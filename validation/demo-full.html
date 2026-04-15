@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI RenderKit — 37 Components Demo</title>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.6.0/dist/echarts.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#0a0a0a;color:#e5e5e5;padding:32px}
+h1{font-size:28px;margin-bottom:4px}
+.sub{color:#888;font-size:14px;margin-bottom:32px}
+.badge{display:inline-block;background:#22c55e;color:#000;font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px}
+.stats{display:flex;gap:24px;margin-bottom:32px}
+.stat{background:#111;border:1px solid #1a1a1a;border-radius:8px;padding:16px 24px;text-align:center}
+.stat-num{font-size:28px;font-weight:700;color:#3b82f6}
+.stat-label{font-size:11px;color:#888;text-transform:uppercase;margin-top:4px}
+.section{margin-bottom:40px}
+.section h2{font-size:16px;color:#888;letter-spacing:.5px;text-transform:uppercase;margin-bottom:16px;border-bottom:1px solid #1a1a1a;padding-bottom:8px}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.grid-2{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
+.card{background:#1a1a1a;border:1px solid #2a2a2a;border-radius:8px;padding:16px;overflow:hidden}
+.card-title{font-size:12px;color:#555;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px}
+.chart{width:100%;height:200px}
+</style>
+</head>
+<body>
+
+<h1>AI RenderKit <span class="badge">v0.1.0</span></h1>
+<p class="sub">37 个组件的 json-render 可视化 Catalog — 18 Charts + 8 UI + 11 Business</p>
+
+<div class="stats">
+  <div class="stat"><div class="stat-num">37</div><div class="stat-label">Components</div></div>
+  <div class="stat"><div class="stat-num">18</div><div class="stat-label">Charts</div></div>
+  <div class="stat"><div class="stat-num">8</div><div class="stat-label">UI</div></div>
+  <div class="stat"><div class="stat-num">11</div><div class="stat-label">Business</div></div>
+</div>
+
+<!-- Charts Section -->
+<div class="section">
+<h2>Charts (mviz bridge)</h2>
+<div class="grid">
+  <div class="card"><div class="card-title">BarChart</div><div id="c-bar" class="chart"></div></div>
+  <div class="card"><div class="card-title">LineChart</div><div id="c-line" class="chart"></div></div>
+  <div class="card"><div class="card-title">AreaChart</div><div id="c-area" class="chart"></div></div>
+  <div class="card"><div class="card-title">PieChart</div><div id="c-pie" class="chart"></div></div>
+  <div class="card"><div class="card-title">ScatterChart</div><div id="c-scatter" class="chart"></div></div>
+  <div class="card"><div class="card-title">BubbleChart</div><div id="c-bubble" class="chart"></div></div>
+  <div class="card"><div class="card-title">HistogramChart</div><div id="c-hist" class="chart"></div></div>
+  <div class="card"><div class="card-title">FunnelChart</div><div id="c-funnel" class="chart"></div></div>
+  <div class="card"><div class="card-title">HeatmapChart</div><div id="c-heatmap" class="chart"></div></div>
+  <div class="card"><div class="card-title">ComboChart</div><div id="c-combo" class="chart"></div></div>
+  <div class="card"><div class="card-title">WaterfallChart</div><div id="c-waterfall" class="chart"></div></div>
+  <div class="card"><div class="card-title">SparklineChart</div><div id="c-spark" class="chart"></div></div>
+</div>
+</div>
+
+<!-- UI Components Section -->
+<div class="section">
+<h2>UI Components</h2>
+<div class="grid">
+  <div class="card">
+    <div class="card-title">BigValue</div>
+    <div style="padding:8px 0"><div style="font-size:12px;color:#888">Monthly Revenue</div><div style="font-size:32px;font-weight:700">$128.5K<span style="font-size:14;color:#22c55e;margin-left:12">↑ 12.3%</span></div></div>
+  </div>
+  <div class="card">
+    <div class="card-title">Delta</div>
+    <div style="padding:8px 0;text-align:center"><div style="font-size:12px;color:#888">vs Last Month</div><div style="font-size:24px;font-weight:700;color:#22c55e">↑ 15.2%</div></div>
+  </div>
+  <div class="card">
+    <div class="card-title">Alert</div>
+    <div style="padding:12px 16px;border-radius:8;border-left:4px solid #f59e0b;background:#422006"><div style="font-size:14;font-weight:600;color:#f59e0b">Warning</div><div style="font-size:13;color:#d1d5db">API rate limit approaching 90%</div></div>
+  </div>
+  <div class="card">
+    <div class="card-title">Note</div>
+    <div style="padding:12px 16px;border-radius:8;background:#1a1a2e;border:1px solid #2a2a3e;display:flex;gap:12"><span>💡</span><div><div style="font-size:14;font-weight:600">Tip</div><div style="font-size:13;color:#9ca3af">Use JSON specs to render any component</div></div></div>
+  </div>
+  <div class="card">
+    <div class="card-title">TextBlock</div>
+    <div style="font-size:14;line-height:1.6">AI RenderKit converts structured JSON into interactive visualizations.</div>
+  </div>
+  <div class="card">
+    <div class="card-title">DataTable</div>
+    <table style="width:100%;border-collapse:collapse;font-size:12">
+      <thead><tr><th style="text-align:left;padding:4px 8px;border-bottom:1px solid #2a2a2a;color:#888">Name</th><th style="text-align:right;padding:4px 8px;border-bottom:1px solid #2a2a2a;color:#888">Value</th></tr></thead>
+      <tbody><tr><td style="padding:4px 8px;color:#ddd">React</td><td style="text-align:right;padding:4px 8px;color:#ddd">19.x</td></tr><tr style="background:#111"><td style="padding:4px 8px;color:#ddd">ECharts</td><td style="text-align:right;padding:4px 8px;color:#ddd">5.6</td></tr><tr><td style="padding:4px 8px;color:#ddd">Zod</td><td style="text-align:right;padding:4px 8px;color:#ddd">v4</td></tr></tbody>
+    </table>
+  </div>
+</div>
+</div>
+
+<!-- Business Components Section -->
+<div class="section">
+<h2>Business Components</h2>
+<div class="grid-2">
+  <div class="card">
+    <div class="card-title">Kanban</div>
+    <div style="display:flex;gap:8;overflow-x:auto">
+      <div style="min-width:160;flex:1;background:#111;border-radius:6;padding:8"><div style="font-size:11;color:#888;margin-bottom:8">To Do <span style="color:#555">(2)</span></div>
+        <div style="background:#1a1a1a;border:1px solid #2a2a2a;border-radius:4;padding:8;margin-bottom:4;font-size:12">Design API</div>
+        <div style="background:#1a1a1a;border:1px solid #2a2a2a;border-radius:4;padding:8;font-size:12">Write tests</div>
+      </div>
+      <div style="min-width:160;flex:1;background:#111;border-radius:6;padding:8"><div style="font-size:11;color:#888;margin-bottom:8">In Progress <span style="color:#555">(1)</span></div>
+        <div style="background:#1a1a1a;border:1px solid #2a2a2a;border-radius:4;padding:8;font-size:12">Build charts</div>
+      </div>
+      <div style="min-width:160;flex:1;background:#111;border-radius:6;padding:8"><div style="font-size:11;color:#888;margin-bottom:8">Done <span style="color:#555">(1)</span></div>
+        <div style="background:#1a1a1a;border:1px solid #2a2a2a;border-radius:4;padding:8;font-size:12">Setup project</div>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">GanttChart</div>
+    <div>
+      <div style="display:flex;align-items:center;height:24;margin-bottom:4"><div style="width:80;font-size:11;color:#888">Design</div><div style="flex:1;height:16;background:#111;border-radius:3;position:relative"><div style="position:absolute;left:0;width:30%;height:100%;background:#3b82f6;border-radius:3"></div></div></div>
+      <div style="display:flex;align-items:center;height:24;margin-bottom:4"><div style="width:80;font-size:11;color:#888">Develop</div><div style="flex:1;height:16;background:#111;border-radius:3;position:relative"><div style="position:absolute;left:20%;width:50%;height:100%;background:#8b5cf6;border-radius:3"></div></div></div>
+      <div style="display:flex;align-items:center;height:24"><div style="width:80;font-size:11;color:#888">Test</div><div style="flex:1;height:16;background:#111;border-radius:3;position:relative"><div style="position:absolute;left:60%;width:35%;height:100%;background:#22c55e;border-radius:3"></div></div></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">KpiDashboard</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8">
+      <div style="background:#111;border-radius:6;padding:12"><div style="font-size:11;color:#888">Users</div><div style="font-size:20;font-weight:700">12.4K</div><div style="font-size:11;color:#22c55e">↑ 8.2%</div></div>
+      <div style="background:#111;border-radius:6;padding:12"><div style="font-size:11;color:#888">Revenue</div><div style="font-size:20;font-weight:700">$84K</div><div style="font-size:11;color:#22c55e">↑ 15.1%</div></div>
+      <div style="background:#111;border-radius:6;padding:12"><div style="font-size:11;color:#888">Churn</div><div style="font-size:20;font-weight:700">2.1%</div><div style="font-size:11;color:#22c55e">↓ 0.3%</div></div>
+      <div style="background:#111;border-radius:6;padding:12"><div style="font-size:11;color:#888">NPS</div><div style="font-size:20;font-weight:700">72</div><div style="font-size:11;color:#f59e0b">→ 0</div></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">Timeline</div>
+    <div style="position:relative;padding-left:20">
+      <div style="position:absolute;left:6;top:4;bottom:4;width:2;background:#2a2a2a"></div>
+      <div style="position:relative;padding-bottom:12;padding-left:16"><div style="position:absolute;left:-16;top:4;width:8;height:8;border-radius:50%;background:#3b82f6"></div><div style="font-size:11;color:#666">Q1 2025</div><div style="font-size:13;font-weight:500">Architecture Design</div></div>
+      <div style="position:relative;padding-bottom:12;padding-left:16"><div style="position:absolute;left:-16;top:4;width:8;height:8;border-radius:50%;background:#8b5cf6"></div><div style="font-size:11;color:#666">Q2 2025</div><div style="font-size:13;font-weight:500">Core Development</div></div>
+      <div style="position:relative;padding-left:16"><div style="position:absolute;left:-16;top:4;width:8;height:8;border-radius:50%;background:#22c55e"></div><div style="font-size:11;color:#666">Q3 2025</div><div style="font-size:13;font-weight:500">Public Release</div></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">FeatureTable</div>
+    <table style="width:100%;border-collapse:collapse;font-size:12">
+      <thead><tr><th style="text-align:left;padding:4px 8px;border-bottom:1px solid #2a2a2a;color:#888">Feature</th><th style="text-align:center;padding:4px 8px;border-bottom:1px solid #2a2a2a;color:#ddd">Free</th><th style="text-align:center;padding:4px 8px;border-bottom:1px solid #2a2a2a;color:#ddd">Pro</th></tr></thead>
+      <tbody>
+        <tr><td style="padding:4px 8px;color:#aaa">Charts</td><td style="text-align:center;padding:4px 8px;color:#22c55e">✓</td><td style="text-align:center;padding:4px 8px;color:#22c55e">✓</td></tr>
+        <tr><td style="padding:4px 8px;color:#aaa">Business</td><td style="text-align:center;padding:4px 8px;color:#555">—</td><td style="text-align:center;padding:4px 8px;color:#22c55e">✓</td></tr>
+        <tr><td style="padding:4px 8px;color:#aaa">Themes</td><td style="text-align:center;padding:4px 8px;color:#555">—</td><td style="text-align:center;padding:4px 8px;color:#22c55e">✓</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="card">
+    <div class="card-title">BudgetReport</div>
+    <div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:4;font-size:12"><span style="color:#ddd">Engineering</span><span style="color:#888">Budget: 50K | Actual: 45K</span></div>
+      <div style="height:4;background:#1a1a1a;border-radius:2;margin-bottom:8"><div style="width:90%;height:100%;background:#3b82f6;border-radius:2"></div></div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:4;font-size:12"><span style="color:#ddd">Marketing</span><span style="color:#888">Budget: 30K | Actual: 35K</span></div>
+      <div style="height:4;background:#1a1a1a;border-radius:2"><div style="width:100%;height:100%;background:#ef4444;border-radius:2"></div></div>
+    </div>
+  </div>
+</div>
+</div>
+
+<script>
+const dark = {backgroundColor:'transparent',textStyle:{color:'#aaa'},tooltip:{trigger:'axis',backgroundColor:'#222',borderColor:'#333',textStyle:{color:'#ddd'}},grid:{left:40,right:12,top:12,bottom:24}}
+const cat = ['Jan','Feb','Mar','Apr','May','Jun']
+const colors = ['#3b82f6','#8b5cf6','#22c55e','#f59e0b','#ef4444','#06b6d4']
+
+function init(id,opt){const c=echarts.init(document.getElementById(id),'dark');c.setOption(Object.assign({},dark,opt));window.addEventListener('resize',()=>c.resize())}
+
+init('c-bar',{xAxis:{type:'category',data:cat},yAxis:{type:'value'},series:[{type:'bar',data:[120,200,150,80,70,110],itemStyle:{color:'#3b82f6',borderRadius:[4,4,0,0]},barWidth:'50%'}]})
+init('c-line',{xAxis:{type:'category',data:cat},yAxis:{type:'value'},series:[{type:'line',data:[820,932,901,934,1290,1330],smooth:true,lineStyle:{color:'#8b5cf6'},itemStyle:{color:'#8b5cf6'},areaStyle:{color:{type:'linear',x:0,y:0,x2:0,y2:1,colorStops:[{offset:0,color:'rgba(139,92,246,0.3)'},{offset:1,color:'rgba(139,92,246,0)'}]}}}]})
+init('c-area',{xAxis:{type:'category',data:cat},yAxis:{type:'value'},series:[{type:'line',data:[220,182,191,234,290,330],areaStyle:{color:'rgba(34,197,94,0.3)'},lineStyle:{color:'#22c55e'},itemStyle:{color:'#22c55e'}}]})
+init('c-pie',{tooltip:{trigger:'item'},series:[{type:'pie',radius:['40%','70%'],data:[{value:1048,name:'Search'},{value:735,name:'Direct'},{value:580,name:'Email'},{value:484,name:'Union'}],itemStyle:{borderRadius:4,borderColor:'#1a1a1a',borderWidth:2}}]})
+init('c-scatter',{xAxis:{type:'value'},yAxis:{type:'value'},series:[{type:'scatter',symbolSize:10,data:[[10,8.04],[8,6.95],[13,7.58],[9,8.81],[11,8.33],[14,9.96]],itemStyle:{color:'#f59e0b'}}]})
+init('c-bubble',{xAxis:{type:'value'},yAxis:{type:'value'},series:[{type:'scatter',symbolSize:function(d){return d[2]},data:[[10,8,20],[8,6,15],[13,7,25],[9,8,18],[11,8,22]],itemStyle:{color:'#06b6d4',opacity:0.7}}]})
+init('c-hist',{xAxis:{type:'category',data:['0-10','10-20','20-30','30-40','40-50','50-60']},yAxis:{type:'value'},series:[{type:'bar',data:[5,18,32,28,12,5],itemStyle:{color:'#3b82f6',borderRadius:[4,4,0,0]},barWidth:'80%'}]})
+init('c-funnel',{tooltip:{trigger:'item'},series:[{type:'funnel',left:'10%',width:'80%',data:[{value:100,name:'Show'},{value:80,name:'Click'},{value:60,name:'Cart'},{value:40,name:'Order'},{value:20,name:'Pay'}],itemStyle:{borderColor:'#1a1a1a',borderWidth:1}}]})
+init('c-heatmap',{xAxis:{type:'category',data:['Mon','Tue','Wed','Thu','Fri']},yAxis:{type:'category',data:['Morning','Afternoon','Evening']},visualMap:{min:0,max:100,show:false},series:[{type:'heatmap',data:[[0,0,80],[0,1,50],[1,0,90],[1,1,60],[2,0,70],[2,1,85],[3,0,40],[3,1,95],[4,0,55],[4,1,30],[0,2,65],[1,2,75],[2,2,45],[3,2,80],[4,2,60]]}]})
+init('c-combo',{xAxis:{type:'category',data:cat},yAxis:{type:'value'},series:[{type:'bar',data:[120,200,150,80,70,110],itemStyle:{color:'#3b82f6',borderRadius:[4,4,0,0]}},{type:'line',data:[100,150,180,130,160,200],smooth:true,lineStyle:{color:'#f59e0b'},itemStyle:{color:'#f59e0b'}}]})
+init('c-waterfall',{xAxis:{type:'category',data:['Start','Sales','Costs','Tax','Net']},yAxis:{type:'value'},series:[{type:'bar',data:[{value:100,itemStyle:{color:'#3b82f6'}},{value:80,itemStyle:{color:'#22c55e'}},{value:-30,itemStyle:{color:'#ef4444'}},{value:-10,itemStyle:{color:'#ef4444'}},{value:140,itemStyle:{color:'#3b82f6'}}]}]})
+init('c-spark',{xAxis:{type:'category',show:false},yAxis:{type:'value',show:false},grid:{left:0,right:0,top:4,bottom:4},series:[{type:'line',data:[50,60,45,80,55,90,70,85,95],smooth:true,areaStyle:{color:'rgba(59,130,246,0.2)'},lineStyle:{color:'#3b82f6',width:2},itemStyle:{color:'#3b82f6'},symbol:'none'}]})
+</script>
+
+</body>
+</html>

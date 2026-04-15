@@ -1,0 +1,10 @@
+{
+  "input": {
+    "nodes": [
+      { "id": "n1", "title": "Phase 1: Planning", "status": "completed", "startDate": "2024-01-01", "endDate": "2024-01-15" },
+      { "id": "n2", "title": "Phase 2: Design", "status": "completed", "startDate": "2024-01-16", "endDate": "2024-02-01" },
+      { "id": "n3", "title": "Phase 3: Development", "status": "in-progress", "startDate": "2024-02-02", "endDate": "2024-04-01" },
+      { "id": "n4", "title": "Phase 4: Launch", "status": "pending", "startDate": "2024-04-02", "endDate": "2024-04-15" }
+    ]
+  }
+}

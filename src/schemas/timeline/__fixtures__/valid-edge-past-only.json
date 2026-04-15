@@ -1,0 +1,8 @@
+{
+  "input": {
+    "nodes": [
+      { "id": "n1", "title": "Sprint 1", "status": "completed", "startDate": "2024-01-01" },
+      { "id": "n2", "title": "Sprint 2", "status": "completed", "startDate": "2024-02-01" }
+    ]
+  }
+}

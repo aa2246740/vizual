@@ -1,0 +1,21 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "title": "Form View",
+  "properties": {
+    "title": { "type": "string" },
+    "fields": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "label": { "type": "string" },
+          "value": {},
+          "type": { "type": "string", "enum": ["text", "number", "date", "email", "phone", "url", "boolean"] }
+        },
+        "required": ["label"]
+      }
+    }
+  },
+  "required": ["title", "fields"]
+}

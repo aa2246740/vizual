@@ -1,0 +1,57 @@
+{
+  "name": "vizual",
+  "version": "1.0.0",
+  "description": "Vizual — AI speaks JSON, Vizual makes it visual. 37 interactive visualization components for json-render: charts, dashboards, kanban, gantt & more.",
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "files": ["dist", "src"],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "build": "npm run build:esm && npm run build:cjs && npm run build:umd && npm run build:standalone",
+    "build:esm": "esbuild src/index.ts --bundle --format=esm --outfile=dist/index.mjs --target=es2020 --external:react --external:react-dom --external:echarts",
+    "build:cjs": "esbuild src/index.ts --bundle --format=cjs --outfile=dist/index.js --target=es2020 --external:react --external:react-dom --external:echarts",
+    "build:umd": "esbuild src/cdn-entry.ts --bundle --format=iife --outfile=dist/vizual.cdn.js --target=es2020 --external:react --external:react-dom --external:echarts --minify --global-name=Vizual",
+    "build:standalone": "esbuild src/cdn-entry.ts --bundle --format=iife --outfile=dist/vizual.standalone.js --target=es2020 --minify --global-name=Vizual",
+    "prepublishOnly": "npm test && npm run build"
+  },
+  "keywords": ["vizual", "visualization", "ai", "chart", "dashboard", "render", "json-render", "mviz", "echarts", "react", "catalog", "generative-ui", "data-viz", "kanban", "gantt"],
+  "author": "",
+  "license": "MIT",
+  "peerDependencies": {
+    "react": ">=18",
+    "react-dom": ">=18"
+  },
+  "dependencies": {
+    "zod": "^3.25.0",
+    "echarts": "^5.6.0",
+    "mviz": "^1.6.4",
+    "@json-render/core": "^0.17.0",
+    "@json-render/react": "^0.17.0"
+  },
+  "devDependencies": {
+    "@json-render/core": "^0.17.0",
+    "@json-render/react": "^0.17.0",
+    "@testing-library/react": "^16.0.0",
+    "@types/node": "^25.6.0",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@vitest/coverage-v8": "^4.1.4",
+    "echarts": "^5.6.0",
+    "esbuild": "^0.28.0",
+    "jsdom": "^29.0.2",
+    "mviz": "^1.6.4",
+    "react": "^19.2.5",
+    "react-dom": "^19.2.5",
+    "typescript": "^6.0.2",
+    "vitest": "^4.1.4"
+  }
+}

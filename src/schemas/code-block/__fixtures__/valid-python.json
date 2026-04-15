@@ -1,0 +1,7 @@
+{
+  "input": {
+    "code": "def hello(name):\n    print(f'Hello, {name}!')\n    return True",
+    "language": "python"
+  },
+  "expectedLineCount": 3
+}

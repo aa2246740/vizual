@@ -1,0 +1,13 @@
+{
+  "input": {
+    "columns": [
+      {
+        "id": "todo",
+        "title": "待办",
+        "cards": [
+          { "id": "card-1", "content": "仅有一个任务" }
+        ]
+      }
+    ]
+  }
+}

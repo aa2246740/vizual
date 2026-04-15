@@ -1,0 +1,10 @@
+{
+  "input": {
+    "data": {
+      "name": "Test",
+      "value": 42,
+      "active": true
+    }
+  },
+  "expectedKeyCount": 3
+}

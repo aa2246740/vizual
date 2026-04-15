@@ -1,0 +1,22 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "title": "JSON Viewer",
+  "description": "Renders structured JSON data with syntax highlighting and collapsible nodes",
+  "properties": {
+    "data": {
+      "type": "object",
+      "description": "The JSON object to render"
+    },
+    "config": {
+      "type": "object",
+      "properties": {
+        "maxDepth": { "type": "integer", "default": 5, "maximum": 20 },
+        "collapsedByDefault": { "type": "boolean", "default": false },
+        "showLineNumbers": { "type": "boolean", "default": true },
+        "syntaxTheme": { "type": "string", "enum": ["dark", "light"], "default": "dark" }
+      }
+    }
+  },
+  "required": ["data"]
+}

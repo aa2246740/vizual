@@ -1,0 +1,17 @@
+{
+  "input": {
+    "data": {
+      "user": {
+        "name": "Alice",
+        "address": {
+          "city": "NYC"
+        }
+      },
+      "items": [
+        { "id": 1 },
+        { "id": 2 }
+      ]
+    }
+  },
+  "expectedDepth2Count": 4
+}

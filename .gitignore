@@ -1,0 +1,23 @@
+node_modules/
+dist/
+coverage/
+.DS_Store
+*.log
+.planning/
+.gstack/
+.env
+
+# Internal docs (not for open source)
+API.md
+PRD.md
+PRD-v2.md
+REPORT.md
+CLAUDE.md
+demo-sim.html
+demo.html
+demo-screenshot-full.png
+demo-sim-screenshot.png
+render-kit.js
+rollup.config.mjs
+screenshots/
+tests/

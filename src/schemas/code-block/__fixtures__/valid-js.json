@@ -1,0 +1,7 @@
+{
+  "input": {
+    "code": "const fetchData = async (url) => {\n  const res = await fetch(url);\n  return res.json();\n};",
+    "language": "javascript"
+  },
+  "expectedLineCount": 4
+}
