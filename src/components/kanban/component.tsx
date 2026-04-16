@@ -1,10 +1,7 @@
-import type { KanbanProps } from './schema'
-
 /**
  * Kanban board with columns and cards
  */
-export function Kanban(props: KanbanProps) {
-  return (props) => {
+export function Kanban({ props }: { props: KanbanProps }) {
       const colors = {low:'#22c55e',medium:'#f59e0b',high:'#ef4444'}
       return <div style={{width:'100%'}}>
         {props.title && <h3 style={{fontSize:16,fontWeight:600,marginBottom:12,color:'var(--rk-text-primary,#e5e5e5)'}}>{props.title}</h3>}
@@ -33,5 +30,4 @@ export function Kanban(props: KanbanProps) {
           ))}
         </div>
       </div>
-    }
 }

@@ -3,7 +3,7 @@ import type { TextBlockProps } from './schema'
 /**
  * Styled text display
  */
-export function TextBlock(props: TextBlockProps) {
+export function TextBlock({ props }: { props: TextBlockProps }) {
   return <div style={{
     fontSize: props.fontSize ?? 14,
     fontWeight: props.fontWeight ?? 'normal',

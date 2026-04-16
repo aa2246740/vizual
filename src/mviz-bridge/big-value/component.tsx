@@ -3,7 +3,7 @@ import type { BigValueProps } from './schema'
 /**
  * Large metric display with optional subtitle
  */
-export function BigValue(props: BigValueProps) {
+export function BigValue({ props }: { props: BigValueProps }) {
   const isUp = props.trend === 'up', isDown = props.trend === 'down'
   return <div style={{padding: '8px 0'}}>
     {props.title && <div style={{fontSize:12,color:'var(--rk-text-secondary,#888)',marginBottom:4}}>{props.title}</div>}

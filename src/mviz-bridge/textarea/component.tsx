@@ -3,7 +3,7 @@ import type { TextAreaProps } from './schema'
 /**
  * Multi-line text block
  */
-export function TextArea(props: TextAreaProps) {
+export function TextArea({ props }: { props: TextAreaProps }) {
   return <div style={{
     padding: '12px 16px', borderRadius: 8, background: '#111', border: '1px solid #2a2a2a',
     fontFamily: 'monospace', fontSize: 13, lineHeight: 1.6,

@@ -1,10 +1,7 @@
-import type { CodeBlockProps } from './schema'
-
 /**
  * Syntax-highlighted code block
  */
-export function CodeBlock(props: CodeBlockProps) {
-  return (props) => {
+export function CodeBlock({ props }: { props: CodeBlockProps }) {
       const lines = props.code.split('\n')
       return <div>
         {props.title && <div style={{display:'flex',justifyContent:'space-between',marginBottom:4}}>
@@ -18,5 +15,4 @@ export function CodeBlock(props: CodeBlockProps) {
           </div>) : <span style={{color:'#d1d5db'}}>{props.code}</span>}
         </pre>
       </div>
-    }
 }

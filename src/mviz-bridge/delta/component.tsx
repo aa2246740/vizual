@@ -3,7 +3,7 @@ import type { DeltaProps } from './schema'
 /**
  * Value change indicator
  */
-export function Delta(props: DeltaProps) {
+export function Delta({ props }: { props: DeltaProps }) {
   const isUp = props.direction === 'up', isDown = props.direction === 'down'
   let pct = ''
   if (props.previousValue != null && props.previousValue !== 0) {

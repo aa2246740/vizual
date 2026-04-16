@@ -3,7 +3,7 @@ import type { NoteProps } from './schema'
 /**
  * Callout note with icon
  */
-export function Note(props: NoteProps) {
+export function Note({ props }: { props: NoteProps }) {
   const icons = {info:'ℹ️',tip:'💡',warning:'⚠️',important:'🔴'}
   const icon = icons[props.variant ?? 'info']
   return <div style={{padding:'12px 16px',borderRadius:8,background:'#1a1a2e',border:'1px solid #2a2a3e',marginBottom:8,display:'flex',gap:12}}>

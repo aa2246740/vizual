@@ -1,10 +1,7 @@
-import type { KpiDashboardProps } from './schema'
-
 /**
  * Multi-metric KPI dashboard cards
  */
-export function KpiDashboard(props: KpiDashboardProps) {
-  return (props) => {
+export function KpiDashboard({ props }: { props: KpiDashboardProps }) {
       const cols = props.columns ?? Math.min(props.metrics.length, 4)
       return <div>
         {props.title && <h3 style={{fontSize:14,fontWeight:600,marginBottom:12}}>{props.title}</h3>}
@@ -23,5 +20,4 @@ export function KpiDashboard(props: KpiDashboardProps) {
           })}
         </div>
       </div>
-    }
 }
