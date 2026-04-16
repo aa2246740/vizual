@@ -1,10 +1,7 @@
-import type { GanttChartProps } from './schema'
-
 /**
  * Gantt chart with task bars and date axis
  */
-export function GanttChart(props: GanttChartProps) {
-  return (props) => {
+export function GanttChart({ props }: { props: GanttChartProps }) {
       if (props.tasks.length === 0) return <div style={{color:'#888',fontSize:13}}>No tasks</div>
       const starts = props.tasks.map(t => new Date(t.start).getTime())
       const ends = props.tasks.map(t => new Date(t.end).getTime())
@@ -27,5 +24,4 @@ export function GanttChart(props: GanttChartProps) {
           })}
         </div>
       </div>
-    }
 }

@@ -11,7 +11,7 @@ export function createEChartsBridge(
   chartType: string,
   buildFallbackOption: (props: ChartProps) => Record<string, unknown>,
 ) {
-  function BridgeComponent(props: ChartProps) {
+  function BridgeComponent({ props }: { props: ChartProps }) {
     const containerRef = useRef<HTMLDivElement>(null)
     const chartRef = useRef<echarts.ECharts | null>(null)
     const [option, setOption] = useState<Record<string, unknown> | null>(null)

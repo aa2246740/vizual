@@ -4,7 +4,7 @@ import type { MermaidProps } from './schema'
 /**
  * Mermaid diagram component — renders mermaid syntax via mermaid.js
  */
-export function MermaidChart(props: MermaidProps) {
+export function MermaidChart({ props }: { props: MermaidProps }) {
   const containerRef = useRef<HTMLDivElement>(null)
   const [html, setHtml] = useState<string>('')
 

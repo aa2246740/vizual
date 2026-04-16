@@ -1,10 +1,7 @@
-import type { AuditLogProps } from './schema'
-
 /**
  * Operation log with timestamps
  */
-export function AuditLog(props: AuditLogProps) {
-  return (props) => {
+export function AuditLog({ props }: { props: AuditLogProps }) {
       const sevColors = {info:'#3b82f6',warning:'#f59e0b',error:'#ef4444'}
       return <div>
         {props.title && <h3 style={{fontSize:14,fontWeight:600,marginBottom:12}}>{props.title}</h3>}
@@ -18,5 +15,4 @@ export function AuditLog(props: AuditLogProps) {
           </div>)}
         </div>
       </div>
-    }
 }

@@ -1,10 +1,7 @@
-import type { FeatureTableProps } from './schema'
-
 /**
  * Product comparison matrix
  */
-export function FeatureTable(props: FeatureTableProps) {
-  return (props) => {
+export function FeatureTable({ props }: { props: FeatureTableProps }) {
       return <div style={{overflowX:'auto'}}>
         {props.title && <h3 style={{fontSize:14,fontWeight:600,marginBottom:12}}>{props.title}</h3>}
         <table style={{width:'100%',borderCollapse:'collapse',fontSize:13}}>
@@ -20,5 +17,4 @@ export function FeatureTable(props: FeatureTableProps) {
           </tr>)}</tbody>
         </table>
       </div>
-    }
 }

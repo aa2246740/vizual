@@ -50,7 +50,7 @@ const styles = {
 /**
  * Timeline custom component — vertical event flow
  */
-export function Timeline(props: TimelineProps) {
+export function Timeline({ props }: { props: TimelineProps }) {
   return (
     <div style={styles.container}>
       {props.title && (

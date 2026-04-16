@@ -1,10 +1,7 @@
-import type { BudgetReportProps } from './schema'
-
 /**
  * Budget vs actual with variance
  */
-export function BudgetReport(props: BudgetReportProps) {
-  return (props) => {
+export function BudgetReport({ props }: { props: BudgetReportProps }) {
       const maxVal = Math.max(...props.categories.map(c => Math.max(c.budget, c.actual)))
       return <div>
         {props.title && <h3 style={{fontSize:14,fontWeight:600,marginBottom:12}}>{props.title}</h3>}
@@ -29,5 +26,4 @@ export function BudgetReport(props: BudgetReportProps) {
           })}
         </div>
       </div>
-    }
 }

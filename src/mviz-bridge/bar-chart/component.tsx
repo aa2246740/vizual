@@ -48,7 +48,7 @@ async function buildOption(props: BarChartProps): Promise<Record<string, unknown
  * BarChart bridge component — uses mviz buildBarOptions to generate ECharts option,
  * with a self-contained fallback if mviz is unavailable.
  */
-export function BarChart(props: BarChartProps) {
+export function BarChart({ props }: { props: BarChartProps }) {
   const containerRef = useRef<HTMLDivElement>(null)
   const chartRef = useRef<echarts.ECharts | null>(null)
   const [option, setOption] = useState<Record<string, unknown> | null>(null)

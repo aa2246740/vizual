@@ -1,10 +1,7 @@
-import type { OrgChartProps } from './schema'
-
 /**
  * Organization chart with tree hierarchy
  */
-export function OrgChart(props: OrgChartProps) {
-  return (props) => {
+export function OrgChart({ props }: { props: OrgChartProps }) {
       const roots = props.nodes.filter(n => !n.parentId)
       const getChildren = (id: string) => props.nodes.filter(n => n.parentId === id)
       const renderNode = (node: any, depth = 0) => {
@@ -23,5 +20,4 @@ export function OrgChart(props: OrgChartProps) {
         {props.title && <h3 style={{fontSize:14,fontWeight:600,marginBottom:12}}>{props.title}</h3>}
         {roots.map(r => renderNode(r))}
       </div>
-    }
 }
