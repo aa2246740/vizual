@@ -45,7 +45,7 @@ import { CodeBlockSchema } from './components/code-block/schema'
 import { FormViewSchema } from './components/form-view/schema'
 
 /**
- * AI RenderKit catalog — 26 components registered as json-render visualization catalog
+ * AI RenderKit catalog — 37 components registered as json-render visualization catalog
  */
 export const renderKitCatalog = defineCatalog(schema, {
   components: {

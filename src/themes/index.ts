@@ -76,9 +76,6 @@ export function applyTheme(container: HTMLElement, themeName: string): boolean {
 .rk-theme-${theme.name} {
 ${cssRules}
 }
-.rk-theme-${theme.name} * {
-${cssRules}
-}
   `.trim()
 
   // Sync theme colors to the runtime color cache
@@ -99,6 +96,15 @@ export function setGlobalTheme(themeName: string): boolean {
   }
   return applyTheme(document.body as unknown as HTMLElement, themeName)
 }
+
+// Auto-register built-in themes
+import { defaultDarkTheme } from './default-dark'
+import { linearTheme } from './linear'
+import { vercelTheme } from './vercel'
+
+registerTheme(defaultDarkTheme.name, defaultDarkTheme)
+registerTheme(linearTheme.name, linearTheme)
+registerTheme(vercelTheme.name, vercelTheme)
 
 // Export the Theme type for external use
 export type { Theme as ThemeDefinition }

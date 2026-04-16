@@ -12,7 +12,7 @@ import { renderKitCatalog } from './catalog'
 import * as echarts from 'echarts'
 import { createElement } from 'react'
 import { createRoot } from 'react-dom/client'
-import { Renderer, StateProvider, JSONUIProvider } from '@json-render/react'
+import { Renderer, JSONUIProvider } from '@json-render/react'
 
 // Re-export everything from index
 export { renderKitCatalog } from './catalog'

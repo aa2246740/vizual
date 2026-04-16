@@ -2,19 +2,25 @@ import type { ScatterChartProps } from './schema'
 import { createEChartsBridge } from '../../core/echarts-bridge-factory'
 
 function buildScatterFallback(props: ScatterChartProps): Record<string, unknown> {
-  const x = props.x ?? 'name'
-  const y = props.y ?? (Array.isArray(props.y) ? props.y[0] : 'value')
-  const yFields = Array.isArray(y) ? y : [y]
+  const xField = props.x ?? 'x'
+  const yField = typeof props.y === 'string' ? props.y : (Array.isArray(props.y) ? props.y[0] : 'y')
+
+  const scatterData = props.data.map(d => [
+    Number(d[xField]) || 0,
+    Number(d[yField]) || 0,
+  ])
+
   return {
     title: props.title ? { text: props.title } : undefined,
-    tooltip: { trigger: 'axis' },
-    xAxis: { type: 'category', data: props.data.map(d => String(d[x] ?? '')) },
-    yAxis: { type: 'value' },
-    series: yFields.map(f => ({
+    tooltip: { trigger: 'item' },
+    xAxis: { type: 'value', name: xField },
+    yAxis: { type: 'value', name: yField },
+    series: [{
       type: 'scatter',
-      name: f, data: props.data.map(d => Number(d[f]) || 0),
-      
-    })),
+      data: scatterData,
+      symbolSize: 8,
+      emphasis: { focus: 'series' },
+    }],
   }
 }
 

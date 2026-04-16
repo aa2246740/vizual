@@ -14,6 +14,7 @@ export function createEChartsBridge(
   function BridgeComponent({ props }: { props: ChartProps }) {
     const containerRef = useRef<HTMLDivElement>(null)
     const chartRef = useRef<echarts.ECharts | null>(null)
+    const observerRef = useRef<ResizeObserver | null>(null)
     const [option, setOption] = useState<Record<string, unknown> | null>(null)
 
     useEffect(() => {
@@ -26,15 +27,22 @@ export function createEChartsBridge(
       if (!chart) {
         chart = echarts.init(containerRef.current)
         chartRef.current = chart
+
+        // Create ResizeObserver only once when chart is first created
+        const observer = new ResizeObserver(() => chart!.resize())
+        observer.observe(containerRef.current)
+        observerRef.current = observer
       }
       chart.setOption(option, true)
-      const observer = new ResizeObserver(() => chart!.resize())
-      observer.observe(containerRef.current)
-      return () => { observer.disconnect() }
     }, [option])
 
     useEffect(() => {
-      return () => { chartRef.current?.dispose(); chartRef.current = null }
+      return () => {
+        observerRef.current?.disconnect()
+        observerRef.current = null
+        chartRef.current?.dispose()
+        chartRef.current = null
+      }
     }, [])
 
     const height = typeof props.height === 'number' ? props.height : (props.title ? 320 : 300)
@@ -60,6 +68,13 @@ async function buildOption(
   return fallback(props)
 }
 
+/**
+ * Convert chartType to PascalCase for mviz function name lookup.
+ * e.g. 'bar-chart' -> 'BarChart', 'scatter' -> 'Scatter'
+ */
 function capitalize(s: string): string {
-  return s.charAt(0).toUpperCase() + s.slice(1)
+  return s
+    .split(/[-_]/)
+    .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+    .join('')
 }

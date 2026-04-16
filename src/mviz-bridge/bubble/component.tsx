@@ -2,19 +2,27 @@ import type { BubbleChartProps } from './schema'
 import { createEChartsBridge } from '../../core/echarts-bridge-factory'
 
 function buildBubbleFallback(props: BubbleChartProps): Record<string, unknown> {
-  const x = props.x ?? 'name'
-  const y = props.y ?? (Array.isArray(props.y) ? props.y[0] : 'value')
-  const yFields = Array.isArray(y) ? y : [y]
+  const xField = props.x ?? 'x'
+  const yField = typeof props.y === 'string' ? props.y : 'y'
+  const sizeField = props.size ?? 'size'
+
+  const bubbleData = props.data.map(d => [
+    Number(d[xField]) || 0,
+    Number(d[yField]) || 0,
+    Number(d[sizeField]) || 10,
+  ])
+
   return {
     title: props.title ? { text: props.title } : undefined,
-    tooltip: { trigger: 'axis' },
-    xAxis: { type: 'category', data: props.data.map(d => String(d[x] ?? '')) },
-    yAxis: { type: 'value' },
-    series: yFields.map(f => ({
+    tooltip: { trigger: 'item' },
+    xAxis: { type: 'value', name: xField },
+    yAxis: { type: 'value', name: yField },
+    series: [{
       type: 'bubble',
-      name: f, data: props.data.map(d => Number(d[f]) || 0),
-      
-    })),
+      data: bubbleData,
+      symbolSize: (val: number[]) => Math.max(val[2] / 2, 4),
+      emphasis: { focus: 'series' },
+    }],
   }
 }
 

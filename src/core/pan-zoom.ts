@@ -189,6 +189,6 @@ export function enablePanZoom(
     pinching = false
     container.style.cursor = ''
     container.style.userSelect = ''
-    try { container.releasePointerCapture?.(-1) } catch (_) { /* ignore */ }
+    // No need to release pointer capture; browser auto-releases when element is removed
   }
 }

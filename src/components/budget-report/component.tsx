@@ -2,7 +2,10 @@
  * Budget vs actual with variance
  */
 export function BudgetReport({ props }: { props: BudgetReportProps }) {
-      const maxVal = Math.max(...props.categories.map(c => Math.max(c.budget, c.actual)))
+      if (!props.categories || props.categories.length === 0) {
+        return <div style={{color:'#888',fontSize:13}}>No budget data</div>
+      }
+      const maxVal = Math.max(...props.categories.map(c => Math.max(c.budget, c.actual))) || 1
       return <div>
         {props.title && <h3 style={{fontSize:14,fontWeight:600,marginBottom:12}}>{props.title}</h3>}
         <div style={{display:'flex',flexDirection:'column',gap:8}}>

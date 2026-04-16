@@ -11,9 +11,14 @@ export function FeatureTable({ props }: { props: FeatureTableProps }) {
           </tr></thead>
           <tbody>{props.features.map((f,i) => <tr key={i} style={{borderBottom:'1px solid #1a1a1a'}}>
             <td style={{padding:'8px 12px',color:'#aaa'}}>{f.name}</td>
-            {f.values.map((v,j) => <td key={j} style={{textAlign:'center',padding:'8px 12px'}}>
-              {typeof v === 'boolean' ? (v ? <span style={{color:'#22c55e',fontWeight:700}}>✓</span> : <span style={{color:'#555'}}>—</span>) : <span style={{color:'#ddd'}}>{String(v)}</span>}
-            </td>)}
+            {Array.from({ length: props.products.length }, (_, j) => {
+              const v = f.values?.[j]
+              return <td key={j} style={{textAlign:'center',padding:'8px 12px'}}>
+                {v === undefined ? <span style={{color:'#333'}}>—</span> :
+                 typeof v === 'boolean' ? (v ? <span style={{color:'#22c55e',fontWeight:700}}>✓</span> : <span style={{color:'#555'}}>—</span>) :
+                 <span style={{color:'#ddd'}}>{String(v)}</span>}
+              </td>
+            })}
           </tr>)}</tbody>
         </table>
       </div>

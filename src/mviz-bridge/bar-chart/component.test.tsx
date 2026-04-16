@@ -6,10 +6,12 @@ describe('BarChart', () => {
   it('renders a container div with correct dimensions', () => {
     const { container } = render(
       <BarChart
-        type="bar"
-        x="name"
-        y="value"
-        data={[{ name: 'A', value: 10 }, { name: 'B', value: 20 }]}
+        props={{
+          type: 'bar',
+          x: 'name',
+          y: 'value',
+          data: [{ name: 'A', value: 10 }, { name: 'B', value: 20 }],
+        }}
       />
     )
     const div = container.firstChild as HTMLDivElement
@@ -21,11 +23,13 @@ describe('BarChart', () => {
   it('renders taller when title is provided', () => {
     const { container } = render(
       <BarChart
-        type="bar"
-        title="Sales Report"
-        x="name"
-        y="value"
-        data={[{ name: 'A', value: 10 }]}
+        props={{
+          type: 'bar',
+          title: 'Sales Report',
+          x: 'name',
+          y: 'value',
+          data: [{ name: 'A', value: 10 }],
+        }}
       />
     )
     const div = container.firstChild as HTMLDivElement

@@ -19,7 +19,9 @@ export function MermaidChart({ props }: { props: MermaidProps }) {
       const { svg } = await mermaid.default.render(id, props.code)
       setHtml(svg)
     }).catch(() => {
-      setHtml(`<pre style="color:#888;font-size:13px">${props.code}</pre>`)
+      // Escape HTML in fallback to prevent XSS
+      const escaped = props.code.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      setHtml(`<pre style="color:#888;font-size:13px">${escaped}</pre>`)
     })
   }, [props.code, props.theme])
 

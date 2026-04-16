@@ -32,12 +32,6 @@ export function render(schemaId: string, input: unknown, options?: RenderOptions
     }
 
     const result = handler.render(parsed)
-    
-    // If a container was provided and theme was set, apply theme to result
-    if (options?.container && options?.theme) {
-      applyTheme(result, options.theme)
-    }
-    
     return result
   } catch {
     return createFallbackContainer(input)

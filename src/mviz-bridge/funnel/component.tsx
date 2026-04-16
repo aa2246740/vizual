@@ -2,19 +2,32 @@ import type { FunnelChartProps } from './schema'
 import { createEChartsBridge } from '../../core/echarts-bridge-factory'
 
 function buildFunnelFallback(props: FunnelChartProps): Record<string, unknown> {
-  const x = props.x ?? 'name'
-  const y = props.y ?? (Array.isArray(props.y) ? props.y[0] : 'value')
-  const yFields = Array.isArray(y) ? y : [y]
+  const labelField = props.label ?? props.x ?? 'name'
+  const valueField = props.value ?? (typeof props.y === 'string' ? props.y : 'value')
+
+  const funnelData = props.data.map(d => ({
+    name: String(d[labelField] ?? ''),
+    value: Number(d[valueField]) || 0,
+  }))
+
   return {
     title: props.title ? { text: props.title } : undefined,
-    tooltip: { trigger: 'axis' },
-    xAxis: { type: 'category', data: props.data.map(d => String(d[x] ?? '')) },
-    yAxis: { type: 'value' },
-    series: yFields.map(f => ({
+    tooltip: { trigger: 'item' },
+    series: [{
       type: 'funnel',
-      name: f, data: props.data.map(d => Number(d[f]) || 0),
-      
-    })),
+      data: funnelData,
+      top: '10%',
+      bottom: '10%',
+      width: '80%',
+      min: 0,
+      max: Math.max(...funnelData.map(d => d.value), 1),
+      minSize: '0%',
+      maxSize: '100%',
+      sort: 'descending',
+      gap: 2,
+      label: { show: true, position: 'inside' },
+      emphasis: { label: { fontSize: 16 } },
+    }],
   }
 }
 
