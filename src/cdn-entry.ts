@@ -12,7 +12,7 @@ import { renderKitCatalog } from './catalog'
 import * as echarts from 'echarts'
 import { createElement } from 'react'
 import { createRoot } from 'react-dom/client'
-import { Renderer, StateProvider } from '@json-render/react'
+import { Renderer, StateProvider, JSONUIProvider } from '@json-render/react'
 
 // Re-export everything from index
 export { renderKitCatalog } from './catalog'
@@ -71,7 +71,7 @@ export { FormView, FormViewSchema } from './components/form-view'
 export function renderSpec(spec: any, container: HTMLElement) {
   const root = createRoot(container)
   root.render(
-    createElement(StateProvider, null,
+    createElement(JSONUIProvider, { registry },
       createElement(Renderer, { spec, registry })
     )
   )
