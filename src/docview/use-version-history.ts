@@ -17,6 +17,10 @@ export interface Snapshot {
 }
 
 export interface UseVersionHistoryOptions {
+  /** External controlled snapshots (if provided, internal state is ignored) */
+  snapshots?: Snapshot[]
+  /** Callback when snapshots change */
+  onSnapshotsChange?: (snapshots: Snapshot[]) => void
   /** Callback when a snapshot is restored */
   onRestore?: (snapshot: Snapshot) => void
 }
@@ -41,14 +45,25 @@ let snapshotCounter = 0
 /**
  * Hook for managing document version snapshots.
  *
+ * Supports both controlled (external snapshots prop) and uncontrolled (internal state) modes.
+ *
  * Users can save snapshots of the current document state (content + annotations),
  * view the history, and restore any previous snapshot.
  *
- * Snapshots are stored in memory (not persisted). For persistence,
- * consume the snapshots array and save to your backend.
+ * Snapshots are stored in memory by default (not persisted). For persistence,
+ * use controlled mode and consume the snapshots array to save to your backend.
  */
 export function useVersionHistory(options: UseVersionHistoryOptions = {}): UseVersionHistoryReturn {
-  const [snapshots, setSnapshots] = useState<Snapshot[]>([])
+  const [internalSnapshots, setInternalSnapshots] = useState<Snapshot[]>([])
+  const snapshots = options.snapshots ?? internalSnapshots
+
+  /** Emit snapshot change: update internal state only if uncontrolled, always call external callback */
+  const emitChange = useCallback((next: Snapshot[]) => {
+    if (!options.snapshots) {
+      setInternalSnapshots(next)
+    }
+    options.onSnapshotsChange?.(next)
+  }, [options.snapshots, options.onSnapshotsChange])
 
   const saveSnapshot = useCallback((content: string, annotations: Annotation[], label?: string): Snapshot => {
     const now = new Date().toISOString()
@@ -60,9 +75,9 @@ export function useVersionHistory(options: UseVersionHistoryOptions = {}): UseVe
       annotations: [...annotations],
       annotationCount: annotations.length,
     }
-    setSnapshots(prev => [snapshot, ...prev])
+    emitChange([snapshot, ...snapshots])
     return snapshot
-  }, [snapshots.length])
+  }, [snapshots, emitChange])
 
   const restoreSnapshot = useCallback((id: string): Snapshot | undefined => {
     const snapshot = snapshots.find(s => s.id === id)
@@ -73,8 +88,8 @@ export function useVersionHistory(options: UseVersionHistoryOptions = {}): UseVe
   }, [snapshots, options.onRestore])
 
   const deleteSnapshot = useCallback((id: string) => {
-    setSnapshots(prev => prev.filter(s => s.id !== id))
-  }, [])
+    emitChange(snapshots.filter(s => s.id !== id))
+  }, [snapshots, emitChange])
 
   const getSnapshot = useCallback((id: string) => {
     return snapshots.find(s => s.id === id)
