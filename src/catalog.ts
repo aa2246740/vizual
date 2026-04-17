@@ -52,8 +52,11 @@ import { InputSelectSchema } from './inputs/input-select/schema'
 import { InputFileSchema } from './inputs/input-file/schema'
 import { FormBuilderSchema } from './inputs/form-builder/schema'
 
+// DocView schema
+import { DocViewSchema } from './docview/schema'
+
 /**
- * AI RenderKit catalog — 42 components registered as json-render visualization catalog
+ * AI RenderKit catalog — 43 components registered as json-render visualization catalog
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const renderKitCatalog = defineCatalog(schema, {
@@ -232,6 +235,12 @@ export const renderKitCatalog = defineCatalog(schema, {
     FormBuilder: {
       props: FormBuilderSchema as any,
       description: 'Dynamic form builder with validation, cascading fields, and grid layout. Use $bindState to capture form data.',
+    },
+
+    // DocView — Document annotation component — 1
+    DocView: {
+      props: DocViewSchema as any,
+      description: 'Interactive document with sections (text, headings, charts, KPIs, tables, callouts, embedded components) and annotation support. AI outputs structured sections, users annotate for revision feedback.',
     },
   },
   actions: {

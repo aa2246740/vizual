@@ -51,8 +51,11 @@ import { InputSelect } from './inputs/input-select/component'
 import { InputFile } from './inputs/input-file/component'
 import { FormBuilder } from './inputs/form-builder/component'
 
+// DocView
+import { DocView } from './docview/container'
+
 /**
- * AI RenderKit registry — 42 React components + 3 action handlers
+ * AI RenderKit registry — 43 React components + 3 action handlers
  *
  * Exported result includes:
  * - registry: ComponentRegistry for <Renderer>
@@ -71,6 +74,7 @@ export const { registry, handlers, executeAction } = defineRegistry(renderKitCat
     Timeline, Kanban, GanttChart, OrgChart, KpiDashboard, BudgetReport,
     FeatureTable, AuditLog, JsonViewer, CodeBlock, FormView,
     InputText, InputSelect, InputFile, FormBuilder,
+    DocView,
   } as any,
   actions: {
     /** Store form submission in state. Host app can override via handlers(). */
