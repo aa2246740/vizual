@@ -9,7 +9,7 @@
 ## Milestones
 
 - ✅ **v1.0 MVP** - Phases 1-4 (shipped 2026-04-15)
-- 🚧 **v2.0 DocView Native Integration** - Phases 5-7 (in progress)
+- ✅ **v2.0 DocView Native Integration** - Phases 5-7 (completed 2026-04-17)
 
 ## Phases
 
@@ -46,13 +46,13 @@ Plans:
 
 </details>
 
-### 🚧 v2.0 DocView Native Integration (In Progress)
+### ✅ v2.0 DocView Native Integration (Completed 2026-04-17)
 
 **Milestone Goal:** Merge DocView from standalone package into vizual core. AI outputs DocView JSON spec, users annotate the rendered document, annotations feed back to AI for revision.
 
 - [x] **Phase 5: Migration & Registration** - Merge DocView source, fix tech debt, register in catalog/registry
-- [ ] **Phase 6: Annotation System** - Full annotation UX: text selection, highlights, multi-granularity, panel, lifecycle, hooks
-- [ ] **Phase 7: AI Revision Loop & Distribution** - Close the AI revision loop, update builds, AI prompts, and docs
+- [x] **Phase 6: Annotation System** - Full annotation UX: text selection, highlights, multi-granularity, panel, lifecycle, hooks
+- [x] **Phase 7: AI Revision Loop & Distribution** - Close the AI revision loop, update builds, AI prompts, and docs
 
 ## Phase Details
 
@@ -104,7 +104,7 @@ Plans:
 
 Plans:
 - [x] 07-01-PLAN.md — AI revision loop integration: orphan detection on sections change, verify batchSubmit/requestRevision events (REV-01, REV-02, REV-03)
-- [ ] 07-02-PLAN.md — Build verification, AI prompt update, demo page, documentation (BLD-02, BLD-03, AIPR-01, AIPR-02, VAL-01, VAL-02)
+- [x] 07-02-PLAN.md — Build verification, AI prompt update, demo page, documentation (BLD-02, BLD-03, AIPR-01, AIPR-02, VAL-01, VAL-02)
 
 ## Progress
 
@@ -118,5 +118,5 @@ Phases execute in numeric order: 5 -> 6 -> 7
 | 3. Business Components | v1.0 | 1/1 | Complete | 2026-04-15 |
 | 4. Publishing & Distribution | v1.0 | 1/1 | Complete | 2026-04-15 |
 | 5. Migration & Registration | v2.0 | 2/2 | Complete | 2026-04-17 |
-| 6. Annotation System | v2.0 | 0/2 | Not started | - |
-| 7. AI Revision Loop & Distribution | v2.0 | 0/2 | Not started | - |
+| 6. Annotation System | v2.0 | 2/2 | Complete | 2026-04-17 |
+| 7. AI Revision Loop & Distribution | v2.0 | 2/2 | Complete | 2026-04-17 |
