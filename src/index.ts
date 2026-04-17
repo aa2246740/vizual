@@ -98,6 +98,8 @@ export type { FormBuilderProps } from './inputs/form-builder'
 export { DocView } from './docview/container'
 export { DocViewSchema } from './docview/schema'
 export type { DocViewSchemaProps } from './docview/schema'
+export { SectionRenderer } from './docview/section-renderer'
+export type { SectionRendererProps } from './docview/section-renderer'
 
 // DocView hooks (for custom integrations)
 export { useAnnotations } from './docview/use-annotations'
@@ -118,7 +120,7 @@ export { AnnotationInput } from './docview/annotation-input'
 export type { AnnotationInputProps } from './docview/annotation-input'
 
 // DocView types and constants
-export type { Annotation, AnnotationStatus, AnnotationColor, OnAnnotationsChange, OnAction } from './docview/types'
+export type { Annotation, AnnotationStatus, AnnotationColor, AnnotationTarget, OnAnnotationsChange, OnAction } from './docview/types'
 export type { DocViewProps } from './docview/types'
 export { ANNOTATION_COLORS } from './docview/types'
 

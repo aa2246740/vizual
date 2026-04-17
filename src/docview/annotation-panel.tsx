@@ -160,6 +160,15 @@ export function AnnotationPanel({
                 }}>
                   {status.label}
                 </span>
+                {ann.target && (
+                  <span style={{
+                    fontSize: 10, fontWeight: 500,
+                    color: '#a855f7', background: '#a855f720',
+                    padding: '1px 6px', borderRadius: 8,
+                  }}>
+                    {ann.target.targetType}
+                  </span>
+                )}
                 <span style={{ fontSize: 10, color: '#555', marginLeft: 'auto' }}>
                   {formatTime(ann.createdAt)}
                 </span>

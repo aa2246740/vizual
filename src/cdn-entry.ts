@@ -72,6 +72,7 @@ export { FormBuilder, FormBuilderSchema } from './inputs/form-builder'
 // DocView
 export { DocView } from './docview/container'
 export { DocViewSchema } from './docview/schema'
+export { SectionRenderer } from './docview/section-renderer'
 export { useAnnotations } from './docview/use-annotations'
 export { useTextSelection } from './docview/use-text-selection'
 export { useRevisionLoop } from './docview/use-revision-loop'
@@ -80,6 +81,8 @@ export { AnnotationOverlay } from './docview/annotation-overlay'
 export { AnnotationPanel } from './docview/annotation-panel'
 export { AnnotationInput } from './docview/annotation-input'
 export { ANNOTATION_COLORS } from './docview/types'
+export type { AnnotationTarget } from './docview/types'
+export type { DocViewProps } from './docview/types'
 
 /**
  * Convenience: render a spec into a DOM container.
