@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: DocView Native Integration
-status: executing
-stopped_at: Completed 05-01-PLAN.md
-last_updated: "2026-04-17T03:57:57.679Z"
+status: verifying
+stopped_at: Completed 05-02-PLAN.md
+last_updated: "2026-04-17T04:05:30.087Z"
 last_activity: 2026-04-17
 progress:
   total_phases: 3
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 2
-  completed_plans: 1
+  completed_plans: 2
   percent: 0
 ---
 
@@ -34,7 +34,7 @@ See: .planning/PROJECT.md (updated 2026-04-17)
 
 Phase: 5 (Migration & Registration) — EXECUTING
 Plan: 2 of 2
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-04-17
 
 Progress: [████░░░░░░░░░░░░░░░░] 0% (v2.0) / 57% overall (4/7 phases done)
@@ -56,6 +56,7 @@ Progress: [████░░░░░░░░░░░░░░░░] 0% (v2.
 | 3. Business Components | 1 | - | - |
 | 4. Publishing | 1 | - | - |
 | Phase 05 P01 | 7min | 2 tasks | 12 files |
+| Phase 05 P02 | 3min | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -70,6 +71,8 @@ Recent decisions affecting current work:
 - [Phase 05]: Static import for react-highlight-words instead of require() -- enables tree-shaking
 - [Phase 05]: extractText() uses React.isValidElement() for fragment-safe text extraction
 - [Phase 05]: DocViewSchema follows FormBuilderSchema pattern: inner SectionSchema, exported schema + inferred type
+- [Phase 05]: DocView registered as component type 'doc_view' via DocViewSchema literal, matching json-render type resolution — Follows same defineCatalog/defineRegistry pattern as all other components
+- [Phase 05]: Fixed CDN export drift: InputText, InputSelect, InputFile, FormBuilder were missing from cdn-entry.ts — CDN/standalone builds could not use input components without these exports
 
 ### Pending Todos
 
@@ -81,6 +84,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-17T03:57:57.675Z
-Stopped at: Completed 05-01-PLAN.md
+Last session: 2026-04-17T04:05:30.084Z
+Stopped at: Completed 05-02-PLAN.md
 Resume file: None

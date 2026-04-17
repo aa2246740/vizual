@@ -14,10 +14,10 @@
 
 ### Catalog & Registry
 
-- [ ] **CATL-01**: DocView 注册到 defineCatalog，AI 可通过 JSON spec 输出文档
-- [ ] **CATL-02**: DocView 的 Zod schema 定义文档结构（sections 含 text + 嵌入组件引用）
-- [ ] **CATL-03**: 批注相关 actions（requestRevision、batchSubmit）注册到 catalog
-- [ ] **CATL-04**: DocView 注册到 defineRegistry，Renderer 可渲染 DocView 类型
+- [x] **CATL-01**: DocView 注册到 defineCatalog，AI 可通过 JSON spec 输出文档
+- [x] **CATL-02**: DocView 的 Zod schema 定义文档结构（sections 含 text + 嵌入组件引用）
+- [x] **CATL-03**: 批注相关 actions（requestRevision、batchSubmit）注册到 catalog
+- [x] **CATL-04**: DocView 注册到 defineRegistry，Renderer 可渲染 DocView 类型
 
 ### Annotation Core
 
@@ -89,10 +89,10 @@
 | MIGR-02 | Phase 5 | Complete |
 | MIGR-03 | Phase 5 | Complete |
 | MIGR-04 | Phase 5 | Complete |
-| CATL-01 | Phase 5 | Pending |
-| CATL-02 | Phase 5 | Pending |
-| CATL-03 | Phase 5 | Pending |
-| CATL-04 | Phase 5 | Pending |
+| CATL-01 | Phase 5 | Complete |
+| CATL-02 | Phase 5 | Complete |
+| CATL-03 | Phase 5 | Complete |
+| CATL-04 | Phase 5 | Complete |
 | BLD-01 | Phase 5 | Complete |
 | ANNO-01 | Phase 6 | Pending |
 | ANNO-02 | Phase 6 | Pending |

@@ -70,7 +70,7 @@ Plans:
 
 Plans:
 - [x] 05-01-PLAN.md — Merge source files with tech debt fixes, create Zod schema, add react-highlight-words dependency
-- [ ] 05-02-PLAN.md — Register DocView in catalog/registry, export from index.ts and cdn-entry.ts, fix CDN drift, verify build
+- [x] 05-02-PLAN.md — Register DocView in catalog/registry, export from index.ts and cdn-entry.ts, fix CDN drift, verify build
 
 ### Phase 6: Annotation System
 **Goal:** Users can annotate any part of a DocView document -- text, charts, KPIs, table cells -- with full lifecycle management and hooks for programmatic control.
