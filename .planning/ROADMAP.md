@@ -103,7 +103,7 @@ Plans:
 **Plans:** 2 plans
 
 Plans:
-- [ ] 07-01-PLAN.md — AI revision loop integration: orphan detection on sections change, verify batchSubmit/requestRevision events (REV-01, REV-02, REV-03)
+- [x] 07-01-PLAN.md — AI revision loop integration: orphan detection on sections change, verify batchSubmit/requestRevision events (REV-01, REV-02, REV-03)
 - [ ] 07-02-PLAN.md — Build verification, AI prompt update, demo page, documentation (BLD-02, BLD-03, AIPR-01, AIPR-02, VAL-01, VAL-02)
 
 ## Progress

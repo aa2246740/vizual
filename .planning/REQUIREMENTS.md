@@ -30,9 +30,9 @@
 
 ### AI Revision Loop
 
-- [ ] **REV-01**: 批注提交后通过 onAction 回调触发外部 AI 修订流程
-- [ ] **REV-02**: 内容刷新后检测 orphaned 批注（文本已被 AI 修改）
-- [ ] **REV-03**: useRevisionLoop hook 导出（submitAllDrafts、requestRevision、onContentRevised）
+- [x] **REV-01**: 批注提交后通过 onAction 回调触发外部 AI 修订流程
+- [x] **REV-02**: 内容刷新后检测 orphaned 批注（文本已被 AI 修改）
+- [x] **REV-03**: useRevisionLoop hook 导出（submitAllDrafts、requestRevision、onContentRevised）
 
 ### Hooks & Custom Integration
 
@@ -104,9 +104,9 @@
 | HOOK-02 | Phase 6 | Complete |
 | HOOK-03 | Phase 6 | Complete |
 | HOOK-04 | Phase 6 | Complete |
-| REV-01 | Phase 7 | Pending |
-| REV-02 | Phase 7 | Pending |
-| REV-03 | Phase 7 | Pending |
+| REV-01 | Phase 7 | Complete |
+| REV-02 | Phase 7 | Complete |
+| REV-03 | Phase 7 | Complete |
 | BLD-02 | Phase 7 | Pending |
 | BLD-03 | Phase 7 | Pending |
 | AIPR-01 | Phase 7 | Pending |
