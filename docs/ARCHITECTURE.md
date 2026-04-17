@@ -1,4 +1,4 @@
-# 架构设计 — AI RenderKit
+# 架构设计 — Vizual
 
 ## 整体架构
 
@@ -10,7 +10,7 @@
 │     <Renderer spec={aiJson} registry={registry} />       │
 │   </StateProvider>                                       │
 │                                                          │
-│   ┌─── ai-render-kit ──────────────────────────────┐     │
+│   ┌─── vizual ──────────────────────────────┐     │
 │   │                                                 │     │
 │   │  catalog.ts  ── defineCatalog(schema, 42组件)       │     │
 │   │  registry.tsx ── defineRegistry(catalog, 组件)       │     │
@@ -49,23 +49,22 @@
 
 ## 数据流
 
-### 1. AI Prompt 生成
+### 1. AI Skill 触发
 
 ```
-renderKitCatalog.prompt()
-  │
-  ├── 读取 catalog 中 42 个组件的 description + Zod Schema
-  ├── 生成 JSON Schema 描述 + 使用示例
-  └── 输出 ~22KB 系统提示词
+用户（在 Claude Code 中）: "用柱状图展示季度销售"
+         │
+         ▼
+vizual Skill 自动触发:
+  1. 读取 SKILL.md → 了解输出格式、组件选择指南
+  2. 按需读取 references/component-catalog.md → 获取 BarChart 完整 Schema
+  3. 生成符合规范的 JSON spec
 ```
 
 ### 2. AI 输出 → 渲染
 
 ```
-用户: "用柱状图展示季度销售"
-         │
-         ▼
-AI (收到 system prompt) 输出 JSON:
+AI Skill 输出 JSON:
 {
   "root": "main",
   "elements": {
@@ -76,6 +75,9 @@ AI (收到 system prompt) 输出 JSON:
     }
   }
 }
+         │
+         ▼
+开发者将 JSON 传入代码:
          │
          ▼
 json-render Renderer:
@@ -215,7 +217,7 @@ export function Timeline(props: TimelineProps) {
 
 ```
                     ┌──────────┐
-                    │ ai-render-kit │
+                    │ vizual │
                     └─────┬────┘
           ┌───────────────┼───────────────┐
           │               │               │

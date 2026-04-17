@@ -1,5 +1,4 @@
-import React, { useMemo, useEffect } from 'react'
-import Highlighter from 'react-highlight-words'
+import React, { useMemo, useEffect, useRef, useCallback } from 'react'
 import type { Annotation } from './types'
 
 export interface AnnotationOverlayProps {
@@ -18,10 +17,9 @@ export interface AnnotationOverlayProps {
  * to component targets (chart, kpi, table) that have annotations.
  *
  * Text-based highlighting:
- * - Uses text-based matching approach (not character offsets)
- * - Searches for annotation text within the rendered text content
- * - Highlights survive minor content changes (AI revisions)
- * - Orphaned annotations (text not found) are skipped silently
+ * - Uses DOM-based approach: walks text nodes and wraps matches in <mark> elements
+ * - Non-destructive: original React tree is preserved, highlights are overlaid via DOM manipulation
+ * - Highlights are cleaned up and re-applied on each render cycle
  *
  * Component-target highlighting:
  * - Scans the container DOM for elements with data-docview-target attributes
@@ -29,91 +27,70 @@ export interface AnnotationOverlayProps {
  * - Uses MutationObserver to detect dynamically added targets
  */
 export function AnnotationOverlay({ children, annotations, onHighlightClick, containerRef }: AnnotationOverlayProps) {
-  // Build a map of annotation texts to annotations for fast lookup
-  const annotationMap = useMemo(() => {
-    const map = new Map<string, Annotation>()
-    for (const ann of annotations) {
-      if (ann.status !== 'orphaned') {
-        map.set(ann.text, ann)
+  const contentRef = useRef<HTMLSpanElement>(null)
+
+  // Filter to active (non-orphaned) text annotations for highlighting
+  const activeAnnotations = useMemo(() =>
+    annotations.filter(a => a.status !== 'orphaned' && !a.target),
+    [annotations]
+  )
+
+  // Stable callback ref for highlight clicks
+  const handleClick = useCallback((ann: Annotation) => {
+    onHighlightClick?.(ann)
+  }, [onHighlightClick])
+
+  // Apply text-based highlighting via DOM manipulation (non-destructive)
+  useEffect(() => {
+    const el = contentRef.current
+    if (!el) return
+
+    // Step 1: Remove all previous highlights (cleanup from last render)
+    el.querySelectorAll('[data-annotation-highlight]').forEach(mark => {
+      const parent = mark.parentNode
+      if (!parent) return
+      while (mark.firstChild) parent.insertBefore(mark.firstChild, mark)
+      parent.removeChild(mark)
+    })
+    el.normalize() // Merge adjacent text nodes after removing marks
+
+    // Step 2: Apply highlights for each active annotation
+    if (activeAnnotations.length === 0) return
+
+    for (const ann of activeAnnotations) {
+      const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT)
+      while (walker.nextNode()) {
+        const textNode = walker.currentNode as Text
+        const text = textNode.textContent ?? ''
+        const idx = text.indexOf(ann.text)
+        if (idx === -1) continue
+
+        try {
+          const range = document.createRange()
+          range.setStart(textNode, idx)
+          range.setEnd(textNode, idx + ann.text.length)
+
+          const mark = document.createElement('mark')
+          mark.style.cssText = `background:rgba(251,191,36,0.35);border-bottom:2px solid #fbbf24;color:#000;cursor:pointer;padding:1px 2px;border-radius:2px;transition:background 0.15s;`
+          mark.setAttribute('data-annotation-highlight', ann.id)
+          mark.addEventListener('click', () => handleClick(ann))
+
+          range.surroundContents(mark)
+          break // Only highlight first occurrence per annotation
+        } catch {
+          // range.surroundContents fails if range crosses element boundaries — skip
+        }
       }
     }
-    return map
-  }, [annotations])
-
-  // Collect search words for text-based highlighting
-  const searchWords = Array.from(annotationMap.keys())
-  const hasTextAnnotations = searchWords.length > 0
+  }, [activeAnnotations, children, handleClick])
 
   return (
     <>
-      {/* Text-based highlighting */}
-      {hasTextAnnotations ? (
-        <AnnotationHighlightWrapper
-          searchWords={searchWords}
-          annotationMap={annotationMap}
-          onHighlightClick={onHighlightClick}
-        >
-          {children}
-        </AnnotationHighlightWrapper>
-      ) : (
-        <>{children}</>
-      )}
-
-      {/* Component-target highlighting (chart, kpi, table outlines) */}
+      <span ref={contentRef}>{children}</span>
       {containerRef && (
         <TargetHighlighter annotations={annotations} containerRef={containerRef} />
       )}
     </>
-  )
-}
-
-/** Internal component that performs the actual text highlighting using react-highlight-words */
-function AnnotationHighlightWrapper({
-  searchWords,
-  annotationMap,
-  onHighlightClick,
-  children,
-}: {
-  searchWords: string[]
-  annotationMap: Map<string, Annotation>
-  onHighlightClick?: (annotation: Annotation) => void
-  children: React.ReactNode
-}) {
-  // Extract text content from children for highlighting
-  const textContent = extractText(children)
-
-  return (
-    <Highlighter
-      highlightTag={({ children: highlightChildren, highlightIndex }) => {
-        const word = searchWords[highlightIndex]
-        const annotation = word ? annotationMap.get(word) : undefined
-        return (
-          <mark
-            style={{
-              background: annotation ? `${annotation.color}40` : '#fbbf2440',
-              borderBottom: `2px solid ${annotation?.color ?? '#fbbf24'}`,
-              cursor: 'pointer',
-              padding: '1px 0',
-              borderRadius: 2,
-              transition: 'background 0.15s',
-            }}
-            onClick={() => annotation && onHighlightClick?.(annotation)}
-            onMouseEnter={(e) => {
-              (e.currentTarget as HTMLElement).style.background = `${annotation?.color ?? '#fbbf24'}60`
-            }}
-            onMouseLeave={(e) => {
-              (e.currentTarget as HTMLElement).style.background = `${annotation?.color ?? '#fbbf24'}40`
-            }}
-            title={annotation?.note || ''}
-          >
-            {highlightChildren}
-          </mark>
-        )
-      }}
-      searchWords={searchWords}
-      autoEscape={true}
-      textToHighlight={textContent}
-    />
   )
 }
 
@@ -153,11 +130,16 @@ function TargetHighlighter({
       // Apply highlights for each target annotation
       for (const ann of targetAnns) {
         if (!ann.target || ann.status === 'orphaned') continue
-        const selector = `[data-section-index="${ann.target.sectionIndex}"][data-target-type="${ann.target.targetType}"]`
+        // Skip chart data point annotations — handled by ECharts dispatchAction in ChartSection
+        if (ann.target.chartDataPoint) continue
+        // Use targetId for precise element matching (e.g., "kpi-3-1" not all kpi-3)
+        const selector = ann.target.targetId
+          ? `[data-docview-target="${ann.target.targetId}"]`
+          : `[data-section-index="${ann.target.sectionIndex}"][data-target-type="${ann.target.targetType}"]`
         const elements = container.querySelectorAll(selector)
         elements.forEach(el => {
           const htmlEl = el as HTMLElement
-          htmlEl.style.outline = `2px solid ${ann.color}`
+          htmlEl.style.outline = `2px solid #fbbf24`
           htmlEl.style.outlineOffset = '2px'
           htmlEl.setAttribute('data-docview-annotated', ann.id)
         })
@@ -174,36 +156,4 @@ function TargetHighlighter({
   }, [annotations, containerRef])
 
   return null
-}
-
-/**
- * Extract plain text from React children recursively.
- *
- * Handles all common React child types:
- * - strings and numbers (leaf values)
- * - null, undefined, boolean (ignored, returns '')
- * - arrays (each element recursively extracted)
- * - React fragments (type === React.Fragment): recurse into props.children
- * - React elements with props.children: recurse into props.children
- */
-function extractText(children: React.ReactNode): string {
-  // Leaf string value
-  if (typeof children === 'string') return children
-  // Leaf number value
-  if (typeof children === 'number') return String(children)
-  // Null, undefined, boolean — nothing to extract
-  if (children === null || children === undefined || typeof children === 'boolean') return ''
-  // Array of children — recurse and concatenate
-  if (Array.isArray(children)) return children.map(extractText).join('')
-  // React element
-  if (React.isValidElement(children)) {
-    // React.Fragment: type is React.Fragment, children are in props.children
-    const childProps = children.props as { children?: React.ReactNode }
-    if (childProps.children !== undefined) {
-      return extractText(childProps.children)
-    }
-    return ''
-  }
-  // All other cases
-  return ''
 }

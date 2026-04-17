@@ -21,6 +21,18 @@ export const ANNOTATION_COLORS = [
 
 export type AnnotationColor = typeof ANNOTATION_COLORS[number]
 
+/** Data point within a chart for drill-down annotation */
+export interface ChartDataPoint {
+  /** Series index in the ECharts instance */
+  seriesIndex: number
+  /** Data index within the series */
+  dataIndex: number
+  /** Human-readable name from x-axis or legend (e.g., "10月", "华东区") */
+  name: string
+  /** Human-readable value (e.g., "15.2万", 23.6) */
+  value: string | number
+}
+
 /** Target for non-text annotations (charts, KPIs, table cells, callouts, components) */
 export interface AnnotationTarget {
   /** Section index in the sections array */
@@ -29,6 +41,10 @@ export interface AnnotationTarget {
   targetType: 'chart' | 'kpi' | 'table' | 'callout' | 'component'
   /** Human-readable label for the target (e.g., "Revenue chart", "Q1 KPI", "Row 3, Col 2") */
   label: string
+  /** Precise DOM identifier for exact element matching (e.g., "kpi-3-1", "chart-5", "table-7-2-3") */
+  targetId?: string
+  /** For chart drill-down annotations: the specific data point within the chart */
+  chartDataPoint?: ChartDataPoint
 }
 
 /** A single annotation on the document */

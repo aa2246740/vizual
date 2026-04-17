@@ -1,9 +1,12 @@
 /**
- * Full json-render catalog validation:
- * 1. catalog.prompt() generates system prompt
- * 2. catalog.validate() accepts valid spec, rejects invalid
- * 3. catalog.zodSchema() returns valid Zod schema
- * 4. catalog.componentNames lists registered components
+ * json-render Catalog Validation
+ *
+ * Tests the catalog's core functionality:
+ * 1. catalog.validate() accepts valid spec, rejects invalid
+ * 2. catalog.zodSchema() returns valid Zod schema
+ * 3. catalog.componentNames lists registered components
+ *
+ * @deprecated catalog.prompt() is deprecated. Use the vizual skill for AI integration.
  */
 import { renderKitCatalog } from '../src/catalog'
 
@@ -27,7 +30,8 @@ check('componentNames includes BarChart + Timeline', () => {
   return names.includes('BarChart') && names.includes('Timeline')
 })
 
-check('prompt() generates system prompt with BarChart', () => {
+// @deprecated test — prompt() still works but is deprecated
+check('prompt() generates system prompt with BarChart (deprecated)', () => {
   const p = renderKitCatalog.prompt()
   return typeof p === 'string' && p.includes('BarChart') && p.length > 100
 })

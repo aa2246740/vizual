@@ -88,24 +88,8 @@
   <div class="progress"><div class="progress-bar" id="progressBar"></div></div>
   <div class="status" id="status"><span class="count" id="passCount">0</span>/42 rendered &middot; <span id="failCount" style="color:#ef4444">0</span> failed</div>
 
-  <!-- Load mermaid synchronously -->
-  <script>
-    var _xhr = new XMLHttpRequest();
-    _xhr.open('GET', '../dist/mermaid.min.js', false);
-    _xhr.send();
-    if (_xhr.status === 200) {
-      var _code = _xhr.responseText.replace(
-        'globalThis["mermaid"] = globalThis.__esbuild_esm_mermaid_nm["mermaid"].default;',
-        'globalThis["mermaid"] = __esbuild_esm_mermaid_nm["mermaid"];'
-      );
-      (0, eval)(_code);
-      if (globalThis.mermaid && globalThis.mermaid.default) globalThis.mermaid = globalThis.mermaid.default;
-    }
-  </script>
-  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
-  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
-  <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
-  <script src="../dist/vizual.cdn.js"></script>
+  <!-- vizual.standalone.js includes React, ReactDOM, ECharts, and mermaid — zero CDN needed -->
+  <script src="../dist/vizual.standalone.js"></script>
   <script>
   (function() {
     // All 42 demo conversations — realistic LLM Q&A with JSON specs

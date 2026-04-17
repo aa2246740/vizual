@@ -28,18 +28,21 @@ export interface UseTextSelectionReturn {
 /**
  * Hook for detecting text selection within a container element.
  *
- * Uses the browser Selection API (selectionchange event) to detect when the user
- * selects text. Filters out selections on interactive elements (buttons, inputs,
- * chart containers) to avoid false positives.
+ * Uses mouseup + selectioncheck pattern:
+ * - Only captures selection on mouseup (not during drag), avoiding mid-selection dismiss
+ * - Debounces rapid selection changes
+ * - Filters out selections on interactive elements
  */
 export function useTextSelection(options: UseTextSelectionOptions): UseTextSelectionReturn {
   const { containerRef, minLength = 2, ignoreSelectors = [] } = options
   const [selection, setSelection] = useState<TextSelection | null>(null)
   const selectionRef = useRef<TextSelection | null>(null)
+  const isPopupOpenRef = useRef(false)
 
   const clearSelection = useCallback(() => {
     setSelection(null)
     selectionRef.current = null
+    isPopupOpenRef.current = false
     window.getSelection()?.removeAllRanges()
   }, [])
 
@@ -47,48 +50,74 @@ export function useTextSelection(options: UseTextSelectionOptions): UseTextSelec
     const container = containerRef.current
     if (!container) return
 
-    const handleSelectionChange = () => {
+    const ignoreTargets = ['button', 'input', 'select', 'textarea', 'a', '[data-docview-ignore]', ...ignoreSelectors]
+
+    /** Extract TextSelection from current browser selection, or null */
+    function extractSelection(): TextSelection | null {
       const sel = window.getSelection()
-      if (!sel || sel.isCollapsed || !sel.rangeCount) {
-        // Don't clear if we just cleared it programmatically
-        if (selectionRef.current) {
-          setSelection(null)
-          selectionRef.current = null
-        }
-        return
-      }
+      if (!sel || sel.isCollapsed || !sel.rangeCount) return null
 
       const text = sel.toString().trim()
+      if (text.length < minLength) return null
 
-      // Minimum length check
-      if (text.length < minLength) return
-
-      // Must be within our container
       const range = sel.getRangeAt(0)
-      if (!container.contains(range.commonAncestorContainer)) return
+      if (!container!.contains(range.commonAncestorContainer)) return null
 
       // Check if selection is within an ignored element
-      const ignoreTargets = ['button', 'input', 'select', 'textarea', 'a', '[data-docview-ignore]', ...ignoreSelectors]
       const target = range.commonAncestorContainer instanceof HTMLElement
         ? range.commonAncestorContainer
         : range.commonAncestorContainer.parentElement
-      if (target && ignoreTargets.some(selector => target.closest(selector))) return
+      if (target && ignoreTargets.some(selector => target.closest(selector))) return null
 
       // Calculate position relative to container
       const rect = range.getBoundingClientRect()
-      const containerRect = container.getBoundingClientRect()
+      const containerRect = container!.getBoundingClientRect()
       const position = {
         top: rect.bottom - containerRect.top + 8,
         left: rect.left - containerRect.left + rect.width / 2,
       }
 
-      const textSelection: TextSelection = { text, range, position }
-      setSelection(textSelection)
-      selectionRef.current = textSelection
+      return { text, range, position }
     }
 
-    document.addEventListener('selectionchange', handleSelectionChange)
-    return () => document.removeEventListener('selectionchange', handleSelectionChange)
+    /** On mouseup inside container: capture the selection */
+    function handleMouseUp(e: MouseEvent) {
+      // Don't capture if popup is open (user might be clicking the popup itself)
+      if (isPopupOpenRef.current) return
+      // Don't capture if clicking on an existing highlight (avoid duplicate annotations)
+      const target = e.target as HTMLElement
+      if (target.closest('[data-annotation-highlight]')) return
+      // Small delay to let the browser finalize the selection
+      setTimeout(() => {
+        const result = extractSelection()
+        if (result) {
+          setSelection(result)
+          selectionRef.current = result
+          isPopupOpenRef.current = true
+        }
+      }, 10)
+    }
+
+    /** On mousedown inside container: clear previous selection if clicking elsewhere */
+    function handleMouseDown(e: MouseEvent) {
+      if (isPopupOpenRef.current) {
+        // Check if click is inside the popup (don't dismiss)
+        const target = e.target as HTMLElement
+        if (target.closest('[data-annotation-input]')) return
+        // Clicking elsewhere in the document dismisses the popup
+        setSelection(null)
+        selectionRef.current = null
+        isPopupOpenRef.current = false
+      }
+    }
+
+    container.addEventListener('mouseup', handleMouseUp)
+    document.addEventListener('mousedown', handleMouseDown)
+
+    return () => {
+      container.removeEventListener('mouseup', handleMouseUp)
+      document.removeEventListener('mousedown', handleMouseDown)
+    }
   }, [containerRef, minLength, ignoreSelectors])
 
   return { selection, clearSelection }

@@ -1,4 +1,4 @@
-# AI RenderKit — 文档目录
+# Vizual — 文档目录
 
 ## 项目文档
 
@@ -12,20 +12,16 @@
 | [AI-INTEGRATION.md](AI-INTEGRATION.md) | AI 集成指南（Claude/GPT 接入、流式输出） |
 | [LICENSES.md](LICENSES.md) | 开源许可证说明、依赖合规 |
 
-## Skill & Prompt（AI 接入）
+## Skill（AI Agent 接入）
 
 | 文件 | 适用场景 | 说明 |
 |------|---------|------|
 | [skill/SKILL.md](../skill/SKILL.md) | Claude Code Agent | Skill 主文件，自动触发 |
-| [skill/prompt.md](../skill/prompt.md) | ChatGPT / Claude.ai / Gemini | 通用 System Prompt，粘贴即用 |
-| [skill/references/component-catalog.md](../skill/references/component-catalog.md) | Skill 内部引用 | 42 组件完整 Schema |
+| [skill/references/component-catalog.md](../skill/references/component-catalog.md) | Skill 内部引用 | 43 组件完整 Schema |
 | [skill/references/recipes.md](../skill/references/recipes.md) | Skill 内部引用 | 组合模式模板 |
 | [skill/scripts/validate-spec.js](../skill/scripts/validate-spec.js) | 开发/CI | JSON spec 校验工具 |
 
-两种接入方式的关系：
-- **Skill（Agent 用）**: 分层加载（SKILL.md → references/），适合 Claude Code 等支持文件引用的环境
-- **Prompt（LLM 用）**: 单文件自包含，适合 ChatGPT / Claude.ai 等只有 System Prompt 字段的环境
-- 两种方式输出的 JSON 格式完全相同
+**注意**：Vizual 专为 AI Agent 设计，不支持 ChatGPT / Claude.ai 等聊天机器人场景。
 
 ## Demo
 
@@ -37,7 +33,7 @@
 ## 项目目录结构
 
 ```
-ai-render-kit/
+vizual/
 ├── README.md                   项目说明
 ├── package.json                npm 包配置
 ├── src/                        源码

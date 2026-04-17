@@ -1,5 +1,5 @@
-import { useState, useCallback } from 'react'
-import type { Annotation, AnnotationColor, ANNOTATION_COLORS } from './types'
+import { useState, useCallback, useRef } from 'react'
+import type { Annotation, AnnotationColor } from './types'
 
 let idCounter = 0
 
@@ -36,13 +36,21 @@ export interface UseAnnotationsReturn {
  * Hook for managing annotation state with CRUD operations and orphan detection.
  *
  * Supports both controlled (external annotations prop) and uncontrolled (internal state) modes.
- * Content-based matching ensures annotations survive minor text changes.
+ * Uses a ref to track latest annotations, avoiding stale closure bugs when
+ * addAnnotation + updateAnnotation are called in sequence within the same handler.
  */
 export function useAnnotations(options: UseAnnotationsOptions = {}): UseAnnotationsReturn {
   const [internalAnnotations, setInternalAnnotations] = useState<Annotation[]>([])
+
+  // Ref to always have the latest annotations — avoids stale closure when
+  // calling addAnnotation() then updateAnnotation() in the same handler.
+  const latestRef = useRef<Annotation[]>([])
+
   const annotations = options.annotations ?? internalAnnotations
+  latestRef.current = annotations
 
   const emitChange = useCallback((next: Annotation[]) => {
+    latestRef.current = next // Update ref synchronously for subsequent calls
     if (!options.annotations) {
       setInternalAnnotations(next)
     }
@@ -60,43 +68,45 @@ export function useAnnotations(options: UseAnnotationsOptions = {}): UseAnnotati
       createdAt: now,
       updatedAt: now,
     }
-    emitChange([...annotations, annotation])
+    emitChange([...latestRef.current, annotation])
     return annotation
-  }, [annotations, emitChange])
+  }, [emitChange])
 
   const updateAnnotation = useCallback((id: string, updates: Partial<Pick<Annotation, 'note' | 'color' | 'status' | 'target'>>) => {
-    const next = annotations.map(a =>
+    const next = latestRef.current.map(a =>
       a.id === id
         ? { ...a, ...updates, updatedAt: new Date().toISOString() }
         : a
     )
     emitChange(next)
-  }, [annotations, emitChange])
+  }, [emitChange])
 
   const deleteAnnotation = useCallback((id: string) => {
-    emitChange(annotations.filter(a => a.id !== id))
-  }, [annotations, emitChange])
+    emitChange(latestRef.current.filter(a => a.id !== id))
+  }, [emitChange])
 
   const getAnnotation = useCallback((id: string) => {
-    return annotations.find(a => a.id === id)
-  }, [annotations])
+    return latestRef.current.find(a => a.id === id)
+  }, [])
 
   const detectOrphans = useCallback((content: string): Annotation[] => {
-    return annotations.filter(a => a.status !== 'orphaned' && !content.includes(a.text))
-  }, [annotations])
+    return latestRef.current.filter(a => a.status !== 'orphaned' && !content.includes(a.text))
+  }, [])
 
   const markOrphans = useCallback((content: string) => {
-    const hasOrphans = annotations.some(a => a.status !== 'orphaned' && !content.includes(a.text))
+    // Only check text-based annotations; skip target-based (chart/KPI/table) —
+    // their "text" is a label, not actual document content
+    const hasOrphans = latestRef.current.some(a => a.status !== 'orphaned' && !a.target && !content.includes(a.text))
     if (hasOrphans) {
-      const next = annotations.map(a => {
-        if (a.status !== 'orphaned' && !content.includes(a.text)) {
+      const next = latestRef.current.map(a => {
+        if (a.status !== 'orphaned' && !a.target && !content.includes(a.text)) {
           return { ...a, status: 'orphaned' as const, updatedAt: new Date().toISOString() }
         }
         return a
       })
       emitChange(next)
     }
-  }, [annotations, emitChange])
+  }, [emitChange])
 
   return {
     annotations,

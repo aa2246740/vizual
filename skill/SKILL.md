@@ -1,14 +1,14 @@
 ---
-name: ai-render-kit
+name: vizual
 version: "1.0.0"
 description: >
-  Generate structured JSON specs for ai-render-kit's 42 visualization components
+  Generate structured JSON specs for Vizual's 43 visualization components
   (19 ECharts charts, 8 UI components, 11 business components, 4 interactive/input
-  components) that render via the json-render platform. Use this skill whenever the
-  user asks for charts, graphs, dashboards, KPIs, kanban boards, timelines, data
-  tables, forms, or any kind of data visualization — even if they don't mention
-  ai-render-kit by name. Also use when the user has ai-render-kit installed and
-  wants to display data visually in a React app or AI chatbot interface.
+  components, plus DocView annotatable document) that render via the json-render
+  platform. Use this skill whenever the user asks for charts, graphs, dashboards,
+  KPIs, kanban boards, timelines, data tables, forms, or any kind of data
+  visualization — even if they don't mention Vizual by name. This skill is designed
+  for AI agents (Claude Code, Cursor, etc.) that generate code, not for chatbots.
 user-invocable: true
 allowed-tools:
   - Read
@@ -19,9 +19,9 @@ allowed-tools:
   - Grep
 ---
 
-# AI RenderKit Skill
+# Vizual Skill
 
-You help users generate JSON specs that the ai-render-kit npm package renders as interactive visualizations. The package bridges mviz's chart builder, ECharts, and custom React components into a unified json-render catalog.
+You help users generate JSON specs that the Vizual npm package renders as interactive visualizations. The package bridges mviz's chart builder, ECharts, and custom React components into a unified json-render catalog.
 
 ## How It Works
 

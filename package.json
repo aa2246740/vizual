@@ -19,11 +19,10 @@
   "scripts": {
     "test": "vitest run",
     "test:watch": "vitest",
-    "build": "npm run build:esm && npm run build:cjs && npm run build:umd && npm run build:standalone",
+    "build": "node build.js && node build.js --standalone",
     "build:esm": "esbuild src/index.ts --bundle --format=esm --outfile=dist/index.mjs --target=es2020 --external:react --external:react-dom --external:echarts",
     "build:cjs": "esbuild src/index.ts --bundle --format=cjs --outfile=dist/index.js --target=es2020 --external:react --external:react-dom --external:echarts",
-    "build:umd": "esbuild src/cdn-entry.ts --bundle --format=iife --outfile=dist/vizual.cdn.js --target=es2020 --external:react --external:react-dom --external:echarts --minify --global-name=Vizual",
-    "build:standalone": "esbuild src/cdn-entry.ts --bundle --format=iife --outfile=dist/vizual.standalone.js --target=es2020 --minify --global-name=Vizual",
+    "build:standalone": "node build.js --standalone",
     "prepublishOnly": "npm test && npm run build"
   },
   "keywords": [

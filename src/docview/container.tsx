@@ -56,6 +56,7 @@ export function DocView({
   style,
 }: DocViewProps) {
   const containerRef = useRef<HTMLDivElement>(null)
+  const contentRef = useRef<HTMLDivElement>(null)
 
   // State for target-based annotation (clicking a non-text element like chart/KPI/table)
   const [targetAnnotation, setTargetAnnotation] = useState<{
@@ -153,7 +154,7 @@ export function DocView({
 
   // Determine content: sections mode (AI-driven) vs children mode (manual)
   const renderedContent = sections && sections.length > 0
-    ? <SectionRenderer sections={sections} onTargetClick={handleTargetClick} />
+    ? <SectionRenderer sections={sections} onTargetClick={handleTargetClick} annotations={annotations} />
     : children
 
   const containerStyle: React.CSSProperties = {
@@ -175,7 +176,7 @@ export function DocView({
   return (
     <div ref={containerRef} className={className} style={containerStyle}>
       {/* Main content area */}
-      <div style={contentStyle}>
+      <div ref={contentRef} style={contentStyle}>
         <AnnotationOverlay
           annotations={annotations}
           onHighlightClick={(ann) => onAction?.('annotationClicked', { annotation: ann })}
@@ -191,16 +192,19 @@ export function DocView({
             selectedText={selection.text}
             onConfirm={handleConfirmAnnotation}
             onCancel={clearSelection}
+            containerWidth={contentRef.current?.clientWidth}
           />
         )}
 
         {/* Annotation input popup for target-based (non-text) elements */}
         {targetAnnotation && (
           <AnnotationInput
+            key={`${targetAnnotation.target.sectionIndex}-${targetAnnotation.target.targetId || targetAnnotation.target.label}`}
             position={targetAnnotation.position}
             selectedText={targetAnnotation.target.label}
             onConfirm={handleConfirmTargetAnnotation}
             onCancel={() => setTargetAnnotation(null)}
+            containerWidth={contentRef.current?.clientWidth}
           />
         )}
       </div>

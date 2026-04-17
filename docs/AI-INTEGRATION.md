@@ -1,100 +1,67 @@
-# AI 集成指南 — AI RenderKit
+# AI 集成指南 — Vizual
 
-如何将 AI RenderKit 接入 Claude、GPT 等 LLM，实现对话式数据可视化。
+Vizual 是专为 **AI Agent** 设计的可视化组件库。通过 Skill 模式，AI Agent 能够智能选择组件并生成符合规范的 JSON spec。
 
-## 两种接入方式
+## 设计理念
 
-| | Claude Code Skill | 通用 LLM Prompt |
-|---|---|---|
-| **适用** | Claude Code、Cursor 等 Agent | ChatGPT、Claude.ai、Gemini 等 |
-| **文件** | `skill/SKILL.md` + references/ | `skill/prompt.md`（单文件） |
-| **安装** | 复制到 `~/.claude/skills/` | 粘贴到 System Prompt 字段 |
-| **加载** | 自动触发，按需读取 reference | 全量加载到上下文 |
-| **校验** | 内置 `validate-spec.js` | 需手动校验 |
+Vizual **不支持** ChatGPT / Claude.ai 等聊天机器人场景。我们专注于：
 
-两种方式输出的 JSON 格式完全相同。
+- **AI Agent 代码生成**（Claude Code、Cursor、Windsurf 等）
+- **自动化工作流**（CI/CD、数据管道、报告生成）
+- **程序化集成**（通过 npm 包在代码中调用）
 
-## 核心思路
+如果你需要在聊天界面中使用，请寻找其他支持对话式交互的方案。
 
-```
-1. 获取 AI Prompt（组件 Schema 说明）
-2. 将 Prompt 作为 system message 传给 AI
-3. 用户提问 → AI 输出 JSON
-4. JSON 传给 json-render Renderer → 渲染组件
+## Claude Code 集成
+
+### 安装 Skill
+
+```bash
+cp -r skill/ ~/.claude/skills/vizual/
 ```
 
-## Step 1: 获取 System Prompt
+### 使用方式
 
-```ts
-import { renderKitCatalog } from 'ai-render-kit'
+安装后，当用户请求以下内容时，Skill 自动触发：
 
-// 生成约 22KB 的系统提示词
-const systemPrompt = renderKitCatalog.prompt()
+- "做一个柱状图展示季度销售"
+- "生成 KPI 仪表盘"
+- "用甘特图显示项目排期"
+- "创建看板管理任务"
+
+Skill 会输出符合 json-render 规范的 JSON spec，开发者将其传入 `<Renderer>` 即可渲染。
+
+### Skill 结构
+
+Vizual Skill 采用**渐进式披露**设计：
+
+```
+~/.claude/skills/vizual/
+├── SKILL.md                 # 主入口：触发条件、输出格式、组件选择指南
+└── references/              # 按需加载的详细参考
+    ├── component-catalog.md # 43 个组件的完整 Schema
+    ├── recipes.md           # 组合模式模板
+    └── ...                  # 其他参考文档
 ```
 
-prompt 内容包含：
-- 42 个组件的 type 名称
-- 每个组件的 props Schema（字段名、类型、是否必填）
-- JSON spec 格式说明
-- 使用示例
+这种设计确保：
+- 常见场景：只需 SKILL.md 中的信息
+- 复杂场景：AI 自动读取 references/ 获取详细信息
+- 最小化 Token 消耗
 
-## Step 2: 接入 OpenAI (GPT-4)
+## 其他 AI Agent 集成
 
-```ts
-import OpenAI from 'openai'
-import { renderKitCatalog } from 'ai-render-kit'
+对于 Cursor、Windsurf 等 AI Agent，将 `skill/prompt.md` 内容作为 System Prompt 传入。
 
-const openai = new OpenAI()
-const systemPrompt = renderKitCatalog.prompt()
+## 前端渲染
 
-async function chat(userMessage: string) {
-  const response = await openai.chat.completions.create({
-    model: 'gpt-4o',
-    messages: [
-      { role: 'system', content: systemPrompt },
-      { role: 'user', content: userMessage },
-    ],
-    response_format: { type: 'json_object' },
-  })
-
-  const json = JSON.parse(response.choices[0].message.content)
-  return json  // → 传给 Renderer
-}
-```
-
-## Step 3: 接入 Claude
-
-```ts
-import Anthropic from '@anthropic-ai/sdk'
-import { renderKitCatalog } from 'ai-render-kit'
-
-const anthropic = new Anthropic()
-const systemPrompt = renderKitCatalog.prompt()
-
-async function chat(userMessage: string) {
-  const message = await anthropic.messages.create({
-    model: 'claude-sonnet-4-6-20250514',
-    max_tokens: 4096,
-    system: systemPrompt,
-    messages: [
-      { role: 'user', content: userMessage },
-    ],
-  })
-
-  // 从回复中提取 JSON
-  const text = message.content[0].text
-  const jsonMatch = text.match(/\{[\s\S]*\}/)
-  return JSON.parse(jsonMatch[0])
-}
-```
-
-## Step 4: 前端渲染
+AI Agent 输出的 JSON spec 通过 json-render 渲染：
 
 ```tsx
-import { registry } from 'ai-render-kit'
+import { registry } from 'vizual'
 import { Renderer, StateProvider } from '@json-render/react'
 
-function ChatBubble({ aiJsonOutput }) {
+function AgentOutput({ aiJsonOutput }) {
   return (
     <StateProvider>
       <Renderer spec={aiJsonOutput} registry={registry} />
@@ -103,84 +70,11 @@ function ChatBubble({ aiJsonOutput }) {
 }
 ```
 
-## Step 5: 流式输出
+## AI 输出格式规范
 
-对于流式场景（SSE / WebSocket），逐字符接收 JSON，完整后渲染：
+### 单组件示例
 
-```tsx
-function StreamingChat() {
-  const [partialJson, setPartialJson] = useState('')
-  const [spec, setSpec] = useState(null)
-
-  // 模拟流式接收
-  useEffect(() => {
-    eventSource.onmessage = (event) => {
-      setPartialJson(prev => prev + event.data)
-
-      try {
-        const parsed = JSON.parse(partialJson)
-        setSpec(parsed)  // JSON 完整 → 渲染
-      } catch {
-        // JSON 不完整 → 继续等待
-      }
-    }
-  }, [])
-
-  if (spec) {
-    return (
-      <StateProvider>
-        <Renderer spec={spec} registry={registry} />
-      </StateProvider>
-    )
-  }
-
-  return <pre>{partialJson}</pre>  // 显示打字效果
-}
-```
-
-## AI Prompt 内容示例
-
-`renderKitCatalog.prompt()` 生成的提示词大致结构：
-
-```
-You are a data visualization assistant. You output JSON specs that can be
-rendered by the json-render platform.
-
-Available components:
-
-## BarChart
-- type: "bar"
-- Props:
-  - type: "bar" (required)
-  - x: string (required) - X axis field name
-  - y: string | string[] (required) - Y axis field(s)
-  - data: object[] (required) - Data array
-  - stacked?: boolean
-  - horizontal?: boolean
-  - title?: string
-  - theme?: "light" | "dark"
-
-[... 42 components total ...]
-
-Output format:
-{
-  "root": "<element-id>",
-  "elements": {
-    "<element-id>": {
-      "type": "<ComponentType>",
-      "props": { ... },
-      "children": []
-    }
-  }
-}
-```
-
-## 实际对话示例
-
-```
-用户: "用柱状图展示我们四个季度的销售额，Q1 120万，Q2 200万，Q3 180万，Q4 310万"
-
-AI 输出:
+```json
 {
   "root": "main",
   "elements": {
@@ -204,14 +98,18 @@ AI 输出:
 }
 ```
 
-```
-用户: "帮我做一个 KPI 仪表盘，包含 DAU、收入、转化率三个指标"
+### 多组件组合示例
 
-AI 输出:
+```json
 {
-  "root": "main",
+  "root": "root",
   "elements": {
-    "main": {
+    "root": {
+      "type": "VerticalLayout",
+      "props": {},
+      "children": ["kpi", "chart", "table"]
+    },
+    "kpi": {
       "type": "KpiDashboard",
       "props": {
         "type": "kpi_dashboard",
@@ -219,8 +117,38 @@ AI 输出:
         "columns": 3,
         "metrics": [
           { "label": "DAU", "value": "12,345", "trend": "up", "trendValue": "+5.2%" },
-          { "label": "收入", "value": "¥89.2K", "trend": "up", "trendValue": "+12.1%" },
+          { "label": "收入", "value": "¥89.2K", "trend": "up", "trendValue": "+12%" },
           { "label": "转化率", "value": "3.8%", "trend": "down", "trendValue": "-0.4%" }
+        ]
+      },
+      "children": []
+    },
+    "chart": {
+      "type": "LineChart",
+      "props": {
+        "type": "line",
+        "title": "收入趋势",
+        "x": "month",
+        "y": "revenue",
+        "data": [
+          { "month": "Jan", "revenue": 100 },
+          { "month": "Feb", "revenue": 120 },
+          { "month": "Mar", "revenue": 150 }
+        ]
+      },
+      "children": []
+    },
+    "table": {
+      "type": "DataTable",
+      "props": {
+        "type": "table",
+        "columns": [
+          { "key": "product", "label": "产品" },
+          { "key": "sales", "label": "销量" }
+        ],
+        "data": [
+          { "product": "A", "sales": 100 },
+          { "product": "B", "sales": 200 }
         ]
       },
       "children": []
@@ -231,40 +159,30 @@ AI 输出:
 
 ## 最佳实践
 
-### 给 AI 足够的数据
+### 提供完整数据
 
-AI 不能凭空编造数据。在 prompt 中提供真实数据：
-
-```
-"帮我用饼图展示以下部门预算占比：
-研发部 40%，市场部 25%，运营部 20%，行政部 15%"
-```
-
-### 引导 AI 选择合适的组件
+AI Agent 需要数据才能生成有意义的可视化。在请求中包含完整的数据集：
 
 ```
-"用折线图展示"    → LineChart
-"做个对比"         → FeatureTable / BarChart
-"展示流程"         → MermaidDiagram / Timeline
-"做个仪表盘"       → KpiDashboard
-"展示层级关系"     → OrgChart
-"项目排期"         → GanttChart
+"用以下数据创建柱状图：Q1=120万, Q2=200万, Q3=180万, Q4=310万"
 ```
 
-### 多组件组合
+### 指定组件类型
 
-json-render 支持在一个 spec 中组合多个组件。引导 AI 输出带 children 的结构：
+虽然 AI 可以自动推断，但明确指定组件类型可以获得更准确的结果：
 
 ```
-"帮我做一个综合仪表盘，顶部是 KPI 卡片，中间是折线图，下面是数据表格"
+"用甘特图展示项目排期" → GanttChart
+"创建看板" → Kanban
+"展示 KPI" → KpiDashboard
 ```
 
 ### Schema 校验
 
-可以用 Zod Schema 在前端校验 AI 输出：
+在代码中校验 AI 输出：
 
 ```ts
-import { BarChartSchema } from 'ai-render-kit'
+import { BarChartSchema } from 'vizual'
 
 const result = BarChartSchema.safeParse(aiOutput.props)
 if (!result.success) {

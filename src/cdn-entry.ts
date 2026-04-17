@@ -1,20 +1,29 @@
 /**
- * CDN Entry — ai-render-kit
+ * CDN Entry — Vizual
  *
- * When loaded via <script> tag, exposes window.AIRenderKit with:
+ * Standalone build entry. When loaded via <script> tag, exposes window.Vizual with:
+ *   - React, ReactDOM, ReactDOMClient: React runtime
+ *   - echarts: ECharts runtime
  *   - registry: json-render registry (43 components)
- *   - renderKitCatalog: catalog (has .prompt() for AI)
- *   - all 43 component classes + schemas
+ *   - all component classes + schemas + DocView + hooks
  *   - renderSpec(spec, container): convenience function
+ *
+ * @deprecated renderKitCatalog.prompt() is deprecated. Use the vizual skill
+ *   for AI integration instead. See: https://github.com/aa2246740/vizual
  */
 import { registry } from './registry'
 import { renderKitCatalog } from './catalog'
 import * as echarts from 'echarts'
-import { createElement } from 'react'
-import { createRoot } from 'react-dom/client'
+import * as React from 'react'
+import * as ReactDOM from 'react-dom'
+import * as ReactDOMClient from 'react-dom/client'
 import { Renderer, StateProvider, JSONUIProvider } from '@json-render/react'
 
+// Expose React runtimes for standalone consumers
+export { React, ReactDOM, ReactDOMClient, echarts }
+
 // Re-export everything from index
+// @deprecated Use vizual skill for AI integration instead
 export { renderKitCatalog } from './catalog'
 export { registry } from './registry'
 export { EChartsWrapper } from './core/echarts-wrapper'

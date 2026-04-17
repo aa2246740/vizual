@@ -1,13 +1,13 @@
-# AI RenderKit Component Catalog — Complete Reference
+# Vizual Component Catalog — Complete Reference
 
 This file contains the complete schema for all 43 components.
-Read this when you need to generate JSON specs for ai-render-kit.
+Read this when you need to generate JSON specs for Vizual.
 
 ---
 
 ## Spec Format
 
-All AI RenderKit output follows this structure:
+All Vizual output follows this structure:
 
 ```json
 {

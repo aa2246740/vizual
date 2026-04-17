@@ -20,10 +20,10 @@ export interface AnnotationPanelProps {
 }
 
 const statusLabels: Record<AnnotationStatus, { label: string; color: string; bg: string }> = {
-  draft: { label: 'Draft', color: '#fbbf24', bg: '#fbbf2420' },
-  active: { label: 'Active', color: '#3b82f6', bg: '#3b82f620' },
-  resolved: { label: 'Resolved', color: '#22c55e', bg: '#22c55e20' },
-  orphaned: { label: 'Orphaned', color: '#888', bg: '#88888820' },
+  draft: { label: '草稿', color: '#fbbf24', bg: '#fbbf2420' },
+  active: { label: '已提交', color: '#3b82f6', bg: '#3b82f620' },
+  resolved: { label: '已解决', color: '#22c55e', bg: '#22c55e20' },
+  orphaned: { label: '孤立', color: '#888', bg: '#88888820' },
 }
 
 const panelContainer: React.CSSProperties = {
@@ -79,7 +79,7 @@ export function AnnotationPanel({
       }}>
         <div>
           <span style={{ fontSize: 14, fontWeight: 600, color: '#e5e5e5' }}>
-            Annotations
+            批注
           </span>
           <span style={{ fontSize: 12, color: '#888', marginLeft: 8 }}>
             {annotations.length}
@@ -88,12 +88,12 @@ export function AnnotationPanel({
         <div style={{ display: 'flex', gap: 8 }}>
           {drafts.length > 0 && (
             <span style={{ fontSize: 11, color: '#fbbf24', background: '#fbbf2420', padding: '2px 8px', borderRadius: 10 }}>
-              {drafts.length} draft
+              {drafts.length} 草稿
             </span>
           )}
           {orphans.length > 0 && (
             <span style={{ fontSize: 11, color: '#888', background: '#88888820', padding: '2px 8px', borderRadius: 10 }}>
-              {orphans.length} orphaned
+              {orphans.length} 孤立
             </span>
           )}
         </div>
@@ -112,7 +112,7 @@ export function AnnotationPanel({
             onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = '#2563eb' }}
             onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = '#3b82f6' }}
           >
-            Submit All Drafts ({drafts.length})
+            批量提交 ({drafts.length})
           </button>
         </div>
       )}
@@ -121,7 +121,7 @@ export function AnnotationPanel({
       <div style={{ flex: 1, overflowY: 'auto', padding: '8px 0' }}>
         {annotations.length === 0 && (
           <div style={{ padding: '24px 16px', textAlign: 'center', color: '#666', fontSize: 13 }}>
-            Select text in the document to add annotations.
+            选中文档中的文字以添加批注
           </div>
         )}
         {annotations.map((ann) => {
@@ -166,7 +166,8 @@ export function AnnotationPanel({
                     color: '#a855f7', background: '#a855f720',
                     padding: '1px 6px', borderRadius: 8,
                   }}>
-                    {ann.target.targetType}
+                    {ann.target.targetType === 'chart' ? '📊 ' : ''}{ann.target.targetType}
+                    {ann.target.chartDataPoint ? ' › 数据点' : ''}
                   </span>
                 )}
                 <span style={{ fontSize: 10, color: '#555', marginLeft: 'auto' }}>
@@ -192,22 +193,16 @@ export function AnnotationPanel({
 
               {/* Actions */}
               <div style={{ display: 'flex', gap: 8, marginTop: 6 }}>
-                {ann.status === 'draft' && (
-                  <button
-                    onClick={(e) => { e.stopPropagation(); onUpdateStatus(ann.id, 'active') }}
-                    style={{ fontSize: 11, color: '#3b82f6', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
-                  >Submit</button>
-                )}
                 {ann.status === 'orphaned' && (
                   <button
                     onClick={(e) => { e.stopPropagation(); onUpdateStatus(ann.id, 'resolved') }}
                     style={{ fontSize: 11, color: '#22c55e', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
-                  >Resolve</button>
+                  >确认</button>
                 )}
                 <button
                   onClick={(e) => { e.stopPropagation(); onDelete(ann.id) }}
                   style={{ fontSize: 11, color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
-                >Delete</button>
+                >删除</button>
               </div>
             </div>
           )

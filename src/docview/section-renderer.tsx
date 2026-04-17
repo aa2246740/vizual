@@ -1,5 +1,6 @@
-import React from 'react'
-import type { AnnotationTarget } from './types'
+import React, { useRef, useEffect } from 'react'
+import * as echarts from 'echarts'
+import type { AnnotationTarget, Annotation, ChartDataPoint } from './types'
 
 /** Props for the SectionRenderer component */
 export interface SectionRendererProps {
@@ -15,6 +16,8 @@ export interface SectionRendererProps {
   }>
   /** Called when user clicks a non-text element to annotate it */
   onTargetClick?: (target: AnnotationTarget, element: HTMLElement) => void
+  /** Current annotations for highlighting annotated data points in charts */
+  annotations?: Annotation[]
 }
 
 /** Variant-to-color mapping for callout sections */
@@ -45,7 +48,7 @@ const headingSizes = [32, 24, 20, 18, 16, 14]
  * data-docview-target, data-section-index, and data-target-type attributes to
  * support multi-granularity annotation targeting.
  */
-export function SectionRenderer({ sections, onTargetClick }: SectionRendererProps) {
+export function SectionRenderer({ sections, onTargetClick, annotations }: SectionRendererProps) {
   /**
    * Handle click on a non-text target element (chart, kpi, table, callout, component).
    * Stops propagation and calls onTargetClick with target metadata and the clicked element.
@@ -58,7 +61,8 @@ export function SectionRenderer({ sections, onTargetClick }: SectionRendererProp
   ) => {
     e.stopPropagation()
     const element = e.currentTarget as HTMLElement
-    onTargetClick?.({ sectionIndex, targetType, label }, element)
+    const targetId = element.getAttribute('data-docview-target') || undefined
+    onTargetClick?.({ sectionIndex, targetType, label, targetId }, element)
   }
 
   return (
@@ -70,7 +74,7 @@ export function SectionRenderer({ sections, onTargetClick }: SectionRendererProp
           case 'heading':
             return renderHeading(section, index)
           case 'chart':
-            return renderChart(section, index, handleTargetClick)
+            return <ChartSection key={`chart-${index}`} section={section} index={index} handleClick={handleTargetClick} onTargetClick={onTargetClick} annotations={annotations} />
           case 'kpi':
             return renderKpi(section, index, handleTargetClick)
           case 'table':
@@ -128,22 +132,112 @@ function renderHeading(section: SectionRendererProps['sections'][number], _index
   )
 }
 
-/** Render a chart section as a clickable placeholder with optional data summary */
-function renderChart(
-  section: SectionRendererProps['sections'][number],
-  index: number,
-  handleClick: (e: React.MouseEvent, idx: number, type: AnnotationTarget['targetType'], label: string) => void,
-): React.ReactNode {
-  /** Try to extract a brief data summary from the chart data object */
-  const dataSummary = extractDataSummary(section.data)
+/** Chart section that renders an actual ECharts chart when data is available.
+ *  Supports two click levels:
+ *  - Click on chart empty area/title → whole chart annotation
+ *  - Click on specific bar/slice → data-point drill-down annotation
+ */
+function ChartSection({
+  section,
+  index,
+  handleClick,
+  onTargetClick,
+  annotations = [],
+}: {
+  section: SectionRendererProps['sections'][number]
+  index: number
+  handleClick: (e: React.MouseEvent, idx: number, type: AnnotationTarget['targetType'], label: string) => void
+  onTargetClick?: (target: AnnotationTarget, element: HTMLElement) => void
+  annotations?: Annotation[]
+}) {
+  const chartRef = useRef<HTMLDivElement>(null)
+  const chartInstanceRef = useRef<echarts.ECharts | null>(null)
+  const dataPointClickedRef = useRef(false)
+  const data = section.data as Record<string, unknown> | undefined
+  const hasChartData = !!(data?.series && Array.isArray(data.series) && (data.series as Array<Record<string, unknown>>[])?.[0]?.data)
+
+  // Initialize ECharts instance and register data point click handler
+  useEffect(() => {
+    if (!hasChartData || !chartRef.current) return
+
+    const chart = echarts.init(chartRef.current, 'dark')
+    chartInstanceRef.current = chart
+    const options = buildChartOptions(section.title || '图表', data!)
+    chart.setOption(options)
+
+    // Register ECharts click event for data point drill-down
+    chart.on('click', (params: any) => {
+      if (params.componentType === 'series' && params.seriesIndex !== undefined && params.dataIndex !== undefined) {
+        dataPointClickedRef.current = true
+        const dp: ChartDataPoint = {
+          seriesIndex: params.seriesIndex,
+          dataIndex: params.dataIndex,
+          name: params.name || '',
+          value: params.value ?? '',
+        }
+        const targetId = `chart-${index}-${params.seriesIndex}-${params.dataIndex}`
+        const chartTitle = section.title || '图表'
+        const label = `${chartTitle} › ${dp.name}: ${dp.value}`
+        const containerEl = chartRef.current?.closest('[data-docview-target]') as HTMLElement
+        onTargetClick?.({
+          sectionIndex: index,
+          targetType: 'chart',
+          label,
+          targetId,
+          chartDataPoint: dp,
+        }, containerEl || chartRef.current!)
+      }
+    })
+
+    const onResize = () => chart.resize()
+    window.addEventListener('resize', onResize)
+    return () => {
+      window.removeEventListener('resize', onResize)
+      chart.off('click')
+      chart.dispose()
+      chartInstanceRef.current = null
+    }
+  }, [section, data, hasChartData, onTargetClick, index])
+
+  // Highlight annotated data points via ECharts dispatchAction
+  useEffect(() => {
+    const chart = chartInstanceRef.current
+    if (!chart) return
+
+    // Downplay all first
+    chart.dispatchAction({ type: 'downplay' })
+
+    // Find annotations targeting data points in this chart
+    const chartAnns = annotations.filter(a =>
+      a.target?.targetType === 'chart' &&
+      a.target?.sectionIndex === index &&
+      a.target?.chartDataPoint &&
+      a.status !== 'orphaned'
+    )
+
+    for (const ann of chartAnns) {
+      const dp = ann.target!.chartDataPoint!
+      chart.dispatchAction({
+        type: 'highlight',
+        seriesIndex: dp.seriesIndex,
+        dataIndex: dp.dataIndex,
+      })
+    }
+  }, [annotations, index])
 
   return (
     <div
-      key={`chart-${index}`}
       data-docview-target={`chart-${index}`}
       data-section-index={index}
       data-target-type="chart"
-      onClick={(e) => handleClick(e, index, 'chart', section.title || 'Chart')}
+      onClick={(e) => {
+        // If a data point was clicked, ECharts handler already processed it
+        if (dataPointClickedRef.current) {
+          dataPointClickedRef.current = false
+          return
+        }
+        handleClick(e, index, 'chart', section.title || '图表')
+      }}
       style={{
         background: '#111',
         border: '1px solid #2a2a4a',
@@ -151,24 +245,44 @@ function renderChart(
         padding: 16,
         marginBottom: 16,
         cursor: 'pointer',
-        minHeight: 120,
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
         transition: 'border-color 0.15s',
       }}
       onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.borderColor = '#4a4a6a' }}
       onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.borderColor = '#2a2a4a' }}
     >
-      <span style={{ color: '#888', fontSize: 13, marginBottom: dataSummary ? 8 : 0 }}>
-        {section.title || 'Chart'}
+      <span style={{ color: '#888', fontSize: 13, marginBottom: 8, display: 'block' }}>
+        {section.title || '图表'}
       </span>
-      {dataSummary && (
-        <span style={{ color: '#666', fontSize: 11 }}>{dataSummary}</span>
+      {hasChartData ? (
+        <div ref={chartRef} style={{ width: '100%', height: 250 }} />
+      ) : (
+        <div style={{ height: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#555', fontSize: 12 }}>
+          点击以添加批注
+        </div>
       )}
     </div>
   )
+}
+
+/** Build ECharts options from section data — merges user data with dark theme defaults */
+function buildChartOptions(title: string, data: Record<string, unknown>): Record<string, unknown> {
+  const series = data.series as Array<Record<string, unknown>> | undefined
+  const seriesType = series?.[0]?.type as string || 'bar'
+
+  return {
+    backgroundColor: 'transparent',
+    title: { text: '', show: false },
+    tooltip: { trigger: seriesType === 'pie' ? 'item' : 'axis' },
+    grid: { left: 50, right: 20, top: 20, bottom: 30 },
+    legend: seriesType === 'pie' ? { bottom: 0, textStyle: { color: '#888', fontSize: 11 } } : undefined,
+    ...data,
+    series: series?.map((s: Record<string, unknown>) => ({
+      ...s,
+      emphasis: {
+        itemStyle: { shadowBlur: 10, shadowOffsetX: 0, shadowColor: 'rgba(0,0,0,0.5)' },
+      },
+    })),
+  }
 }
 
 /** Render a KPI section with metric cards from structured data */

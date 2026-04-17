@@ -22,29 +22,8 @@
     <tbody id="results"></tbody>
   </table>
 
-  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
-  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
-  <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
-  <script>
-    // Load mermaid synchronously via XHR+eval before vizual.cdn.js.
-    // mermaid v11 uses "use strict" + var, which breaks globalThis in direct eval.
-    // Fix: replace the last line to use local var instead of globalThis lookup.
-    var _xhr = new XMLHttpRequest();
-    _xhr.open('GET', '../dist/mermaid.min.js', false);
-    _xhr.send();
-    if (_xhr.status === 200) {
-      var _code = _xhr.responseText.replace(
-        'globalThis["mermaid"] = globalThis.__esbuild_esm_mermaid_nm["mermaid"].default;',
-        'globalThis["mermaid"] = __esbuild_esm_mermaid_nm["mermaid"];'
-      );
-      (0, eval)(_code);
-      // Ensure window.mermaid.default is accessible directly
-      if (globalThis.mermaid && globalThis.mermaid.default) {
-        globalThis.mermaid = globalThis.mermaid.default;
-      }
-    }
-  </script>
-  <script src="../dist/vizual.cdn.js"></script>
+  <!-- vizual.standalone.js includes React, ReactDOM, ECharts, and mermaid — zero CDN needed -->
+  <script src="../dist/vizual.standalone.js"></script>
   <script>
     // All 42 registered components with correct data format
     var tests = [
@@ -112,17 +91,6 @@
 
     var PASS_COUNT = 0, FAIL_COUNT = 0, SKIP_COUNT = 0;
     var idx = 0;
-
-    // Wait for mermaid to be loaded (fetched+eval'd above) before starting tests
-    function waitForMermaid(cb) {
-      if (typeof globalThis.mermaid !== 'undefined') { cb(); return; }
-      var tries = 0;
-      var iv = setInterval(function() {
-        tries++;
-        if (typeof globalThis.mermaid !== 'undefined') { clearInterval(iv); cb(); }
-        else if (tries > 30) { clearInterval(iv); cb(); } // give up after ~3s
-      }, 100);
-    }
 
     function runNext() {
       if (idx >= tests.length) { showSummary(); return; }
@@ -202,7 +170,7 @@
       el.className = FAIL_COUNT === 0 ? 'pass' : 'fail';
     }
 
-    waitForMermaid(runNext);
+    runNext();
   </script>
 </body>
 </html>
