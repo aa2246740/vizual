@@ -100,11 +100,11 @@ Plans:
   4. All 4 build formats (ESM, CJS, CDN, Standalone) include DocView and all hooks; cdn-entry drift is fixed
   5. demo-docview.html loads from vizual CDN build and demonstrates full annotation + revision flow
   6. README.md and COMPONENTS.md document DocView usage and annotation features
-**Plans:** TBD
+**Plans:** 2 plans
 
 Plans:
-- [ ] 07-01: AI revision loop integration
-- [ ] 07-02: Build exports, AI prompts, and documentation
+- [ ] 07-01-PLAN.md — AI revision loop integration: orphan detection on sections change, verify batchSubmit/requestRevision events (REV-01, REV-02, REV-03)
+- [ ] 07-02-PLAN.md — Build verification, AI prompt update, demo page, documentation (BLD-02, BLD-03, AIPR-01, AIPR-02, VAL-01, VAL-02)
 
 ## Progress
 
