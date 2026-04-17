@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react'
+import React, { useMemo, useEffect } from 'react'
 import Highlighter from 'react-highlight-words'
 import type { Annotation } from './types'
 
@@ -9,20 +9,26 @@ export interface AnnotationOverlayProps {
   annotations: Annotation[]
   /** Called when a highlight is clicked */
   onHighlightClick?: (annotation: Annotation) => void
+  /** Ref to the content container for scanning target elements */
+  containerRef?: React.RefObject<HTMLElement | null>
 }
 
 /**
- * Renders highlighted annotations over text content.
+ * Renders highlighted annotations over text content and applies visual outlines
+ * to component targets (chart, kpi, table) that have annotations.
  *
- * Uses a text-based matching approach (not character offsets):
+ * Text-based highlighting:
+ * - Uses text-based matching approach (not character offsets)
  * - Searches for annotation text within the rendered text content
- * - This means highlights survive minor content changes (AI revisions)
+ * - Highlights survive minor content changes (AI revisions)
  * - Orphaned annotations (text not found) are skipped silently
  *
- * Implementation: uses react-highlight-words for robust text matching,
- * wrapping matches in styled <mark> elements.
+ * Component-target highlighting:
+ * - Scans the container DOM for elements with data-docview-target attributes
+ * - Applies colored outlines to elements that have matching annotations
+ * - Uses MutationObserver to detect dynamically added targets
  */
-export function AnnotationOverlay({ children, annotations, onHighlightClick }: AnnotationOverlayProps) {
+export function AnnotationOverlay({ children, annotations, onHighlightClick, containerRef }: AnnotationOverlayProps) {
   // Build a map of annotation texts to annotations for fast lookup
   const annotationMap = useMemo(() => {
     const map = new Map<string, Annotation>()
@@ -34,21 +40,30 @@ export function AnnotationOverlay({ children, annotations, onHighlightClick }: A
     return map
   }, [annotations])
 
-  // If no active annotations, just render children directly
-  if (annotationMap.size === 0) return <>{children}</>
-
-  // Collect search words and their annotation mappings
+  // Collect search words for text-based highlighting
   const searchWords = Array.from(annotationMap.keys())
-  if (searchWords.length === 0) return <>{children}</>
+  const hasTextAnnotations = searchWords.length > 0
 
   return (
-    <AnnotationHighlightWrapper
-      searchWords={searchWords}
-      annotationMap={annotationMap}
-      onHighlightClick={onHighlightClick}
-    >
-      {children}
-    </AnnotationHighlightWrapper>
+    <>
+      {/* Text-based highlighting */}
+      {hasTextAnnotations ? (
+        <AnnotationHighlightWrapper
+          searchWords={searchWords}
+          annotationMap={annotationMap}
+          onHighlightClick={onHighlightClick}
+        >
+          {children}
+        </AnnotationHighlightWrapper>
+      ) : (
+        <>{children}</>
+      )}
+
+      {/* Component-target highlighting (chart, kpi, table outlines) */}
+      {containerRef && (
+        <TargetHighlighter annotations={annotations} containerRef={containerRef} />
+      )}
+    </>
   )
 }
 
@@ -100,6 +115,65 @@ function AnnotationHighlightWrapper({
       textToHighlight={textContent}
     />
   )
+}
+
+/**
+ * Applies visual indicators to component targets (chart, kpi, table) that have annotations.
+ * Scans the container for elements with data-section-index and data-target-type attributes
+ * and applies a colored outline if a matching annotation exists.
+ * Uses MutationObserver to detect dynamically added targets.
+ */
+function TargetHighlighter({
+  annotations,
+  containerRef,
+}: {
+  annotations: Annotation[]
+  containerRef: React.RefObject<HTMLElement | null>
+}) {
+  useEffect(() => {
+    const container = containerRef.current
+    if (!container) return
+
+    // Find all target annotations (non-text)
+    const targetAnns = annotations.filter(a => a.target)
+
+    /**
+     * Apply or remove outlines on component targets based on current annotations.
+     * First clears all existing target highlights, then applies new ones.
+     */
+    const applyHighlights = () => {
+      // Remove all existing target highlights
+      container.querySelectorAll('[data-docview-annotated]').forEach(el => {
+        const htmlEl = el as HTMLElement
+        htmlEl.style.outline = ''
+        htmlEl.style.outlineOffset = ''
+        htmlEl.removeAttribute('data-docview-annotated')
+      })
+
+      // Apply highlights for each target annotation
+      for (const ann of targetAnns) {
+        if (!ann.target || ann.status === 'orphaned') continue
+        const selector = `[data-section-index="${ann.target.sectionIndex}"][data-target-type="${ann.target.targetType}"]`
+        const elements = container.querySelectorAll(selector)
+        elements.forEach(el => {
+          const htmlEl = el as HTMLElement
+          htmlEl.style.outline = `2px solid ${ann.color}`
+          htmlEl.style.outlineOffset = '2px'
+          htmlEl.setAttribute('data-docview-annotated', ann.id)
+        })
+      }
+    }
+
+    applyHighlights()
+
+    // Re-apply on DOM changes (sections may load asynchronously)
+    const observer = new MutationObserver(applyHighlights)
+    observer.observe(container, { childList: true, subtree: true })
+
+    return () => observer.disconnect()
+  }, [annotations, containerRef])
+
+  return null
 }
 
 /**
