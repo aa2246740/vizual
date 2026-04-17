@@ -21,7 +21,7 @@ export interface UseAnnotationsReturn {
   /** Add a new annotation */
   addAnnotation: (text: string, note: string, color: AnnotationColor) => Annotation
   /** Update an existing annotation */
-  updateAnnotation: (id: string, updates: Partial<Pick<Annotation, 'note' | 'color' | 'status'>>) => void
+  updateAnnotation: (id: string, updates: Partial<Pick<Annotation, 'note' | 'color' | 'status' | 'target'>>) => void
   /** Delete an annotation */
   deleteAnnotation: (id: string) => void
   /** Get a specific annotation by ID */
@@ -64,7 +64,7 @@ export function useAnnotations(options: UseAnnotationsOptions = {}): UseAnnotati
     return annotation
   }, [annotations, emitChange])
 
-  const updateAnnotation = useCallback((id: string, updates: Partial<Pick<Annotation, 'note' | 'color' | 'status'>>) => {
+  const updateAnnotation = useCallback((id: string, updates: Partial<Pick<Annotation, 'note' | 'color' | 'status' | 'target'>>) => {
     const next = annotations.map(a =>
       a.id === id
         ? { ...a, ...updates, updatedAt: new Date().toISOString() }

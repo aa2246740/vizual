@@ -1,3 +1,5 @@
+import type { DocViewSchemaProps } from './schema'
+
 /**
  * Annotation status lifecycle:
  * - draft: Created but not yet submitted for revision
@@ -19,6 +21,16 @@ export const ANNOTATION_COLORS = [
 
 export type AnnotationColor = typeof ANNOTATION_COLORS[number]
 
+/** Target for non-text annotations (charts, KPIs, table cells, callouts, components) */
+export interface AnnotationTarget {
+  /** Section index in the sections array */
+  sectionIndex: number
+  /** Type of the target element */
+  targetType: 'chart' | 'kpi' | 'table' | 'callout' | 'component'
+  /** Human-readable label for the target (e.g., "Revenue chart", "Q1 KPI", "Row 3, Col 2") */
+  label: string
+}
+
 /** A single annotation on the document */
 export interface Annotation {
   id: string
@@ -34,6 +46,8 @@ export interface Annotation {
   createdAt: string
   /** ISO timestamp when the annotation was last updated */
   updatedAt: string
+  /** For non-text annotations: the component element being annotated */
+  target?: AnnotationTarget
 }
 
 /** Callback when annotations change (add, update, delete) */
@@ -44,8 +58,10 @@ export type OnAction = (actionName: string, params: Record<string, unknown>) => 
 
 /** Props for the DocView container */
 export interface DocViewProps {
-  /** Content to render and annotate */
-  children: React.ReactNode
+  /** Content to render and annotate (manual mode) */
+  children?: React.ReactNode
+  /** Document sections to render (AI-driven mode). If provided AND children is empty, sections are rendered internally. */
+  sections?: DocViewSchemaProps['sections']
   /** Controlled annotations (if using external state) */
   annotations?: Annotation[]
   /** Callback when annotations change */

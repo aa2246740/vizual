@@ -6,6 +6,8 @@ const SectionSchema = z.object({
   type: z.enum(['text', 'heading', 'chart', 'kpi', 'table', 'callout', 'component']),
   /** Text content for text/heading/callout sections, or component JSON spec for chart/kpi/table/component */
   content: z.string(),
+  /** Structured data for chart/kpi/table/component sections (JSON object or array) */
+  data: z.unknown().optional(),
   /** Heading level (1-6), only used when type is 'heading' */
   level: z.number().min(1).max(6).optional(),
   /** Callout variant style */

@@ -21,11 +21,13 @@ export { AnnotationPanel } from './annotation-panel'
 export type { AnnotationPanelProps } from './annotation-panel'
 export { AnnotationInput } from './annotation-input'
 export type { AnnotationInputProps } from './annotation-input'
+export { SectionRenderer } from './section-renderer'
+export type { SectionRendererProps } from './section-renderer'
 
 // Zod schema for catalog registration
 export { DocViewSchema } from './schema'
 export type { DocViewSchemaProps } from './schema'
 
 // Types and constants
-export type { Annotation, AnnotationStatus, AnnotationColor, OnAnnotationsChange, OnAction } from './types'
+export type { Annotation, AnnotationStatus, AnnotationColor, AnnotationTarget, OnAnnotationsChange, OnAction } from './types'
 export { ANNOTATION_COLORS } from './types'
