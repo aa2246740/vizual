@@ -1,6 +1,6 @@
 # AI RenderKit Component Catalog — Complete Reference
 
-This file contains the complete schema for all 37 components.
+This file contains the complete schema for all 42 components.
 Read this when you need to generate JSON specs for ai-render-kit.
 
 ---
@@ -24,7 +24,7 @@ All AI RenderKit output follows this structure:
 
 - `root`: the ID of the top-level element
 - `elements`: map of element IDs to their definitions
-- `type`: must match one of the 37 registered component names
+- `type`: must match one of the 42 registered component names
 - `props`: must match the component's Zod schema exactly
 - `children`: array of child element IDs (for composition)
 
@@ -60,7 +60,7 @@ All AI RenderKit output follows this structure:
 
 ---
 
-## Charts (18) — ECharts via mviz Bridge
+## Charts (19) — ECharts via mviz Bridge
 
 All chart components share these optional props:
 - `title?: string` — chart title
@@ -345,6 +345,40 @@ Renders Mermaid syntax diagrams (flowchart, sequence, gantt, etc.).
 }
 ```
 
+### RadarChart
+**type value:** `"radar"`
+
+Radar chart for multi-dimensional comparison. Supports indicator mode (indicators + series) and table mode (data + x + y).
+
+| Prop | Type | Required | Description |
+|------|------|----------|-------------|
+| type | `"radar"` | yes | fixed literal |
+| title | string | no | chart title |
+| indicators | { name: string, max?: number }[] | no | dimension definitions |
+| series | { name: string, values: number[] }[] | no | data series (one per indicator set) |
+| x | string | no | category field (table mode) |
+| y | string \| string[] | no | value field(s) (table mode) |
+| data | object[] | no | data array (table mode) |
+
+Indicator mode:
+```json
+{
+  "type": "radar",
+  "title": "Car Comparison",
+  "indicators": [
+    { "name": "Speed", "max": 100 },
+    { "name": "Safety", "max": 100 },
+    { "name": "Comfort", "max": 100 },
+    { "name": "Fuel", "max": 100 },
+    { "name": "Price", "max": 100 }
+  ],
+  "series": [
+    { "name": "Car A", "values": [85, 70, 90, 60, 80] },
+    { "name": "Car B", "values": [70, 90, 75, 85, 65] }
+  ]
+}
+```
+
 ---
 
 ## UI Components (8)
@@ -552,3 +586,248 @@ Key-value data display in form layout.
 |------|------|----------|-------------|
 | fields | { label: string, value: any, type?: `"text"` \| `"number"` \| `"date"` \| `"email"` \| `"url"` \| `"boolean"` }[] | yes | |
 | columns | number | no | layout columns |
+
+---
+
+## Interactive/Input Components (4)
+
+### InputText
+**type value:** `"input_text"`
+
+Single-line text input field.
+
+| Prop | Type | Required | Description |
+|------|------|----------|-------------|
+| type | `"input_text"` | yes | fixed literal |
+| label | string | no | field label |
+| placeholder | string | no | placeholder text |
+| value | string | no | current value |
+| inputType | `"text"` \| `"email"` \| `"password"` \| `"number"` \| `"url"` \| `"tel"` | no | HTML input type (default `"text"`) |
+| disabled | boolean | no | disable input |
+| required | boolean | no | mark as required |
+| description | string | no | help text below input |
+| error | string | no | error message |
+
+```json
+{
+  "type": "input_text",
+  "label": "Email Address",
+  "placeholder": "you@example.com",
+  "inputType": "email",
+  "required": true,
+  "description": "We will never share your email."
+}
+```
+
+### InputSelect
+**type value:** `"input_select"`
+
+Dropdown select input.
+
+| Prop | Type | Required | Description |
+|------|------|----------|-------------|
+| type | `"input_select"` | yes | fixed literal |
+| label | string | no | field label |
+| placeholder | string | no | placeholder text |
+| value | string | no | currently selected value |
+| options | { label: string, value: string }[] | yes | selectable options |
+| disabled | boolean | no | disable select |
+| required | boolean | no | mark as required |
+| description | string | no | help text below select |
+| error | string | no | error message |
+
+```json
+{
+  "type": "input_select",
+  "label": "Department",
+  "placeholder": "Select a department",
+  "options": [
+    { "label": "Engineering", "value": "eng" },
+    { "label": "Marketing", "value": "mkt" },
+    { "label": "Sales", "value": "sales" },
+    { "label": "HR", "value": "hr" }
+  ],
+  "required": true
+}
+```
+
+### InputFile
+**type value:** `"input_file"`
+
+File upload input.
+
+| Prop | Type | Required | Description |
+|------|------|----------|-------------|
+| type | `"input_file"` | yes | fixed literal |
+| label | string | no | field label |
+| accept | string | no | accepted file types (e.g. `".png,.jpg"`, `"image/*"`) |
+| multiple | boolean | no | allow multiple file selection |
+| maxFiles | number | no | max number of files (only when `multiple` is true) |
+| disabled | boolean | no | disable input |
+| description | string | no | help text |
+| error | string | no | error message |
+| asBase64 | boolean | no | return file contents as base64 string |
+
+> **Note:** When `multiple` is false or omitted, the component operates in single-file mode and returns one file. When `multiple` is true, it accepts up to `maxFiles` files.
+
+```json
+{
+  "type": "input_file",
+  "label": "Upload Avatar",
+  "accept": "image/png,image/jpeg",
+  "description": "PNG or JPEG, max 2MB.",
+  "asBase64": true
+}
+```
+
+Multi-file mode:
+```json
+{
+  "type": "input_file",
+  "label": "Attach Documents",
+  "accept": ".pdf,.doc,.docx",
+  "multiple": true,
+  "maxFiles": 5,
+  "description": "Upload up to 5 documents."
+}
+```
+
+### FormBuilder
+**type value:** `"form_builder"`
+
+Dynamic form with multiple field types, validation, and conditional visibility.
+
+| Prop | Type | Required | Description |
+|------|------|----------|-------------|
+| type | `"form_builder"` | yes | fixed literal |
+| title | string | no | form title |
+| columns | number | no | layout columns (default 1) |
+| submitLabel | string | no | submit button text (default `"Submit"`) |
+| fields | FormField[] | yes | array of field definitions |
+
+**Supported field types (18):**
+
+| Field type | Description |
+|------------|-------------|
+| `text` | Single-line text input |
+| `email` | Email input with validation |
+| `password` | Password input (masked) |
+| `number` | Numeric input |
+| `url` | URL input with validation |
+| `tel` | Telephone input |
+| `select` | Dropdown select |
+| `file` | File upload |
+| `textarea` | Multi-line text input |
+| `radio` | Radio button group |
+| `checkbox` | Checkbox (single or group) |
+| `switch` | Toggle switch |
+| `slider` | Range slider |
+| `color` | Color picker |
+| `date` | Date picker |
+| `datetime` | Date and time picker |
+| `time` | Time picker |
+| `rating` | Star rating |
+
+**Common field definition props:**
+
+| Prop | Type | Required | Description |
+|------|------|----------|-------------|
+| name | string | yes | field identifier (used as form data key) |
+| type | string | yes | one of the 18 field types above |
+| label | string | no | field label |
+| required | boolean | no | mark as required |
+| disabled | boolean | no | disable field |
+| description | string | no | help text |
+| defaultValue | any | no | initial value |
+| dependsOn | string | no | name of another field this field depends on |
+| showWhen | { field: string, value: any } | no | show this field only when `dependsOn` field matches `value` |
+
+**Field-specific props:**
+
+| Field type | Additional props |
+|------------|-----------------|
+| `select` | `options: { label: string, value: string }[]` |
+| `radio` | `options: { label: string, value: string }[]` |
+| `checkbox` | `options?: { label: string, value: string }[]` (omit for single boolean checkbox) |
+| `slider` | `min?: number`, `max?: number`, `step?: number` |
+| `rating` | `max?: number` (default 5) |
+| `file` | `accept?: string`, `multiple?: boolean`, `maxFiles?: number`, `asBase64?: boolean` |
+| `textarea` | `rows?: number`, `maxLength?: number` |
+
+```json
+{
+  "type": "form_builder",
+  "title": "Event Registration",
+  "columns": 2,
+  "submitLabel": "Register Now",
+  "fields": [
+    {
+      "name": "fullName",
+      "type": "text",
+      "label": "Full Name",
+      "required": true,
+      "description": "As shown on your ID"
+    },
+    {
+      "name": "email",
+      "type": "email",
+      "label": "Email",
+      "required": true
+    },
+    {
+      "name": "phone",
+      "type": "tel",
+      "label": "Phone Number"
+    },
+    {
+      "name": "ticketType",
+      "type": "select",
+      "label": "Ticket Type",
+      "options": [
+        { "label": "Standard — $99", "value": "standard" },
+        { "label": "VIP — $249", "value": "vip" },
+        { "label": "Speaker", "value": "speaker" }
+      ],
+      "required": true
+    },
+    {
+      "name": "dietaryNotes",
+      "type": "textarea",
+      "label": "Dietary Requirements",
+      "rows": 3
+    },
+    {
+      "name": "agreeTerms",
+      "type": "checkbox",
+      "label": "I agree to the terms and conditions",
+      "required": true
+    }
+  ]
+}
+```
+
+Conditional field example (show `companyName` only when `attendeeType` is `"corporate"`):
+```json
+{
+  "type": "form_builder",
+  "title": "Registration",
+  "fields": [
+    {
+      "name": "attendeeType",
+      "type": "radio",
+      "label": "Attendee Type",
+      "options": [
+        { "label": "Individual", "value": "individual" },
+        { "label": "Corporate", "value": "corporate" }
+      ]
+    },
+    {
+      "name": "companyName",
+      "type": "text",
+      "label": "Company Name",
+      "dependsOn": "attendeeType",
+      "showWhen": { "field": "attendeeType", "value": "corporate" }
+    }
+  ]
+}
+```

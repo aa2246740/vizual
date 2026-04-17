@@ -46,9 +46,9 @@ Multi-component example:
 }
 ```
 
-## 37 Components Quick Reference
+## 42 Components Quick Reference
 
-### Charts (18) — ECharts
+### Charts (19) — ECharts
 
 | Component | props.type | Required Props | Key Optional Props |
 |-----------|-----------|----------------|-------------------|
@@ -70,6 +70,7 @@ Multi-component example:
 | ComboChart | `"combo"` | data, series | series: [{type:"bar"|"line", y:"field"}] |
 | DumbbellChart | `"dumbbell"` | data | low, high, groupField |
 | MermaidDiagram | `"mermaid"` | code | theme ("default"\|"dark"\|"forest"\|"neutral") |
+| RadarChart | `"radar"` | indicators + series, or data + x + y | title |
 
 All charts accept: `title?: string`, `theme?: "light"|"dark"`, `height?: number`
 
@@ -101,6 +102,56 @@ All charts accept: `title?: string`, `theme?: "light"|"dark"`, `height?: number`
 | JsonViewer | `"json_viewer"` | data (any) | expanded, maxDepth |
 | CodeBlock | `"code_block"` | code | language, showLineNumbers |
 | FormView | `"form_view"` | fields: [{label, value, type?}] | columns |
+
+### Interactive Components (4)
+
+| Component | props.type | Required Props | Key Optional Props |
+|-----------|-----------|----------------|-------------------|
+| InputText | `"input_text"` | | label, placeholder, inputType ("text"\|"email"\|"password"\|"number"\|"url"\|"tel"), required, disabled |
+| InputSelect | `"input_select"` | options: [{label, value}] | label, placeholder, required, disabled |
+| InputFile | `"input_file"` | | label, accept, multiple, maxFiles, disabled |
+| FormBuilder | `"form_builder"` | fields: [{name, type, ...}] | title, columns, submitLabel |
+
+FormBuilder field types and their extra props:
+
+| type | Extra Props | Default Value |
+|------|-------------|---------------|
+| `text` / `email` / `password` / `number` / `url` / `tel` | placeholder | — |
+| `select` | options: string[] or {label,value}[] | — |
+| `textarea` | placeholder, rows | — |
+| `radio` | options: string[] or {label,value}[] | — |
+| `checkbox` | options: string[] or {label,value}[], defaultValue: string[] | — |
+| `switch` | defaultValue: boolean | false |
+| `slider` | min, max, step | 0, 100, 1 |
+| `color` | defaultValue: "#hex" | — |
+| `date` | defaultValue: "YYYY-MM-DD" | — |
+| `datetime` | defaultValue: "YYYY-MM-DDTHH:mm" | — |
+| `time` | defaultValue: "HH:mm" | — |
+| `rating` | max (star count) | 5 |
+| `file` | accept, multiple | — |
+
+Common field props: `name`, `label`, `required`, `disabled`, `description`, `defaultValue`, `dependsOn` + `showWhen` (cascading visibility)
+
+FormBuilder example:
+```json
+{
+  "type": "FormBuilder",
+  "props": {
+    "title": "User Survey",
+    "columns": 2,
+    "fields": [
+      { "name": "name", "label": "Name", "type": "text", "required": true },
+      { "name": "email", "label": "Email", "type": "email", "required": true },
+      { "name": "role", "label": "Role", "type": "select", "options": ["Developer", "Designer", "Manager"] },
+      { "name": "skills", "label": "Skills", "type": "checkbox", "options": ["React", "Vue", "Angular", "Svelte"] },
+      { "name": "remote", "label": "Work remotely", "type": "switch", "defaultValue": true },
+      { "name": "experience", "label": "Years of experience", "type": "slider", "min": 0, "max": 20 },
+      { "name": "startDate", "label": "Start date", "type": "date" },
+      { "name": "rating", "label": "Satisfaction", "type": "rating", "max": 5, "defaultValue": 3 }
+    ]
+  }
+}
+```
 
 ## Common Mistakes
 
@@ -138,4 +189,8 @@ All charts accept: `title?: string`, `theme?: "light"|"dark"`, `height?: number`
 | Show org hierarchy | OrgChart |
 | Show event history | Timeline / AuditLog |
 | Display code or JSON | CodeBlock / JsonViewer |
+| Multi-dimensional comparison | RadarChart |
 | Show budget vs actual | BudgetReport |
+| Collect user input (text, select, file) | InputText / InputSelect / InputFile |
+| Build a form with multiple fields | FormBuilder |
+| Display structured key-value data | FormView |

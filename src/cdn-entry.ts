@@ -2,9 +2,9 @@
  * CDN Entry — ai-render-kit
  *
  * When loaded via <script> tag, exposes window.AIRenderKit with:
- *   - registry: json-render registry (37 components)
+ *   - registry: json-render registry (42 components)
  *   - renderKitCatalog: catalog (has .prompt() for AI)
- *   - all 37 component classes + schemas
+ *   - all 42 component classes + schemas
  *   - renderSpec(spec, container): convenience function
  */
 import { registry } from './registry'
@@ -37,6 +37,7 @@ export { CalendarChart, CalendarChartSchema } from './mviz-bridge/calendar'
 export { SparklineChart, SparklineChartSchema } from './mviz-bridge/sparkline'
 export { ComboChart, ComboChartSchema } from './mviz-bridge/combo'
 export { DumbbellChart, DumbbellChartSchema } from './mviz-bridge/dumbbell'
+export { RadarChart, RadarChartSchema } from './mviz-bridge/radar'
 export { MermaidChart, MermaidSchema } from './mviz-bridge/mermaid'
 
 // UI
@@ -71,7 +72,7 @@ export { FormView, FormViewSchema } from './components/form-view'
 export function renderSpec(spec: any, container: HTMLElement) {
   const root = createRoot(container)
   root.render(
-    createElement(JSONUIProvider, { registry },
+    createElement(JSONUIProvider, { registry } as any,
       createElement(Renderer, { spec, registry })
     )
   )

@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>AI RenderKit — Streaming LLM Demo</title>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:system-ui,-apple-system,sans-serif;background:#0a0a14;color:#e0e0e0;height:100vh;display:flex;overflow:hidden}
+
+    /* Sidebar */
+    .sidebar{width:260px;background:#0d0d1a;border-right:1px solid #1e1e32;display:flex;flex-direction:column;flex-shrink:0}
+    .sidebar-header{padding:16px;border-bottom:1px solid #1e1e32;font-weight:700;font-size:14px;color:#a78bfa;display:flex;align-items:center;gap:8px}
+    .sidebar-header .dot{width:8px;height:8px;border-radius:50%;background:#22c55e;animation:pulse 2s infinite}
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+    .chat-list{flex:1;overflow-y:auto;padding:8px}
+    .chat-item{padding:10px 12px;border-radius:8px;font-size:13px;color:#888;cursor:pointer;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .chat-item.active{background:#1a1a2e;color:#e0e0e0}
+    .chat-item:hover{background:#151528}
+
+    /* Main chat area */
+    .main{flex:1;display:flex;flex-direction:column;min-width:0}
+    .topbar{height:48px;border-bottom:1px solid #1e1e32;display:flex;align-items:center;padding:0 20px;font-size:13px;color:#888;gap:8px}
+    .topbar b{color:#e0e0e0}
+
+    .messages{flex:1;overflow-y:auto;padding:20px 0;scroll-behavior:smooth}
+    .msg{display:flex;gap:12px;padding:12px 40px;max-width:900px;margin:0 auto;width:100%}
+    .msg.user{justify-content:flex-end}
+    .msg.user .bubble{background:#2a2a4a;border-radius:16px 16px 4px 16px;padding:10px 16px;font-size:14px;max-width:70%;color:#e0e0e0}
+    .msg.ai .avatar{width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,#7c3aed,#2563eb);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;flex-shrink:0;color:#fff}
+    .msg.ai .bubble{max-width:85%;min-width:0}
+    .msg.ai .bubble .text{font-size:14px;line-height:1.6;color:#d1d5db;margin-bottom:8px}
+
+    /* Streaming JSON */
+    .json-stream{font-family:'SF Mono',Monaco,Consolas,monospace;font-size:11.5px;line-height:1.5;color:#6b7280;background:#0d0d1a;border:1px solid #1e1e32;border-radius:8px;padding:12px;margin-top:8px;white-space:pre-wrap;word-break:break-all;max-height:200px;overflow-y:auto;position:relative}
+    .json-stream .cursor{display:inline-block;width:7px;height:14px;background:#7c3aed;animation:blink 1s step-end infinite;vertical-align:text-bottom;margin-left:1px}
+    @keyframes blink{50%{opacity:0}}
+    .json-key{color:#7c3aed}.json-str{color:#22c55e}.json-num{color:#f59e0b}.json-bool{color:#3b82f6}.json-null{color:#6b7280}
+
+    /* Rendered component */
+    .rendered{margin-top:8px;border:1px solid #1e1e32;border-radius:8px;overflow:hidden;background:#111122}
+    .rendered-label{font-size:10px;color:#555;padding:4px 8px;background:#0d0d1a;border-bottom:1px solid #1e1e32;display:flex;justify-content:space-between;align-items:center}
+    .rendered-label .comp-name{color:#7c3aed;font-weight:600}
+    .rendered-label .toggle-json{color:#555;cursor:pointer;font-size:10px;text-decoration:underline}
+    .rendered-label .toggle-json:hover{color:#999}
+    .rendered-content{padding:12px}
+
+    /* Thinking indicator */
+    .thinking{display:flex;gap:4px;padding:4px 0}
+    .thinking span{width:6px;height:6px;border-radius:50%;background:#555;animation:dot 1.4s infinite}
+    .thinking span:nth-child(2){animation-delay:.2s}
+    .thinking span:nth-child(3){animation-delay:.4s}
+    @keyframes dot{0%,80%,100%{opacity:.3}40%{opacity:1}}
+
+    /* Input bar */
+    .inputbar{border-top:1px solid #1e1e32;padding:12px 20px;display:flex;gap:8px;align-items:center}
+    .inputbar input{flex:1;background:#151528;border:1px solid #1e1e32;border-radius:8px;padding:10px 14px;color:#e0e0e0;font-size:13px;outline:none}
+    .inputbar input::placeholder{color:#444}
+    .inputbar button{background:#7c3aed;border:none;color:#fff;padding:10px 16px;border-radius:8px;font-size:13px;cursor:pointer;font-weight:600}
+    .inputbar button:hover{background:#6d28d9}
+    .inputbar button:disabled{background:#333;cursor:not-allowed;color:#666}
+
+    /* Progress */
+    .progress{position:fixed;top:0;left:0;right:0;height:3px;z-index:100}
+    .progress-bar{height:100%;background:linear-gradient(90deg,#7c3aed,#3b82f6);transition:width .3s;width:0}
+
+    /* Status badge */
+    .status{position:fixed;bottom:20px;right:20px;background:#111;border:1px solid #1e1e32;border-radius:8px;padding:8px 14px;font-size:11px;color:#888;z-index:100}
+    .status .count{color:#22c55e;font-weight:700}
+  </style>
+</head>
+<body>
+  <div class="sidebar">
+    <div class="sidebar-header"><div class="dot"></div> AI RenderKit Demo</div>
+    <div class="chat-list">
+      <div class="chat-item active" id="chat-item">All 42 Components — Streaming Test</div>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="topbar"><b>AI RenderKit</b> — Streaming Component Demo</div>
+    <div class="messages" id="messages"></div>
+    <div class="inputbar">
+      <input id="userInput" placeholder="Demo auto-plays — type to skip ahead..." disabled>
+      <button id="skipBtn">Skip All</button>
+    </div>
+  </div>
+
+  <div class="progress"><div class="progress-bar" id="progressBar"></div></div>
+  <div class="status" id="status"><span class="count" id="passCount">0</span>/42 rendered &middot; <span id="failCount" style="color:#ef4444">0</span> failed</div>
+
+  <!-- Load mermaid synchronously -->
+  <script>
+    var _xhr = new XMLHttpRequest();
+    _xhr.open('GET', '../dist/mermaid.min.js', false);
+    _xhr.send();
+    if (_xhr.status === 200) {
+      var _code = _xhr.responseText.replace(
+        'globalThis["mermaid"] = globalThis.__esbuild_esm_mermaid_nm["mermaid"].default;',
+        'globalThis["mermaid"] = __esbuild_esm_mermaid_nm["mermaid"];'
+      );
+      (0, eval)(_code);
+      if (globalThis.mermaid && globalThis.mermaid.default) globalThis.mermaid = globalThis.mermaid.default;
+    }
+  </script>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+  <script src="../dist/vizual.cdn.js"></script>
+  <script>
+  (function() {
+    // All 42 demo conversations — realistic LLM Q&A with JSON specs
+    var conversations = [
+      // === 19 Charts ===
+      { q: "用柱状图展示一下各季度销售额", intro: "好的，这是各季度销售额的柱状图：",
+        spec: { root:'m', elements:{ m:{ type:'BarChart', props:{ title:'季度销售额', x:'quarter', y:'revenue', data:[{quarter:'Q1',revenue:120},{quarter:'Q2',revenue:200},{quarter:'Q3',revenue:150},{quarter:'Q4',revenue:280}] }, children:[] }}}},
+      { q: "画一条用户增长趋势折线图", intro: "以下是过去12个月的用户增长趋势：",
+        spec: { root:'m', elements:{ m:{ type:'LineChart', props:{ title:'用户增长趋势', x:'month', y:'users', smooth:true, data:[{month:'1月',users:1200},{month:'2月',users:1800},{month:'3月',users:2400},{month:'4月',users:3100},{month:'5月',users:4200},{month:'6月',users:5800},{month:'7月',users:7200},{month:'8月',users:8900},{month:'9月',users:10500},{month:'10月',users:12000},{month:'11月',users:13800},{month:'12月',users:15600}] }, children:[] }}}},
+      { q: "展示一下各产品的市场份额占比", intro: "各产品市场份额如下：",
+        spec: { root:'m', elements:{ m:{ type:'PieChart', props:{ title:'市场份额分布', category:'product', value:'share', data:[{product:'云服务',share:35},{product:'SaaS平台',share:28},{product:'AI解决方案',share:22},{product:'咨询服务',share:15}] }, children:[] }}}},
+      { q: "分析一下用户活跃度和付费金额的关系", intro: "用户活跃度与付费金额的散点分布：",
+        spec: { root:'m', elements:{ m:{ type:'ScatterChart', props:{ title:'活跃度 vs 付费金额', x:'activity', y:'payment', data:[{activity:20,payment:50},{activity:35,payment:120},{activity:45,payment:180},{activity:55,payment:250},{activity:65,payment:310},{activity:75,payment:420},{activity:85,payment:580},{activity:95,payment:720}] }, children:[] }}}},
+      { q: "展示月度收入的变化面积图", intro: "月度收入变化趋势（面积图）：",
+        spec: { root:'m', elements:{ m:{ type:'AreaChart', props:{ title:'月度收入趋势', x:'month', y:'revenue', smooth:true, data:[{month:'1月',revenue:45},{month:'2月',revenue:52},{month:'3月',revenue:48},{month:'4月',revenue:65},{month:'5月',revenue:78},{month:'6月',revenue:92},{month:'7月',revenue:85},{month:'8月',revenue:110},{month:'9月',revenue:125},{month:'10月',revenue:118},{month:'11月',revenue:140},{month:'12月',revenue:165}] }, children:[] }}}},
+      { q: "给我看一个股价走势的迷你图", intro: "最近30天股价走势迷你图：",
+        spec: { root:'m', elements:{ m:{ type:'SparklineChart', props:{ x:'day', y:'price', data:(function(){var d=[];var p=156;for(var i=1;i<=30;i++){p+=Math.round((Math.random()-0.45)*8);d.push({day:i,price:p})}return d})() }, children:[] }}}},
+      { q: "展示考试成绩的分布直方图", intro: "考试成绩分布情况：",
+        spec: { root:'m', elements:{ m:{ type:'HistogramChart', props:{ title:'考试成绩分布', x:'score', data:[{score:45},{score:52},{score:58},{score:62},{score:65},{score:67},{score:70},{score:72},{score:74},{score:75},{score:76},{score:78},{score:80},{score:82},{score:85},{score:88},{score:90},{score:92},{score:95}] }, children:[] }}}},
+      { q: "画一个服务器各时段负载热力图", intro: "本周服务器负载热力图：",
+        spec: { root:'m', elements:{ m:{ type:'HeatmapChart', props:{ title:'服务器负载（CPU%）', x:'hour', y:'day', value:'load', data:[{hour:'6:00',day:'周一',load:15},{hour:'9:00',day:'周一',load:65},{hour:'12:00',day:'周一',load:82},{hour:'15:00',day:'周一',load:70},{hour:'18:00',day:'周一',load:45},{hour:'6:00',day:'周二',load:12},{hour:'9:00',day:'周二',load:72},{hour:'12:00',day:'周二',load:90},{hour:'15:00',day:'周二',load:78},{hour:'18:00',day:'周二',load:50},{hour:'6:00',day:'周三',load:18},{hour:'9:00',day:'周三',load:68},{hour:'12:00',day:'周三',load:85},{hour:'15:00',day:'周三',load:75},{hour:'18:00',day:'周三',load:48}] }, children:[] }}}},
+      { q: "用气泡图展示各产品线的市场表现", intro: "各产品线市场表现（价格×销量×利润）：",
+        spec: { root:'m', elements:{ m:{ type:'BubbleChart', props:{ title:'产品线市场分析', x:'price', y:'volume', size:'profit', data:[{name:'基础版',price:99,volume:1200,profit:80},{name:'专业版',price:299,volume:800,profit:200},{name:'企业版',price:799,volume:300,profit:450},{name:'旗舰版',price:1299,volume:150,profit:600}] }, children:[] }}}},
+      { q: "各科成绩分布的箱线图", intro: "各科目成绩箱线图分布：",
+        spec: { root:'m', elements:{ m:{ type:'BoxplotChart', props:{ title:'各科成绩分布', x:'subject', y:'score', data:[{subject:'语文',score:72},{subject:'语文',score:78},{subject:'语文',score:85},{subject:'语文',score:90},{subject:'语文',score:95},{subject:'数学',score:55},{subject:'数学',score:65},{subject:'数学',score:78},{subject:'数学',score:88},{subject:'数学',score:98},{subject:'英语',score:60},{subject:'英语',score:70},{subject:'英语',score:80},{subject:'英语',score:85},{subject:'英语',score:92}] }, children:[] }}}},
+      { q: "展示年度活跃度日历图", intro: "2024年用户活跃度日历热力图：",
+        spec: { root:'m', elements:{ m:{ type:'CalendarChart', props:{ title:'2024年用户活跃度', date:'date', value:'active', data:(function(){var d=[];for(var m=1;m<=12;m++)for(var dd=1;dd<=28;dd++){d.push({date:'2024-'+(m<10?'0':'')+m+'-'+(dd<10?'0':'')+dd,active:Math.floor(Math.random()*100)})}return d})() }, children:[] }}}},
+      { q: "分析一下销售漏斗的转化率", intro: "销售漏斗各阶段转化情况：",
+        spec: { root:'m', elements:{ m:{ type:'FunnelChart', props:{ title:'销售转化漏斗', category:'stage', value:'count', data:[{stage:'网站访问',count:50000},{stage:'注册用户',count:18000},{stage:'试用产品',count:8000},{stage:'付费用户',count:3200},{stage:'续费用户',count:2100}] }, children:[] }}}},
+      { q: "画一个用户流转的桑基图", intro: "用户在不同产品间的流转路径：",
+        spec: { root:'m', elements:{ m:{ type:'SankeyChart', props:{ title:'用户流转路径', nodes:[{name:'首页'},{name:'产品页'},{name:'博客'},{name:'购买'},{name:'注册'},{name:'离开'}], links:[{source:'首页',target:'产品页',value:400},{source:'首页',target:'博客',value:200},{source:'首页',target:'离开',value:150},{source:'产品页',target:'购买',value:180},{source:'产品页',target:'注册',value:120},{source:'博客',target:'注册',value:80}] }, children:[] }}}},
+      { q: "用组合图展示收入和成本对比", intro: "收入与成本的组合图（柱+折线）：",
+        spec: { root:'m', elements:{ m:{ type:'ComboChart', props:{ title:'收入 vs 成本', x:'month', y:['revenue','cost'], data:[{month:'1月',revenue:85,cost:62},{month:'2月',revenue:92,cost:68},{month:'3月',revenue:78,cost:65},{month:'4月',revenue:110,cost:72},{month:'5月',revenue:125,cost:78},{month:'6月',revenue:140,cost:85}] }, children:[] }}}},
+      { q: "展示公司损益的瀑布图", intro: "公司年度损益瀑布图：",
+        spec: { root:'m', elements:{ m:{ type:'WaterfallChart', props:{ title:'年度损益分析（万元）', category:'item', value:'amount', data:[{item:'营业收入',amount:500},{item:'营业成本',amount:-180},{item:'毛利润',amount:320},{item:'运营费用',amount:-120},{item:'研发投入',amount:-80},{item:'净利润',amount:120}] }, children:[] }}}},
+      { q: "生成产品质量的SPC控制图", intro: "产品质量XMR控制图（统计过程控制）：",
+        spec: { root:'m', elements:{ m:{ type:'XmrChart', props:{ title:'产品质量SPC监控', x:'sample', y:'measurement', data:[{sample:1,measurement:10.02},{sample:2,measurement:10.05},{sample:3,measurement:9.98},{sample:4,measurement:10.01},{sample:5,measurement:10.08},{sample:6,measurement:9.95},{sample:7,measurement:10.03},{sample:8,measurement:10.06},{sample:9,measurement:9.97},{sample:10,measurement:10.04},{sample:11,measurement:10.10},{sample:12,measurement:9.99}] }, children:[] }}}},
+      { q: "对比各城市温度范围的哑铃图", intro: "各城市最高最低温度对比：",
+        spec: { root:'m', elements:{ m:{ type:'DumbbellChart', props:{ title:'城市温度范围对比（°C）', x:'city', low:'low', high:'high', data:[{city:'北京',low:-5,high:38},{city:'上海',low:2,high:40},{city:'广州',low:8,high:39},{city:'哈尔滨',low:-30,high:33},{city:'昆明',low:3,high:28}] }, children:[] }}}},
+      { q: "画一个系统架构的流程图", intro: "系统架构流程图（Mermaid）：",
+        spec: { root:'m', elements:{ m:{ type:'MermaidDiagram', props:{ code:'graph TD\n  Client[客户端] --> Gateway[API Gateway]\n  Gateway --> Auth[认证服务]\n  Gateway --> Biz[业务服务]\n  Biz --> Cache[(Redis缓存)]\n  Biz --> DB[(数据库)]\n  Biz --> MQ[消息队列]\n  MQ --> Worker[后台Worker]\n  Worker --> DB' }, children:[] }}}},
+      { q: "对比两款产品的综合性能雷达图", intro: "产品A vs 产品B 综合性能雷达图：",
+        spec: { root:'m', elements:{ m:{ type:'RadarChart', props:{ title:'产品综合性能对比', indicators:[{name:'性能',max:100},{name:'续航',max:100},{name:'拍照',max:100},{name:'屏幕',max:100},{name:'性价比',max:100},{name:'生态',max:100}], series:[{name:'产品A',values:[92,78,88,85,70,95]},{name:'产品B',values:[80,90,75,92,85,72]}] }, children:[] }}}},
+      // === 8 UI Components ===
+      { q: "展示一下关键业务指标", intro: "当前核心业务指标：",
+        spec: { root:'m', elements:{ m:{ type:'BigValue', props:{ title:'月活跃用户', value:'1,280万', trend:'up', change:'+12.5%' }, children:[] }}}},
+      { q: "今天的数据变化大吗？", intro: "今日关键指标变化：",
+        spec: { root:'m', elements:{ m:{ type:'Delta', props:{ value:'+23.5%', direction:'up' }, children:[] }}}},
+      { q: "系统部署完成了吗？", intro: "部署已完成，系统状态通知：",
+        spec: { root:'m', elements:{ m:{ type:'Alert', props:{ type:'success', title:'部署成功', message:'v2.4.1 已成功部署到生产环境。所有健康检查通过，服务运行正常。' }, children:[] }}}},
+      { q: "关于这个数据有什么需要注意的？", intro: "数据使用注意事项：",
+        spec: { root:'m', elements:{ m:{ type:'Note', props:{ variant:'warning', content:'此数据基于采样统计，置信度95%。实际值可能有±3%的偏差。建议结合原始日志进行交叉验证。' }, children:[] }}}},
+      { q: "解释一下什么是SaaS", intro: "SaaS（Software as a Service）是一种软件交付模式：",
+        spec: { root:'m', elements:{ m:{ type:'TextBlock', props:{ content:'SaaS是一种通过互联网提供软件应用的云计算模式。用户无需在本地安装软件，而是通过浏览器访问托管在云端的应用。SaaS的优势包括：快速部署、按需付费、自动更新、随时随地访问。典型的SaaS产品包括Salesforce、Slack、Notion等。' }, children:[] }}}},
+      { q: "展示一段配置文件内容", intro: "以下是 nginx 配置示例：",
+        spec: { root:'m', elements:{ m:{ type:'TextArea', props:{ content:'server {\n  listen 80;\n  server_name api.example.com;\n\n  location / {\n    proxy_pass http://backend:3000;\n    proxy_set_header Host $host;\n    proxy_set_header X-Real-IP $remote_addr;\n  }\n}' }, children:[] }}}},
+      { q: "展示员工信息表格", intro: "员工信息数据表：",
+        spec: { root:'m', elements:{ m:{ type:'DataTable', props:{ title:'员工信息', striped:true, columns:[{key:'name',label:'姓名'},{key:'dept',label:'部门'},{key:'role',label:'职位'},{key:'salary',label:'薪资',align:'right'}], data:[{name:'张三',dept:'技术部',role:'高级工程师',salary:'¥35,000'},{name:'李四',dept:'产品部',role:'产品经理',salary:'¥30,000'},{name:'王五',dept:'设计部',role:'UI设计师',salary:'¥25,000'},{name:'赵六',dept:'市场部',role:'市场总监',salary:'¥40,000'}] }, children:[] }}}},
+      { q: "在这里加一些间距", intro: "好的，添加一些间距：",
+        spec: { root:'m', elements:{ m:{ type:'EmptySpace', props:{ height:60 }, children:[] }}}},
+      // === 11 Business Components ===
+      { q: "展示项目里程碑时间线", intro: "项目关键里程碑时间线：",
+        spec: { root:'m', elements:{ m:{ type:'Timeline', props:{ title:'项目里程碑', events:[{date:'2024-01-15',title:'项目启动',description:'确定技术方案，组建开发团队'},{date:'2024-03-01',title:'Alpha版本',description:'核心功能开发完成，内部测试开始'},{date:'2024-05-20',title:'Beta发布',description:'公测版本上线，收集用户反馈'},{date:'2024-07-10',title:'正式发布',description:'v1.0正式发布，开始商业化运营'},{date:'2024-09-01',title:'10万用户',description:'注册用户突破10万里程碑'}] }, children:[] }}}},
+      { q: "展示当前Sprint的任务看板", intro: "Sprint #12 任务看板：",
+        spec: { root:'m', elements:{ m:{ type:'Kanban', props:{ title:'Sprint #12 看板', columns:[{id:'todo',title:'待开发',cards:[{id:1,title:'用户认证模块'},{id:2,title:'支付接口对接'},{id:3,title:'数据导出功能'}]},{id:'doing',title:'进行中',cards:[{id:4,title:'仪表盘重构'},{id:5,title:'API性能优化'}]},{id:'done',title:'已完成',cards:[{id:6,title:'登录页UI改版'},{id:7,title:'邮件通知服务'}]}] }, children:[] }}}},
+      { q: "画一个项目排期的甘特图", intro: "项目开发甘特图排期：",
+        spec: { root:'m', elements:{ m:{ type:'GanttChart', props:{ title:'项目排期', tasks:[{name:'需求分析',start:'2024-01-01',end:'2024-01-20'},{name:'UI设计',start:'2024-01-15',end:'2024-02-10'},{name:'前端开发',start:'2024-02-01',end:'2024-03-15'},{name:'后端开发',start:'2024-02-01',end:'2024-03-20'},{name:'联调测试',start:'2024-03-15',end:'2024-04-05'},{name:'上线部署',start:'2024-04-05',end:'2024-04-15'}] }, children:[] }}}},
+      { q: "展示公司的组织架构", intro: "公司组织架构图：",
+        spec: { root:'m', elements:{ m:{ type:'OrgChart', props:{ title:'组织架构', nodes:[{id:1,name:'CEO',children:[{id:2,name:'CTO',children:[{id:5,name:'前端团队'},{id:6,name:'后端团队'},{id:7,name:'AI团队'}]},{id:3,name:'CFO',children:[{id:8,name:'财务部'},{id:9,name:'审计部'}]},{id:4,name:'CMO',children:[{id:10,name:'市场部'},{id:11,name:'销售部'}]}]}] }, children:[] }}}},
+      { q: "展示运营关键指标仪表盘", intro: "实时运营指标看板：",
+        spec: { root:'m', elements:{ m:{ type:'KpiDashboard', props:{ title:'运营指标', metrics:[{label:'DAU',value:'128万',trend:'up',trendValue:'+8.5%'},{label:'收入',value:'¥2.3亿',trend:'up',trendValue:'+15.2%'},{label:'转化率',value:'3.8%',trend:'down',trendValue:'-0.3%'},{label:'NPS',value:'72',trend:'up',trendValue:'+5'}] }, children:[] }}}},
+      { q: "对比一下各部门预算执行情况", intro: "各部门预算 vs 实际支出：",
+        spec: { root:'m', elements:{ m:{ type:'BudgetReport', props:{ title:'2024年度预算执行报告', categories:[{name:'研发部',budget:500,actual:480},{name:'市场部',budget:300,actual:320},{name:'运营部',budget:200,actual:185},{name:'行政部',budget:100,actual:95},{name:'人力资源',budget:150,actual:160}] }, children:[] }}}},
+      { q: "展示各套餐的功能对比表", intro: "产品套餐功能对比：",
+        spec: { root:'m', elements:{ m:{ type:'FeatureTable', props:{ title:'套餐功能对比', products:['基础版','专业版','企业版'], features:[{name:'用户数',values:['5人','20人','无限']},{name:'存储空间',values:['10GB','100GB','1TB']},{name:'API调用',values:['1K/天','10K/天','无限']},{name:'自定义域名',values:[false,true,true]},{name:'SSO集成',values:[false,false,true]},{name:'专属客服',values:[false,false,true]}] }, children:[] }}}},
+      { q: "查看最近的操作审计日志", intro: "最近10条操作审计日志：",
+        spec: { root:'m', elements:{ m:{ type:'AuditLog', props:{ title:'操作审计日志', entries:[{time:'14:32:05',user:'张三',action:'部署',target:'v2.4.1 → 生产环境',severity:'info'},{time:'14:28:12',user:'李四',action:'修改配置',target:'Redis连接池参数',severity:'warning'},{time:'14:15:33',user:'系统',action:'告警',target:'CPU使用率 > 90%',severity:'error'},{time:'13:45:20',user:'王五',action:'数据迁移',target:'用户表 → 新集群',severity:'info'},{time:'12:00:00',user:'系统',action:'定时任务',target:'日报生成',severity:'info'}] }, children:[] }}}},
+      { q: "展示一下这个API返回的JSON结构", intro: "API 响应数据结构：",
+        spec: { root:'m', elements:{ m:{ type:'JsonViewer', props:{ data:{ status:200, message:'success', data:{ users:[{id:1,name:'Alice',role:'admin',permissions:['read','write','delete']},{id:2,name:'Bob',role:'editor',permissions:['read','write']}], pagination:{page:1,pageSize:20,total:156} }, timestamp:'2024-07-15T14:30:00Z' } }, children:[] }}}},
+      { q: "展示一段Python示例代码", intro: "数据处理示例代码：",
+        spec: { root:'m', elements:{ m:{ type:'CodeBlock', props:{ language:'python', title:'data_processor.py', code:'import pandas as pd\nfrom sklearn.model_selection import train_test_split\n\ndef load_and_split(path, test_size=0.2):\n    df = pd.read_csv(path)\n    df = df.dropna()\n    \n    X = df.drop("target", axis=1)\n    y = df["target"]\n    \n    return train_test_split(\n        X, y, test_size=test_size, random_state=42\n    )\n\n# Usage\nX_train, X_test, y_train, y_test = load_and_split("data.csv")\nprint(f"Train: {len(X_train)}, Test: {len(X_test)}")' }, children:[] }}}},
+      { q: "展示用户反馈表单", intro: "用户反馈收集表单：",
+        spec: { root:'m', elements:{ m:{ type:'FormView', props:{ title:'用户反馈', fields:[{label:'联系邮箱',value:'user@example.com',type:'email'},{label:'问题类型',value:'功能请求'},{label:'优先级',value:true,type:'boolean'},{label:'附件链接',value:'https://example.com/screenshot',type:'url'}] }, children:[] }}}},
+      // === 4 Input Components ===
+      { q: "创建一个用户名输入框", intro: "用户名输入组件：",
+        spec: { root:'m', elements:{ m:{ type:'InputText', props:{ label:'用户名', placeholder:'请输入用户名', required:true }, children:[] }}}},
+      { q: "加一个颜色选择下拉框", intro: "颜色选择下拉组件：",
+        spec: { root:'m', elements:{ m:{ type:'InputSelect', props:{ label:'选择颜色', placeholder:'请选择...', options:[{label:'红色',value:'red'},{label:'蓝色',value:'blue'},{label:'绿色',value:'green'},{label:'黄色',value:'yellow'}] }, children:[] }}}},
+      { q: "添加一个文件上传入口", intro: "文件上传组件（支持拖拽）：",
+        spec: { root:'m', elements:{ m:{ type:'InputFile', props:{ label:'上传附件', accept:'.pdf,.doc,.docx,.png,.jpg', multiple:true }, children:[] }}}},
+      { q: "创建一个用户调查问卷", intro: "用户满意度调查表单（含多种输入控件）：",
+        spec: { root:'m', elements:{ m:{ type:'FormBuilder', props:{ title:'用户体验调查', columns:2, fields:[{name:'satisfaction',label:'整体满意度',type:'select',options:['非常满意','满意','一般','不满意'],defaultValue:'满意'},{name:'recommend',label:'是否推荐给朋友',type:'radio',options:['一定会','可能会','不太会'],defaultValue:'一定会'},{name:'features',label:'最喜欢的功能',type:'checkbox',options:['速度','界面','客服','价格'],defaultValue:['速度','界面']},{name:'newsletter',label:'订阅新闻邮件',type:'switch',defaultValue:true},{name:'budget',label:'月度预算（元）',type:'slider',min:0,max:5000,step:100,defaultValue:1500},{name:'favColor',label:'喜欢的主题色',type:'color',defaultValue:'#3b82f6'},{name:'birthday',label:'生日',type:'date',defaultValue:'1995-06-15'},{name:'meeting',label:'下次会议时间',type:'datetime',defaultValue:'2024-08-01T10:00'},{name:'alarm',label:'提醒时间',type:'time',defaultValue:'09:00'},{name:'rating',label:'总体评分',type:'rating',max:5,defaultValue:4},{name:'feedback',label:'改进建议',type:'textarea',placeholder:'请输入您的建议...',description:'选填'},{name:'email',label:'联系邮箱',type:'email',required:true}] }, children:[] }}}},
+    ];
+
+    var msgContainer = document.getElementById('messages');
+    var progressBar = document.getElementById('progressBar');
+    var passCountEl = document.getElementById('passCount');
+    var failCountEl = document.getElementById('failCount');
+    var skipBtn = document.getElementById('skipBtn');
+    var passCount = 0, failCount = 0;
+    var currentConv = 0;
+    var aborted = false;
+
+    // Skip button: render all remaining instantly
+    skipBtn.onclick = function() {
+      aborted = true;
+      skipBtn.disabled = true;
+      skipBtn.textContent = 'Rendering...';
+      // Find which conversations haven't been rendered yet by checking DOM
+      var renderedNames = new Set();
+      document.querySelectorAll('.rendered-label .comp-name').forEach(function(el) {
+        renderedNames.add(el.textContent);
+      });
+      var todo = [];
+      conversations.forEach(function(conv, i) {
+        var type = conv.spec.elements[conv.spec.root].type;
+        if (!renderedNames.has(type)) todo.push(conv);
+      });
+      passCount = renderedNames.size;
+      failCount = 0;
+      var idx = 0;
+      function doNext() {
+        if (idx >= todo.length) {
+          updateStatus();
+          skipBtn.textContent = 'Done';
+          return;
+        }
+        var conv = todo[idx];
+        addMessage('user', conv.q);
+        var aiDiv = addAIMessage(conv.intro);
+        var bubble = aiDiv.querySelector('.bubble');
+        var thinkingEl = bubble.querySelector('.thinking');
+        if (thinkingEl) thinkingEl.remove();
+        renderComponent(conv.spec, conv.q, function(rendered) {
+          if (rendered) {
+            bubble.appendChild(rendered);
+            passCount++;
+          } else {
+            failCount++;
+            var errDiv = document.createElement('div');
+            errDiv.style.cssText = 'color:#ef4444;font-size:12px;padding:8px';
+            errDiv.textContent = 'Render failed';
+            bubble.appendChild(errDiv);
+          }
+          updateStatus();
+          msgContainer.scrollTop = msgContainer.scrollHeight;
+          idx++;
+          doNext();
+        });
+      }
+      doNext();
+    };
+
+    function addMessage(role, text) {
+      var div = document.createElement('div');
+      div.className = 'msg ' + role;
+      if (role === 'user') {
+        div.innerHTML = '<div class="bubble"></div>';
+      }
+      div.querySelector('.bubble' + (role === 'user' ? '' : '') || role === 'user' ? ' .bubble' : '').textContent = text;
+      // Simpler approach
+      div.innerHTML = role === 'user'
+        ? '<div class="bubble">' + escapeHtml(text) + '</div>'
+        : '';
+      msgContainer.appendChild(div);
+      msgContainer.scrollTop = msgContainer.scrollHeight;
+      return div;
+    }
+
+    function addAIMessage(intro) {
+      var div = document.createElement('div');
+      div.className = 'msg ai';
+      div.innerHTML = '<div class="avatar">R</div><div class="bubble"><div class="text">' +
+        escapeHtml(intro) + '</div><div class="thinking"><span></span><span></span><span></span></div></div>';
+      msgContainer.appendChild(div);
+      msgContainer.scrollTop = msgContainer.scrollHeight;
+      return div;
+    }
+
+    function escapeHtml(s) {
+      return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+
+    function renderComponent(spec, question, callback) {
+      try {
+        var container = document.createElement('div');
+        container.style.cssText = 'width:100%;position:absolute;left:-9999px';
+        document.body.appendChild(container);
+        Vizual.renderSpec(spec, container);
+
+        // React 18 concurrent mode — poll for rendered content
+        var attempts = 0;
+        var maxAttempts = 20;
+        var pollInterval = setInterval(function() {
+          attempts++;
+          var html = container.innerHTML;
+          // Check for meaningful content: ECharts canvas, SVG, table, text, etc.
+          var hasContent = html.length > 20 ||
+            html.indexOf('_echarts_instance_') !== -1 ||
+            html.indexOf('<canvas') !== -1 ||
+            html.indexOf('<svg') !== -1 ||
+            html.indexOf('<input') !== -1 ||
+            html.indexOf('<table') !== -1;
+
+          if (hasContent || attempts >= maxAttempts) {
+            clearInterval(pollInterval);
+            document.body.removeChild(container);
+            container.style.position = '';
+            container.style.left = '';
+            finishRender(spec, container, hasContent, callback);
+          }
+        }, 100);
+      } catch(e) {
+        console.error('Render error:', e);
+        callback(null);
+      }
+    }
+
+    function finishRender(spec, container, hasContent, callback) {
+      if (!hasContent) { callback(null); return; }
+
+      var rootEl = spec.elements[spec.root];
+      var compName = rootEl ? rootEl.type : 'Unknown';
+
+      var wrapper = document.createElement('div');
+      wrapper.className = 'rendered';
+
+      var label = document.createElement('div');
+      label.className = 'rendered-label';
+      label.innerHTML = '<span class="comp-name">' + compName + '</span>' +
+        '<span class="toggle-json" onclick="this.parentElement.nextElementSibling.style.display=this.parentElement.nextElementSibling.style.display===\'none\'?\'block\':\'none\'">JSON</span>';
+      wrapper.appendChild(label);
+
+      var content = document.createElement('div');
+      content.className = 'rendered-content';
+      content.appendChild(container);
+      wrapper.appendChild(content);
+
+      callback(wrapper);
+    }
+
+    function streamConversation(idx) {
+      if (idx >= conversations.length || aborted) {
+        updateStatus();
+        skipBtn.textContent = 'Done';
+        skipBtn.disabled = true;
+        return;
+      }
+
+      var conv = conversations[idx];
+      progressBar.style.width = ((idx / conversations.length) * 100) + '%';
+
+      // 1. User message
+      addMessage('user', conv.q);
+
+      // 2. AI message with thinking
+      var aiDiv = addAIMessage(conv.intro);
+      var bubble = aiDiv.querySelector('.bubble');
+      var textEl = bubble.querySelector('.text');
+      var thinkingEl = bubble.querySelector('.thinking');
+
+      // After a brief "thinking" delay, stream the JSON
+      setTimeout(function() {
+        thinkingEl.remove();
+
+        // Add JSON stream area
+        var jsonDiv = document.createElement('div');
+        jsonDiv.className = 'json-stream';
+        var jsonText = JSON.stringify(conv.spec, null, 2);
+        jsonDiv.innerHTML = '<span class="cursor"></span>';
+        bubble.appendChild(jsonDiv);
+
+        // Stream characters
+        var charIdx = 0;
+        var speed = 12; // chars per tick
+        var streamInterval = setInterval(function() {
+          if (aborted) {
+            clearInterval(streamInterval);
+            return;
+          }
+          var chunk = jsonText.substring(charIdx, charIdx + speed);
+          charIdx += speed;
+
+          // Remove cursor, add text + cursor
+          var cursor = jsonDiv.querySelector('.cursor');
+          if (cursor) cursor.remove();
+
+          if (charIdx >= jsonText.length) {
+            clearInterval(streamInterval);
+            // Done streaming — render component (async, waits for React)
+            jsonDiv.innerHTML = syntaxHighlight(jsonText);
+            renderComponent(conv.spec, conv.q, function(rendered) {
+              if (rendered) {
+                bubble.appendChild(rendered);
+                passCount++;
+              } else {
+                failCount++;
+                var errDiv = document.createElement('div');
+                errDiv.style.cssText = 'color:#ef4444;font-size:12px;padding:8px';
+                errDiv.textContent = 'Render failed';
+                bubble.appendChild(errDiv);
+              }
+              updateStatus();
+              msgContainer.scrollTop = msgContainer.scrollHeight;
+              currentConv = idx + 1;
+              setTimeout(function() { streamConversation(idx + 1); }, 800);
+            });
+          } else {
+            jsonDiv.innerHTML = syntaxHighlight(jsonText.substring(0, charIdx)) + '<span class="cursor"></span>';
+          }
+          msgContainer.scrollTop = msgContainer.scrollHeight;
+        }, 30);
+      }, 600 + Math.random() * 400);
+    }
+
+    function syntaxHighlight(json) {
+      return escapeHtml(json)
+        .replace(/"([^"]+)":/g, '<span class="json-key">"$1"</span>:')
+        .replace(/: "([^"]*)"/g, ': <span class="json-str">"$1"</span>')
+        .replace(/: (\d+\.?\d*)/g, ': <span class="json-num">$1</span>')
+        .replace(/: (true|false)/g, ': <span class="json-bool">$1</span>')
+        .replace(/: (null)/g, ': <span class="json-null">$1</span>');
+    }
+
+    function updateStatus() {
+      passCountEl.textContent = passCount;
+      failCountEl.textContent = failCount;
+      progressBar.style.width = '100%';
+    }
+
+    // Start!
+    streamConversation(0);
+  })();
+  </script>
+</body>
+</html>

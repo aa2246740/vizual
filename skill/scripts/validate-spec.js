@@ -3,7 +3,7 @@
 /**
  * AI RenderKit Spec Validator
  *
- * Validates a JSON spec against the 37-component catalog.
+ * Validates a JSON spec against the 42-component catalog.
  * Usage:
  *   node scripts/validate-spec.js < spec.json
  *   node scripts/validate-spec.js path/to/spec.json
@@ -52,6 +52,11 @@ const COMPONENT_TYPES = {
   JsonViewer: 'json_viewer',
   CodeBlock: 'code_block',
   FormView: 'form_view',
+  RadarChart: 'radar',
+  InputText: 'input_text',
+  InputSelect: 'input_select',
+  InputFile: 'input_file',
+  FormBuilder: 'form_builder',
 }
 
 // Layout components (no type literal in props)
@@ -112,7 +117,8 @@ function validate(spec) {
 
     // Chart-specific checks
     if (['BarChart', 'LineChart', 'AreaChart', 'ScatterChart', 'BubbleChart',
-         'BoxplotChart', 'HistogramChart', 'HeatmapChart', 'CalendarChart'].includes(el.type)) {
+         'BoxplotChart', 'HistogramChart', 'HeatmapChart', 'CalendarChart',
+         'RadarChart'].includes(el.type)) {
       if (el.props && !el.props.data) {
         warnings.push(`Element "${id}": ${el.type} usually needs a "data" array`)
       }

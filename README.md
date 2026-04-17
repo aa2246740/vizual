@@ -4,11 +4,11 @@
 
 **AI speaks JSON, Vizual makes it visual.**
 
-AI 输出 JSON → 自动渲染为 37 种交互式可视化组件。
+AI 输出 JSON → 自动渲染为 42 种交互式可视化组件。
 
 [![npm version](https://img.shields.io/npm/v/vizual.svg)](https://www.npmjs.com/package/vizual)
 [![license](https://img.shields.io/npm/l/vizual.svg)](https://github.com/aa2246740/vizual/blob/main/LICENSE)
-[![components](https://img.shields.io/badge/components-37-blue)](docs/COMPONENTS.md)
+[![components](https://img.shields.io/badge/components-42-blue)](docs/COMPONENTS.md)
 
 **English** · [中文文档](#中文文档)
 
@@ -16,7 +16,7 @@ AI 输出 JSON → 自动渲染为 37 种交互式可视化组件。
 
 </div>
 
-37 visualization components — 18 ECharts charts, 8 UI components, 11 business components — all with Zod Schema validation, auto-generated AI prompts, and json-render integration.
+42 visualization components — 19 ECharts charts, 8 UI components, 11 business components — all with Zod Schema validation, auto-generated AI prompts, and json-render integration.
 
 ```tsx
 // AI outputs this JSON:
@@ -44,7 +44,7 @@ import { Renderer, StateProvider } from '@json-render/react'
 
 ## Features
 
-- **37 Components** — Charts (ECharts), UI elements, business components
+- **42 Components** — Charts (ECharts), UI elements, business components
 - **Zod Schema Validation** — Every prop strictly typed, AI can't get it wrong
 - **json-render Native** — `defineCatalog` + `defineRegistry`, plug and play
 - **mviz Bridge** — Reuses mviz `buildXxxOptions()` with auto fallback
@@ -96,9 +96,9 @@ See [INSTALL.md](INSTALL.md) for detailed instructions.
 | `dist/index.mjs` | ESM | 760KB | `import` via npm |
 | `dist/index.js` | CJS | 766KB | `require()` via npm |
 
-## 37 Components
+## 42 Components
 
-### Charts (18) — ECharts via mviz Bridge
+### Charts (19) — ECharts via mviz Bridge
 
 | Component | type | Description |
 |-----------|------|-------------|
@@ -120,6 +120,7 @@ See [INSTALL.md](INSTALL.md) for detailed instructions.
 | ComboChart | `combo` | Combo chart (bar + line) |
 | DumbbellChart | `dumbbell` | Dumbbell chart |
 | MermaidDiagram | `mermaid` | Mermaid diagram |
+| RadarChart | `radar` | Radar chart (multi-dimensional comparison) |
 
 ### UI Components (8)
 
@@ -150,7 +151,35 @@ See [INSTALL.md](INSTALL.md) for detailed instructions.
 | CodeBlock | `code_block` | Code display |
 | FormView | `form_view` | Key-value form |
 
+### Interactive Components (4)
+
+| Component | type | Description |
+|-----------|------|-------------|
+| InputText | `input_text` | Text input with validation |
+| InputSelect | `input_select` | Dropdown select |
+| InputFile | `input_file` | File upload with drag-and-drop |
+| FormBuilder | `form_builder` | Dynamic form with 18 field types |
+
+FormBuilder supports these field types: `text`, `email`, `password`, `number`, `url`, `tel`, `select`, `file`, `textarea`, `radio`, `checkbox`, `switch`, `slider`, `color`, `date`, `datetime`, `time`, `rating`
+
 Full component reference: [docs/COMPONENTS.md](docs/COMPONENTS.md)
+
+## Testing & Demos
+
+The `validation/` directory contains ready-to-use test and demo pages:
+
+| File | Purpose |
+|------|---------|
+| `validation/test-all-42.html` | Automated test — renders all 42 components, reports PASS/FAIL |
+| `validation/demo-streaming.html` | LLM chat simulation — streams JSON specs and renders components in a chat UI |
+
+```bash
+# Quick test — start a local server and open in browser
+python3 -m http.server 8790
+# Then open http://localhost:8790/validation/test-all-42.html
+```
+
+These pages double as **integration examples** — each component's JSON spec format is shown inline, making them ideal references for AI agents learning to use the library.
 
 ## AI Integration
 
@@ -202,10 +231,12 @@ npm run build    # Build all formats (ESM + CJS + CDN + Standalone)
 |----------|-------------|
 | [INSTALL.md](INSTALL.md) | Installation guide (NPM / CDN / Offline) |
 | [GETTING-STARTED.md](docs/GETTING-STARTED.md) | Developer quickstart |
-| [COMPONENTS.md](docs/COMPONENTS.md) | All 37 component schemas & examples |
+| [COMPONENTS.md](docs/COMPONENTS.md) | All 42 component schemas & examples |
 | [ARCHITECTURE.md](docs/ARCHITECTURE.md) | Architecture, data flow, dependency graph |
 | [AI-INTEGRATION.md](docs/AI-INTEGRATION.md) | AI integration guide (Claude / GPT) |
 | [LICENSES.md](docs/LICENSES.md) | License compliance for all dependencies |
+| [validation/test-all-42.html](validation/test-all-42.html) | Live test — all 42 components with real data |
+| [validation/demo-streaming.html](validation/demo-streaming.html) | LLM chat demo — streaming JSON → rendered components |
 
 ## License
 
@@ -217,13 +248,13 @@ npm run build    # Build all formats (ESM + CJS + CDN + Standalone)
 
 # 中文文档
 
-**AI 输出 JSON → 自动渲染为 37 种交互式可视化组件。**
+**AI 输出 JSON → 自动渲染为 42 种交互式可视化组件。**
 
-Vizual 是一个面向 AI Agent 的可视化组件库。它将 18 种 ECharts 图表、8 种 UI 组件、11 种业务组件统一封装为 Zod Schema + React 组件，通过 json-render 平台实现一键渲染。
+Vizual 是一个面向 AI Agent 的可视化组件库。它将 19 种 ECharts 图表、8 种 UI 组件、11 种业务组件统一封装为 Zod Schema + React 组件，通过 json-render 平台实现一键渲染。
 
 ## 特性
 
-- **37 个组件** — 图表、UI、业务组件全覆盖
+- **42 个组件** — 图表、UI、业务组件全覆盖
 - **Zod Schema 校验** — 每个 props 都有严格的类型定义，AI 不会写错
 - **json-render 原生集成** — `defineCatalog` + `defineRegistry`，即插即用
 - **mviz Bridge** — 复用 mviz 的 `buildXxxOptions()` 生成 ECharts 配置，含自动 fallback
@@ -285,11 +316,11 @@ const spec = {
 </StateProvider>
 ```
 
-## 37 个组件
+## 42 个组件
 
-### 图表 (18) — ECharts
+### 图表 (19) — ECharts
 
-BarChart, LineChart, AreaChart, PieChart, ScatterChart, BubbleChart, BoxplotChart, HistogramChart, WaterfallChart, XmrChart, SankeyChart, FunnelChart, HeatmapChart, CalendarChart, SparklineChart, ComboChart, DumbbellChart, MermaidDiagram
+BarChart, LineChart, AreaChart, PieChart, ScatterChart, BubbleChart, BoxplotChart, HistogramChart, WaterfallChart, XmrChart, SankeyChart, FunnelChart, HeatmapChart, CalendarChart, SparklineChart, ComboChart, DumbbellChart, MermaidDiagram, RadarChart
 
 ### UI 组件 (8)
 
@@ -299,7 +330,30 @@ BigValue, Delta, Alert, Note, TextBlock, TextArea, DataTable, EmptySpace
 
 Timeline, Kanban, GanttChart, OrgChart, KpiDashboard, BudgetReport, FeatureTable, AuditLog, JsonViewer, CodeBlock, FormView
 
+### 交互组件 (4)
+
+InputText, InputSelect, InputFile, FormBuilder
+
+FormBuilder 支持 18 种字段类型：text, email, password, number, url, tel, select, file, textarea, radio, checkbox, switch, slider, color, date, datetime, time, rating
+
 完整组件参考：[docs/COMPONENTS.md](docs/COMPONENTS.md)
+
+## 测试与演示
+
+`validation/` 目录包含开箱即用的测试和演示页面：
+
+| 文件 | 用途 |
+|------|------|
+| `validation/test-all-42.html` | 自动测试 — 渲染全部 42 个组件，报告 PASS/FAIL |
+| `validation/demo-streaming.html` | LLM 对话模拟 — 流式输出 JSON spec 并在聊天 UI 中渲染组件 |
+
+```bash
+# 快速测试 — 启动本地服务器并在浏览器中打开
+python3 -m http.server 8790
+# 然后打开 http://localhost:8790/validation/test-all-42.html
+```
+
+这些页面同时也是**集成示例** — 每个组件的 JSON spec 格式都在页面中展示，非常适合作为 AI Agent 学习使用本库的参考。
 
 ## AI 接入
 

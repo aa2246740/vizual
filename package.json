@@ -1,11 +1,14 @@
 {
   "name": "vizual",
-  "version": "1.0.0",
-  "description": "Vizual — AI speaks JSON, Vizual makes it visual. 37 interactive visualization components for json-render: charts, dashboards, kanban, gantt & more.",
+  "version": "1.1.0",
+  "description": "Vizual — AI speaks JSON, Vizual makes it visual. 38 interactive visualization components for json-render: charts, dashboards, kanban, gantt, input forms & more.",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
-  "files": ["dist", "src"],
+  "files": [
+    "dist",
+    "src"
+  ],
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -23,7 +26,23 @@
     "build:standalone": "esbuild src/cdn-entry.ts --bundle --format=iife --outfile=dist/vizual.standalone.js --target=es2020 --minify --global-name=Vizual",
     "prepublishOnly": "npm test && npm run build"
   },
-  "keywords": ["vizual", "visualization", "ai", "chart", "dashboard", "render", "json-render", "mviz", "echarts", "react", "catalog", "generative-ui", "data-viz", "kanban", "gantt"],
+  "keywords": [
+    "vizual",
+    "visualization",
+    "ai",
+    "chart",
+    "dashboard",
+    "render",
+    "json-render",
+    "mviz",
+    "echarts",
+    "react",
+    "catalog",
+    "generative-ui",
+    "data-viz",
+    "kanban",
+    "gantt"
+  ],
   "author": "",
   "license": "MIT",
   "peerDependencies": {
@@ -31,11 +50,12 @@
     "react-dom": ">=18"
   },
   "dependencies": {
-    "zod": "^3.25.0",
-    "echarts": "^5.6.0",
-    "mviz": "^1.6.4",
     "@json-render/core": "^0.17.0",
-    "@json-render/react": "^0.17.0"
+    "@json-render/react": "^0.17.0",
+    "echarts": "^5.6.0",
+    "mermaid": "^11.14.0",
+    "mviz": "^1.6.4",
+    "zod": "^3.25.0"
   },
   "devDependencies": {
     "@json-render/core": "^0.17.0",

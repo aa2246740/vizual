@@ -1,3 +1,5 @@
+import type { JsonViewerProps } from './schema'
+
 /**
  * Syntax-highlighted collapsible JSON
  */

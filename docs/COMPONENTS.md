@@ -1,12 +1,12 @@
 # 组件参考文档 — AI RenderKit
 
-完整列出 37 个组件的 Schema、props 说明和使用示例。
+完整列出 42 个组件的 Schema、props 说明和使用示例。
 
 > 所有图表组件共享以下可选 props：`title?: string`、`theme?: 'light' | 'dark'`、`height?: number`
 
 ---
 
-## Charts (18) — ECharts via mviz Bridge
+## Charts (19) — ECharts via mviz Bridge
 
 ### BarChart
 
@@ -358,6 +358,38 @@ Mermaid 流程图/序列图/甘特图等。
 | code | string | 是 | Mermaid 语法代码 |
 | theme | `"default"` \| `"dark"` \| `"forest"` \| `"neutral"` | 否 | Mermaid 主题 |
 
+### RadarChart
+
+雷达图，支持多维度对比。支持 indicator 模式（indicators + series）和 table 模式（data + x + y）。
+
+```json
+{
+  "type": "radar",
+  "title": "车型对比",
+  "indicators": [
+    { "name": "速度", "max": 100 },
+    { "name": "安全", "max": 100 },
+    { "name": "舒适", "max": 100 },
+    { "name": "油耗", "max": 100 },
+    { "name": "价格", "max": 100 }
+  ],
+  "series": [
+    { "name": "车型 A", "values": [85, 70, 90, 60, 80] },
+    { "name": "车型 B", "values": [70, 90, 75, 85, 65] }
+  ]
+}
+```
+
+| Prop | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| type | `"radar"` | 是 | 固定值 |
+| title | string | 否 | 图表标题 |
+| indicators | { name: string, max?: number }[] | 否 | 维度定义 |
+| series | { name: string, values: number[] }[] | 否 | 数据系列 |
+| x | string | 否 | 分类字段（table 模式） |
+| y | string \| string[] | 否 | 数值字段（table 模式） |
+| data | object[] | 否 | 数据数组（table 模式） |
+
 ---
 
 ## UI Components (8) — 纯 React
@@ -687,3 +719,174 @@ JSON 查看器。
 | fields | { label, value, type? }[] | 是 | 字段列表 |
 | type | `"text"` \| `"number"` \| `"date"` \| `"email"` \| `"url"` \| `"boolean"` | 否 | 字段类型 |
 | columns | number | 否 | 列数 |
+
+---
+
+## Interactive/Input Components (4) — 交互输入组件
+
+### InputText
+
+文本输入框，支持多种输入类型。
+
+```json
+{
+  "type": "InputText",
+  "props": {
+    "label": "姓名",
+    "placeholder": "请输入姓名",
+    "required": true
+  }
+}
+```
+
+| Prop | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| type | `"InputText"` | 是 | 固定值 |
+| label | string | 否 | 输入框标签 |
+| placeholder | string | 否 | 占位文本 |
+| value | string | 否 | 默认值 |
+| inputType | `"text"` \| `"email"` \| `"password"` \| `"number"` \| `"url"` \| `"tel"` | 否 | 输入类型，默认 `text` |
+| disabled | boolean | 否 | 是否禁用 |
+| required | boolean | 否 | 是否必填 |
+| description | string | 否 | 字段描述/提示文字 |
+| error | string | 否 | 错误提示信息 |
+
+### InputSelect
+
+下拉选择框。
+
+```json
+{
+  "type": "InputSelect",
+  "props": {
+    "label": "颜色",
+    "options": [
+      { "label": "红色", "value": "red" },
+      { "label": "蓝色", "value": "blue" }
+    ]
+  }
+}
+```
+
+| Prop | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| type | `"InputSelect"` | 是 | 固定值 |
+| label | string | 否 | 选择框标签 |
+| placeholder | string | 否 | 占位文本 |
+| value | string | 否 | 默认选中值 |
+| options | { label: string, value: string }[] | 是 | 选项列表 |
+| disabled | boolean | 否 | 是否禁用 |
+| required | boolean | 否 | 是否必填 |
+| description | string | 否 | 字段描述/提示文字 |
+| error | string | 否 | 错误提示信息 |
+
+### InputFile
+
+文件上传组件，支持单文件和多文件模式。
+
+```json
+{
+  "type": "InputFile",
+  "props": {
+    "label": "附件上传",
+    "accept": ".pdf,.doc,.docx",
+    "maxFiles": 3,
+    "description": "支持 PDF、Word 文档，最多 3 个文件"
+  }
+}
+```
+
+| Prop | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| type | `"InputFile"` | 是 | 固定值 |
+| label | string | 否 | 上传区域标签 |
+| accept | string | 否 | 接受的文件类型（MIME 或扩展名） |
+| multiple | boolean | 否 | 是否允许多文件上传 |
+| maxFiles | number | 否 | 最大文件数量，默认 1；0 表示不限制 |
+| disabled | boolean | 否 | 是否禁用 |
+| description | string | 否 | 上传说明文字 |
+| error | string | 否 | 错误提示信息 |
+| asBase64 | boolean | 否 | 是否以 Base64 编码返回文件内容 |
+
+**单文件模式**（maxFiles=1）：上传后上传区域消失，显示文件卡片和删除按钮。
+
+**多文件模式**（multiple=true 或 maxFiles>1）：显示文件列表，上传区域始终可见。
+
+### FormBuilder
+
+动态表单构建器，支持 18 种字段类型，可通过 JSON 配置生成完整表单。
+
+```json
+{
+  "type": "FormBuilder",
+  "props": {
+    "title": "用户注册",
+    "columns": 2,
+    "submitLabel": "提交注册",
+    "fields": [
+      { "name": "username", "type": "text", "label": "用户名", "required": true, "placeholder": "请输入用户名" },
+      { "name": "email", "type": "email", "label": "邮箱", "required": true },
+      { "name": "password", "type": "password", "label": "密码", "required": true, "description": "至少 8 位字符" },
+      { "name": "role", "type": "select", "label": "角色", "options": [
+        { "label": "管理员", "value": "admin" },
+        { "label": "编辑", "value": "editor" },
+        { "label": "访客", "value": "viewer" }
+      ]},
+      { "name": "bio", "type": "textarea", "label": "个人简介", "description": "简要介绍自己" },
+      { "name": "notifications", "type": "switch", "label": "接收通知", "defaultValue": true },
+      { "name": "experience", "type": "slider", "label": "经验年限", "min": 0, "max": 20, "step": 1 },
+      { "name": "theme", "type": "color", "label": "主题色", "defaultValue": "#3B82F6" },
+      { "name": "birthday", "type": "date", "label": "生日", "defaultValue": "2000-01-01" },
+      { "name": "meeting", "type": "datetime", "label": "会议时间" },
+      { "name": "satisfaction", "type": "rating", "label": "满意度", "max": 5 },
+      { "name": "agree", "type": "checkbox", "label": "同意服务条款", "required": true },
+      { "name": "website", "type": "url", "label": "个人网站" },
+      { "name": "phone", "type": "tel", "label": "手机号" }
+    ]
+  }
+}
+```
+
+| Prop | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| type | `"FormBuilder"` | 是 | 固定值 |
+| title | string | 否 | 表单标题 |
+| columns | number | 否 | 表单列数 |
+| submitLabel | string | 否 | 提交按钮文字 |
+| fields | object[] | 是 | 字段配置列表（见下方字段类型） |
+
+**支持的 18 种字段类型：**
+
+| 字段 type | 说明 | 额外 props |
+|-----------|------|-----------|
+| text | 单行文本 | — |
+| email | 邮箱 | — |
+| password | 密码 | — |
+| number | 数字 | — |
+| url | URL 地址 | — |
+| tel | 电话号码 | — |
+| select | 下拉选择 | `options: { label, value }[]` |
+| file | 文件上传 | — |
+| textarea | 多行文本 | — |
+| radio | 单选按钮组 | `options: { label, value }[]` |
+| checkbox | 复选框 | — |
+| switch | 开关 | — |
+| slider | 滑动条 | `min`, `max`, `step` |
+| color | 颜色选择器 | — |
+| date | 日期选择 | `defaultValue` |
+| datetime | 日期时间选择 | `defaultValue` |
+| time | 时间选择 | `defaultValue` |
+| rating | 评分 | `max`（星级上限） |
+
+**通用字段 props：**
+
+| Prop | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| name | string | 是 | 字段标识，提交时作为 key |
+| label | string | 否 | 字段标签 |
+| required | boolean | 否 | 是否必填 |
+| disabled | boolean | 否 | 是否禁用 |
+| description | string | 否 | 字段描述/提示文字 |
+| defaultValue | any | 否 | 默认值 |
+| dependsOn | string | 否 | 依赖的字段 name |
+| showWhen | any | 否 | 当 dependsOn 字段值等于 showWhen 时显示 |

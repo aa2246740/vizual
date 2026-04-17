@@ -24,7 +24,7 @@ npm install ai-render-kit
 
 ## 第二步：注册 Registry
 
-`ai-render-kit` 导出了一个预构建的 `registry`，包含 37 个组件的 type → React 组件映射：
+`ai-render-kit` 导出了一个预构建的 `registry`，包含 42 个组件的 type → React 组件映射：
 
 ```tsx
 import { registry } from 'ai-render-kit'

@@ -193,6 +193,7 @@ Title + alert + chart + insight notes:
 | Mixed bar + line | ComboChart | `combo` |
 | Range comparison | DumbbellChart | `dumbbell` |
 | Flowchart/sequence/gantt diagram | MermaidDiagram | `mermaid` |
+| Radar/spider chart | RadarChart | `radar` |
 | Big number with trend | BigValue | `big_value` |
 | Change from previous | Delta | `delta` |
 | Warning/notification | Alert | `alert` |
@@ -212,3 +213,34 @@ Title + alert + chart + insight notes:
 | JSON display | JsonViewer | `json_viewer` |
 | Source code display | CodeBlock | `code_block` |
 | Key-value form | FormView | `form_view` |
+
+## Multi-Dimensional Comparison
+
+Radar chart for comparing entities across multiple dimensions:
+
+```json
+{
+  "root": "main",
+  "elements": {
+    "main": {
+      "type": "RadarChart",
+      "props": {
+        "type": "radar",
+        "title": "Team Skill Assessment",
+        "indicators": [
+          { "name": "Frontend", "max": 100 },
+          { "name": "Backend", "max": 100 },
+          { "name": "DevOps", "max": 100 },
+          { "name": "Design", "max": 100 },
+          { "name": "Testing", "max": 100 }
+        ],
+        "series": [
+          { "name": "Team A", "values": [90, 70, 60, 80, 75] },
+          { "name": "Team B", "values": [65, 85, 80, 55, 90] }
+        ]
+      },
+      "children": []
+    }
+  }
+}
+```

@@ -19,6 +19,7 @@ import { CalendarChart } from './mviz-bridge/calendar/component'
 import { SparklineChart } from './mviz-bridge/sparkline/component'
 import { ComboChart } from './mviz-bridge/combo/component'
 import { DumbbellChart } from './mviz-bridge/dumbbell/component'
+import { RadarChart } from './mviz-bridge/radar/component'
 import { MermaidChart } from './mviz-bridge/mermaid/component'
 
 // UI components (mviz bridge)
@@ -44,17 +45,77 @@ import { JsonViewer } from './components/json-viewer/component'
 import { CodeBlock } from './components/code-block/component'
 import { FormView } from './components/form-view/component'
 
+// Interactive input components
+import { InputText } from './inputs/input-text/component'
+import { InputSelect } from './inputs/input-select/component'
+import { InputFile } from './inputs/input-file/component'
+import { FormBuilder } from './inputs/form-builder/component'
+
 /**
- * AI RenderKit registry — 37 React components mapped to catalog schemas
+ * AI RenderKit registry — 42 React components + 3 action handlers
+ *
+ * Exported result includes:
+ * - registry: ComponentRegistry for <Renderer>
+ * - handlers: (getSetState, getState) => action handler map for JSONUIProvider
+ * - executeAction: imperative action execution for use outside React tree
  */
-export const { registry } = defineRegistry(renderKitCatalog, {
+// @ts-ignore — Component function signatures use Zod v3 inferred types;
+// json-render's defineRegistry expects Zod v4 types. Runtime is correct.
+export const { registry, handlers, executeAction } = defineRegistry(renderKitCatalog, {
   components: {
     BarChart, AreaChart, LineChart, PieChart, ScatterChart, BubbleChart,
     BoxplotChart, HistogramChart, WaterfallChart, XmrChart, SankeyChart,
     FunnelChart, HeatmapChart, CalendarChart, SparklineChart, ComboChart,
-    DumbbellChart, MermaidDiagram: MermaidChart,
+    DumbbellChart, RadarChart, MermaidDiagram: MermaidChart,
     BigValue, Delta, Alert, Note, TextBlock, TextArea, DataTable, EmptySpace,
     Timeline, Kanban, GanttChart, OrgChart, KpiDashboard, BudgetReport,
     FeatureTable, AuditLog, JsonViewer, CodeBlock, FormView,
+    InputText, InputSelect, InputFile, FormBuilder,
+  } as any,
+  actions: {
+    /** Store form submission in state. Host app can override via handlers(). */
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    submitForm: async (params: any, setState: any) => {
+      const submission = {
+        formId: params?.formId,
+        data: params?.data ?? {},
+        submittedAt: new Date().toISOString(),
+      }
+      setState((prev: any) => ({
+        ...prev,
+        _formSubmissions: [...(Array.isArray(prev._formSubmissions) ? prev._formSubmissions : []), submission],
+        _lastFormSubmission: submission,
+      }))
+    },
+
+    /** Store revision request in state. Host app wires to AI API. */
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    requestRevision: async (params: any, setState: any) => {
+      const request = {
+        annotationId: params?.annotationId ?? '',
+        text: params?.text ?? '',
+        note: params?.note ?? '',
+        requestedAt: new Date().toISOString(),
+      }
+      setState((prev: any) => ({
+        ...prev,
+        _revisionRequests: [...(Array.isArray(prev._revisionRequests) ? prev._revisionRequests : []), request],
+        _lastRevisionRequest: request,
+      }))
+    },
+
+    /** Store batch annotation submission in state. Used by DocView revision loop. */
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    batchSubmit: async (params: any, setState: any) => {
+      const batch = {
+        annotations: params?.annotations ?? [],
+        submittedAt: new Date().toISOString(),
+      }
+      setState((prev: any) => ({
+        ...prev,
+        _batchSubmissions: [...(Array.isArray(prev._batchSubmissions) ? prev._batchSubmissions : []), batch],
+        _lastBatchSubmission: batch,
+      }))
+    },
   },
 })

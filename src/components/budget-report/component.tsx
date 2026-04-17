@@ -1,3 +1,5 @@
+import type { BudgetReportProps } from './schema'
+
 /**
  * Budget vs actual with variance
  */

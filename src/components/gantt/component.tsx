@@ -1,3 +1,5 @@
+import type { GanttChartProps } from './schema'
+
 /**
  * Gantt chart with task bars and date axis
  */

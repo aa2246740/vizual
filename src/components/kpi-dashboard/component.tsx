@@ -1,3 +1,5 @@
+import type { KpiDashboardProps } from './schema'
+
 /**
  * Multi-metric KPI dashboard cards
  */

@@ -1,3 +1,5 @@
+import type { FeatureTableProps } from './schema'
+
 /**
  * Product comparison matrix
  */

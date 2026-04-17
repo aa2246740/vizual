@@ -4,7 +4,7 @@ import type { DataTableProps } from './schema'
  * Data table with formatting
  */
 export function DataTable({ props }: { props: DataTableProps }) {
-  const cols = props.columns ?? (props.data.length > 0 ? Object.keys(props.data[0]).map(k=>({key:k})) : [])
+  const cols = props.columns ?? (props.data.length > 0 ? Object.keys(props.data[0]).map(k=>({key:k, label: k as string | undefined, align: undefined as 'left'|'center'|'right'|undefined})) : [])
   return <div style={{width:'100%'}}>
     {props.title && <div style={{fontSize:14,fontWeight:600,marginBottom:8}}>{props.title}</div>}
     <table style={{width:'100%',borderCollapse:'collapse',fontSize:props.compact?12:13}}>

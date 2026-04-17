@@ -1,21 +1,34 @@
 import type { SankeyChartProps } from './schema'
 import { createEChartsBridge } from '../../core/echarts-bridge-factory'
 
-function buildSankeyFallback(props: SankeyChartProps): Record<string, unknown> {
-  const x = props.x ?? 'name'
-  const y = props.y ?? (Array.isArray(props.y) ? props.y[0] : 'value')
-  const yFields = Array.isArray(y) ? y : [y]
+/**
+ * Map schema props to mviz format.
+ * mviz reads spec.data for the links array.
+ * Our schema uses links for the connections.
+ */
+function toMvizProps(props: SankeyChartProps): Record<string, unknown> {
   return {
-    title: props.title ? { text: props.title } : undefined,
-    tooltip: { trigger: 'axis' },
-    xAxis: { type: 'category', data: props.data.map(d => String(d[x] ?? '')) },
-    yAxis: { type: 'value' },
-    series: yFields.map(f => ({
-      type: 'sankey',
-      name: f, data: props.data.map(d => Number(d[f]) || 0),
-      
-    })),
+    ...props,
+    data: props.links ?? [],
   }
 }
 
-export const SankeyChart = createEChartsBridge('sankey', buildSankeyFallback)
+function buildSankeyFallback(props: SankeyChartProps): Record<string, unknown> {
+  const links = Array.isArray(props.links) ? props.links : []
+  const nodes = Array.isArray(props.nodes) ? props.nodes : []
+  return {
+    title: props.title ? { text: props.title } : undefined,
+    tooltip: { trigger: 'item' },
+    series: [{
+      type: 'sankey',
+      layout: 'none',
+      emphasis: { focus: 'adjacency' },
+      data: nodes.map((n: Record<string, unknown>) => ({ name: n.name })),
+      links: links.map((l: Record<string, unknown>) => ({
+        source: l.source, target: l.target, value: l.value,
+      })),
+    }],
+  }
+}
+
+export const SankeyChart = createEChartsBridge('sankey', buildSankeyFallback, toMvizProps)

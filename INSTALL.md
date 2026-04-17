@@ -26,7 +26,7 @@
 - ECharts 5.6
 - mviz 1.6.4 + json-render 0.17
 - Zod v4
-- 37 个组件
+- 42 个组件
 
 部署方式：把这一个文件放到你的内网服务器或本地目录即可。
 
@@ -120,10 +120,10 @@ function App({ aiJsonOutput }) {
 | API | 说明 |
 |-----|------|
 | `Vizual.renderSpec(spec, container)` | 一行渲染，最常用 |
-| `Vizual.registry` | json-render registry（37 组件映射） |
+| `Vizual.registry` | json-render registry（42 组件映射） |
 | `Vizual.renderKitCatalog` | Catalog 对象（调用 `.prompt()` 获取 AI 提示词） |
-| `Vizual.BarChart` / `.LineChart` / ... | 37 个 React 组件（直接用） |
-| `Vizual.BarChartSchema` / ... | 37 个 Zod Schema |
+| `Vizual.BarChart` / `.LineChart` / ... | 42 个 React 组件（直接用） |
+| `Vizual.BarChartSchema` / ... | 42 个 Zod Schema |
 
 **CDN 产物：**
 

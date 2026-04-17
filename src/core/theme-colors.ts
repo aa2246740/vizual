@@ -13,7 +13,7 @@ import { defaultDarkTheme } from '../themes/default-dark'
 import { getTheme } from '../themes'
 
 /** 默认颜色表（来自 default-dark 主题） */
-const defaultColors = defaultDarkTheme.cssVariables
+const defaultColors: Record<string, string> = { ...defaultDarkTheme.cssVariables }
 
 /** 当前生效的颜色缓存 */
 let activeColors: Record<string, string> = { ...defaultColors }

@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Full 42-Component Test — Correct Registry Names</title>
+  <style>
+    body{font-family:system-ui;background:#0f0f1a;color:#e0e0e0;padding:24px;margin:0}
+    h2{margin-top:0}
+    #summary{font-size:18px;font-weight:700;margin:16px 0}
+    .pass{color:#22c55e}.fail{color:#ef4444}.skip{color:#f59e0b}
+    table{width:100%;border-collapse:collapse;margin-top:12px}
+    th,td{text-align:left;padding:6px 10px;border-bottom:1px solid #2a2a3e;font-size:12px}
+    th{background:#161625;color:#aaa;font-weight:600}
+    .row-pass td{color:#22c55e}.row-fail td{color:#ef4444}.row-skip td{color:#f59e0b}
+  </style>
+</head>
+<body>
+  <h2>Full 42-Component Test (correct names + data)</h2>
+  <div id="summary">Running...</div>
+  <table>
+    <thead><tr><th>#</th><th>Component</th><th>Status</th><th>Details</th></tr></thead>
+    <tbody id="results"></tbody>
+  </table>
+
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+  <script>
+    // Load mermaid synchronously via XHR+eval before vizual.cdn.js.
+    // mermaid v11 uses "use strict" + var, which breaks globalThis in direct eval.
+    // Fix: replace the last line to use local var instead of globalThis lookup.
+    var _xhr = new XMLHttpRequest();
+    _xhr.open('GET', '../dist/mermaid.min.js', false);
+    _xhr.send();
+    if (_xhr.status === 200) {
+      var _code = _xhr.responseText.replace(
+        'globalThis["mermaid"] = globalThis.__esbuild_esm_mermaid_nm["mermaid"].default;',
+        'globalThis["mermaid"] = __esbuild_esm_mermaid_nm["mermaid"];'
+      );
+      (0, eval)(_code);
+      // Ensure window.mermaid.default is accessible directly
+      if (globalThis.mermaid && globalThis.mermaid.default) {
+        globalThis.mermaid = globalThis.mermaid.default;
+      }
+    }
+  </script>
+  <script src="../dist/vizual.cdn.js"></script>
+  <script>
+    // All 42 registered components with correct data format
+    var tests = [
+      // === 19 Chart Components (mviz bridge via ECharts) ===
+      { type: 'BarChart', category: 'chart', props: { title: 'Sales', x: 'quarter', y: 'revenue', data: [{quarter:'Q1',revenue:120},{quarter:'Q2',revenue:200},{quarter:'Q3',revenue:150},{quarter:'Q4',revenue:180}] } },
+      { type: 'LineChart', category: 'chart', props: { title: 'Trend', x: 'month', y: 'value', data: [{month:'Jan',value:30},{month:'Feb',value:45},{month:'Mar',value:28}] } },
+      { type: 'PieChart', category: 'chart', props: { title: 'Share', category: 'name', value: 'val', data: [{name:'A',val:30},{name:'B',val:50},{name:'C',val:20}] } },
+      { type: 'ScatterChart', category: 'chart', props: { title: 'Points', x: 'height', y: 'weight', data: [{height:160,weight:50},{height:170,weight:65},{height:180,weight:80}] } },
+      { type: 'AreaChart', category: 'chart', props: { title: 'Revenue', x: 'month', y: 'revenue', data: [{month:'Jan',revenue:100},{month:'Feb',revenue:150},{month:'Mar',revenue:120}] } },
+      { type: 'SparklineChart', category: 'chart', props: { x: 'day', y: 'price', data: [{day:1,price:10},{day:2,price:15},{day:3,price:12},{day:4,price:18},{day:5,price:22}] } },
+      { type: 'HistogramChart', category: 'chart', props: { title: 'Distribution', x: 'score', data: [{score:65},{score:72},{score:78},{score:85},{score:90}] } },
+      { type: 'HeatmapChart', category: 'chart', props: { title: 'Heat', x: 'hour', y: 'day', value: 'temp', data: [{hour:'9am',day:'Mon',temp:20},{hour:'12pm',day:'Mon',temp:30},{hour:'9am',day:'Tue',temp:22}] } },
+      { type: 'BubbleChart', category: 'chart', props: { title: 'Market', x: 'price', y: 'volume', size: 'cap', data: [{price:100,volume:50,cap:200},{price:200,volume:80,cap:350}] } },
+      { type: 'BoxplotChart', category: 'chart', props: { title: 'Scores', x: 'subject', y: 'score', data: [{subject:'Math',score:65},{subject:'Math',score:72},{subject:'Math',score:85},{subject:'Eng',score:55},{subject:'Eng',score:68},{subject:'Eng',score:78}] } },
+      { type: 'CalendarChart', category: 'chart', props: { title: 'Activity', date: 'day', value: 'count', data: [{day:'2024-01-01',count:5},{day:'2024-01-02',count:8},{day:'2024-01-03',count:3}] } },
+      { type: 'FunnelChart', category: 'chart', props: { title: 'Conversion', category: 'stage', value: 'count', data: [{stage:'Visit',count:1000},{stage:'Signup',count:500},{stage:'Buy',count:100}] } },
+      { type: 'SankeyChart', category: 'chart', props: { title: 'Flow', nodes: [{name:'A'},{name:'B'},{name:'C'}], links: [{source:'A',target:'B',value:10},{source:'B',target:'C',value:5}] } },
+      { type: 'ComboChart', category: 'chart', props: { title: 'Mixed', x: 'month', y: ['sales','cost'], data: [{month:'Jan',sales:100,cost:80},{month:'Feb',sales:120,cost:90}] } },
+      { type: 'WaterfallChart', category: 'chart', props: { title: 'P&L', category: 'item', value: 'amount', data: [{item:'Revenue',amount:500},{item:'COGS',amount:-200},{item:'Profit',amount:300}] } },
+      { type: 'XmrChart', category: 'chart', props: { title: 'SPC', x: 'sample', y: 'measurement', data: [{sample:1,measurement:10.2},{sample:2,measurement:10.5},{sample:3,measurement:9.8}] } },
+      { type: 'DumbbellChart', category: 'chart', props: { title: 'Range', x: 'name', low: 'low', high: 'high', data: [{name:'A',low:10,high:80},{name:'B',low:20,high:90}] } },
+      { type: 'RadarChart', category: 'chart', props: { title: 'Skills', indicators: [{name:'Speed',max:100},{name:'Power',max:100},{name:'Range',max:100},{name:'Efficiency',max:100},{name:'Safety',max:100}], series: [{name:'Car A',values:[85,70,90,60,80]},{name:'Car B',values:[60,85,70,90,65]}] } },
+      { type: 'MermaidDiagram', category: 'chart', props: { code: 'graph LR\n  A-->B\n  B-->C' } },
+
+      // === 8 UI Components (mviz bridge, non-chart) ===
+      { type: 'BigValue', category: 'ui', props: { title: 'Revenue', value: '$12.3M', trend: 'up', change: '+15%' } },
+      { type: 'Delta', category: 'ui', props: { value: '+12%', direction: 'up' } },
+      { type: 'Alert', category: 'ui', props: { type: 'success', message: 'Operation completed successfully' } },
+      { type: 'Note', category: 'ui', props: { content: 'This is an important note about the data shown above.' } },
+      { type: 'TextBlock', category: 'ui', props: { content: 'This is a text paragraph with some important information.' } },
+      { type: 'TextArea', category: 'ui', props: { content: 'Multi-line text content\nthat spans multiple lines\nfor display purposes.' } },
+      { type: 'DataTable', category: 'ui', props: { title: 'Users', columns: [{key:'name',label:'Name'},{key:'age',label:'Age'}], data: [{name:'Alice',age:30},{name:'Bob',age:25}] } },
+      { type: 'EmptySpace', category: 'ui', props: { height: 50 } },
+
+      // === 11 Business Components ===
+      { type: 'Timeline', category: 'business', props: { title: 'History', events: [{date:'2024-01-01',title:'Start',description:'Project kick-off'},{date:'2024-02-01',title:'MVP',description:'First release'}] } },
+      { type: 'Kanban', category: 'business', props: { title: 'Sprint', columns: [{id:'todo',title:'To Do',cards:[{id:1,title:'Task A'}]},{id:'done',title:'Done',cards:[]}] } },
+      { type: 'GanttChart', category: 'business', props: { title: 'Timeline', tasks: [{name:'Design',start:'2024-01-01',end:'2024-01-15'},{name:'Build',start:'2024-01-10',end:'2024-02-01'}] } },
+      { type: 'OrgChart', category: 'business', props: { title: 'Team', nodes: [{id:1,name:'CEO',children:[{id:2,name:'CTO'},{id:3,name:'CFO'}]}] } },
+      { type: 'KpiDashboard', category: 'business', props: { title: 'Dashboard', metrics: [{label:'Revenue',value:'$1.2M',trend:'up',trendValue:'+15%'},{label:'Users',value:'45K',trend:'up',trendValue:'+8%'}] } },
+      { type: 'BudgetReport', category: 'business', props: { title: 'Budget', categories: [{name:'Engineering',budget:500,actual:480},{name:'Marketing',budget:300,actual:320}] } },
+      { type: 'FeatureTable', category: 'business', props: { title: 'Features', products: ['Basic','Pro','Enterprise'], features: [{name:'Auth',values:[true,true,true]},{name:'SSO',values:[false,true,true]}] } },
+      { type: 'AuditLog', category: 'business', props: { title: 'Log', entries: [{time:'10:00',user:'Alice',action:'Created',target:'Report A'},{time:'10:05',user:'Bob',action:'Updated',target:'Report B'}] } },
+      { type: 'JsonViewer', category: 'business', props: { data: { name: 'test', value: 42, nested: { a: 1 } } } },
+      { type: 'CodeBlock', category: 'business', props: { language: 'javascript', code: 'const x = 42;\nconsole.log(x);' } },
+      { type: 'FormView', category: 'business', props: { title: 'Contact', fields: [{label:'Email',value:'alice@example.com',type:'email'},{label:'Message',value:'Hello, I have a question.'},{label:'Status',value:true,type:'boolean'},{label:'Website',value:'https://example.com',type:'url'}] } },
+
+      // === 4 Input Components ===
+      { type: 'InputText', category: 'input', props: { label: 'Name', placeholder: 'Enter your name' } },
+      { type: 'InputSelect', category: 'input', props: { label: 'Color', options: [{label:'Red',value:'red'},{label:'Blue',value:'blue'}] } },
+      { type: 'InputFile', category: 'input', props: { label: 'Upload', accept: '.png,.jpg' } },
+      { type: 'FormBuilder', category: 'input', props: { title: 'Survey', fields: [
+        {name:'satisfaction',label:'How satisfied?',type:'select',options:['Very','Somewhat','Not'],defaultValue:'Somewhat'},
+        {name:'recommend',label:'Would recommend?',type:'radio',options:['Yes','No','Maybe']},
+        {name:'features',label:'Liked features',type:'checkbox',options:['Speed','UI','Support','Price'],defaultValue:['Speed','UI']},
+        {name:'newsletter',label:'Subscribe newsletter',type:'switch',defaultValue:true},
+        {name:'budget',label:'Budget range',type:'slider',min:0,max:1000,step:50,defaultValue:300},
+        {name:'color',label:'Favorite color',type:'color',defaultValue:'#3b82f6'},
+        {name:'birthdate',label:'Birth date',type:'date',defaultValue:'2000-06-15'},
+        {name:'meeting',label:'Meeting time',type:'datetime',defaultValue:'2024-07-20T14:30'},
+        {name:'alarm',label:'Alarm',type:'time',defaultValue:'08:30'},
+        {name:'rating',label:'Overall rating',type:'rating',max:5,defaultValue:4},
+      ] } },
+    ];
+
+    var PASS_COUNT = 0, FAIL_COUNT = 0, SKIP_COUNT = 0;
+    var idx = 0;
+
+    // Wait for mermaid to be loaded (fetched+eval'd above) before starting tests
+    function waitForMermaid(cb) {
+      if (typeof globalThis.mermaid !== 'undefined') { cb(); return; }
+      var tries = 0;
+      var iv = setInterval(function() {
+        tries++;
+        if (typeof globalThis.mermaid !== 'undefined') { clearInterval(iv); cb(); }
+        else if (tries > 30) { clearInterval(iv); cb(); } // give up after ~3s
+      }, 100);
+    }
+
+    function runNext() {
+      if (idx >= tests.length) { showSummary(); return; }
+      var test = tests[idx];
+      var div = document.createElement('div');
+      div.className = 'chart-box';
+      div.id = 'chart-' + idx;
+      div.style.cssText = 'border:1px solid #2a2a3e;border-radius:4px;min-height:10px;margin:2px 0;overflow:hidden';
+      document.body.appendChild(div);
+
+      try {
+        Vizual.renderSpec({ root: 'm', elements: { m: { type: test.type, props: test.props, children: [] } } }, div);
+      } catch(e) { /* caught */ }
+
+      setTimeout(function() {
+        var html = div.innerHTML;
+        var info = checkResult(test, html);
+        if (info.skip) SKIP_COUNT++;
+        else if (info.pass) PASS_COUNT++;
+        else FAIL_COUNT++;
+        addRow(idx + 1, test.type, info);
+        idx++;
+        runNext();
+      }, 1200);
+    }
+
+    function checkResult(test, html) {
+      var hasEcharts = html.indexOf('_echarts_instance_') !== -1;
+      var hasCanvas = html.indexOf('<canvas') !== -1;
+      var hasSvg = html.indexOf('<svg') !== -1;
+      var hasTable = html.indexOf('<table') !== -1 || html.indexOf('<th') !== -1 || html.indexOf('<td') !== -1;
+      var hasText = html.replace(/<[^>]*>/g, '').trim().length > 5;
+      var htmlLen = html.length;
+      var t = test.type;
+
+      // ECharts charts: need _echarts_instance_ + <canvas>
+      var echartsTypes = ['BarChart','LineChart','PieChart','ScatterChart','AreaChart','SparklineChart',
+        'HistogramChart','HeatmapChart','BubbleChart','BoxplotChart','CalendarChart','FunnelChart',
+        'SankeyChart','ComboChart','WaterfallChart','XmrChart','DumbbellChart','RadarChart'];
+      if (echartsTypes.indexOf(t) !== -1) {
+        if (hasEcharts && hasCanvas) return { pass: true, detail: 'ECharts+canvas OK (' + htmlLen + ')' };
+        if (hasEcharts) return { pass: false, detail: 'ECharts but no canvas (' + htmlLen + ')' };
+        return { pass: false, detail: 'No ECharts (' + htmlLen + ')' };
+      }
+
+      // MermaidDiagram: needs mermaid CDN loaded
+      if (t === 'MermaidDiagram') {
+        if (hasSvg) return { pass: true, detail: 'SVG rendered (' + htmlLen + ')' };
+        if (htmlLen > 50) return { pass: false, detail: 'No SVG (mermaid CDN not loaded?) (' + htmlLen + ')' };
+        return { pass: false, detail: 'Empty (' + htmlLen + ')' };
+      }
+
+      // DataTable: table structure
+      if (t === 'DataTable') {
+        if (hasTable) return { pass: true, detail: 'Table rendered (' + htmlLen + ')' };
+        return { pass: false, detail: 'No table (' + htmlLen + ')' };
+      }
+
+      // Everything else: meaningful HTML content
+      if (htmlLen > 30 && hasText) return { pass: true, detail: 'Content OK (' + htmlLen + ')' };
+      if (htmlLen > 30) return { pass: true, detail: 'HTML present (' + htmlLen + ')' };
+      return { pass: false, detail: 'Empty/missing (' + htmlLen + ')' };
+    }
+
+    function addRow(num, type, info) {
+      var tbody = document.getElementById('results');
+      var tr = document.createElement('tr');
+      tr.className = info.skip ? 'row-skip' : (info.pass ? 'row-pass' : 'row-fail');
+      tr.innerHTML = '<td>' + num + '</td><td>' + type + '</td><td>' +
+        (info.skip ? 'SKIP' : (info.pass ? 'PASS' : 'FAIL')) + '</td><td>' + info.detail + '</td>';
+      tbody.appendChild(tr);
+    }
+
+    function showSummary() {
+      var el = document.getElementById('summary');
+      el.textContent = 'DONE: ' + PASS_COUNT + '/' + tests.length + ' passed, ' + FAIL_COUNT + ' failed, ' + SKIP_COUNT + ' skipped';
+      el.className = FAIL_COUNT === 0 ? 'pass' : 'fail';
+    }
+
+    waitForMermaid(runNext);
+  </script>
+</body>
+</html>

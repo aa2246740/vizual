@@ -1,3 +1,5 @@
+import type { AuditLogProps } from './schema'
+
 /**
  * Operation log with timestamps
  */

@@ -1,21 +1,40 @@
 import type { DumbbellChartProps } from './schema'
 import { createEChartsBridge } from '../../core/echarts-bridge-factory'
 
-function buildDumbbellFallback(props: DumbbellChartProps): Record<string, unknown> {
-  const x = props.x ?? 'name'
-  const y = props.y ?? (Array.isArray(props.y) ? props.y[0] : 'value')
-  const yFields = Array.isArray(y) ? y : [y]
+/**
+ * Map our Schema props to mviz's expected format.
+ * mviz uses: category, start, end, startLabel, endLabel
+ * Our schema uses: x (category field), data with low/high fields
+ */
+function toMvizProps(props: DumbbellChartProps): Record<string, unknown> {
+  const categoryField = props.x ?? 'name'
+  const startField = props.low ?? 'low'
+  const endField = props.high ?? 'high'
   return {
-    title: props.title ? { text: props.title } : undefined,
-    tooltip: { trigger: 'axis' },
-    xAxis: { type: 'category', data: props.data.map(d => String(d[x] ?? '')) },
-    yAxis: { type: 'value' },
-    series: yFields.map(f => ({
-      type: 'dumbbell',
-      name: f, data: props.data.map(d => Number(d[f]) || 0),
-      
-    })),
+    ...props,
+    category: categoryField,
+    start: startField,
+    end: endField,
   }
 }
 
-export const DumbbellChart = createEChartsBridge('dumbbell', buildDumbbellFallback)
+function buildDumbbellFallback(props: DumbbellChartProps): Record<string, unknown> {
+  const data = Array.isArray(props.data) ? props.data : []
+  const categoryField = props.x ?? 'name'
+  const lowField = props.low ?? 'low'
+  const highField = props.high ?? 'high'
+  const categories = data.map((d: Record<string, unknown>) => String(d[categoryField] ?? ''))
+  return {
+    title: props.title ? { text: props.title } : undefined,
+    tooltip: { trigger: 'axis' },
+    xAxis: { type: 'category', data: categories },
+    yAxis: { type: 'value' },
+    series: [{
+      type: 'custom',
+      renderItem: () => ({}),
+      data: data.map((d: Record<string, unknown>) => [Number(d[lowField]) || 0, Number(d[highField]) || 0]),
+    }],
+  }
+}
+
+export const DumbbellChart = createEChartsBridge('dumbbell', buildDumbbellFallback, toMvizProps)

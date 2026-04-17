@@ -12,17 +12,22 @@
 │                                                          │
 │   ┌─── ai-render-kit ──────────────────────────────┐     │
 │   │                                                 │     │
-│   │  catalog.ts  ── defineCatalog(schema, 37组件)   │     │
-│   │  registry.tsx ── defineRegistry(catalog, 组件)   │     │
+│   │  catalog.ts  ── defineCatalog(schema, 42组件)       │     │
+│   │  registry.tsx ── defineRegistry(catalog, 组件)       │     │
 │   │  index.ts    ── 统一导出                         │     │
 │   │                                                 │     │
-│   │  ┌── mviz-bridge/ (26 组件) ──────────────┐     │     │
-│   │  │  Charts (18):  BarChart ~ MermaidChart  │     │     │
+│   │  ┌── mviz-bridge/ (27 组件) ──────────────┐     │     │
+│   │  │  Charts (19):  BarChart ~ RadarChart    │     │     │
 │   │  │  UI (8):       BigValue ~ EmptySpace    │     │     │
 │   │  └─────────────────────────────────────────┘     │     │
 │   │                                                 │     │
 │   │  ┌── components/ (11 组件) ───────────────┐      │     │
 │   │  │  Timeline, Kanban, GanttChart, ...     │      │     │
+│   │  └─────────────────────────────────────────┘     │     │
+│   │                                                 │     │
+│   │  ┌── inputs/ (4 组件) ────────────────────┐      │     │
+│   │  │  InputText, InputSelect,               │      │     │
+│   │  │  InputFile, FormBuilder                │      │     │
 │   │  └─────────────────────────────────────────┘     │     │
 │   │                                                 │     │
 │   │  ┌── core/ ──────────────────────────────┐       │     │
@@ -49,7 +54,7 @@
 ```
 renderKitCatalog.prompt()
   │
-  ├── 读取 catalog 中 37 个组件的 description + Zod Schema
+  ├── 读取 catalog 中 42 个组件的 description + Zod Schema
   ├── 生成 JSON Schema 描述 + 使用示例
   └── 输出 ~22KB 系统提示词
 ```
@@ -95,10 +100,10 @@ DOM: <div> 里的 ECharts 图表
 ```
 src/
 ├── index.ts              # 统一导出入口
-├── catalog.ts            # defineCatalog — 注册 37 个组件的 Schema
+├── catalog.ts            # defineCatalog — 注册 42 个组件的 Schema
 ├── registry.tsx          # defineRegistry — Schema → React 组件映射
 │
-├── mviz-bridge/          # 26 个 mviz 桥接组件
+├── mviz-bridge/          # 27 个 mviz 桥接组件
 │   ├── bar-chart/        # 唯一手写的 bridge（参考实现）
 │   │   ├── schema.ts     # Zod Schema + 类型导出
 │   │   ├── component.tsx # React 组件（ECharts + mviz fallback）
@@ -107,7 +112,7 @@ src/
 │   │
 │   ├── area/             # 生成 bridge
 │   ├── line/             # 生成 bridge
-│   ├── pie/              # ... 共 17 个图表 bridge
+│   ├── pie/              # ... 共 19 个图表 bridge
 │   └── ...
 │
 │   ├── big-value/        # UI 组件 bridge (React 重实现)
@@ -137,6 +142,12 @@ src/
 │   ├── code-block/
 │   └── form-view/
 │
+├── inputs/               # 交互输入组件 (4)
+│   ├── input-text/       # InputText — 文本输入框
+│   ├── input-select/     # InputSelect — 下拉选择框
+│   ├── input-file/       # InputFile — 文件上传
+│   └── form-builder/     # FormBuilder — 动态表单构建器
+│
 └── core/                 # 共享工具
     ├── echarts-wrapper.tsx        # ECharts React 容器
     ├── echarts-bridge-factory.tsx # 通用 ECharts bridge 工厂函数
@@ -146,7 +157,7 @@ src/
 
 ## 组件三种实现模式
 
-### 模式一：ECharts Bridge（18 个图表）
+### 模式一：ECharts Bridge（19 个图表）
 
 ```tsx
 // 每个 Chart 组件的内部逻辑:
@@ -211,7 +222,7 @@ export function Timeline(props: TimelineProps) {
     ┌─────┴─────┐  ┌─────┴─────┐  ┌─────┴─────┐
     │@json-render│  │  echarts   │  │   mviz    │
     │ core+react │  │   5.6.0   │  │  1.6.4    │
-    │  0.17.0    │  │ Apache-2  │  │   MIT     │
+    │  0.16.0    │  │ Apache-2  │  │   MIT     │
     │ Apache-2   │  └─────┬─────┘  └─────┬─────┘
     └─────┬─────┘        │               │
           │               │         buildXxxOptions()
@@ -219,9 +230,10 @@ export function Timeline(props: TimelineProps) {
           │               │               │
     defineCatalog    ┌─────┴───────────────┘
     defineRegistry   │
-    Renderer         │  Charts (18): mviz → ECharts option → 渲染
+    Renderer         │  Charts (19): mviz → ECharts option → 渲染
                      │  UI (8): React inline styles
                      │  Business (11): React inline styles
+                     │  Inputs (4): React inline styles
                      │
     ┌────────────────┴────────────────┐
     │            zod ^3.25 (MIT)       │

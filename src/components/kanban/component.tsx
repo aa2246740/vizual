@@ -1,3 +1,5 @@
+import type { KanbanProps } from './schema'
+
 /**
  * Kanban board with columns and cards
  */

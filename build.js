@@ -8,6 +8,8 @@ function browserGlobalsPlugin() {
     { mod: 'react-dom', global: 'ReactDOM', code: `module.exports = ReactDOM` },
     { mod: 'react-dom/client', global: 'ReactDOM', code: `module.exports = { createRoot: ReactDOM.createRoot, hydrateRoot: ReactDOM.hydrateRoot }` },
     { mod: 'echarts', global: 'echarts', code: `module.exports = echarts` },
+    { mod: 'mermaid', global: 'mermaid', code: `module.exports = mermaid` },
+    { mod: 'mermaid/dist/mermaid', global: 'mermaid', code: `module.exports = mermaid` },
   ]
 
   return {

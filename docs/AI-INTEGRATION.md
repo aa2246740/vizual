@@ -33,7 +33,7 @@ const systemPrompt = renderKitCatalog.prompt()
 ```
 
 prompt 内容包含：
-- 37 个组件的 type 名称
+- 42 个组件的 type 名称
 - 每个组件的 props Schema（字段名、类型、是否必填）
 - JSON spec 格式说明
 - 使用示例
@@ -160,7 +160,7 @@ Available components:
   - title?: string
   - theme?: "light" | "dark"
 
-[... 37 components total ...]
+[... 42 components total ...]
 
 Output format:
 {

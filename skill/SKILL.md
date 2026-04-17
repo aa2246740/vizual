@@ -2,13 +2,13 @@
 name: ai-render-kit
 version: "1.0.0"
 description: >
-  Generate structured JSON specs for ai-render-kit's 37 visualization components
-  (18 ECharts charts, 8 UI components, 11 business components) that render via
-  the json-render platform. Use this skill whenever the user asks for charts,
-  graphs, dashboards, KPIs, kanban boards, timelines, data tables, or any kind
-  of data visualization — even if they don't mention ai-render-kit by name.
-  Also use when the user has ai-render-kit installed and wants to display data
-  visually in a React app or AI chatbot interface.
+  Generate structured JSON specs for ai-render-kit's 42 visualization components
+  (19 ECharts charts, 8 UI components, 11 business components, 4 interactive/input
+  components) that render via the json-render platform. Use this skill whenever the
+  user asks for charts, graphs, dashboards, KPIs, kanban boards, timelines, data
+  tables, forms, or any kind of data visualization — even if they don't mention
+  ai-render-kit by name. Also use when the user has ai-render-kit installed and
+  wants to display data visually in a React app or AI chatbot interface.
 user-invocable: true
 allowed-tools:
   - Read
@@ -138,6 +138,7 @@ When deciding which component to use, consider the user's intent:
 | "combo chart", "mixed chart" | ComboChart | `combo` |
 | "dumbbell", "range comparison" | DumbbellChart | `dumbbell` |
 | "flowchart", "diagram", "sequence" | MermaidDiagram | `mermaid` |
+| "radar", "spider chart", "multi-dimensional" | RadarChart | `radar` |
 | "big number", "metric" | BigValue | `big_value` |
 | "change", "delta", "difference" | Delta | `delta` |
 | "alert", "warning banner" | Alert | `alert` |
@@ -157,6 +158,10 @@ When deciding which component to use, consider the user's intent:
 | "JSON viewer" | JsonViewer | `json_viewer` |
 | "code block" | CodeBlock | `code_block` |
 | "form", "key-value" | FormView | `form_view` |
+| "text input", "text field" | InputText | `input_text` |
+| "select", "dropdown" | InputSelect | `input_select` |
+| "file upload", "file input" | InputFile | `input_file` |
+| "form builder", "dynamic form" | FormBuilder | `form_builder` |
 
 ## Data Handling
 

@@ -1,6 +1,6 @@
 // AI RenderKit — json-render 可视化 Catalog
 export { renderKitCatalog } from './catalog'
-export { registry } from './registry'
+export { registry, handlers, executeAction } from './registry'
 
 // Charts (mviz bridge)
 export { BarChart, BarChartSchema } from './mviz-bridge/bar-chart'
@@ -37,6 +37,8 @@ export { ComboChart, ComboChartSchema } from './mviz-bridge/combo'
 export type { ComboChartProps } from './mviz-bridge/combo'
 export { DumbbellChart, DumbbellChartSchema } from './mviz-bridge/dumbbell'
 export type { DumbbellChartProps } from './mviz-bridge/dumbbell'
+export { RadarChart, RadarChartSchema } from './mviz-bridge/radar'
+export type { RadarChartProps } from './mviz-bridge/radar'
 export { MermaidChart, MermaidSchema } from './mviz-bridge/mermaid'
 export type { MermaidProps } from './mviz-bridge/mermaid'
 
@@ -81,6 +83,16 @@ export { CodeBlock, CodeBlockSchema } from './components/code-block'
 export type { CodeBlockProps } from './components/code-block'
 export { FormView, FormViewSchema } from './components/form-view'
 export type { FormViewProps } from './components/form-view'
+
+// Interactive input components
+export { InputText, InputTextSchema } from './inputs/input-text'
+export type { InputTextProps } from './inputs/input-text'
+export { InputSelect, InputSelectSchema } from './inputs/input-select'
+export type { InputSelectProps } from './inputs/input-select'
+export { InputFile, InputFileSchema } from './inputs/input-file'
+export type { InputFileProps } from './inputs/input-file'
+export { FormBuilder, FormBuilderSchema } from './inputs/form-builder'
+export type { FormBuilderProps } from './inputs/form-builder'
 
 // Core utilities
 export { EChartsWrapper } from './core/echarts-wrapper'

@@ -1,3 +1,5 @@
+import type { FormViewProps } from './schema'
+
 /**
  * Structured key-value data display
  */

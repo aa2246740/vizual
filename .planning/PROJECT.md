@@ -1,73 +1,106 @@
-# AI RenderKit
+# Vizual (formerly AI RenderKit)
 
 ## What This Is
 
-json-render 生态中最全的 AI 数据可视化 Catalog。将 mviz 的 24 种图表/UI 组件与 RenderKit 自研的 11 种业务组件（看板、甘特图、组织架构等）统一封装为 React 组件 + Zod Schema，接入 json-render 平台。AI 输出 JSON → json-render 自动渲染为交互式可视化组件。
+AI 和用户之间的交互渲染层。AI 输出 JSON spec → Vizual 渲染为可交互的可视化组件（图表、表单、输入框、文档等），用户交互后数据可回传给 AI，形成闭环。面向 AI Agent 开发者，通过 json-render 平台实现一键接入。
 
-面向三类用户：AI 用户（Claude/ChatGPT 对话中看到图表）、开发者（调用 render(json) 获得组件）、AI Agent（输出符合 Schema 的 JSON 自动渲染）。
+当前版本：37 个组件（18 种 ECharts 图表 + 8 种 UI 组件 + 11 种业务组件），4 种构建格式（ESM/CJS/CDN/Standalone），已开源至 GitHub。
 
 ## Core Value
 
-AI 说出结构化 JSON → 自动渲染为可交互的可视化组件，直接嵌入对话流或应用中。
+AI 说出结构化 JSON → 自动渲染为可交互的可视化组件，直接嵌入对话流或应用中。用户可以通过组件回传数据给 AI，实现双向交互。
+
+## Current Milestone: v1.1 Interactive Vizual
+
+**Goal:** 将 Vizual 从"展示型渲染库"升级为"交互型渲染库"，支持用户输入和数据回传，并新增 DocView 批注协作文档组件。
+
+**Target features:**
+- 4 个交互输入组件（InputText、InputSelect、InputFile、FormBuilder）加入 vizual 核心包
+- DocView 批注协作组件作为独立 @vizual/docview 扩展包
+- 利用 json-render 的 state + on 事件系统实现数据回传
+- 更新 AI prompt 和 Skill 包含新组件
+- 用户测试确认后再决定是否开源发布
 
 ## Requirements
 
 ### Validated
 
-(None yet — ship to validate)
+- ✓ 37 个组件注册在 json-render catalog — v1.0
+- ✓ 18 种 ECharts 图表通过 mviz bridge 渲染 — v1.0
+- ✓ 8 种 UI 组件（BigValue/Delta/Alert/Note/TextBlock/TextArea/DataTable/EmptySpace）— v1.0
+- ✓ 11 种业务组件（Kanban/GanttChart/OrgChart/Timeline/KpiDashboard/BudgetReport/FeatureTable/AuditLog/JsonViewer/CodeBlock/FormView）— v1.0
+- ✓ catalog.prompt() 生成 22KB AI 系统提示词 — v1.0
+- ✓ 4 种构建格式（ESM 760KB + CJS 766KB + CDN 444KB + Standalone 1.6MB）— v1.0
+- ✓ GitHub 开源 + MIT 许可证 — v1.0
 
 ### Active
 
-- [ ] mviz 全部 24 种组件封装为 json-render 兼容的 React 组件 + Zod Schema
-- [ ] 11 种自研业务组件（Kanban/Gantt/OrgChart/Timeline/KPIDashboard/BudgetReport/FeatureTable/AuditLog/JSONViewer/CodeBlock/FormView）实现为 React 组件 + Zod Schema
-- [ ] 统一主题系统（3 种内置主题 + 自定义 CSS Variables）
-- [ ] 注册为 json-render catalog（defineCatalog + defineRegistry）
-- [ ] 发布为 Claude Code Skill（SKILL.md）
-- [ ] 发布为 npm 包
-- [ ] ECharts 按需加载控制包体积
+- [ ] 4 个交互输入组件加入 vizual 核心包（37 → 41 组件）
+- [ ] 交互组件利用 json-render state/on/watch 实现数据回传
+- [ ] DocView 容器组件（独立 @vizual/docview 包）
+- [ ] 批注层（AnnotationOverlay）— 文字选中、高亮、offset 定位
+- [ ] 批注面板（AnnotationPanel）— 右侧面板、批量提交
+- [ ] AI 修订循环 — 批注 + spec 提交 AI → 新 spec → 文档刷新
+- [ ] 版本快照与回滚
+- [ ] 更新 catalog.prompt() 和 AI Skill 包含新组件
+- [ ] 用户测试验证
 
 ### Out of Scope
 
 - 独立 Chart.js 图表渲染 — 被 mviz/ECharts 替代
-- 通用 UI 框架（按钮/表单/对话框）— json-render/shadcn 已覆盖
+- 通用 UI 框架（按钮/对话框）— json-render/shadcn 已覆盖
 - BI 平台（数据库连接）— 不是数据分析工具
 - Vue/Svelte 组件输出 — v2 再考虑
-- 流式渲染 — json-render 已内置支持，不需要单独做
+- 长图文/截图/超分输出 — 属于内容生产流水线，不是渲染库的职责
+- 多人协作 — DocView MVP 只做单人批注
+- 权限系统 — DocView MVP 不涉及
 
 ## Context
 
-### 已有能力（来自 v1.0 开发）
-- 16 种 Schema 类型已有完整的 parser + renderer 实现（基于 Chart.js + SVG + DOM）
-- 469 个单元测试全部通过
-- 3 种内置主题（Default Dark / Linear / Vercel）
-- 构建产物：IIFE (913KB) + ESM (860KB)
+### v1.0 已完成
+- 37 个组件全部注册在 registry
+- json-render 的 Renderer + StateProvider 渲染管线已验证
+- catalog.prompt() 和 catalog.validate() 可用
+- json-render 的 UIElement 接口支持 state/on/watch/repeat，交互基础设施就绪
+- 4 种构建格式，GitHub 开源
 
-### 竞品分析结论
-- **mviz** (matsonj/mviz): Claude Code Skill，17 种 ECharts 图表 + 7 种 UI 组件，输出独立 HTML。CLI 渲染引擎是自写的 TypeScript（charts/bar.js 等模块把 JSON spec 编译成 ECharts option），我们直接复用。
-- **AntV mcp-server-chart**: 26+ 种图表，输出 PNG 图片（无交互），不适用。
-- **json-render** (vercel-labs/json-render): 通用 Generative UI 框架，支持 React/Vue/Svelte/PDF/Email/3D。v0.16.0，核心 API 是 `defineCatalog` → `defineRegistry` → `<Renderer>`。使用 Zod v4 定义 Schema。
+### json-render 交互能力
+```typescript
+interface UIElement {
+  type: string
+  props: Record<string, unknown>
+  children?: string[]
+  state?: Record<string, unknown>      // 状态管理
+  on?: Record<string, ActionBinding>   // 事件绑定（用户交互回传）
+  watch?: Record<string, ActionBinding> // 状态监听
+  repeat?: { statePath: string; key?: string } // 列表渲染
+}
+```
 
-### 技术决策依据
-- mviz 的图表编译逻辑（buildBarOptions 等）已验证可直接通过 npm 包的 dist/ 调用
-- json-render 的 catalog 注册模式：defineCatalog(schema, { components: { Name: { props: zodSchema, description } } }) → defineRegistry(catalog, { components: { Name: ReactComponent } })
-- ECharts 通过 CDN 按需加载，mviz 已有此模式
+### 技术决策
+- 交互组件放核心包（vizual），DocView 放扩展包（@vizual/docview）
+- 复用 json-render 的 state/on 事件系统，不另建数据流
+- DocView 的批注通过 on 事件回传，不需要独立的 AI adapter
+- 最终是否开源取决于用户测试结果
 
 ## Constraints
 
-- **依赖**: React 18+, Zod v4, ECharts 5.x, mviz 1.6.4+, json-render 0.16+
-- **包体积**: ECharts 按需加载，目标 gzip 后 < 300KB（不含 ECharts CDN）
+- **依赖**: React 18+, Zod v4, ECharts 5.x, mviz 1.6.4+, json-render 0.17+
+- **包体积**: ECharts 按需加载，核心包增量 < 50KB
 - **浏览器**: Chrome 90+, Firefox 90+, Safari 15+
-- **json-render 稳定性**: v0.16.0 API 可能变化，需要版本锁定
+- **json-render 事件系统**: 需要验证 on/watch 在实际组件中的可用性
+- **开源决策**: 用户测试通过后才决定是否开源发布
 
 ## Key Decisions
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| 不重写 mviz 图表，直接封装 | mviz 已有成熟 ECharts 编译器，重写是造轮子 | — Pending |
-| React 组件 + Zod Schema 输出 | json-render 要求此格式；也是最通用的组件化方式 | — Pending |
-| Chart.js → ECharts 切换 | mviz 使用 ECharts，统一引擎减少依赖 | — Pending |
-| 保留业务组件自研 | 看板/甘特/组织架构等是独家差异化，没有竞品提供 | — Pending |
-| json-render catalog 模式 | 接入 json-render 生态获得流式渲染、跨框架等能力 | — Pending |
+| 不重写 mviz 图表，直接封装 | mviz 已有成熟 ECharts 编译器 | ✓ Good |
+| Chart.js → ECharts 切换 | mviz 使用 ECharts，统一引擎 | ✓ Good |
+| 交互组件放核心包 | 表单/输入是 AI 对话的基础交互能力 | — Pending |
+| DocView 放 @vizual/docview | 批注协作是高复杂度功能，不应膨胀核心包 | — Pending |
+| 复用 json-render state/on | 不另建数据流，保持与平台一致 | — Pending |
+| 先测试再决定开源 | 确保质量达标后再公开 | — Pending |
 
 ---
 
@@ -89,4 +122,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-15 after initialization*
+*Last updated: 2026-04-16 after v1.1 milestone start*
