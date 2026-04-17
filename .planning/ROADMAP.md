@@ -87,7 +87,7 @@ Plans:
 
 Plans:
 - [x] 06-01-PLAN.md — Section renderer, multi-granularity annotations (ANNO-01, ANNO-02, ANNO-03)
-- [ ] 06-02-PLAN.md — Annotation panel lifecycle, hooks exports, build verification (ANNO-04, ANNO-05, ANNO-06, HOOK-01, HOOK-02, HOOK-03, HOOK-04)
+- [x] 06-02-PLAN.md — Annotation panel lifecycle, hooks exports, build verification (ANNO-04, ANNO-05, ANNO-06, HOOK-01, HOOK-02, HOOK-03, HOOK-04)
 
 ### Phase 7: AI Revision Loop & Distribution
 **Goal:** The annotation-to-AI-to-revised-document loop works end-to-end. All build artifacts include DocView. AI prompts and documentation are updated.

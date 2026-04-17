@@ -24,9 +24,9 @@
 - [x] **ANNO-01**: 用户可选中文本内容添加批注（弹窗输入笔记 + 6 色选择）
 - [x] **ANNO-02**: 批注高亮在文档中以对应颜色 mark 显示（AnnotationOverlay + react-highlight-words）
 - [x] **ANNO-03**: 多粒度批注支持 — 点击图表数据点、KPI 卡片、表格单元格添加批注
-- [ ] **ANNO-04**: AnnotationPanel 侧边面板展示批注列表（颜色点 + 状态 + 时间 + 操作按钮）
-- [ ] **ANNO-05**: 批注生命周期管理 — draft → active → resolved / orphaned 状态流转
-- [ ] **ANNO-06**: 批量提交所有 draft 批注为 active（batchSubmit 按钮）
+- [x] **ANNO-04**: AnnotationPanel 侧边面板展示批注列表（颜色点 + 状态 + 时间 + 操作按钮）
+- [x] **ANNO-05**: 批注生命周期管理 — draft → active → resolved / orphaned 状态流转
+- [x] **ANNO-06**: 批量提交所有 draft 批注为 active（batchSubmit 按钮）
 
 ### AI Revision Loop
 
@@ -36,10 +36,10 @@
 
 ### Hooks & Custom Integration
 
-- [ ] **HOOK-01**: useAnnotations hook 导出 — 批注 CRUD + markOrphans
-- [ ] **HOOK-02**: useTextSelection hook 导出 — 浏览器文本选中检测
-- [ ] **HOOK-03**: useVersionHistory hook 导出 — 文档版本快照与回滚
-- [ ] **HOOK-04**: 所有 hooks 支持受控（controlled）和非受控（uncontrolled）两种模式
+- [x] **HOOK-01**: useAnnotations hook 导出 — 批注 CRUD + markOrphans
+- [x] **HOOK-02**: useTextSelection hook 导出 — 浏览器文本选中检测
+- [x] **HOOK-03**: useVersionHistory hook 导出 — 文档版本快照与回滚
+- [x] **HOOK-04**: 所有 hooks 支持受控（controlled）和非受控（uncontrolled）两种模式
 
 ### Build & Distribution
 
@@ -97,13 +97,13 @@
 | ANNO-01 | Phase 6 | Complete |
 | ANNO-02 | Phase 6 | Complete |
 | ANNO-03 | Phase 6 | Complete |
-| ANNO-04 | Phase 6 | Pending |
-| ANNO-05 | Phase 6 | Pending |
-| ANNO-06 | Phase 6 | Pending |
-| HOOK-01 | Phase 6 | Pending |
-| HOOK-02 | Phase 6 | Pending |
-| HOOK-03 | Phase 6 | Pending |
-| HOOK-04 | Phase 6 | Pending |
+| ANNO-04 | Phase 6 | Complete |
+| ANNO-05 | Phase 6 | Complete |
+| ANNO-06 | Phase 6 | Complete |
+| HOOK-01 | Phase 6 | Complete |
+| HOOK-02 | Phase 6 | Complete |
+| HOOK-03 | Phase 6 | Complete |
+| HOOK-04 | Phase 6 | Complete |
 | REV-01 | Phase 7 | Pending |
 | REV-02 | Phase 7 | Pending |
 | REV-03 | Phase 7 | Pending |
