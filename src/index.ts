@@ -94,6 +94,34 @@ export type { InputFileProps } from './inputs/input-file'
 export { FormBuilder, FormBuilderSchema } from './inputs/form-builder'
 export type { FormBuilderProps } from './inputs/form-builder'
 
+// DocView — Document annotation with AI revision loop
+export { DocView } from './docview/container'
+export { DocViewSchema } from './docview/schema'
+export type { DocViewSchemaProps } from './docview/schema'
+
+// DocView hooks (for custom integrations)
+export { useAnnotations } from './docview/use-annotations'
+export type { UseAnnotationsOptions, UseAnnotationsReturn } from './docview/use-annotations'
+export { useTextSelection } from './docview/use-text-selection'
+export type { UseTextSelectionOptions, UseTextSelectionReturn, TextSelection } from './docview/use-text-selection'
+export { useRevisionLoop } from './docview/use-revision-loop'
+export type { UseRevisionLoopOptions, UseRevisionLoopReturn } from './docview/use-revision-loop'
+export { useVersionHistory } from './docview/use-version-history'
+export type { UseVersionHistoryOptions, UseVersionHistoryReturn, Snapshot } from './docview/use-version-history'
+
+// DocView sub-components (for custom layouts)
+export { AnnotationOverlay } from './docview/annotation-overlay'
+export type { AnnotationOverlayProps } from './docview/annotation-overlay'
+export { AnnotationPanel } from './docview/annotation-panel'
+export type { AnnotationPanelProps } from './docview/annotation-panel'
+export { AnnotationInput } from './docview/annotation-input'
+export type { AnnotationInputProps } from './docview/annotation-input'
+
+// DocView types and constants
+export type { Annotation, AnnotationStatus, AnnotationColor, OnAnnotationsChange, OnAction } from './docview/types'
+export type { DocViewProps } from './docview/types'
+export { ANNOTATION_COLORS } from './docview/types'
+
 // Core utilities
 export { EChartsWrapper } from './core/echarts-wrapper'
 export type { EChartsWrapperProps } from './core/echarts-wrapper'

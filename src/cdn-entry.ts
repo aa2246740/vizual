@@ -2,9 +2,9 @@
  * CDN Entry — ai-render-kit
  *
  * When loaded via <script> tag, exposes window.AIRenderKit with:
- *   - registry: json-render registry (42 components)
+ *   - registry: json-render registry (43 components)
  *   - renderKitCatalog: catalog (has .prompt() for AI)
- *   - all 42 component classes + schemas
+ *   - all 43 component classes + schemas
  *   - renderSpec(spec, container): convenience function
  */
 import { registry } from './registry'
@@ -62,6 +62,24 @@ export { AuditLog, AuditLogSchema } from './components/audit-log'
 export { JsonViewer, JsonViewerSchema } from './components/json-viewer'
 export { CodeBlock, CodeBlockSchema } from './components/code-block'
 export { FormView, FormViewSchema } from './components/form-view'
+
+// Inputs (fix drift: these were missing from CDN entry)
+export { InputText, InputTextSchema } from './inputs/input-text'
+export { InputSelect, InputSelectSchema } from './inputs/input-select'
+export { InputFile, InputFileSchema } from './inputs/input-file'
+export { FormBuilder, FormBuilderSchema } from './inputs/form-builder'
+
+// DocView
+export { DocView } from './docview/container'
+export { DocViewSchema } from './docview/schema'
+export { useAnnotations } from './docview/use-annotations'
+export { useTextSelection } from './docview/use-text-selection'
+export { useRevisionLoop } from './docview/use-revision-loop'
+export { useVersionHistory } from './docview/use-version-history'
+export { AnnotationOverlay } from './docview/annotation-overlay'
+export { AnnotationPanel } from './docview/annotation-panel'
+export { AnnotationInput } from './docview/annotation-input'
+export { ANNOTATION_COLORS } from './docview/types'
 
 /**
  * Convenience: render a spec into a DOM container.
