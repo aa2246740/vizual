@@ -69,7 +69,7 @@ Plans:
 **Plans:** 2 plans
 
 Plans:
-- [ ] 05-01-PLAN.md — Merge source files with tech debt fixes, create Zod schema, add react-highlight-words dependency
+- [x] 05-01-PLAN.md — Merge source files with tech debt fixes, create Zod schema, add react-highlight-words dependency
 - [ ] 05-02-PLAN.md — Register DocView in catalog/registry, export from index.ts and cdn-entry.ts, fix CDN drift, verify build
 
 ### Phase 6: Annotation System
