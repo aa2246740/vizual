@@ -21,9 +21,9 @@
 
 ### Annotation Core
 
-- [ ] **ANNO-01**: 用户可选中文本内容添加批注（弹窗输入笔记 + 6 色选择）
-- [ ] **ANNO-02**: 批注高亮在文档中以对应颜色 mark 显示（AnnotationOverlay + react-highlight-words）
-- [ ] **ANNO-03**: 多粒度批注支持 — 点击图表数据点、KPI 卡片、表格单元格添加批注
+- [x] **ANNO-01**: 用户可选中文本内容添加批注（弹窗输入笔记 + 6 色选择）
+- [x] **ANNO-02**: 批注高亮在文档中以对应颜色 mark 显示（AnnotationOverlay + react-highlight-words）
+- [x] **ANNO-03**: 多粒度批注支持 — 点击图表数据点、KPI 卡片、表格单元格添加批注
 - [ ] **ANNO-04**: AnnotationPanel 侧边面板展示批注列表（颜色点 + 状态 + 时间 + 操作按钮）
 - [ ] **ANNO-05**: 批注生命周期管理 — draft → active → resolved / orphaned 状态流转
 - [ ] **ANNO-06**: 批量提交所有 draft 批注为 active（batchSubmit 按钮）
@@ -94,9 +94,9 @@
 | CATL-03 | Phase 5 | Complete |
 | CATL-04 | Phase 5 | Complete |
 | BLD-01 | Phase 5 | Complete |
-| ANNO-01 | Phase 6 | Pending |
-| ANNO-02 | Phase 6 | Pending |
-| ANNO-03 | Phase 6 | Pending |
+| ANNO-01 | Phase 6 | Complete |
+| ANNO-02 | Phase 6 | Complete |
+| ANNO-03 | Phase 6 | Complete |
 | ANNO-04 | Phase 6 | Pending |
 | ANNO-05 | Phase 6 | Pending |
 | ANNO-06 | Phase 6 | Pending |

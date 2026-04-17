@@ -86,7 +86,7 @@ Plans:
 **Plans:** 2 plans
 
 Plans:
-- [ ] 06-01-PLAN.md — Section renderer, multi-granularity annotations (ANNO-01, ANNO-02, ANNO-03)
+- [x] 06-01-PLAN.md — Section renderer, multi-granularity annotations (ANNO-01, ANNO-02, ANNO-03)
 - [ ] 06-02-PLAN.md — Annotation panel lifecycle, hooks exports, build verification (ANNO-04, ANNO-05, ANNO-06, HOOK-01, HOOK-02, HOOK-03, HOOK-04)
 
 ### Phase 7: AI Revision Loop & Distribution
