@@ -50,7 +50,7 @@ Plans:
 
 **Milestone Goal:** Merge DocView from standalone package into vizual core. AI outputs DocView JSON spec, users annotate the rendered document, annotations feed back to AI for revision.
 
-- [ ] **Phase 5: Migration & Registration** - Merge DocView source, fix tech debt, register in catalog/registry
+- [x] **Phase 5: Migration & Registration** - Merge DocView source, fix tech debt, register in catalog/registry
 - [ ] **Phase 6: Annotation System** - Full annotation UX: text selection, highlights, multi-granularity, panel, lifecycle, hooks
 - [ ] **Phase 7: AI Revision Loop & Distribution** - Close the AI revision loop, update builds, AI prompts, and docs
 
@@ -83,12 +83,11 @@ Plans:
   4. AnnotationPanel sidebar shows all annotations with color, status, timestamp, and action buttons
   5. Annotations follow the lifecycle: draft -> active -> resolved/orphaned, with batch submit for drafts
   6. All 4 hooks (useAnnotations, useTextSelection, useVersionHistory, + controlled/uncontrolled modes) are exported and functional
-**UI hint:** yes
-**Plans:** TBD
+**Plans:** 2 plans
 
 Plans:
-- [ ] 06-01: Annotation core (selection, highlights, multi-granularity)
-- [ ] 06-02: Annotation panel, lifecycle, and hooks
+- [ ] 06-01-PLAN.md — Section renderer, multi-granularity annotations (ANNO-01, ANNO-02, ANNO-03)
+- [ ] 06-02-PLAN.md — Annotation panel lifecycle, hooks exports, build verification (ANNO-04, ANNO-05, ANNO-06, HOOK-01, HOOK-02, HOOK-03, HOOK-04)
 
 ### Phase 7: AI Revision Loop & Distribution
 **Goal:** The annotation-to-AI-to-revised-document loop works end-to-end. All build artifacts include DocView. AI prompts and documentation are updated.
@@ -118,6 +117,6 @@ Phases execute in numeric order: 5 -> 6 -> 7
 | 2. Core Infrastructure + mviz Bridge | v1.0 | 1/1 | Complete | 2026-04-15 |
 | 3. Business Components | v1.0 | 1/1 | Complete | 2026-04-15 |
 | 4. Publishing & Distribution | v1.0 | 1/1 | Complete | 2026-04-15 |
-| 5. Migration & Registration | v2.0 | 0/2 | Not started | - |
+| 5. Migration & Registration | v2.0 | 2/2 | Complete | 2026-04-17 |
 | 6. Annotation System | v2.0 | 0/2 | Not started | - |
 | 7. AI Revision Loop & Distribution | v2.0 | 0/2 | Not started | - |
