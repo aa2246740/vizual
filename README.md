@@ -4,11 +4,11 @@
 
 **AI speaks JSON, Vizual makes it visual.**
 
-AI 输出 JSON → 自动渲染为 42 种交互式可视化组件。
+AI 输出 JSON → 自动渲染为 42 种交互式可视化组件或图文并茂的可批注文档（DocView）。
 
 [![npm version](https://img.shields.io/npm/v/vizual.svg)](https://www.npmjs.com/package/vizual)
 [![license](https://img.shields.io/npm/l/vizual.svg)](https://github.com/aa2246740/vizual/blob/main/LICENSE)
-[![components](https://img.shields.io/badge/components-42-blue)](docs/COMPONENTS.md)
+[![components](https://img.shields.io/badge/components-43-blue)](docs/COMPONENTS.md)
 
 **English** · [中文文档](#中文文档)
 
@@ -16,7 +16,7 @@ AI 输出 JSON → 自动渲染为 42 种交互式可视化组件。
 
 </div>
 
-42 visualization components — 19 ECharts charts, 8 UI components, 11 business components — all with Zod Schema validation, auto-generated AI prompts, and json-render integration.
+42 visualization components — 19 ECharts charts, 8 UI components, 11 business components — plus DocView annotatable document — all with Zod Schema validation, auto-generated AI prompts, and json-render integration.
 
 ```tsx
 // AI outputs this JSON:
@@ -42,9 +42,33 @@ import { Renderer, StateProvider } from '@json-render/react'
 </StateProvider>
 ```
 
+```tsx
+// AI outputs a DocView spec — renders as an annotatable document:
+const docSpec = {
+  root: 'main',
+  elements: {
+    main: {
+      type: 'DocView',
+      props: {
+        type: 'doc_view',
+        title: 'Q1 Report',
+        sections: [
+          { type: 'heading', content: 'Q1 Performance' },
+          { type: 'text', content: 'Revenue grew 15% YoY...' },
+          { type: 'kpi', content: '', data: { metrics: [{label:'Revenue',value:'$12.3M',trend:'up',trendValue:'+15%'}] } },
+          { type: 'callout', content: 'Note: Figures are preliminary.' }
+        ],
+        showPanel: true,
+      },
+      children: []
+    }
+  }
+}
+```
+
 ## Features
 
-- **42 Components** — Charts (ECharts), UI elements, business components
+- **43 Components** — Charts (ECharts), UI elements, business components, DocView annotatable document
 - **Zod Schema Validation** — Every prop strictly typed, AI can't get it wrong
 - **json-render Native** — `defineCatalog` + `defineRegistry`, plug and play
 - **mviz Bridge** — Reuses mviz `buildXxxOptions()` with auto fallback
@@ -96,7 +120,7 @@ See [INSTALL.md](INSTALL.md) for detailed instructions.
 | `dist/index.mjs` | ESM | 760KB | `import` via npm |
 | `dist/index.js` | CJS | 766KB | `require()` via npm |
 
-## 42 Components
+## 43 Components
 
 ### Charts (19) — ECharts via mviz Bridge
 
@@ -162,6 +186,12 @@ See [INSTALL.md](INSTALL.md) for detailed instructions.
 
 FormBuilder supports these field types: `text`, `email`, `password`, `number`, `url`, `tel`, `select`, `file`, `textarea`, `radio`, `checkbox`, `switch`, `slider`, `color`, `date`, `datetime`, `time`, `rating`
 
+### DocView — Annotatable Document (1)
+
+| Component | type | Description |
+|-----------|------|-------------|
+| DocView | `doc_view` | Interactive document with sections, annotation, and AI revision loop |
+
 Full component reference: [docs/COMPONENTS.md](docs/COMPONENTS.md)
 
 ## Testing & Demos
@@ -172,6 +202,7 @@ The `validation/` directory contains ready-to-use test and demo pages:
 |------|---------|
 | `validation/test-all-42.html` | Automated test — renders all 42 components, reports PASS/FAIL |
 | `validation/demo-streaming.html` | LLM chat simulation — streams JSON specs and renders components in a chat UI |
+| `validation/demo-docview.html` | DocView annotation demo — text selection, annotation, AI revision flow |
 
 ```bash
 # Quick test — start a local server and open in browser
@@ -250,11 +281,11 @@ npm run build    # Build all formats (ESM + CJS + CDN + Standalone)
 
 **AI 输出 JSON → 自动渲染为 42 种交互式可视化组件。**
 
-Vizual 是一个面向 AI Agent 的可视化组件库。它将 19 种 ECharts 图表、8 种 UI 组件、11 种业务组件统一封装为 Zod Schema + React 组件，通过 json-render 平台实现一键渲染。
+Vizual 是一个面向 AI Agent 的可视化组件库。它将 19 种 ECharts 图表、8 种 UI 组件、11 种业务组件统一封装为 Zod Schema + React 组件，通过 json-render 平台实现一键渲染。还支持 DocView 可批注文档组件，实现 AI 输出文档 -> 用户批注 -> AI 修订的闭环。
 
 ## 特性
 
-- **42 个组件** — 图表、UI、业务组件全覆盖
+- **43 个组件** — 图表、UI、业务组件 + DocView 可批注文档全覆盖
 - **Zod Schema 校验** — 每个 props 都有严格的类型定义，AI 不会写错
 - **json-render 原生集成** — `defineCatalog` + `defineRegistry`，即插即用
 - **mviz Bridge** — 复用 mviz 的 `buildXxxOptions()` 生成 ECharts 配置，含自动 fallback
@@ -316,7 +347,7 @@ const spec = {
 </StateProvider>
 ```
 
-## 42 个组件
+## 43 个组件
 
 ### 图表 (19) — ECharts
 
@@ -336,6 +367,10 @@ InputText, InputSelect, InputFile, FormBuilder
 
 FormBuilder 支持 18 种字段类型：text, email, password, number, url, tel, select, file, textarea, radio, checkbox, switch, slider, color, date, datetime, time, rating
 
+### DocView — 可批注文档 (1)
+
+DocView — AI 输出结构化文档（标题、段落、图表、KPI、表格等），用户可批注任意文本或组件，提交批注后 AI 修订文档，自动检测孤儿批注。
+
 完整组件参考：[docs/COMPONENTS.md](docs/COMPONENTS.md)
 
 ## 测试与演示
@@ -346,6 +381,7 @@ FormBuilder 支持 18 种字段类型：text, email, password, number, url, tel,
 |------|------|
 | `validation/test-all-42.html` | 自动测试 — 渲染全部 42 个组件，报告 PASS/FAIL |
 | `validation/demo-streaming.html` | LLM 对话模拟 — 流式输出 JSON spec 并在聊天 UI 中渲染组件 |
+| `validation/demo-docview.html` | DocView 批注演示 — 文本选择、批注、AI 修订流程 |
 
 ```bash
 # 快速测试 — 启动本地服务器并在浏览器中打开

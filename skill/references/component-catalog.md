@@ -1,6 +1,6 @@
 # AI RenderKit Component Catalog — Complete Reference
 
-This file contains the complete schema for all 42 components.
+This file contains the complete schema for all 43 components.
 Read this when you need to generate JSON specs for ai-render-kit.
 
 ---
@@ -24,7 +24,7 @@ All AI RenderKit output follows this structure:
 
 - `root`: the ID of the top-level element
 - `elements`: map of element IDs to their definitions
-- `type`: must match one of the 42 registered component names
+- `type`: must match one of the 43 registered component names
 - `props`: must match the component's Zod schema exactly
 - `children`: array of child element IDs (for composition)
 
@@ -831,3 +831,80 @@ Conditional field example (show `companyName` only when `attendeeType` is `"corp
   ]
 }
 ```
+
+---
+
+## DocView — Annotatable Document (1)
+
+### DocView
+**type value:** `"doc_view"`
+
+Interactive document with sections (text, headings, charts, KPIs, tables, callouts, embedded components) and annotation support. Users can annotate any text or component target, submit annotations for AI revision, and the library automatically detects orphaned annotations when content changes.
+
+```json
+{
+  "type": "doc_view",
+  "title": "Quarterly Report",
+  "sections": [
+    { "type": "heading", "content": "Q1 Performance Report" },
+    { "type": "text", "content": "Revenue grew 15% year-over-year, driven by strong enterprise sales and new market penetration." },
+    { "type": "chart", "content": "", "data": { "chartType": "BarChart", "x": "quarter", "y": "revenue", "data": [{"quarter":"Q1","revenue":120},{"quarter":"Q2","revenue":200}] } },
+    { "type": "kpi", "content": "", "data": { "metrics": [{"label":"Revenue","value":"$12.3M","trend":"up","trendValue":"+15%"}] } },
+    { "type": "table", "content": "", "data": { "columns": [{"key":"name","label":"Name"},{"key":"value","label":"Value"}], "data": [{"name":"Q1","value":120},{"name":"Q2","value":200}] } },
+    { "type": "callout", "content": "Note: All figures are preliminary and subject to audit." },
+    { "type": "component", "content": "", "data": { "componentType": "BigValue", "value": "1.2M", "trend": "up" } }
+  ],
+  "showPanel": true,
+  "panelPosition": "right"
+}
+```
+
+| Prop | Type | Required | Description |
+|------|------|----------|-------------|
+| type | `"doc_view"` | yes | Fixed literal |
+| title | string | no | Document title |
+| sections | Section[] | yes | Array of document sections (see below) |
+| showPanel | boolean | no | Show annotation panel sidebar (default: true) |
+| panelPosition | `"right"` \| `"left"` \| `"bottom"` | no | Panel position (default: right) |
+| annotations | Annotation[] | no | Controlled annotations (external state) |
+| onAnnotationsChange | function | no | Callback when annotations change |
+| onAction | function | no | Callback for annotation actions |
+
+**Section Types:**
+
+| type | content | data | Description |
+|------|---------|------|-------------|
+| heading | string | - | Section heading |
+| text | string | - | Text paragraph |
+| chart | "" | { chartType, x, y, data, ... } | Embedded chart (uses chart component props) |
+| kpi | "" | { metrics: [{label, value, trend, trendValue}] } | KPI dashboard cards |
+| table | "" | { columns: [{key, label}], data: [...] } | Data table |
+| callout | string | - | Highlighted callout note |
+| component | "" | { componentType, ...props } | Embedded vizual component |
+
+**Annotation Actions (via onAction callback):**
+
+| Action | Trigger | Params |
+|--------|---------|--------|
+| annotationAdded | User creates annotation | { annotation } |
+| annotationDeleted | User deletes annotation | { annotation } |
+| annotationClicked | User clicks annotation | { annotation } |
+| requestRevision | User submits single annotation for revision | { annotationId, text, note } |
+| batchSubmit | User submits all draft annotations | { annotations: [{id, text, note, color}] } |
+
+**Annotation Lifecycle:**
+- draft -> active (submitted for revision)
+- active -> resolved (AI has addressed the annotation)
+- active -> orphaned (AI revised the text, annotation no longer matches)
+
+**Hooks for Custom Integration:**
+- `useAnnotations` — annotation CRUD + orphan detection
+- `useTextSelection` — browser text selection detection
+- `useRevisionLoop` — submitAllDrafts, requestRevision, onContentRevised
+- `useVersionHistory` — document version snapshots and rollback
+
+**Sub-components for Custom Layouts:**
+- `AnnotationOverlay` — highlights annotations on text
+- `AnnotationPanel` — sidebar panel for annotation management
+- `AnnotationInput` — popup for creating new annotations
+- `SectionRenderer` — renders sections array into React elements

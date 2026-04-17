@@ -46,7 +46,7 @@ Multi-component example:
 }
 ```
 
-## 42 Components Quick Reference
+## 43 Components Quick Reference
 
 ### Charts (19) — ECharts
 
@@ -152,6 +152,57 @@ FormBuilder example:
   }
 }
 ```
+
+### DocView — Annotatable Document (1)
+
+Interactive document with sections (text, headings, charts, KPIs, tables, callouts, embedded components) and annotation support. AI outputs structured sections, users annotate for revision feedback.
+
+```json
+{
+  "type": "DocView",
+  "props": {
+    "type": "doc_view",
+    "title": "Quarterly Report",
+    "sections": [
+      { "type": "heading", "content": "Q1 Performance Report" },
+      { "type": "text", "content": "Revenue grew 15% year-over-year, driven by strong enterprise sales." },
+      { "type": "chart", "content": "", "data": { "chartType": "BarChart", "x": "quarter", "y": "revenue", "data": [{"quarter":"Q1","revenue":120},{"quarter":"Q2","revenue":200}] } },
+      { "type": "kpi", "content": "", "data": { "metrics": [{"label":"Revenue","value":"$12.3M","trend":"up","trendValue":"+15%"}] } },
+      { "type": "callout", "content": "Note: All figures are preliminary and subject to audit." }
+    ],
+    "showPanel": true,
+    "panelPosition": "right"
+  }
+}
+```
+
+| Prop | Type | Required | Description |
+|------|------|----------|-------------|
+| type | `"doc_view"` | yes | Fixed literal |
+| title | string | no | Document title |
+| sections | Section[] | yes | Array of document sections |
+| showPanel | boolean | no | Show annotation panel (default: true) |
+| panelPosition | `"right"` \| `"left"` \| `"bottom"` | no | Panel position (default: right) |
+
+Section types:
+| type | content | data | Description |
+|------|---------|------|-------------|
+| heading | string (heading text) | - | Section heading |
+| text | string (paragraph text) | - | Text paragraph |
+| chart | "" | { chartType, x, y, data, ... } | Embedded chart |
+| kpi | "" | { metrics: [{label, value, trend, trendValue}] } | KPI cards |
+| table | "" | { columns, data } | Data table |
+| callout | string (note text) | - | Highlighted callout |
+| component | "" | { componentType, ...props } | Embedded vizual component |
+
+Annotation actions (fired via onAction callback):
+- `annotationAdded` — user created an annotation
+- `requestRevision` — user requested AI revision for one annotation (params: {annotationId, text, note})
+- `batchSubmit` — user submitted all drafts for AI revision (params: {annotations: [{id, text, note, color}]})
+- `annotationClicked` — user clicked an existing annotation
+- `annotationDeleted` — user deleted an annotation
+
+When AI revises the document, return a new DocView spec with updated sections. The library automatically detects orphaned annotations (whose text was changed) and marks them.
 
 ## Common Mistakes
 
