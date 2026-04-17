@@ -1,4 +1,4 @@
-import { useRef, useCallback, useState } from 'react'
+import { useRef, useCallback, useState, useEffect } from 'react'
 import { useTextSelection } from './use-text-selection'
 import { useAnnotations } from './use-annotations'
 import { useRevisionLoop } from './use-revision-loop'
@@ -80,12 +80,30 @@ export function DocView({
   })
 
   // Revision loop integration
-  const { submitAllDrafts, requestRevision, drafts, orphans } = useRevisionLoop({
+  const { submitAllDrafts, requestRevision, onContentRevised, drafts, orphans } = useRevisionLoop({
     annotations,
     updateAnnotation,
     markOrphans,
     onAction,
   })
+
+  // Auto-detect orphaned annotations when sections change (AI returns revised content)
+  // Extracts all text from sections and passes to onContentRevised which calls markOrphans.
+  // Annotations whose text is no longer found in the revised content are marked 'orphaned'.
+  useEffect(() => {
+    if (!sections || sections.length === 0) return
+    const allText = sections
+      .map(s => {
+        if (typeof s.content === 'string') return s.content
+        if (s.data && typeof s.data === 'object') return JSON.stringify(s.data)
+        return ''
+      })
+      .filter(Boolean)
+      .join(' ')
+    if (allText) {
+      onContentRevised(allText)
+    }
+  }, [sections, onContentRevised])
 
   // Confirm annotation from text selection
   const handleConfirmAnnotation = useCallback((note: string, color: AnnotationColor) => {
