@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vitest'
+import { tc } from '../core/theme-colors'
 import { InputSelectSchema } from './schema'
+import { tc } from '../core/theme-colors'
 
 describe('InputSelect Schema', () => {
   it('accepts valid input_select spec with options', () => {

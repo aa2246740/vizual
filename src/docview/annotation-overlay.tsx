@@ -1,6 +1,9 @@
 import React, { useMemo, useEffect, useRef, useCallback } from 'react'
 import type { Annotation } from './types'
-import { tc } from '../core/theme-colors'
+import { tcss, tc } from '../core/theme-colors'
+
+/** Annotation highlight color — user-selectable, amber yellow for visibility */
+const HIGHLIGHT_COLOR = '#fbbf24'
 
 export interface AnnotationOverlayProps {
   /** Content to render with annotations overlaid */
@@ -58,6 +61,12 @@ export function AnnotationOverlay({ children, annotations, onHighlightClick, con
     // Step 2: Apply highlights for each active annotation
     if (activeAnnotations.length === 0) return
 
+    // Build highlight CSS from current theme — ensures themed text color for contrast
+    const highlightBg = `rgba(251,191,36,0.35)`
+    const highlightBorder = HIGHLIGHT_COLOR
+    // Use theme's text-primary inverted for contrast on yellow highlight
+    const highlightCss = `background:${highlightBg};border-bottom:2px solid ${highlightBorder};color:#000;cursor:pointer;padding:1px 2px;border-radius:2px;transition:background 0.15s;`
+
     for (const ann of activeAnnotations) {
       const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT)
       while (walker.nextNode()) {
@@ -72,7 +81,7 @@ export function AnnotationOverlay({ children, annotations, onHighlightClick, con
           range.setEnd(textNode, idx + ann.text.length)
 
           const mark = document.createElement('mark')
-          mark.style.cssText = `background:rgba(251,191,36,0.35);border-bottom:2px solid #fbbf24;color:#000;cursor:pointer;padding:1px 2px;border-radius:2px;transition:background 0.15s;`
+          mark.style.cssText = highlightCss
           mark.setAttribute('data-annotation-highlight', ann.id)
           mark.addEventListener('click', () => handleClick(ann))
 
@@ -128,6 +137,9 @@ function TargetHighlighter({
         htmlEl.removeAttribute('data-docview-annotated')
       })
 
+      // Use theme-aware outline color
+      const outlineColor = tcss('--rk-warning')
+
       // Apply highlights for each target annotation
       for (const ann of targetAnns) {
         if (!ann.target || ann.status === 'orphaned') continue
@@ -140,7 +152,7 @@ function TargetHighlighter({
         const elements = container.querySelectorAll(selector)
         elements.forEach(el => {
           const htmlEl = el as HTMLElement
-          htmlEl.style.outline = `2px solid #fbbf24`
+          htmlEl.style.outline = `2px solid ${outlineColor}`
           htmlEl.style.outlineOffset = '2px'
           htmlEl.setAttribute('data-docview-annotated', ann.id)
         })

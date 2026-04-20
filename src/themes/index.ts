@@ -20,12 +20,15 @@ export interface Theme {
   cssVariables: Record<string, string>
   /** 'dark' or 'light' — 用于模式切换 */
   mode?: 'dark' | 'light'
+  /** 映射完整度报告（仅 mapDesignTokensToTheme 产生） */
+  _mappingReport?: import('./design-md-mapper').ThemeMappingReport
 }
 
 // DESIGN.md 支持
 export { parseDesignMd } from './design-md-parser'
 export type { DesignTokens, ColorToken, TypographyToken, SpacingToken, RadiusToken } from './design-md-parser'
 export { mapDesignTokensToTheme, invertTheme } from './design-md-mapper'
+export type { ThemeMappingReport } from './design-md-mapper'
 
 // Internal registry storage
 const themes = new Map<string, Theme>()

@@ -1,0 +1,23 @@
+{
+  "skill_name": "design-md-parser",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Parse this The Verge design system into vizual DesignTokens. The document is very long with colors scattered throughout prose, component specs, and tables. Extract ALL colors, typography, spacing, and radius tokens.\n\n[PASTE THE FULL VERGE DESIGN.md HERE]",
+      "expected_output": "DesignTokens JSON with 15-25 colors, typography with fontFamily + sizes (10+) + weights (4-6), spacing with baseUnit + scale, radius with scale (5-7 entries)",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "I have a minimal design system for my fintech app. Parse it into vizual DesignTokens format:\n\n## Brand Colors\n- Primary: #4F46E5 (indigo, used for CTAs and links)\n- Success: #059669\n- Warning: #D97706\n- Error: #DC2626\n- Background: #FAFAFA\n- Card BG: #FFFFFF\n- Text: #111827\n- Subtle text: #6B7280\n\n## Typography\nWe use Inter for everything. Body is 14px, headings go 16/20/24/32px. Weights: regular 400, medium 500, bold 700.\n\n## Spacing\n4px base, scale: 4, 8, 12, 16, 24, 32\n\n## Border Radius\nButtons and cards: 8px, pills: 9999px, inputs: 6px",
+      "expected_output": "DesignTokens JSON with 8+ colors properly named, typography with fontFamily Inter + 5 sizes + 3 weights, spacing scale space-1 to space-6, radius with sm/md/pill",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "帮我把这个 Linear 风格的设计系统解析成 vizual 的 DesignTokens JSON：\n\n整体风格：暗色系，类似 Linear.app 的极简风格。\n\n颜色方案（暗色模式）：\n背景主色 #0A0A0B，卡片 #141415，输入框/悬浮 #1C1C1E\n边框 #1F1F22，微弱边框 #2A2A2D\n文字 #EDEDEF，次要文字 #7C7C85，禁用 #4A4A50\n品牌蓝 #5E6AD2，悬停 #7B85D9，浅底 rgba(94,106,210,0.15)\n成功 #4DAF73，警告 #E2A03F，错误 #E5534B\n等宽字体背景 #0D0D10\n\n字体：使用 -apple-system, 等宽用 SF Mono。正文 13px，小字 12px，标题 14/16/20px\n间距：4px 为基础单位，有 4/8/12/16/20/24\n圆角：小 4px，中 6px，大 8px\n阴影：卡片用 0 2px 8px rgba(0,0,0,0.3)",
+      "expected_output": "DesignTokens JSON with 12+ colors including rgba values, complete typography sizes + weights, spacing scale, radius scale",
+      "files": []
+    }
+  ]
+}

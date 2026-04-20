@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vitest'
+import { tc } from '../core/theme-colors'
 import { FormBuilderSchema } from './schema'
+import { tc } from '../core/theme-colors'
 
 describe('FormBuilder Schema', () => {
   const validForm = {

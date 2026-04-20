@@ -39,11 +39,33 @@ export const defaultLightTheme = {
     // Typography
     '--rk-font-sans': '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
     '--rk-font-mono': '"SF Mono", "Fira Code", Consolas, monospace',
+    '--rk-text-xs': '11px',
+    '--rk-text-sm': '12px',
+    '--rk-text-base': '13px',
+    '--rk-text-md': '14px',
+    '--rk-text-lg': '16px',
+    '--rk-text-xl': '20px',
+    '--rk-text-2xl': '24px',
+    '--rk-weight-normal': '400',
+    '--rk-weight-medium': '500',
+    '--rk-weight-semibold': '600',
+    '--rk-weight-bold': '700',
 
-    // Spacing & Radius
+    // Spacing
+    '--rk-space-1': '4px',
+    '--rk-space-2': '8px',
+    '--rk-space-3': '12px',
+    '--rk-space-4': '16px',
+    '--rk-space-5': '20px',
+    '--rk-space-6': '24px',
+
+    // Radius
+    '--rk-radius-xs': '2px',
     '--rk-radius-sm': '4px',
     '--rk-radius-md': '8px',
     '--rk-radius-lg': '10px',
+    '--rk-radius-xl': '12px',
+    '--rk-radius-pill': '9999px',
 
     // Shadows
     '--rk-shadow': '0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06)',

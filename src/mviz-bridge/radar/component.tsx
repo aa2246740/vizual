@@ -1,5 +1,6 @@
 import type { RadarChartProps } from './schema'
 import { createEChartsBridge } from '../../core/echarts-bridge-factory'
+import { tcss, tc } from '../../core/theme-colors'
 
 /**
  * Build ECharts radar option from schema props.
@@ -33,7 +34,7 @@ function buildRadarFallback(props: RadarChartProps): Record<string, unknown> {
         radius: '60%',
         name: {
           textStyle: {
-            fontSize: 12,
+            fontSize:parseInt(tc('--rk-text-sm')),
           },
         },
       },
@@ -100,7 +101,7 @@ function buildRadarFallback(props: RadarChartProps): Record<string, unknown> {
       radius: '60%',
       name: {
         textStyle: {
-          fontSize: 12,
+          fontSize:parseInt(tc('--rk-text-sm')),
         },
       },
     },

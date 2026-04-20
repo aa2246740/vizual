@@ -80,6 +80,21 @@ function mapColorsToVars(colors: ColorToken[]): MappingResult {
 /**
  * 将未匹配的颜色分配给 chart-1~6 调色板
  */
+/**
+ * 判断两个颜色是否属于同一色系，不适合同时出现在图表调色板
+ * 规则：色相距离 < 30° → 视为同色系（不管亮度差异多大）
+ * 数据可视化要求图表色来自不同色系，同色系的深浅变体会让用户混淆
+ */
+function isPerceptuallyClose(a: string, b: string): boolean {
+  const [h1, s1] = hexToHsl(a)
+  const [h2, s2] = hexToHsl(b)
+  // 两个低饱和度灰色互相不算接近（灰色无色相，靠亮度区分）
+  if (s1 < 0.15 && s2 < 0.15) return false
+  // 色相距离 < 30° → 同色系
+  const hueDist = Math.min(Math.abs(h1 - h2), 360 - Math.abs(h1 - h2))
+  return hueDist < 30
+}
+
 function assignChartColors(
   vars: Map<string, string>,
   unmatched: ColorToken[]
@@ -90,16 +105,29 @@ function assignChartColors(
 
   if (existingChartCount >= 6) return
 
+  // 收集已填入的图表色（用于感知距离检查）
+  const assigned: string[] = []
+  for (let i = 1; i <= 6; i++) {
+    const v = vars.get(`--rk-chart-${i}`)
+    if (v) assigned.push(v)
+  }
+
   // 过滤掉明显不是"调色板"颜色（如背景色、文字色等）
   const paletteColors = unmatched.filter(t => {
     const name = t.name
     // 排除背景、文字、边框类
-    const excludeKw = ['bg', 'background', 'surface', 'text', 'border', 'shadow',
+    const excludeKw = ['bg', 'background', 'surface', 'card', 'text', 'border', 'shadow',
       'white', 'black', 'transparent', 'overlay', 'divider']
-    return !excludeKw.some(kw => name.includes(kw))
+    if (excludeKw.some(kw => name.includes(kw))) return false
+
+    // 排除过亮/过暗的颜色（OKLCH-L > 0.85 或 < 0.15），这类颜色与任何背景都缺乏对比度
+    const [L] = hexToOklch(t.value)
+    if (L > 0.85 || L < 0.15) return false
+
+    return true
   })
 
-  // 按顺序分配给 chart-1~6
+  // 按顺序分配给 chart-1~6，但跳过与已有图表色过于相似的候选
   let chartIdx = existingChartCount + 1
   for (const token of paletteColors) {
     if (chartIdx > 6) break
@@ -108,12 +136,92 @@ function assignChartColors(
       chartIdx++
     }
     if (chartIdx > 6) break
+
+    // 感知距离检查：与已有图表色过于相似则跳过
+    if (assigned.some(c => isPerceptuallyClose(c, token.value))) continue
+
     vars.set(`--rk-chart-${chartIdx}`, token.value)
+    assigned.push(token.value)
     chartIdx++
   }
 }
 
-// ─── 图表调色板自动生成 ──────────────────────────────────
+// ─── OKLCH 色彩空间（感知均匀） ─────────────────────────────
+//
+// 为什么用 OKLCH 而不是 HSL？
+// HSL 的 Lightness 不是感知均匀的：相同 HSL-L=0.5 下，黄色看起来比蓝色亮 3 倍。
+// OKLCH 基于人眼生理模型，相同 L = 相同视觉权重。
+// 这意味着图表中 6 种颜色没有任何一个"抢眼"——感知亮度完全平衡。
+//
+// 参考：CSS Color Level 4 (oklch)、Björn Ottosson 的 OKLab 论文、
+//       D3 的 d3-color、Chrome/Firefox 原生 oklch() 支持
+
+/** sRGB gamma 解码：[0,1] → 线性 */
+function srgbToLinear(c: number): number {
+  return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4)
+}
+
+/** 线性 → sRGB gamma 编码 */
+function linearToSrgb(c: number): number {
+  return c <= 0.0031308 ? 12.92 * c : 1.055 * Math.pow(c, 1 / 2.4) - 0.055
+}
+
+/** Hex → OKLCH [L(0-1), C(0-~0.4), H(0-360)] */
+function hexToOklch(hex: string): [number, number, number] {
+  const h = hex.replace('#', '')
+  if (h.length < 6) return [0.5, 0, 0]
+
+  const r = srgbToLinear(parseInt(h.substring(0, 2), 16) / 255)
+  const g = srgbToLinear(parseInt(h.substring(2, 4), 16) / 255)
+  const b = srgbToLinear(parseInt(h.substring(4, 6), 16) / 255)
+
+  // linear sRGB → LMS (OKLab 色彩空间中间态)
+  const l = 0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b
+  const m = 0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b
+  const s = 0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b
+
+  // LMS → 立方根压缩（模拟人眼非线性响应）
+  const lc = Math.cbrt(l), mc = Math.cbrt(m), sc = Math.cbrt(s)
+
+  // LMS' → OKLab
+  const L = 0.2104542553 * lc + 0.7936177850 * mc - 0.0040720468 * sc
+  const a = 1.9779984951 * lc - 2.4285922050 * mc + 0.4505937099 * sc
+  const bv = 0.0259040371 * lc + 0.7827717662 * mc - 0.8086757660 * sc
+
+  // OKLab → OKLCH (直角坐标 → 极坐标)
+  const C = Math.sqrt(a * a + bv * bv)
+  let H = Math.atan2(bv, a) * 180 / Math.PI
+  if (H < 0) H += 360
+
+  return [L, C, H]
+}
+
+/** OKLCH → Hex，自动 clamp 到 sRGB 色域 */
+function oklchToHex(L: number, C: number, H: number): string {
+  // OKLCH → OKLab (极坐标 → 直角坐标)
+  const a = C * Math.cos(H * Math.PI / 180)
+  const b = C * Math.sin(H * Math.PI / 180)
+
+  // OKLab → LMS'
+  const lc = L + 0.3963377774 * a + 0.2158037573 * b
+  const mc = L - 0.1055613458 * a - 0.0638541728 * b
+  const sc = L - 0.0894841775 * a - 1.2914855480 * b
+
+  // LMS' → LMS (立方还原)
+  const l = lc * lc * lc, m = mc * mc * mc, s = sc * sc * sc
+
+  // LMS → linear sRGB
+  const lr = +4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s
+  const lg = -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s
+  const lb = -0.0041960863 * l - 0.7034186147 * m + 1.7076147010 * s
+
+  // linear → sRGB gamma 编码，clamp 到 [0,1]
+  const clamp = (v: number) => Math.max(0, Math.min(1, linearToSrgb(v)))
+  const toHex = (v: number) => Math.round(v * 255).toString(16).padStart(2, '0')
+  return `#${toHex(clamp(lr))}${toHex(clamp(lg))}${toHex(clamp(lb))}`
+}
+
+// ─── HSL 辅助（invertTheme 等其他逻辑仍使用）────────────
 
 /**
  * 将 hex 颜色转为 HSL
@@ -167,38 +275,51 @@ function hslToHex(h: number, s: number, l: number): string {
   return `#${toHex(r)}${toHex(g)}${toHex(b)}`
 }
 
+// ─── 图表调色板生成（OKLCH 感知均匀） ────────────────────────
+
 /**
- * 从一个基色生成 6 色图表调色板
+ * 从一个基色生成 N 色图表调色板（OKLCH 空间）
  *
- * 策略：以基色色相为起点，均匀旋转 60° 得到 6 个颜色，
- * 同时调整饱和度和亮度增加区分度。
- * 适用于大多数数据可视化场景（6 个 category 颜色足够）。
+ * 1. **锚定色优先**：第一个颜色 = 基色（品牌色），保持品牌一致性。
+ * 2. **感知均匀亮度**：辅助色统一 OKLCH-L，同 L = 同视觉权重。
+ * 3. **适中色度**：辅助色 C clamp 到 [0.10, 0.18]，避免过饱和或过灰。
+ * 4. **等角色相旋转**：360°/n 等间隔，保证最大区分度。
  */
-function generateChartPalette(baseColor: string): string[] {
-  const [h, s, l] = hexToHsl(baseColor)
+function generateChartPalette(baseColor: string, count: number = 6, bgColor?: string): string[] {
+  const [L, C, H] = hexToOklch(baseColor)
 
-  // 如果基色饱和度太低（灰/黑白），使用默认蓝色
-  if (s < 0.15) return generateChartPalette('#667eea')
+  // 如果基色色度太低（灰色），使用默认蓝色
+  if (C < 0.03) return generateChartPalette('#667eea', count, bgColor)
 
-  const palette: string[] = []
-  for (let i = 0; i < 6; i++) {
-    // 色相每步旋转 60°，形成均匀色轮分布
-    const hue = h + i * 60
-    // 交替调整饱和度和亮度，增加区分度
-    const sat = s * (0.85 + (i % 3) * 0.08)
-    const lit = Math.max(0.4, Math.min(0.7, l + (i % 2 === 0 ? 0.05 : -0.05)))
-    palette.push(hslToHex(hue, sat, lit))
+  // 锚定色（品牌色）作为第一个颜色
+  const palette: string[] = [baseColor]
+
+  // 辅助色亮度：根据背景亮度调整，确保图表色与背景有足够对比度
+  let auxL: number
+  if (bgColor) {
+    const [bgL] = hexToOklch(bgColor)
+    auxL = bgL > 0.5
+      ? Math.max(0.35, Math.min(0.50, L))  // 亮色背景 → 深色图表色
+      : Math.max(0.55, Math.min(0.70, L))   // 暗色背景 → 亮色图表色
+  } else {
+    auxL = Math.max(0.55, Math.min(0.70, L))
+  }
+  const auxC = Math.max(0.10, Math.min(0.18, C))
+
+  for (let i = 1; i < count; i++) {
+    const hue = (H + i * (360 / count)) % 360
+    palette.push(oklchToHex(auxL, auxC, hue))
   }
   return palette
 }
 
 /**
- * 如果 chart-1~6 有空缺，从 Primary/Accent 色自动生成调色板填充
+ * 如果 chart-1~6 有空缺，从 accent 色用 HSL 色轮生成多样化调色板
  *
- * 优先级：
- *   1. DESIGN.md 中已有的 chart 颜色 → 保留
- *   2. DESIGN.md 中已映射的 semantic 色 (accent, success, warning, error) → 作为基础
- *   3. 从 accent 或 primary 颜色用 HSL 色轮自动生成
+ * 策略：不用 semantic 色（success/warning/error）填充图表色，
+ * 因为它们和 accent 可能色调接近（如 accent=红, error=红），
+ * 导致图表多条 series 颜色无法区分。
+ * 而是从 accent 出发，通过 HSL 色轮旋转生成 6 个色相间隔 ≥60° 的颜色。
  */
 function fillChartPaletteFromSemantic(vars: Map<string, string>): void {
   // 统计已有的 chart 颜色
@@ -210,39 +331,12 @@ function fillChartPaletteFromSemantic(vars: Map<string, string>): void {
   }
   if (emptySlots.length === 0) return
 
-  // 收集可用的 semantic 颜色作为调色板种子
-  const semanticColors: string[] = []
-  const semanticKeys = ['--rk-accent', '--rk-success', '--rk-warning', '--rk-error', '--rk-chart-1', '--rk-chart-2', '--rk-chart-3', '--rk-chart-4', '--rk-chart-5', '--rk-chart-6']
-  for (const key of semanticKeys) {
-    if (vars.has(key)) {
-      const val = vars.get(key)!
-      if (val.startsWith('#') && val.length >= 7) {
-        semanticColors.push(val)
-      }
-    }
-  }
-
-  // 优先用已有的 semantic/chart 颜色填充空位
-  for (const slot of emptySlots) {
-    if (semanticColors.length > 0) {
-      vars.set(`--rk-chart-${slot}`, semanticColors.shift()!)
-    }
-  }
-
-  // 如果还有空位，从 accent 色自动生成
-  const stillEmpty: number[] = []
-  for (let i = 1; i <= 6; i++) {
-    if (!vars.has(`--rk-chart-${i}`)) {
-      stillEmpty.push(i)
-    }
-  }
-  if (stillEmpty.length === 0) return
-
-  // 选择生成基色：accent > success > 已有 chart 中第一个
+  // 选择生成基色：accent > success > 默认蓝
   const baseForGen = vars.get('--rk-accent') || vars.get('--rk-success') || '#667eea'
-  const generated = generateChartPalette(baseForGen)
+  const bgColor = vars.get('--rk-bg-primary')
+  const generated = generateChartPalette(baseForGen, 6, bgColor)
 
-  for (const slot of stillEmpty) {
+  for (const slot of emptySlots) {
     vars.set(`--rk-chart-${slot}`, generated[slot - 1] || generated[0])
   }
 }
@@ -289,6 +383,115 @@ function createHoverVersion(color: string, mode: 'light' | 'dark'): string {
   return `#${nr.toString(16).padStart(2, '0')}${ng.toString(16).padStart(2, '0')}${nb.toString(16).padStart(2, '0')}`
 }
 
+// ─── 颜色值清洗 ──────────────────────────────────────────
+
+/**
+ * CMYK → Hex 转换
+ * 公式: R = 255 × (1-C) × (1-K), G = 255 × (1-M) × (1-K), B = 255 × (1-Y) × (1-K)
+ * C/M/Y/K 为 0-1 范围
+ */
+function cmykToHex(c: number, m: number, y: number, k: number): string {
+  const r = Math.round(255 * (1 - c) * (1 - k))
+  const g = Math.round(255 * (1 - m) * (1 - k))
+  const b = Math.round(255 * (1 - y) * (1 - k))
+  const toHex = (v: number) => Math.max(0, Math.min(255, v)).toString(16).padStart(2, '0')
+  return `#${toHex(r)}${toHex(g)}${toHex(b)}`
+}
+
+/**
+ * 检测并转换 CMYK 字符串为 hex
+ * 支持格式: "C0 M100 Y100 K40", "C0,M100,Y100,K40", "0,100,100,40"
+ */
+function tryConvertCmyk(value: string): string | null {
+  // 匹配带 C/M/Y/K 前缀的格式
+  const named = value.match(/C\s*(\d+)\s*M\s*(\d+)\s*Y\s*(\d+)\s*K\s*(\d+)/i)
+  if (named) {
+    return cmykToHex(+named[1] / 100, +named[2] / 100, +named[3] / 100, +named[4] / 100)
+  }
+  // 匹配纯 K 值 (如 "K80", "K100")
+  const kOnly = value.match(/^K(\d+)$/i)
+  if (kOnly) {
+    const k = +kOnly[1] / 100
+    const v = Math.round(255 * (1 - k))
+    const hex = v.toString(16).padStart(2, '0')
+    return `#${hex}${hex}${hex}`
+  }
+  return null
+}
+
+/**
+ * 检查颜色值是否是合法的 CSS 颜色
+ */
+function isValidCssColor(value: string): boolean {
+  // hex: #fff or #ffffff or #ffffffff
+  if (/^#[0-9a-f]{3,8}$/i.test(value)) return true
+  // rgb/rgba
+  if (/^rgba?\(\s*\d/.test(value)) return true
+  // hsl/hsla
+  if (/^hsla?\(\s*\d/.test(value)) return true
+  // named colors (常见的)
+  const namedColors = ['white', 'black', 'transparent', 'currentColor', 'red', 'blue', 'green',
+    'gray', 'grey', 'yellow', 'orange', 'purple', 'pink', 'brown', 'cyan', 'magenta']
+  if (namedColors.includes(value.toLowerCase())) return true
+  return false
+}
+
+/**
+ * 预处理颜色 token 列表：
+ * 1. 将 CMYK 值转换为 hex
+ * 2. 过滤掉不合法的颜色值（保留原始值做日志）
+ */
+function sanitizeColors(colors: ColorToken[]): {
+  sanitized: ColorToken[]
+  warnings: string[]
+} {
+  const warnings: string[] = []
+  const sanitized: ColorToken[] = []
+
+  for (const token of colors) {
+    let value = token.value.trim()
+
+    // 尝试 CMYK → hex 转换
+    if (!isValidCssColor(value)) {
+      const converted = tryConvertCmyk(value)
+      if (converted) {
+        warnings.push(`Converted CMYK "${value}" → "${converted}" (${token.name})`)
+        value = converted
+      } else {
+        warnings.push(`Invalid color value "${value}" skipped (${token.name})`)
+        continue // 跳过不合法的值
+      }
+    }
+
+    sanitized.push({ name: token.name, value })
+  }
+
+  return { sanitized, warnings }
+}
+
+// ─── 完整度报告 ──────────────────────────────────────────
+
+export interface ThemeMappingReport {
+  /** 关键角色是否被匹配 */
+  roles: {
+    accent: boolean
+    background: boolean
+    text: boolean
+    border: boolean
+    success: boolean
+    warning: boolean
+    error: boolean
+  }
+  /** 颜色转换警告 */
+  warnings: string[]
+  /** 映射统计 */
+  stats: {
+    totalColors: number
+    mappedColors: number
+    chartAutoGenerated: number
+  }
+}
+
 // ─── 主映射函数 ──────────────────────────────────────────
 
 /**
@@ -296,16 +499,21 @@ function createHoverVersion(color: string, mode: 'light' | 'dark'): string {
  *
  * @param tokens 从 DESIGN.md 解析出的 token
  * @param name 主题名（默认 'design-md'）
- * @returns 完整的 Theme 对象
+ * @returns 完整的 Theme 对象（含 _mappingReport 附加信息）
  */
 export function mapDesignTokensToTheme(
   tokens: DesignTokens,
   name: string = 'design-md'
-): Theme {
+): Theme & { _mappingReport?: ThemeMappingReport } {
+  // 0. 预处理：CMYK 转换 + 过滤非法颜色
+  const { sanitized, warnings } = sanitizeColors(tokens.colors)
+
   // 1. 映射颜色
-  const { mapped, unmatched } = mapColorsToVars(tokens.colors)
+  const { mapped, unmatched } = mapColorsToVars(sanitized)
+  const chartCountBefore = [1, 2, 3, 4, 5, 6].filter(i => mapped.has(`--rk-chart-${i}`)).length
   assignChartColors(mapped, unmatched)
   fillChartPaletteFromSemantic(mapped)
+  const chartCountAfter = [1, 2, 3, 4, 5, 6].filter(i => mapped.has(`--rk-chart-${i}`)).length
 
   // 2. 推断明暗模式
   const bgColor = mapped.get('--rk-bg-primary') || '#0f1117'
@@ -338,24 +546,83 @@ export function mapDesignTokensToTheme(
     }
   }
 
-  // 5. 映射间距 → radius
+  // 4b. 映射字号 → --rk-text-*
+  if (tokens.typography.sizes) {
+    const sizeMap: Record<string, string> = {
+      'micro': '--rk-text-xs', 'caption': '--rk-text-xs', 'xs': '--rk-text-xs',
+      'small': '--rk-text-sm', 'sm': '--rk-text-sm',
+      'body': '--rk-text-lg', 'base': '--rk-text-lg',
+      'subtitle': '--rk-text-xl',
+      'h6': '--rk-text-xl', 'heading-6': '--rk-text-xl',
+      'h5': '--rk-text-xl', 'heading-5': '--rk-text-xl',
+      'h4': '--rk-text-2xl', 'heading-4': '--rk-text-2xl',
+      'h3': '--rk-text-2xl', 'heading-3': '--rk-text-2xl',
+      'h2': '--rk-text-2xl', 'heading-2': '--rk-text-2xl',
+      'h1': '--rk-text-2xl', 'heading-1': '--rk-text-2xl',
+      'display': '--rk-text-2xl', 'xxl': '--rk-text-2xl',
+    }
+    for (const [key, value] of Object.entries(tokens.typography.sizes)) {
+      const varName = sizeMap[key]
+      if (varName && !mapped.has(varName)) {
+        mapped.set(varName, value)
+      }
+    }
+  }
+
+  // 4c. 映射字重 → --rk-weight-*
+  if (tokens.typography.weights) {
+    const weightMap: Record<string, string> = {
+      'thin': '--rk-weight-normal', 'light': '--rk-weight-normal', 'regular': '--rk-weight-normal',
+      'medium': '--rk-weight-medium',
+      'semibold': '--rk-weight-semibold',
+      'bold': '--rk-weight-bold', 'extrabold': '--rk-weight-bold',
+    }
+    for (const [key, value] of Object.entries(tokens.typography.weights)) {
+      const varName = weightMap[key]
+      if (varName && !mapped.has(varName)) {
+        mapped.set(varName, value)
+      }
+    }
+  }
+
+  // 5. 映射圆角 → --rk-radius-*
   if (tokens.radius.scale) {
     const scale = tokens.radius.scale
-    if (scale.sm && !mapped.has('--rk-radius-sm')) {
-      mapped.set('--rk-radius-sm', scale.sm)
+    const radiusMap: Record<string, string> = {
+      'xs': '--rk-radius-xs',
+      'sm': '--rk-radius-sm', 'small': '--rk-radius-sm',
+      'md': '--rk-radius-md', 'medium': '--rk-radius-md', 'card': '--rk-radius-md', 'button': '--rk-radius-md',
+      'lg': '--rk-radius-lg', 'large': '--rk-radius-lg',
+      'xl': '--rk-radius-xl', 'rounded': '--rk-radius-xl',
+      'pill': '--rk-radius-pill', 'full': '--rk-radius-pill',
     }
-    if (scale.md && !mapped.has('--rk-radius-md')) {
-      mapped.set('--rk-radius-md', scale.md)
-    }
-    if (scale.lg && !mapped.has('--rk-radius-lg')) {
-      mapped.set('--rk-radius-lg', scale.lg)
+    for (const [key, value] of Object.entries(scale)) {
+      const varName = radiusMap[key]
+      if (varName && !mapped.has(varName)) {
+        mapped.set(varName, value)
+      }
     }
     // 如果只有 md，自动推算 sm 和 lg
-    if (!scale.sm && scale.md) {
+    if (!scale.sm && !scale.small && scale.md) {
       mapped.set('--rk-radius-sm', scale.md)
     }
-    if (!scale.lg && scale.md) {
+    if (!scale.lg && !scale.large && scale.md) {
       mapped.set('--rk-radius-lg', scale.md)
+    }
+  }
+
+  // 5b. 映射间距 → --rk-space-*
+  if (tokens.spacing.scale) {
+    for (const [key, value] of Object.entries(tokens.spacing.scale)) {
+      // space-1 → --rk-space-1, etc.
+      const numMatch = key.match(/(\d+)/)
+      if (numMatch) {
+        const idx = numMatch[1]
+        const varName = `--rk-space-${idx}`
+        if (!mapped.has(varName)) {
+          mapped.set(varName, value)
+        }
+      }
     }
   }
 
@@ -371,11 +638,39 @@ export function mapDesignTokensToTheme(
   // 7. 生成显示名
   const displayName = mode === 'dark' ? 'Design.md (Dark)' : 'Design.md (Light)'
 
+  // 8. 生成完整度报告
+  const report: ThemeMappingReport = {
+    roles: {
+      accent: mapped.has('--rk-accent'),
+      background: mapped.has('--rk-bg-primary'),
+      text: mapped.has('--rk-text-primary'),
+      border: mapped.has('--rk-border'),
+      success: mapped.has('--rk-success'),
+      warning: mapped.has('--rk-warning'),
+      error: mapped.has('--rk-error'),
+    },
+    warnings,
+    stats: {
+      totalColors: sanitized.length,
+      mappedColors: mapped.size,
+      chartAutoGenerated: chartCountAfter - chartCountBefore,
+    },
+  }
+
+  // 如果关键角色缺失，添加警告
+  const missingRoles = Object.entries(report.roles)
+    .filter(([, found]) => !found)
+    .map(([role]) => role)
+  if (missingRoles.length > 0) {
+    report.warnings.push(`Key roles not matched: ${missingRoles.join(', ')} — using default values`)
+  }
+
   return {
     name,
     displayName,
     cssVariables: cssVars,
     mode,
+    _mappingReport: report,
   }
 }
 

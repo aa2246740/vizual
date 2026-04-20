@@ -1,8 +1,8 @@
 import { useState, useRef, useEffect } from 'react'
 import type { AnnotationColor } from './types'
-import { tc } from '../core/theme-colors'
+import { tcss, tc } from '../core/theme-colors'
 
-/** Default annotation color — amber yellow for clear visibility in dark mode */
+/** Default annotation color — amber yellow for clear visibility */
 const DEFAULT_COLOR: AnnotationColor = '#fbbf24'
 
 export interface AnnotationInputProps {
@@ -21,15 +21,16 @@ export interface AnnotationInputProps {
 const POPUP_WIDTH = 280
 const POPUP_HALF = POPUP_WIDTH / 2
 
+/** tcss() returns var() references — naturally reactive via CSS engine, safe at module level */
 const popupStyle: React.CSSProperties = {
   position: 'absolute',
   zIndex: 1000,
-  background: tc('--rk-bg-secondary'),
-  border: `1px solid ${tc('--rk-border-subtle')}`,
-  borderRadius: 10,
-  padding: 12,
+  background: tcss('--rk-bg-secondary'),
+  border: `1px solid ${tcss('--rk-border-subtle')}`,
+  borderRadius: parseInt(tc('--rk-radius-lg')),
+  padding: parseInt(tc('--rk-space-3')),
   width: POPUP_WIDTH,
-  boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
+  boxShadow: tcss('--rk-shadow'),
   transform: 'translateX(-50%)',
 }
 
@@ -37,12 +38,12 @@ const textareaStyle: React.CSSProperties = {
   width: '100%',
   minHeight: 60,
   padding: '8px 10px',
-  fontSize: 13,
+  fontSize: parseInt(tc('--rk-text-base')),
   lineHeight: 1.4,
-  background: tc('--rk-bg-primary'),
-  border: `1px solid ${tc('--rk-border-subtle')}`,
-  borderRadius: 6,
-  color: tc('--rk-text-primary'),
+  background: tcss('--rk-bg-primary'),
+  border: `1px solid ${tcss('--rk-border-subtle')}`,
+  borderRadius: parseInt(tc('--rk-radius-md')),
+  color: tcss('--rk-text-primary'),
   resize: 'vertical',
   outline: 'none',
   boxSizing: 'border-box',
@@ -51,11 +52,11 @@ const textareaStyle: React.CSSProperties = {
 
 const buttonBase: React.CSSProperties = {
   padding: '6px 14px',
-  borderRadius: 6,
-  fontSize: 13,
+  borderRadius: parseInt(tc('--rk-radius-md')),
+  fontSize: parseInt(tc('--rk-text-base')),
   cursor: 'pointer',
   border: 'none',
-  fontWeight: 500,
+  fontWeight: parseInt(tc('--rk-weight-medium')),
 }
 
 /**
@@ -99,10 +100,10 @@ export function AnnotationInput({ position, selectedText, onConfirm, onCancel, c
     <div style={{ ...popupStyle, top: position.top, left: clampedLeft }} data-annotation-input>
       {/* Selected text preview */}
       <div style={{
-        fontSize: 12, color: tc('--rk-text-secondary'), marginBottom: 8,
-        padding: '4px 8px', background: tc('--rk-bg-primary'), borderRadius: 4,
+        fontSize: parseInt(tc('--rk-text-sm')), color: tcss('--rk-text-secondary'), marginBottom: 8,
+        padding: '4px 8px', background: tcss('--rk-bg-primary'), borderRadius: parseInt(tc('--rk-radius-sm')),
         maxHeight: 60, overflow: 'hidden', lineHeight: 1.3,
-        borderLeft: `3px solid #fbbf24`,
+        borderLeft: `3px solid ${DEFAULT_COLOR}`,
       }}>
         "{selectedText.length > 100 ? selectedText.slice(0, 100) + '...' : selectedText}"
       </div>
@@ -120,15 +121,15 @@ export function AnnotationInput({ position, selectedText, onConfirm, onCancel, c
       <div style={{ display: 'flex', gap: 8, marginTop: 10, justifyContent: 'flex-end' }}>
         <button onClick={onCancel} style={{
           ...buttonBase,
-          background: tc('--rk-border-subtle'), color: tc('--rk-text-secondary'),
+          background: tcss('--rk-border-subtle'), color: tcss('--rk-text-secondary'),
         }}>取消</button>
         <button
           onClick={handleSubmit}
           disabled={!note.trim()}
           style={{
             ...buttonBase,
-            background: note.trim() ? '#fbbf24' : tc('--rk-border-subtle'),
-            color: note.trim() ? '#000' : tc('--rk-text-tertiary'),
+            background: note.trim() ? tcss('--rk-accent') : tcss('--rk-border-subtle'),
+            color: note.trim() ? '#fff' : tcss('--rk-text-tertiary'),
             cursor: note.trim() ? 'pointer' : 'not-allowed',
           }}
         >确认</button>

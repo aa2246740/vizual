@@ -21,3 +21,12 @@ render-kit.js
 rollup.config.mjs
 screenshots/
 tests/
+
+# Client-specific demos (not for open source)
+validation/demo-cmb.html
+validation/apple-theme.json
+validation/verge-theme.json
+validation/brand-color-tryout.html
+validation/eval-visual.html
+validation/check-*.png
+validation/screenshot-*.png

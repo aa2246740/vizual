@@ -55,6 +55,9 @@ import { FormBuilderSchema } from './inputs/form-builder/schema'
 // DocView schema
 import { DocViewSchema } from './docview/schema'
 
+// InteractivePlayground schema
+import { InteractivePlaygroundSchema } from './components/interactive-playground/schema'
+
 /**
  * AI RenderKit catalog — 43 components registered as json-render visualization catalog
  */
@@ -235,6 +238,12 @@ export const renderKitCatalog = defineCatalog(schema, {
     FormBuilder: {
       props: FormBuilderSchema as any,
       description: 'Dynamic form builder with validation, cascading fields, and grid layout. Use $bindState to capture form data.',
+    },
+
+    // InteractivePlayground — Meta component — 1
+    InteractivePlayground: {
+      props: InteractivePlaygroundSchema as any,
+      description: 'Interactive playground wrapping any vizual component with AI-defined controls (slider, select, toggle, color, text, number, buttonGroup). Users adjust parameters and see real-time re-render. Use for education, demos, palette exploration.',
     },
 
     // DocView — Document annotation component — 1

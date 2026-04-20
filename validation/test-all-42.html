@@ -4,14 +4,14 @@
   <meta charset="utf-8">
   <title>Full 42-Component Test — Correct Registry Names</title>
   <style>
-    body{font-family:system-ui;background:#0f0f1a;color:#e0e0e0;padding:24px;margin:0}
+    body{font-family:system-ui;background:var(--rk-bg-primary,#0f0f1a);color:var(--rk-text-primary,#e0e0e0);padding:24px;margin:0}
     h2{margin-top:0}
     #summary{font-size:18px;font-weight:700;margin:16px 0}
-    .pass{color:#22c55e}.fail{color:#ef4444}.skip{color:#f59e0b}
+    .pass{color:var(--rk-success,#22c55e)}.fail{color:var(--rk-error,#ef4444)}.skip{color:var(--rk-warning,#f59e0b)}
     table{width:100%;border-collapse:collapse;margin-top:12px}
-    th,td{text-align:left;padding:6px 10px;border-bottom:1px solid #2a2a3e;font-size:12px}
-    th{background:#161625;color:#aaa;font-weight:600}
-    .row-pass td{color:#22c55e}.row-fail td{color:#ef4444}.row-skip td{color:#f59e0b}
+    th,td{text-align:left;padding:6px 10px;border-bottom:1px solid var(--rk-border-subtle,#2a2a3e);font-size:12px}
+    th{background:var(--rk-bg-secondary,#161625);color:var(--rk-text-secondary,#aaa);font-weight:600}
+    .row-pass td{color:var(--rk-success,#22c55e)}.row-fail td{color:var(--rk-error,#ef4444)}.row-skip td{color:var(--rk-warning,#f59e0b)}
   </style>
 </head>
 <body>
@@ -25,6 +25,14 @@
   <!-- vizual.standalone.js includes React, ReactDOM, ECharts, and mermaid — zero CDN needed -->
   <script src="../dist/vizual.standalone.js"></script>
   <script>
+    // Claude / Anthropic light theme
+    var claudeTokens = {"colors":[{"name":"terracotta","value":"#c96442"},{"name":"accent","value":"#c96442"},{"name":"coral","value":"#d97757"},{"name":"text","value":"#141413"},{"name":"background","value":"#f5f4ed"},{"name":"card","value":"#faf9f5"},{"name":"ivory","value":"#faf9f5"},{"name":"parchment","value":"#f5f4ed"},{"name":"text-secondary","value":"#5e5d59"},{"name":"text-tertiary","value":"#87867f"},{"name":"border","value":"#f0eee6"},{"name":"border-subtle","value":"#e8e6dc"},{"name":"dark-surface","value":"#30302e"},{"name":"charcoal","value":"#4d4c48"},{"name":"success","value":"#10b981"},{"name":"warning","value":"#f59e0b"},{"name":"error","value":"#b53333"}],"typography":{"fontFamily":"Georgia, system-ui, serif","sizes":{"body":"16px","h3":"25px"},"weights":{"regular":"400","bold":"500"}},"spacing":{"baseUnit":"8px","scale":{"space-1":"4px","space-2":"8px","space-3":"16px"}},"radius":{"scale":{"sm":"6px","md":"8px","lg":"12px"}}};
+    var claude = Vizual.mapDesignTokensToTheme(claudeTokens, 'claude');
+    Vizual.registerTheme(claude.name, claude);
+    var claudeL = Vizual.invertTheme(claude);
+    Vizual.registerTheme(claudeL.name, claudeL);
+    Vizual.setGlobalTheme('claude');
+
     // All 42 registered components with correct data format
     var tests = [
       // === 19 Chart Components (mviz bridge via ECharts) ===
@@ -168,9 +176,338 @@
       var el = document.getElementById('summary');
       el.textContent = 'DONE: ' + PASS_COUNT + '/' + tests.length + ' passed, ' + FAIL_COUNT + ' failed, ' + SKIP_COUNT + ' skipped';
       el.className = FAIL_COUNT === 0 ? 'pass' : 'fail';
+      // After 42-component test, launch theme adaptation test
+      setTimeout(initThemeTest, 300);
     }
 
     runNext();
+
+    // ═══════════════════════════════════════════════════════════
+    // Theme Adaptation Test — 拟真全量主题适配测试
+    // 验证：颜色调色板、圆角、间距、字号、暗亮模式
+    // ═══════════════════════════════════════════════════════════
+
+    // --- 4 套预设主题 DesignTokens ---
+    var themePresets = {
+      'claude': { colors:[
+        {name:'accent',value:'#c96442'},{name:'background',value:'#f5f4ed'},{name:'text',value:'#141413'},
+        {name:'card',value:'#faf9f5'},{name:'success',value:'#10b981'},{name:'warning',value:'#f59e0b'},{name:'error',value:'#b53333'}
+      ], typography:{fontFamily:'Georgia, system-ui, serif',sizes:{body:'16px',h3:'25px'},weights:{regular:'400',bold:'500'}}, spacing:{baseUnit:'8px',scale:{'space-1':'4px','space-2':'8px','space-3':'16px'}}, radius:{scale:{sm:'6px',md:'8px',lg:'12px'}}},
+      'tech-blue': { colors:[
+        {name:'accent',value:'#667eea'},{name:'background',value:'#f0f4ff'},{name:'text',value:'#1a1a2e'},
+        {name:'card',value:'#e8eeff'},{name:'success',value:'#10b981'},{name:'warning',value:'#f59e0b'},{name:'error',value:'#ef4444'}
+      ], typography:{fontFamily:'Inter, system-ui, sans-serif',sizes:{body:'14px',h3:'20px'},weights:{regular:'400',bold:'600'}}, spacing:{baseUnit:'6px',scale:{'space-1':'4px','space-2':'6px','space-3':'10px'}}, radius:{scale:{sm:'6px',md:'10px',lg:'14px'}}},
+      'forest-green': { colors:[
+        {name:'accent',value:'#10b981'},{name:'background',value:'#f0fdf4'},{name:'text',value:'#052e16'},
+        {name:'card',value:'#dcfce7'},{name:'success',value:'#22c55e'},{name:'warning',value:'#eab308'},{name:'error',value:'#dc2626'}
+      ], typography:{fontFamily:'system-ui, sans-serif',sizes:{body:'14px',h3:'22px'},weights:{regular:'400',bold:'700'}}, spacing:{baseUnit:'10px',scale:{'space-1':'6px','space-2':'10px','space-3':'14px'}}, radius:{scale:{sm:'8px',md:'12px',lg:'16px'}}},
+      'warm-orange': { colors:[
+        {name:'accent',value:'#f97316'},{name:'background',value:'#fffbeb'},{name:'text',value:'#431407'},
+        {name:'card',value:'#fef3c7'},{name:'success',value:'#10b981'},{name:'warning',value:'#eab308'},{name:'error',value:'#ef4444'}
+      ], typography:{fontFamily:'system-ui, sans-serif',sizes:{body:'15px',h3:'24px'},weights:{regular:'400',bold:'700'}}, spacing:{baseUnit:'8px',scale:{'space-1':'5px','space-2':'8px','space-3':'12px'}}, radius:{scale:{sm:'3px',md:'6px',lg:'10px'}}}
+    };
+
+    // --- 可变数据集（3/6/12 档） ---
+    var dataSlices = {
+      pie: {
+        3: [{name:'Alpha',val:40},{name:'Beta',val:35},{name:'Gamma',val:25}],
+        6: [{name:'Alpha',val:25},{name:'Beta',val:20},{name:'Gamma',val:18},{name:'Delta',val:15},{name:'Echo',val:12},{name:'Foxtrot',val:10}],
+        12: [{name:'Jan',val:12},{name:'Feb',val:10},{name:'Mar',val:11},{name:'Apr',val:9},{name:'May',val:8},{name:'Jun',val:10},{name:'Jul',val:9},{name:'Aug',val:8},{name:'Sep',val:7},{name:'Oct',val:6},{name:'Nov',val:5},{name:'Dec',val:5}]
+      },
+      bar: {
+        3: [{name:'Q1',value:120},{name:'Q2',value:200},{name:'Q3',value:160}],
+        6: [{name:'Alpha',value:96},{name:'Beta',value:93},{name:'Gamma',value:91},{name:'Delta',value:88},{name:'Echo',value:85},{name:'Foxtrot',value:82}],
+        12: [{name:'A',value:45},{name:'B',value:38},{name:'C',value:52},{name:'D',value:29},{name:'E',value:61},{name:'F',value:33},{name:'G',value:48},{name:'H',value:27},{name:'I',value:55},{name:'J',value:41},{name:'K',value:36},{name:'L',value:44}]
+      },
+      radar: {
+        3: {indicators:[{name:'Speed',max:100},{name:'Power',max:100},{name:'Range',max:100}],series:[{name:'X',values:[85,70,90]},{name:'Y',values:[60,85,70]}]},
+        6: {indicators:[{name:'Speed',max:100},{name:'Power',max:100},{name:'Range',max:100},{name:'Efficiency',max:100},{name:'Safety',max:100},{name:'Cost',max:100}],series:[{name:'Model A',values:[85,70,90,60,80,75]},{name:'Model B',values:[60,85,70,90,65,80]}]},
+        12: {indicators:[{name:'Jan',max:100},{name:'Feb',max:100},{name:'Mar',max:100},{name:'Apr',max:100},{name:'May',max:100},{name:'Jun',max:100},{name:'Jul',max:100},{name:'Aug',max:100},{name:'Sep',max:100},{name:'Oct',max:100},{name:'Nov',max:100},{name:'Dec',max:100}],series:[{name:'2024',values:[65,70,75,80,72,68,78,82,76,80,85,90]},{name:'2023',values:[55,60,65,70,62,58,68,72,66,70,75,80]}]}
+      }
+    };
+
+    var currentThemeName = 'cmb';
+    var currentDataCount = 6;
+    var themeRegistry = {}; // name → theme object
+
+    function initThemeTest() {
+      // Register all preset themes + their inverted variants
+      for (var key in themePresets) {
+        var t = Vizual.mapDesignTokensToTheme(themePresets[key], key);
+        Vizual.registerTheme(t.name, t);
+        themeRegistry[t.name] = t;
+        var inv = Vizual.invertTheme(t);
+        Vizual.registerTheme(inv.name, inv);
+        themeRegistry[inv.name] = inv;
+      }
+
+      // Build UI
+      var sec = document.createElement('div');
+      sec.id = 'theme-test-section';
+      sec.innerHTML = [
+        '<h2 style="margin-top:32px;border-top:2px solid var(--rk-border-subtle,#2a2a3e);padding-top:20px">Theme Adaptation Test</h2>',
+        '<div id="theme-controls" style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:16px">',
+        '  <div id="theme-btns" style="display:flex;gap:6px"></div>',
+        '  <input id="custom-accent" type="color" value="#c8152d" title="Custom accent color" style="width:36px;height:30px;border:1px solid var(--rk-border-subtle);border-radius:6px;cursor:pointer">',
+        '  <button id="apply-custom" style="padding:6px 12px;border-radius:6px;border:1px solid var(--rk-border-subtle);background:var(--rk-bg-secondary);color:var(--rk-text-primary);cursor:pointer;font-size:12px">Custom</button>',
+        '  <div style="display:flex;align-items:center;gap:6px;margin-left:auto">',
+        '    <span style="font-size:12px;color:var(--rk-text-tertiary)">Data:</span>',
+        '    <select id="data-count" style="padding:4px 8px;border-radius:6px;border:1px solid var(--rk-border-subtle);background:var(--rk-bg-secondary);color:var(--rk-text-primary);font-size:12px">',
+        '      <option value="3">3 items</option><option value="6" selected>6 items</option><option value="12">12 items</option>',
+        '    </select>',
+        '  </div>',
+        '  <div style="display:flex;align-items:center;gap:6px">',
+        '    <span style="font-size:12px;color:var(--rk-text-tertiary)">Dark</span>',
+        '    <div id="mode-toggle" style="width:44px;height:24px;border-radius:12px;background:var(--rk-bg-tertiary);cursor:pointer;position:relative;transition:background .2s">',
+        '      <div id="mode-thumb" style="width:20px;height:20px;border-radius:50%;background:#fff;position:absolute;top:2px;left:2px;transition:left .2s"></div>',
+        '    </div>',
+        '    <span style="font-size:12px;color:var(--rk-text-tertiary)">Light</span>',
+        '  </div>',
+        '</div>',
+        '<div id="palette-bar" style="display:flex;gap:4px;margin-bottom:16px;flex-wrap:wrap"></div>',
+        '<div id="theme-vars" style="font-size:11px;color:var(--rk-text-tertiary);margin-bottom:16px;font-family:monospace"></div>',
+        '<div id="theme-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(360px,1fr));gap:12px"></div>',
+        '<div id="mapping-report" style="margin-top:16px;padding:10px 14px;background:var(--rk-bg-secondary);border:1px solid var(--rk-border-subtle);border-radius:8px;font-size:11px;color:var(--rk-text-secondary)"></div>'
+      ].join('\n');
+      document.body.appendChild(sec);
+
+      // Theme buttons
+      var btnContainer = document.getElementById('theme-btns');
+      var labels = {'claude':'Claude','tech-blue':'Tech Blue','forest-green':'Forest','warm-orange':'Warm Orange'};
+      for (var key in labels) {
+        var btn = document.createElement('button');
+        btn.textContent = labels[key];
+        btn.dataset.theme = key;
+        btn.style.cssText = 'padding:6px 14px;border-radius:6px;border:1px solid var(--rk-border-subtle);background:var(--rk-bg-secondary);color:var(--rk-text-primary);cursor:pointer;font-size:12px;transition:all .15s';
+        btn.onclick = function() { switchTheme(this.dataset.theme); updateActiveBtn(this); };
+        btnContainer.appendChild(btn);
+      }
+      // Set CMB active by default
+      btnContainer.children[0].style.background = 'var(--rk-accent)';
+      btnContainer.children[0].style.color = '#fff';
+      btnContainer.children[0].style.borderColor = 'var(--rk-accent)';
+
+      // Custom accent
+      document.getElementById('apply-custom').onclick = function() {
+        var hex = document.getElementById('custom-accent').value;
+        var customTokens = { colors:[
+          {name:'accent',value:hex},{name:'background',value:'#ffffff'},{name:'text',value:'#1a1a1a'},
+          {name:'success',value:'#10b981'},{name:'warning',value:'#f59e0b'},{name:'error',value:'#ef4444'}
+        ], typography:{fontFamily:'system-ui, sans-serif',sizes:{body:'14px',h3:'22px'},weights:{regular:'400',bold:'700'}}, spacing:{baseUnit:'8px',scale:{'space-1':'4px','space-2':'8px'}}, radius:{scale:{md:'8px'}}};
+        var ct = Vizual.mapDesignTokensToTheme(customTokens, 'custom');
+        Vizual.registerTheme(ct.name, ct);
+        themeRegistry[ct.name] = ct;
+        var ci = Vizual.invertTheme(ct);
+        Vizual.registerTheme(ci.name, ci);
+        themeRegistry[ci.name] = ci;
+        switchTheme('custom');
+        updateActiveBtn(null);
+      };
+
+      // Data count
+      document.getElementById('data-count').onchange = function() {
+        currentDataCount = parseInt(this.value);
+        renderThemeGrid();
+      };
+
+      // Mode toggle
+      document.getElementById('mode-toggle').onclick = function() {
+        var mode = Vizual.toggleMode();
+        currentThemeName = Vizual.getCurrentThemeName();
+        var thumb = document.getElementById('mode-thumb');
+        if (mode === 'light') { thumb.style.left = '22px'; this.style.background = 'var(--rk-accent)'; }
+        else { thumb.style.left = '2px'; this.style.background = 'var(--rk-bg-tertiary)'; }
+        renderThemeGrid();
+        updatePaletteBar();
+        updateThemeVars();
+      };
+
+      // Initial render
+      switchTheme('claude');
+    }
+
+    function updateActiveBtn(activeBtn) {
+      var btns = document.querySelectorAll('#theme-btns button');
+      btns.forEach(function(b) {
+        b.style.background = 'var(--rk-bg-secondary)';
+        b.style.color = 'var(--rk-text-primary)';
+        b.style.borderColor = 'var(--rk-border-subtle)';
+      });
+      if (activeBtn) {
+        activeBtn.style.background = 'var(--rk-accent)';
+        activeBtn.style.color = '#fff';
+        activeBtn.style.borderColor = 'var(--rk-accent)';
+      }
+    }
+
+    function switchTheme(name) {
+      currentThemeName = name;
+      Vizual.setGlobalTheme(name);
+      renderThemeGrid();
+      updatePaletteBar();
+      updateThemeVars();
+      updateMappingReport();
+      // Reset mode toggle visual
+      var theme = Vizual.getTheme(name);
+      var thumb = document.getElementById('mode-thumb');
+      var track = document.getElementById('mode-toggle');
+      if (theme && theme.mode === 'light') { thumb.style.left = '22px'; track.style.background = 'var(--rk-accent)'; }
+      else { thumb.style.left = '2px'; track.style.background = 'var(--rk-bg-tertiary)'; }
+    }
+
+    function updatePaletteBar() {
+      var bar = document.getElementById('palette-bar');
+      var colors = Vizual.chartColors(6);
+      bar.innerHTML = colors.map(function(c, i) {
+        return '<div style="display:flex;flex-direction:column;align-items:center;gap:2px">' +
+          '<div style="width:48px;height:24px;background:' + c + ';border-radius:4px;border:1px solid var(--rk-border-subtle)"></div>' +
+          '<span style="font-size:9px;font-family:monospace;color:var(--rk-text-tertiary)">' + c + '</span>' +
+          '<span style="font-size:8px;color:var(--rk-text-tertiary)">chart-' + (i+1) + '</span></div>';
+      }).join('');
+    }
+
+    function updateThemeVars() {
+      var el = document.getElementById('theme-vars');
+      var vars = ['--rk-accent','--rk-bg-primary','--rk-text-primary','--rk-border-subtle',
+        '--rk-radius-sm','--rk-radius-md','--rk-radius-lg',
+        '--rk-space-1','--rk-space-2','--rk-space-3',
+        '--rk-text-sm','--rk-text-base','--rk-text-lg',
+        '--rk-font-sans'];
+      el.innerHTML = vars.map(function(v) {
+        return '<span style="margin-right:14px">' + v + ': <b style="color:var(--rk-text-primary)">' + Vizual.tc(v) + '</b></span>';
+      }).join('');
+    }
+
+    function updateMappingReport() {
+      var el = document.getElementById('mapping-report');
+      var theme = Vizual.getTheme(currentThemeName);
+      if (!theme || !theme._mappingReport) { el.textContent = 'No mapping report'; return; }
+      var r = theme._mappingReport;
+      var roles = r.roles || {};
+      var stats = r.stats || {};
+      var html = '<b>Mapping Report:</b> ';
+      for (var role in roles) {
+        var ok = roles[role];
+        html += '<span style="color:' + (ok ? 'var(--rk-success)' : 'var(--rk-error)') + '">' + role + (ok ? '✓' : '✗') + '</span> ';
+      }
+      html += '&nbsp;|&nbsp; Chart: ' + (stats.chartAutoGenerated || 0) + ' auto-generated, ' + (stats.chartExplicit || 0) + ' explicit';
+      html += '&nbsp;|&nbsp; Mode: ' + (theme.mode || 'dark');
+      el.innerHTML = html;
+    }
+
+    function renderSpec(type, props, container) {
+      container.innerHTML = '';
+      try {
+        Vizual.renderSpec({ root:'m', elements:{ m:{ type:type, props:props, children:[] } } }, container);
+      } catch(e) {
+        container.innerHTML = '<div style="color:var(--rk-error);font-size:11px;padding:8px">Error: ' + e.message + '</div>';
+      }
+    }
+
+    function renderThemeGrid() {
+      var grid = document.getElementById('theme-grid');
+      grid.innerHTML = '';
+      var n = currentDataCount;
+
+      // Helper: create slot with label
+      function slot(label, type, props, wide) {
+        var wrap = document.createElement('div');
+        wrap.style.cssText = 'border:1px solid var(--rk-border-subtle);border-radius:var(--rk-radius-md,8px);overflow:hidden' + (wide ? ';grid-column:1/-1' : '');
+        var lbl = document.createElement('div');
+        lbl.style.cssText = 'font-size:10px;color:var(--rk-text-tertiary);padding:4px 8px;background:var(--rk-bg-secondary);border-bottom:1px solid var(--rk-border-subtle)';
+        lbl.textContent = label;
+        var content = document.createElement('div');
+        content.style.cssText = 'padding:8px;min-height:40px';
+        wrap.appendChild(lbl);
+        wrap.appendChild(content);
+        renderSpec(type, props, content);
+        return wrap;
+      }
+
+      // Row 1: Chart components (palette validation)
+      grid.appendChild(slot('PieChart — ' + n + ' sectors', 'PieChart',
+        { title:'Market Share', category:'name', value:'val', data: dataSlices.pie[n] }));
+      grid.appendChild(slot('BarChart — ' + n + ' bars', 'BarChart',
+        { title:'Performance', x:'name', y:'value', data: dataSlices.bar[n] }));
+      grid.appendChild(slot('RadarChart — ' + n + ' axes', 'RadarChart',
+        { title:'Comparison', indicators: dataSlices.radar[n].indicators, series: dataSlices.radar[n].series }));
+
+      // Row 2: Business components (radius/spacing/font validation)
+      var metrics = n <= 6 ? [
+        {label:'Revenue',value:'$1.2M',trend:'up',trendValue:'+15%'},
+        {label:'Users',value:'45K',trend:'up',trendValue:'+8%'},
+        {label:'Churn',value:'3.2%',trend:'down',trendValue:'-1.1%'},
+        {label:'NPS',value:'72',trend:'up',trendValue:'+5'},
+        {label:'ARPU',value:'$28',trend:'up',trendValue:'+$2'},
+        {label:'Retention',value:'89%',trend:'up',trendValue:'+3%'}
+      ].slice(0, n) : [
+        {label:'M1',value:'$1M',trend:'up',trendValue:'+10%'},{label:'M2',value:'$2M',trend:'up',trendValue:'+5%'},
+        {label:'M3',value:'$1.5M',trend:'down',trendValue:'-2%'},{label:'M4',value:'$3M',trend:'up',trendValue:'+20%'},
+        {label:'M5',value:'$2.5M',trend:'up',trendValue:'+8%'},{label:'M6',value:'$4M',trend:'up',trendValue:'+15%'},
+        {label:'M7',value:'$3.5M',trend:'down',trendValue:'-5%'},{label:'M8',value:'$5M',trend:'up',trendValue:'+25%'},
+        {label:'M9',value:'$4.5M',trend:'up',trendValue:'+12%'},{label:'M10',value:'$6M',trend:'up',trendValue:'+18%'},
+        {label:'M11',value:'$5.5M',trend:'down',trendValue:'-3%'},{label:'M12',value:'$7M',trend:'up',trendValue:'+22%'}
+      ];
+      grid.appendChild(slot('KpiDashboard — ' + metrics.length + ' metrics', 'KpiDashboard',
+        { title:'Dashboard', metrics: metrics }));
+
+      var kanbanCards = function(count) {
+        var cols = [
+          {id:'backlog',title:'Backlog',cards:[]},
+          {id:'todo',title:'To Do',cards:[]},
+          {id:'progress',title:'In Progress',cards:[]},
+          {id:'review',title:'Review',cards:[]},
+          {id:'done',title:'Done',cards:[]}
+        ];
+        for (var i = 0; i < count; i++) {
+          var ci = i % 5;
+          cols[ci].cards.push({id:i+1, title:'Task ' + String.fromCharCode(65+i)});
+        }
+        return cols;
+      };
+      grid.appendChild(slot('Kanban — ' + n + ' cards', 'Kanban',
+        { title:'Sprint Board', columns: kanbanCards(n) }));
+
+      // Row 3: Wide components
+      var tableCols = [{key:'name',label:'Name'},{key:'dept',label:'Dept'},{key:'score',label:'Score'},{key:'status',label:'Status'}];
+      var tableRows = function(count) {
+        var depts = ['Engineering','Marketing','Sales','Design','Ops','Finance','Legal','HR','QA','Support','Product','Research'];
+        var statuses = ['Active','Active','Pending','Active','Review','Active','Pending','Active','Review','Active','Active','Active'];
+        var rows = [];
+        for (var i = 0; i < count; i++) {
+          rows.push({name:'Member ' + (i+1), dept:depts[i%depts.length], score: String(70 + Math.floor(Math.random()*25)), status:statuses[i%statuses.length]});
+        }
+        return rows;
+      };
+      grid.appendChild(slot('DataTable — ' + n + ' rows (spacing/radius/font)', 'DataTable',
+        { title:'Team Directory', columns: tableCols, data: tableRows(n) }, true));
+
+      // Row 4: Mixed
+      var events = function(count) {
+        var evts = [];
+        for (var i = 0; i < count; i++) {
+          var m = String(i+1).padStart(2,'0');
+          evts.push({date:'2024-'+m+'-01', title:'Milestone ' + String.fromCharCode(65+i), description:'Phase ' + (i+1) + ' deliverable completed'});
+        }
+        return evts;
+      };
+      grid.appendChild(slot('Timeline — ' + n + ' events', 'Timeline',
+        { title:'Project History', events: events(n) }));
+
+      var features = function(count) {
+        var names = ['Auth','SSO','RBAC','API','Webhooks','Analytics','Export','Import','Audit','Backup','Restore','Encryption'];
+        var feats = [];
+        for (var i = 0; i < count && i < 12; i++) {
+          feats.push({name:names[i], values:[i%3===0, i%2===0 || i%3===0, true]});
+        }
+        return feats;
+      };
+      grid.appendChild(slot('FeatureTable — ' + n + ' features', 'FeatureTable',
+        { title:'Plan Comparison', products:['Basic','Pro','Enterprise'], features: features(n) }));
+
+      grid.appendChild(slot('Alert — semantic colors', 'Alert',
+        { type:'success', message:'Operation completed — verifying semantic color tokens' }));
+    }
   </script>
 </body>
 </html>

@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vitest'
+import { tc } from '../core/theme-colors'
 import { InputTextSchema } from './schema'
+import { tc } from '../core/theme-colors'
 
 describe('InputText Schema', () => {
   it('accepts valid input_text spec with all fields', () => {

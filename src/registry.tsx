@@ -54,6 +54,9 @@ import { FormBuilder } from './inputs/form-builder/component'
 // DocView
 import { DocView } from './docview/container'
 
+// InteractivePlayground
+import { InteractivePlayground } from './components/interactive-playground/component'
+
 /**
  * AI RenderKit registry — 43 React components + 3 action handlers
  *
@@ -74,6 +77,7 @@ export const { registry, handlers, executeAction } = defineRegistry(renderKitCat
     Timeline, Kanban, GanttChart, OrgChart, KpiDashboard, BudgetReport,
     FeatureTable, AuditLog, JsonViewer, CodeBlock, FormView,
     InputText, InputSelect, InputFile, FormBuilder,
+    InteractivePlayground,
     DocView,
   } as any,
   actions: {

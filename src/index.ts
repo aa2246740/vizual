@@ -94,6 +94,10 @@ export type { InputFileProps } from './inputs/input-file'
 export { FormBuilder, FormBuilderSchema } from './inputs/form-builder'
 export type { FormBuilderProps } from './inputs/form-builder'
 
+// InteractivePlayground — Interactive parameter exploration wrapper
+export { InteractivePlayground, InteractivePlaygroundSchema } from './components/interactive-playground'
+export type { InteractivePlaygroundProps, Control } from './components/interactive-playground'
+
 // DocView — Document annotation with AI revision loop
 export { DocView } from './docview/container'
 export { DocViewSchema } from './docview/schema'
@@ -133,7 +137,7 @@ export { registerTheme, getTheme, getThemeNames, applyTheme, setGlobalTheme, loa
 export type { Theme as ThemeDefinition, LoadDesignMdOptions } from './themes'
 export { parseDesignMd, mapDesignTokensToTheme, invertTheme } from './themes'
 export { detectMode } from './themes/design-md-parser'
-export type { DesignTokens, ColorToken, TypographyToken, SpacingToken, RadiusToken } from './themes'
+export type { DesignTokens, ColorToken, TypographyToken, SpacingToken, RadiusToken, ThemeMappingReport } from './themes'
 
 // Theme presets
 export { defaultDarkTheme } from './themes/default-dark'
@@ -142,4 +146,4 @@ export { linearTheme } from './themes/linear'
 export { vercelTheme } from './themes/vercel'
 
 // Theme color accessor
-export { tc, chartColors, updateActiveColors } from './core/theme-colors'
+export { tc, tcss, chartColors, updateActiveColors } from './core/theme-colors'

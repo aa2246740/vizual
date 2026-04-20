@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import * as echarts from 'echarts'
-import { chartColors } from './theme-colors'
+import { chartColors, tc } from './theme-colors'
 
 // Static imports from mviz — bundled by esbuild, works in browser
 import {
@@ -176,6 +176,74 @@ function buildOption(
   const palette = chartColors(6)
   if (palette.length > 0) {
     option.color = palette
+    // Override series-level hardcoded colors with palette colors
+    // Only override when mviz builder set an explicit color, or for types where
+    // ECharts defaults to white (#fff) which would be invisible on light themes.
+    // Don't add itemStyle.color to pie/funnel etc. — they need per-data-point color cycling.
+    const whiteDefaultTypes = new Set(['boxplot', 'candlestick'])
+    const series = option.series as Record<string, unknown>[] | undefined
+    if (series && Array.isArray(series)) {
+      for (let i = 0; i < series.length; i++) {
+        const s = series[i] as Record<string, unknown>
+        if (!s || typeof s !== 'object') continue
+        if ('color' in s) s.color = undefined
+        const is = s.itemStyle as Record<string, unknown> | undefined
+        const sType = s.type as string | undefined
+        if (is && typeof is === 'object' && 'color' in is) {
+          is.color = palette[i % palette.length]
+        } else if (sType && whiteDefaultTypes.has(sType)) {
+          if (!s.itemStyle || typeof s.itemStyle !== 'object') s.itemStyle = {}
+          ;(s.itemStyle as Record<string, unknown>).color = palette[i % palette.length]
+        }
+      }
+    }
+  }
+
+  // Override mviz hardcoded text/axis/tooltip/splitLine colors with theme colors
+  const textColor = tc('--rk-text-secondary')
+  const bgColor = tc('--rk-bg-secondary')
+  const borderColor = tc('--rk-border-subtle')
+
+  // Axis labels
+  // Axis labels, splitLines, axisLines
+  for (const key of ['xAxis', 'yAxis']) {
+    const raw = option[key]
+    const axes = (Array.isArray(raw) ? raw : raw ? [raw] : []) as Record<string, unknown>[]
+    for (const axis of axes) {
+      if (!axis || typeof axis !== 'object') continue
+      const label = axis.axisLabel as Record<string, unknown> | undefined
+      if (label && textColor) label.color = textColor
+      const splitLine = axis.splitLine as Record<string, unknown> | undefined
+      if (splitLine && borderColor) {
+        const lineStyle = splitLine.lineStyle as Record<string, unknown> | undefined
+        if (lineStyle) lineStyle.color = borderColor
+      }
+      const axisLine = axis.axisLine as Record<string, unknown> | undefined
+      if (axisLine && borderColor) {
+        const lineStyle = axisLine.lineStyle as Record<string, unknown> | undefined
+        if (lineStyle) lineStyle.color = borderColor
+      }
+    }
+  }
+
+  // Tooltip
+  if (textColor && bgColor) {
+    const tooltip = option.tooltip as Record<string, unknown> | undefined
+    if (tooltip) {
+      tooltip.backgroundColor = bgColor
+      tooltip.borderColor = borderColor || bgColor
+      const ts = tooltip.textStyle as Record<string, unknown> | undefined
+      if (ts) ts.color = textColor
+    }
+  }
+
+  // Legend text
+  const legends = option.legend as Record<string, unknown>[] | undefined
+  if (legends && Array.isArray(legends) && textColor) {
+    for (const leg of legends) {
+      const ts = leg.textStyle as Record<string, unknown> | undefined
+      if (ts) ts.color = textColor
+    }
   }
 
   return option

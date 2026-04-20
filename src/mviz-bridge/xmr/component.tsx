@@ -1,6 +1,6 @@
 import type { XmrChartProps } from './schema'
 import { createEChartsBridge } from '../../core/echarts-bridge-factory'
-import { tc } from '../../core/theme-colors'
+import { tcss, tc } from '../../core/theme-colors'
 
 /**
  * Map schema props to mviz format.

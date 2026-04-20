@@ -1,7 +1,7 @@
 import React, { useRef, useEffect } from 'react'
 import * as echarts from 'echarts'
 import type { AnnotationTarget, Annotation, ChartDataPoint } from './types'
-import { tc } from '../core/theme-colors'
+import { tcss, tc } from '../core/theme-colors'
 
 /** Props for the SectionRenderer component */
 export interface SectionRendererProps {
@@ -21,13 +21,13 @@ export interface SectionRendererProps {
   annotations?: Annotation[]
 }
 
-/** Variant-to-color mapping for callout sections */
+/** Variant-to-color mapping for callout sections — tcss() is naturally reactive */
 const variantColors: Record<string, string> = {
-  info: tc('--rk-accent'),
+  info: tcss('--rk-accent'),
   warning: '#fbbf24',
-  success: tc('--rk-success'),
-  error: tc('--rk-error'),
-  neutral: tc('--rk-text-secondary'),
+  success: tcss('--rk-success'),
+  error: tcss('--rk-error'),
+  neutral: tcss('--rk-text-secondary'),
 }
 
 /** Heading font sizes by level (h1=32px down to h6=14px) */
@@ -67,7 +67,7 @@ export function SectionRenderer({ sections, onTargetClick, annotations }: Sectio
   }
 
   return (
-    <div style={{ padding: '16px 24px', maxWidth: 900 }}>
+    <div style={{ padding: '16px 24px', maxWidth: 900, background: tcss('--rk-bg-primary'), minHeight: '100%' }}>
       {sections.map((section, index) => {
         switch (section.type) {
           case 'text':
@@ -98,8 +98,8 @@ function renderText(section: SectionRendererProps['sections'][number], _index: n
     <p
       key={`text-${_index}`}
       style={{
-        color: tc('--rk-text-primary'),
-        fontSize: 14,
+        color: tcss('--rk-text-primary'),
+        fontSize:parseInt(tcss('--rk-text-md')),
         lineHeight: 1.6,
         marginBottom: 16,
         whiteSpace: 'pre-wrap' as const,
@@ -120,9 +120,9 @@ function renderHeading(section: SectionRendererProps['sections'][number], _index
     <Tag
       key={`heading-${_index}`}
       style={{
-        color: tc('--rk-text-primary'),
+        color: tcss('--rk-text-primary'),
         fontSize: size,
-        fontWeight: 700,
+        fontWeight:parseInt(tcss('--rk-weight-bold')),
         marginBottom: 12,
         marginTop: 24,
         lineHeight: 1.3,
@@ -240,24 +240,24 @@ function ChartSection({
         handleClick(e, index, 'chart', section.title || '图表')
       }}
       style={{
-        background: tc('--rk-bg-primary'),
-        border: `1px solid ${tc('--rk-border-subtle')}`,
-        borderRadius: 8,
-        padding: 16,
+        background: tcss('--rk-bg-primary'),
+        border: `1px solid ${tcss('--rk-border-subtle')}`,
+        borderRadius:parseInt(tcss('--rk-radius-md')),
+        padding: parseInt(tcss('--rk-space-4')),
         marginBottom: 16,
         cursor: 'pointer',
         transition: 'border-color 0.15s',
       }}
-      onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.borderColor = tc('--rk-border') }}
-      onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.borderColor = tc('--rk-border-subtle') }}
+      onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.borderColor = tcss('--rk-border') }}
+      onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.borderColor = tcss('--rk-border-subtle') }}
     >
-      <span style={{ color: tc('--rk-text-secondary'), fontSize: 13, marginBottom: 8, display: 'block' }}>
+      <span style={{ color: tcss('--rk-text-secondary'), fontSize:parseInt(tcss('--rk-text-base')), marginBottom: 8, display: 'block' }}>
         {section.title || '图表'}
       </span>
       {hasChartData ? (
         <div ref={chartRef} style={{ width: '100%', height: 250 }} />
       ) : (
-        <div style={{ height: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', color: tc('--rk-text-tertiary'), fontSize: 12 }}>
+        <div style={{ height: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', color: tcss('--rk-text-tertiary'), fontSize:parseInt(tcss('--rk-text-sm')) }}>
           点击以添加批注
         </div>
       )}
@@ -275,7 +275,7 @@ function buildChartOptions(title: string, data: Record<string, unknown>): Record
     title: { text: '', show: false },
     tooltip: { trigger: seriesType === 'pie' ? 'item' : 'axis' },
     grid: { left: 50, right: 20, top: 20, bottom: 30 },
-    legend: seriesType === 'pie' ? { bottom: 0, textStyle: { color: tc('--rk-text-secondary'), fontSize: 11 } } : undefined,
+    legend: seriesType === 'pie' ? { bottom: 0, textStyle: { color: tc('--rk-text-secondary'), fontSize:parseInt(tc('--rk-text-xs')) } } : undefined,
     ...data,
     series: series?.map((s: Record<string, unknown>) => ({
       ...s,
@@ -309,30 +309,30 @@ function renderKpi(
             data-target-type="kpi"
             onClick={(e) => handleClick(e, index, 'kpi', metric.label)}
             style={{
-              background: tc('--rk-bg-primary'),
-              border: `1px solid ${tc('--rk-border-subtle')}`,
-              borderRadius: 8,
+              background: tcss('--rk-bg-primary'),
+              border: `1px solid ${tcss('--rk-border-subtle')}`,
+              borderRadius:parseInt(tcss('--rk-radius-md')),
               padding: '12px 16px',
               minWidth: 140,
               cursor: 'pointer',
               transition: 'border-color 0.15s',
             }}
-            onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.borderColor = tc('--rk-border') }}
-            onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.borderColor = tc('--rk-border-subtle') }}
+            onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.borderColor = tcss('--rk-border') }}
+            onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.borderColor = tcss('--rk-border-subtle') }}
           >
-            <div style={{ fontSize: 12, color: tc('--rk-text-secondary'), marginBottom: 4 }}>{metric.label}</div>
+            <div style={{ fontSize:parseInt(tcss('--rk-text-sm')), color: tcss('--rk-text-secondary'), marginBottom: 4 }}>{metric.label}</div>
             <div style={{
-              fontSize: 24,
-              fontWeight: 700,
-              color: metric.color || tc('--rk-text-primary'),
+              fontSize:parseInt(tcss('--rk-text-2xl')),
+              fontWeight:parseInt(tcss('--rk-weight-bold')),
+              color: metric.color || tcss('--rk-text-primary'),
               lineHeight: 1.2,
             }}>
               {metric.value}
             </div>
             {metric.change && (
               <div style={{
-                fontSize: 11,
-                color: metric.change.startsWith('-') ? tc('--rk-error') : tc('--rk-success'),
+                fontSize:parseInt(tc('--rk-text-xs')),
+                color: metric.change.startsWith('-') ? tcss('--rk-error') : tcss('--rk-success'),
                 marginTop: 4,
               }}>
                 {metric.change}
@@ -353,20 +353,20 @@ function renderKpi(
       data-target-type="kpi"
       onClick={(e) => handleClick(e, index, 'kpi', section.content || 'KPI')}
       style={{
-        background: tc('--rk-bg-primary'),
-        border: `1px solid ${tc('--rk-border-subtle')}`,
-        borderRadius: 8,
+        background: tcss('--rk-bg-primary'),
+        border: `1px solid ${tcss('--rk-border-subtle')}`,
+        borderRadius:parseInt(tcss('--rk-radius-md')),
         padding: '12px 16px',
         minWidth: 140,
         cursor: 'pointer',
         marginBottom: 16,
         transition: 'border-color 0.15s',
       }}
-      onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.borderColor = tc('--rk-border') }}
-      onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.borderColor = tc('--rk-border-subtle') }}
+      onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.borderColor = tcss('--rk-border') }}
+      onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.borderColor = tcss('--rk-border-subtle') }}
     >
-      <div style={{ fontSize: 12, color: tc('--rk-text-secondary') }}>KPI</div>
-      <div style={{ fontSize: 24, fontWeight: 700, color: tc('--rk-text-primary') }}>{section.content}</div>
+      <div style={{ fontSize:parseInt(tcss('--rk-text-sm')), color: tcss('--rk-text-secondary') }}>KPI</div>
+      <div style={{ fontSize:parseInt(tcss('--rk-text-2xl')), fontWeight:parseInt(tcss('--rk-weight-bold')), color: tcss('--rk-text-primary') }}>{section.content}</div>
     </div>
   )
 }
@@ -385,9 +385,9 @@ function renderTable(
       <div
         key={`table-${index}`}
         style={{
-          background: tc('--rk-bg-primary'),
-          border: `1px solid ${tc('--rk-border-subtle')}`,
-          borderRadius: 8,
+          background: tcss('--rk-bg-primary'),
+          border: `1px solid ${tcss('--rk-border-subtle')}`,
+          borderRadius:parseInt(tcss('--rk-radius-md')),
           overflow: 'hidden',
           marginBottom: 16,
         }}
@@ -400,11 +400,11 @@ function renderTable(
                   key={`th-${cIdx}`}
                   style={{
                     padding: '10px 14px',
-                    fontSize: 12,
-                    fontWeight: 600,
-                    color: tc('--rk-text-secondary'),
-                    background: tc('--rk-bg-primary'),
-                    borderBottom: `1px solid ${tc('--rk-border-subtle')}`,
+                    fontSize:parseInt(tcss('--rk-text-sm')),
+                    fontWeight:parseInt(tcss('--rk-weight-semibold')),
+                    color: tcss('--rk-text-secondary'),
+                    background: tcss('--rk-bg-primary'),
+                    borderBottom: `1px solid ${tcss('--rk-border-subtle')}`,
                     textAlign: 'left',
                   }}
                 >
@@ -428,13 +428,13 @@ function renderTable(
                       }
                       style={{
                         padding: '8px 14px',
-                        fontSize: 13,
-                        color: tc('--rk-text-primary'),
-                        borderBottom: rIdx < rows.length - 1 ? `1px solid ${tc('--rk-border-subtle')}` : 'none',
+                        fontSize:parseInt(tcss('--rk-text-base')),
+                        color: tcss('--rk-text-primary'),
+                        borderBottom: rIdx < rows.length - 1 ? `1px solid ${tcss('--rk-border-subtle')}` : 'none',
                         cursor: 'pointer',
                         transition: 'background 0.15s',
                       }}
-                      onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = tc('--rk-bg-secondary') }}
+                      onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = tcss('--rk-bg-secondary') }}
                       onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = 'transparent' }}
                     >
                       {String(cell)}
@@ -458,18 +458,18 @@ function renderTable(
       data-target-type="table"
       onClick={(e) => handleClick(e, index, 'table', section.title || 'Table')}
       style={{
-        background: tc('--rk-bg-primary'),
-        border: `1px solid ${tc('--rk-border-subtle')}`,
-        borderRadius: 8,
-        padding: 16,
+        background: tcss('--rk-bg-primary'),
+        border: `1px solid ${tcss('--rk-border-subtle')}`,
+        borderRadius:parseInt(tcss('--rk-radius-md')),
+        padding: parseInt(tcss('--rk-space-4')),
         marginBottom: 16,
         cursor: 'pointer',
         transition: 'border-color 0.15s',
       }}
-      onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.borderColor = tc('--rk-border') }}
-      onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.borderColor = tc('--rk-border-subtle') }}
+      onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.borderColor = tcss('--rk-border') }}
+      onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.borderColor = tcss('--rk-border-subtle') }}
     >
-      <span style={{ color: tc('--rk-text-secondary'), fontSize: 13 }}>{section.content}</span>
+      <span style={{ color: tcss('--rk-text-secondary'), fontSize:parseInt(tcss('--rk-text-base')) }}>{section.content}</span>
     </div>
   )
 }
@@ -480,7 +480,7 @@ function renderCallout(
   index: number,
   handleClick: (e: React.MouseEvent, idx: number, type: AnnotationTarget['targetType'], label: string) => void,
 ): React.ReactNode {
-  const borderColor = variantColors[section.variant || 'neutral'] || tc('--rk-text-secondary')
+  const borderColor = variantColors[section.variant || 'neutral'] || tcss('--rk-text-secondary')
 
   return (
     <div
@@ -490,18 +490,18 @@ function renderCallout(
       data-target-type="callout"
       onClick={(e) => handleClick(e, index, 'callout', section.content.slice(0, 40) || 'Callout')}
       style={{
-        background: tc('--rk-bg-primary'),
+        background: tcss('--rk-bg-primary'),
         borderLeft: `3px solid ${borderColor}`,
         padding: '12px 16px',
-        borderRadius: 4,
+        borderRadius:parseInt(tcss('--rk-radius-sm')),
         marginBottom: 16,
         cursor: 'pointer',
         transition: 'background 0.15s',
       }}
-      onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = tc('--rk-bg-secondary') }}
-      onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = tc('--rk-bg-primary') }}
+      onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = tcss('--rk-bg-secondary') }}
+      onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = tcss('--rk-bg-primary') }}
     >
-      <p style={{ color: tc('--rk-text-primary'), fontSize: 14, lineHeight: 1.5, margin: 0 }}>
+      <p style={{ color: tcss('--rk-text-primary'), fontSize:parseInt(tcss('--rk-text-md')), lineHeight: 1.5, margin: 0 }}>
         {section.content}
       </p>
     </div>
@@ -524,10 +524,10 @@ function renderComponent(
       data-target-type="component"
       onClick={(e) => handleClick(e, index, 'component', label)}
       style={{
-        background: tc('--rk-bg-primary'),
-        border: `1px solid ${tc('--rk-border-subtle')}`,
-        borderRadius: 8,
-        padding: 16,
+        background: tcss('--rk-bg-primary'),
+        border: `1px solid ${tcss('--rk-border-subtle')}`,
+        borderRadius:parseInt(tcss('--rk-radius-md')),
+        padding: parseInt(tcss('--rk-space-4')),
         marginBottom: 16,
         cursor: 'pointer',
         minHeight: 80,
@@ -536,10 +536,10 @@ function renderComponent(
         justifyContent: 'center',
         transition: 'border-color 0.15s',
       }}
-      onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.borderColor = tc('--rk-border') }}
-      onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.borderColor = tc('--rk-border-subtle') }}
+      onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.borderColor = tcss('--rk-border') }}
+      onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.borderColor = tcss('--rk-border-subtle') }}
     >
-      <span style={{ color: tc('--rk-text-secondary'), fontSize: 13 }}>{label}</span>
+      <span style={{ color: tcss('--rk-text-secondary'), fontSize:parseInt(tcss('--rk-text-base')) }}>{label}</span>
     </div>
   )
 }

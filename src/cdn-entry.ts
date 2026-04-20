@@ -24,9 +24,8 @@ export { React, ReactDOM, ReactDOMClient, echarts }
 
 // Theme system (DESIGN.md support + Dark/Light mode toggle)
 export { loadDesignMd, setGlobalTheme, applyTheme, registerTheme, getTheme, getThemeNames, toggleMode, getCurrentThemeName } from './themes'
-export { parseDesignMd, mapDesignTokensToTheme, detectMode, invertTheme } from './themes'
-export { defaultDarkTheme, defaultLightTheme, linearTheme, vercelTheme } from './themes'
-export { tc, chartColors } from './core/theme-colors'
+export { parseDesignMd, mapDesignTokensToTheme, invertTheme } from './themes'
+export { tc, tcss, chartColors } from './core/theme-colors'
 
 // Re-export everything from index
 // @deprecated Use vizual skill for AI integration instead
@@ -83,6 +82,9 @@ export { InputText, InputTextSchema } from './inputs/input-text'
 export { InputSelect, InputSelectSchema } from './inputs/input-select'
 export { InputFile, InputFileSchema } from './inputs/input-file'
 export { FormBuilder, FormBuilderSchema } from './inputs/form-builder'
+
+// InteractivePlayground
+export { InteractivePlayground, InteractivePlaygroundSchema } from './components/interactive-playground'
 
 // DocView
 export { DocView } from './docview/container'

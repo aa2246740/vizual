@@ -1,5 +1,6 @@
 import type { FunnelChartProps } from './schema'
 import { createEChartsBridge } from '../../core/echarts-bridge-factory'
+import { tcss, tc } from '../../core/theme-colors'
 
 /**
  * Build ECharts funnel option from schema props.
@@ -41,16 +42,16 @@ function buildFunnelFallback(props: FunnelChartProps): Record<string, unknown> {
         show: true,
         position: 'inside',
         formatter: '{b}',
-        fontSize: 13,
+        fontSize:parseInt(tc('--rk-text-base')),
       },
       emphasis: {
         label: {
-          fontSize: 14,
+          fontSize:parseInt(tc('--rk-text-md')),
           fontWeight: 'bold',
         },
       },
       itemStyle: {
-        borderColor: '#fff',
+        borderColor: tc('--rk-bg-primary'),
         borderWidth: 1,
       },
       data: funnelData,

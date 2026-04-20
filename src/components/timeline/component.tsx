@@ -1,11 +1,11 @@
 import type { TimelineProps } from './schema'
-import { tc } from '../../core/theme-colors'
+import { tcss, tc } from '../../core/theme-colors'
 
 const styles = {
   container: {
     position: 'relative' as const,
     paddingLeft: 24,
-    fontFamily: tc('--rk-font-sans'),
+    fontFamily: tcss('--rk-font-sans'),
   },
   line: {
     position: 'absolute' as const,
@@ -13,7 +13,7 @@ const styles = {
     top: 8,
     bottom: 8,
     width: 2,
-    background: tc('--rk-border'),
+    background: tcss('--rk-border'),
   },
   event: {
     position: 'relative' as const,
@@ -27,23 +27,23 @@ const styles = {
     width: 10,
     height: 10,
     borderRadius: '50%',
-    background: tc('--rk-accent'),
-    border: `2px solid ${tc('--rk-bg-primary')}`,
+    background: tcss('--rk-accent'),
+    border: `2px solid ${tcss('--rk-bg-primary')}`,
   },
   date: {
-    fontSize: 12,
-    color: tc('--rk-text-secondary'),
+    fontSize:parseInt(tcss('--rk-text-sm')),
+    color: tcss('--rk-text-secondary'),
     marginBottom: 2,
   },
   title: {
-    fontSize: 14,
-    fontWeight: 600 as const,
-    color: tc('--rk-text-primary'),
+    fontSize:parseInt(tcss('--rk-text-md')),
+    fontWeight:parseInt(tcss('--rk-weight-semibold')) as const,
+    color: tcss('--rk-text-primary'),
     marginBottom: 2,
   },
   description: {
-    fontSize: 13,
-    color: tc('--rk-text-secondary'),
+    fontSize:parseInt(tcss('--rk-text-base')),
+    color: tcss('--rk-text-secondary'),
     lineHeight: 1.5,
   },
 }
@@ -55,7 +55,7 @@ export function Timeline({ props }: { props: TimelineProps }) {
   return (
     <div style={styles.container}>
       {props.title && (
-        <h3 style={{ fontSize: 16, fontWeight: 600, marginBottom: 12, color: tc('--rk-text-primary') }}>
+        <h3 style={{ fontSize:parseInt(tcss('--rk-text-lg')), fontWeight:parseInt(tcss('--rk-weight-semibold')), marginBottom: 12, color: tcss('--rk-text-primary') }}>
           {props.title}
         </h3>
       )}

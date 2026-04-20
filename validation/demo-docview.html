@@ -4,32 +4,33 @@
   <meta charset="utf-8">
   <title>运营管理月报 — DocView 批注演示</title>
   <style>
-    body { font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; background: #0f0f1a; color: #e0e0e0; padding: 0; margin: 0; }
-    .page-header { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); padding: 20px 24px; border-bottom: 1px solid #2a2a4a; }
-    .page-header h2 { margin: 0 0 4px 0; color: #fff; font-size: 20px; }
-    .page-header p { margin: 0; color: #888; font-size: 13px; }
-    .toolbar { display: flex; align-items: center; gap: 10px; padding: 12px 24px; background: #111118; border-bottom: 1px solid #2a2a4a; }
+    /* Theme-aware CSS using CSS variables injected by vizual theme system */
+    body { font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; background: var(--rk-bg-primary, #0f0f1a); color: var(--rk-text-primary, #e0e0e0); padding: 0; margin: 0; }
+    .page-header { background: var(--rk-bg-secondary, #1e293b); padding: 20px 24px; border-bottom: 1px solid var(--rk-border-subtle, #2d3148); }
+    .page-header h2 { margin: 0 0 4px 0; color: var(--rk-text-primary, #fff); font-size: 20px; }
+    .page-header p { margin: 0; color: var(--rk-text-secondary, #888); font-size: 13px; }
+    .toolbar { display: flex; align-items: center; gap: 10px; padding: 12px 24px; background: var(--rk-bg-tertiary, #111118); border-bottom: 1px solid var(--rk-border-subtle, #2a2a4a); }
     .toolbar button {
-      background: #2a2a3e; color: #e0e0e0; border: 1px solid #3a3a5e;
+      background: var(--rk-bg-secondary, #2a2a3e); color: var(--rk-text-primary, #e0e0e0); border: 1px solid var(--rk-border-subtle, #3a3a5e);
       padding: 6px 14px; border-radius: 4px; cursor: pointer; font-size: 13px;
     }
-    .toolbar button:hover { background: #3a3a5e; }
-    .toolbar button.primary { background: #3b82f6; border-color: #3b82f6; color: #fff; }
-    .toolbar button.primary:hover { background: #2563eb; }
+    .toolbar button:hover { background: var(--rk-bg-tertiary, #3a3a5e); }
+    .toolbar button.primary { background: var(--rk-accent, #3b82f6); border-color: var(--rk-accent, #3b82f6); color: #fff; }
+    .toolbar button.primary:hover { background: var(--rk-accent-hover, #2563eb); }
     .toolbar .badge { font-size: 11px; padding: 2px 8px; border-radius: 10px; }
-    .badge-info { background: #1e3a5f; color: #60a5fa; }
-    .badge-success { background: #1e3f2f; color: #22c55e; }
-    .badge-warn { background: #3f3a1e; color: #fbbf24; }
+    .badge-info { background: var(--rk-accent-muted, #1e3a5f); color: var(--rk-accent, #60a5fa); }
+    .badge-success { background: var(--rk-success-muted, #1e3f2f); color: var(--rk-success, #22c55e); }
+    .badge-warn { background: var(--rk-warning-muted, #3f3a1e); color: var(--rk-warning, #fbbf24); }
     #app { width: 100%; min-height: 500px; }
-    #action-section { padding: 16px 24px; }
-    #action-section h4 { color: #888; font-size: 13px; margin: 0 0 8px 0; }
-    #action-log { background: #0a0a14; border: 1px solid #2a2a4e; border-radius: 4px; padding: 10px; font-family: monospace; font-size: 12px; max-height: 200px; overflow-y: auto; color: #ccc; }
-    .log-entry { padding: 3px 0; border-bottom: 1px solid #1a1a2e; }
+    #action-section { padding: 16px 24px; background: var(--rk-bg-secondary, #111118); }
+    #action-section h4 { color: var(--rk-text-secondary, #888); font-size: 13px; margin: 0 0 8px 0; }
+    #action-log { background: var(--rk-bg-primary, #0a0a14); border: 1px solid var(--rk-border-subtle, #2a2a4e); border-radius: 4px; padding: 10px; font-family: monospace; font-size: 12px; max-height: 200px; overflow-y: auto; color: var(--rk-text-primary, #ccc); }
+    .log-entry { padding: 3px 0; border-bottom: 1px solid var(--rk-border-subtle, #1a1a2e); }
     .log-entry:last-child { border-bottom: none; }
-    .log-time { color: #555; margin-right: 6px; }
-    .log-name { color: #fbbf24; font-weight: 600; }
-    .log-params { color: #777; font-size: 11px; }
-    .footer { text-align: center; padding: 12px; color: #444; font-size: 11px; }
+    .log-time { color: var(--rk-text-tertiary, #555); margin-right: 6px; }
+    .log-name { color: var(--rk-warning, #fbbf24); font-weight: 600; }
+    .log-params { color: var(--rk-text-tertiary, #777); font-size: 11px; }
+    .footer { text-align: center; padding: 12px; color: var(--rk-text-tertiary, #444); font-size: 11px; }
   </style>
 </head>
 <body>
@@ -56,6 +57,14 @@
 
   <script src="../dist/vizual.standalone.js"></script>
   <script>
+    // CMB light theme
+    var cmbTokens = {"colors":[{"name":"cmb-red","value":"#c8152d"},{"name":"accent","value":"#c8152d"},{"name":"cmb-black","value":"#000000"},{"name":"text","value":"#000000"},{"name":"white","value":"#ffffff"},{"name":"background","value":"#ffffff"},{"name":"dark-gray","value":"#333333"},{"name":"text-secondary","value":"#333333"},{"name":"card","value":"#f5f5f5"},{"name":"success","value":"#10b981"},{"name":"warning","value":"#f59e0b"},{"name":"error","value":"#ef4444"}],"typography":{"fontFamily":"\"Founder Lanting Hei\", Arial, sans-serif","sizes":{"body":"14px"},"weights":{"regular":"400"}},"spacing":{"baseUnit":"8px","scale":{"space-1":"4px"}},"radius":{"scale":{"md":"8px"}}};
+    var cmb = Vizual.mapDesignTokensToTheme(cmbTokens, 'cmb');
+    Vizual.registerTheme(cmb.name, cmb);
+    var cmbL = Vizual.invertTheme(cmb);
+    Vizual.registerTheme(cmbL.name, cmbL);
+    Vizual.setGlobalTheme('cmb');
+
     // --- 操作日志 ---
     var actionLog = document.getElementById('action-log');
     function logAction(name, params) {

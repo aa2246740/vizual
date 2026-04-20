@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react'
 import { useBoundProp } from '@json-render/react'
-import { tc } from '../../core/theme-colors'
+import { tcss, tc } from '../../core/theme-colors'
 import type { FormBuilderProps } from './schema'
 
 type Field = FormBuilderProps['fields'][0]
@@ -75,30 +75,30 @@ export function FormBuilder({ props, bindings }: { props: FormBuilderProps; bind
   })
 
   const labelStyle: React.CSSProperties = {
-    display: 'block', fontSize: 13, fontWeight: 500,
-    color: tc('--rk-text-secondary'), marginBottom: 4,
+    display: 'block', fontSize:parseInt(tcss('--rk-text-base')), fontWeight:parseInt(tcss('--rk-weight-medium')),
+    color: tcss('--rk-text-secondary'), marginBottom: 4,
   }
   const inputStyle: React.CSSProperties = {
-    width: '100%', padding: '8px 12px', fontSize: 14,
-    background: tc('--rk-bg-primary'), border: `1px solid ${tc('--rk-border-subtle')}`,
-    borderRadius: 6, color: tc('--rk-text-primary'), outline: 'none', boxSizing: 'border-box',
+    width: '100%', padding: '8px 12px', fontSize:parseInt(tcss('--rk-text-md')),
+    background: tcss('--rk-bg-primary'), border: `1px solid ${tcss('--rk-border-subtle')}`,
+    borderRadius:parseInt(tcss('--rk-radius-md')), color: tcss('--rk-text-primary'), outline: 'none', boxSizing: 'border-box',
   }
 
   const renderLabel = (field: Field) =>
     field.label && <label style={labelStyle}>
       {field.label}
-      {field.required && <span style={{ color: tc('--rk-error'), marginLeft: 2 }}>*</span>}
+      {field.required && <span style={{ color: tcss('--rk-error'), marginLeft: 2 }}>*</span>}
     </label>
 
   const renderError = (field: Field, error?: string) =>
     (error || field.description) && <div style={{
-      fontSize: 12, marginTop: 4, color: error ? tc('--rk-error') : tc('--rk-text-tertiary'),
+      fontSize:parseInt(tcss('--rk-text-sm')), marginTop: 4, color: error ? tcss('--rk-error') : tcss('--rk-text-tertiary'),
     }}>{error || field.description}</div>
 
   const renderField = (field: Field) => {
     const value = formData?.[field.name]
     const error = touched[field.name] ? errors[field.name] : undefined
-    const borderStyle = error ? tc('--rk-error') : tc('--rk-border-subtle')
+    const borderStyle = error ? tcss('--rk-error') : tcss('--rk-border-subtle')
 
     // === SELECT ===
     if (field.type === 'select') {
@@ -126,10 +126,10 @@ export function FormBuilder({ props, bindings }: { props: FormBuilderProps; bind
             const selected = String(value ?? '') === String(opt.value)
             return <label key={i} style={{
               display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer',
-              padding: '6px 12px', borderRadius: 6,
-              border: `1px solid ${selected ? tc('--rk-accent') : tc('--rk-border-subtle')}`,
-              background: selected ? tc('--rk-accent-muted') : tc('--rk-bg-primary'),
-              color: selected ? tc('--rk-accent') : tc('--rk-text-secondary'), fontSize: 13,
+              padding: '6px 12px', borderRadius:parseInt(tcss('--rk-radius-md')),
+              border: `1px solid ${selected ? tcss('--rk-accent') : tcss('--rk-border-subtle')}`,
+              background: selected ? tcss('--rk-accent-muted') : tcss('--rk-bg-primary'),
+              color: selected ? tcss('--rk-accent') : tcss('--rk-text-secondary'), fontSize:parseInt(tcss('--rk-text-base')),
             }}>
               <input type="radio" name={field.name} value={opt.value}
                 checked={selected} disabled={field.disabled}
@@ -137,10 +137,10 @@ export function FormBuilder({ props, bindings }: { props: FormBuilderProps; bind
                 style={{ display: 'none' }} />
               <span style={{
                 width: 14, height: 14, borderRadius: '50%',
-                border: `2px solid ${selected ? tc('--rk-accent') : tc('--rk-text-tertiary')}`,
+                border: `2px solid ${selected ? tcss('--rk-accent') : tcss('--rk-text-tertiary')}`,
                 display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
               }}>
-                {selected && <span style={{ width: 6, height: 6, borderRadius: '50%', background: tc('--rk-accent') }} />}
+                {selected && <span style={{ width: 6, height: 6, borderRadius: '50%', background: tcss('--rk-accent') }} />}
               </span>
               {opt.label}
             </label>
@@ -161,10 +161,10 @@ export function FormBuilder({ props, bindings }: { props: FormBuilderProps; bind
             const checked = selected.includes(opt.value)
             return <label key={i} style={{
               display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer',
-              padding: '6px 12px', borderRadius: 6,
-              border: `1px solid ${checked ? tc('--rk-accent') : tc('--rk-border-subtle')}`,
-              background: checked ? tc('--rk-accent-muted') : tc('--rk-bg-primary'),
-              color: checked ? tc('--rk-accent') : tc('--rk-text-secondary'), fontSize: 13,
+              padding: '6px 12px', borderRadius:parseInt(tcss('--rk-radius-md')),
+              border: `1px solid ${checked ? tcss('--rk-accent') : tcss('--rk-border-subtle')}`,
+              background: checked ? tcss('--rk-accent-muted') : tcss('--rk-bg-primary'),
+              color: checked ? tcss('--rk-accent') : tcss('--rk-text-secondary'), fontSize:parseInt(tcss('--rk-text-base')),
             }}>
               <input type="checkbox" checked={checked} disabled={field.disabled}
                 onChange={() => {
@@ -175,11 +175,11 @@ export function FormBuilder({ props, bindings }: { props: FormBuilderProps; bind
                 }}
                 style={{ display: 'none' }} />
               <span style={{
-                width: 14, height: 14, borderRadius: 3,
-                border: `2px solid ${checked ? tc('--rk-accent') : tc('--rk-text-tertiary')}`,
+                width: 14, height: 14, borderRadius:parseInt(tcss('--rk-radius-xs')),
+                border: `2px solid ${checked ? tcss('--rk-accent') : tcss('--rk-text-tertiary')}`,
                 display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                background: checked ? tc('--rk-accent') : 'transparent',
-                color: tc('--rk-text-primary'), fontSize: 10, lineHeight: 1,
+                background: checked ? tcss('--rk-accent') : 'transparent',
+                color: tcss('--rk-text-primary'), fontSize:parseInt(tcss('--rk-text-xs')), lineHeight: 1,
               }}>{checked ? '✓' : ''}</span>
               {opt.label}
             </label>
@@ -201,16 +201,16 @@ export function FormBuilder({ props, bindings }: { props: FormBuilderProps; bind
             opacity: field.disabled ? 0.5 : 1,
           }}>
           <div style={{
-            width: 40, height: 22, borderRadius: 11, position: 'relative',
-            background: on ? tc('--rk-accent') : tc('--rk-bg-tertiary'), transition: 'background 0.2s',
+            width: 40, height: 22, borderRadius: parseInt(tcss('--rk-radius-pill')), position: 'relative',
+            background: on ? tcss('--rk-accent') : tcss('--rk-bg-tertiary'), transition: 'background 0.2s',
           }}>
             <div style={{
-              width: 18, height: 18, borderRadius: '50%', background: tc('--rk-text-primary'),
+              width: 18, height: 18, borderRadius: '50%', background: tcss('--rk-text-primary'),
               position: 'absolute', top: 2,
               left: on ? 20 : 2, transition: 'left 0.2s',
             }} />
           </div>
-          <span style={{ fontSize: 13, color: tc('--rk-text-secondary') }}>{on ? 'On' : 'Off'}</span>
+          <span style={{ fontSize:parseInt(tcss('--rk-text-base')), color: tcss('--rk-text-secondary') }}>{on ? 'On' : 'Off'}</span>
         </div>
         {renderError(field, error)}
       </div>
@@ -228,8 +228,8 @@ export function FormBuilder({ props, bindings }: { props: FormBuilderProps; bind
           <input type="range" min={min} max={max} step={step} value={numVal}
             disabled={field.disabled}
             onChange={(e) => updateField(field.name, Number(e.target.value))}
-            style={{ flex: 1, accentColor: tc('--rk-accent') }} />
-          <span style={{ fontSize: 14, color: tc('--rk-text-primary'), minWidth: 40, textAlign: 'right' }}>{numVal}</span>
+            style={{ flex: 1, accentColor: tcss('--rk-accent') }} />
+          <span style={{ fontSize:parseInt(tcss('--rk-text-md')), color: tcss('--rk-text-primary'), minWidth: 40, textAlign: 'right' }}>{numVal}</span>
         </div>
         {renderError(field, error)}
       </div>
@@ -237,7 +237,7 @@ export function FormBuilder({ props, bindings }: { props: FormBuilderProps; bind
 
     // === COLOR ===
     if (field.type === 'color') {
-      const colorVal = String(value || tc('--rk-accent'))
+      const colorVal = String(value || tcss('--rk-accent'))
       return <div key={field.name} style={{ marginBottom: 12 }}>
         {renderLabel(field)}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -245,14 +245,14 @@ export function FormBuilder({ props, bindings }: { props: FormBuilderProps; bind
             const inp = document.getElementById('color-' + field.name)
             inp?.click()
           }} style={{
-            width: 36, height: 36, borderRadius: 6, cursor: 'pointer',
-            background: colorVal, border: '2px solid #2a2a2a',
+            width: 36, height: 36, borderRadius:parseInt(tcss('--rk-radius-md')), cursor: 'pointer',
+            background: colorVal, border: `2px solid ${tcss('--rk-border-subtle')}`,
           }} />
           <input id={'color-' + field.name} type="color" value={colorVal}
             disabled={field.disabled}
             onChange={(e) => updateField(field.name, e.target.value)}
             style={{ position: 'absolute', opacity: 0, pointerEvents: 'none' }} />
-          <span style={{ fontSize: 13, color: tc('--rk-text-secondary'), fontFamily: 'monospace' }}>{colorVal}</span>
+          <span style={{ fontSize:parseInt(tcss('--rk-text-base')), color: tcss('--rk-text-secondary'), fontFamily: 'monospace' }}>{colorVal}</span>
         </div>
         {renderError(field, error)}
       </div>
@@ -266,7 +266,7 @@ export function FormBuilder({ props, bindings }: { props: FormBuilderProps; bind
         <div style={{ position: 'relative' }}>
           {!dateVal && <div style={{
             position: 'absolute', top: '50%', left: 12, transform: 'translateY(-50%)',
-            fontSize: 14, color: tc('--rk-text-tertiary'), pointerEvents: 'none',
+            fontSize:parseInt(tcss('--rk-text-md')), color: tcss('--rk-text-tertiary'), pointerEvents: 'none',
           }}>{field.placeholder || 'Select a date'}</div>}
           <input type="date" value={dateVal}
             disabled={field.disabled}
@@ -286,7 +286,7 @@ export function FormBuilder({ props, bindings }: { props: FormBuilderProps; bind
         <div style={{ position: 'relative' }}>
           {!dtVal && <div style={{
             position: 'absolute', top: '50%', left: 12, transform: 'translateY(-50%)',
-            fontSize: 14, color: tc('--rk-text-tertiary'), pointerEvents: 'none',
+            fontSize:parseInt(tcss('--rk-text-md')), color: tcss('--rk-text-tertiary'), pointerEvents: 'none',
           }}>{field.placeholder || 'Select date & time'}</div>}
           <input type="datetime-local" value={dtVal}
             disabled={field.disabled}
@@ -306,7 +306,7 @@ export function FormBuilder({ props, bindings }: { props: FormBuilderProps; bind
         <div style={{ position: 'relative' }}>
           {!timeVal && <div style={{
             position: 'absolute', top: '50%', left: 12, transform: 'translateY(-50%)',
-            fontSize: 14, color: tc('--rk-text-tertiary'), pointerEvents: 'none',
+            fontSize:parseInt(tcss('--rk-text-md')), color: tcss('--rk-text-tertiary'), pointerEvents: 'none',
           }}>{field.placeholder || 'Select time'}</div>}
           <input type="time" value={timeVal}
             disabled={field.disabled}
@@ -336,12 +336,12 @@ export function FormBuilder({ props, bindings }: { props: FormBuilderProps; bind
             <span key={star} onClick={() => !field.disabled && updateField(field.name, star)}
               onMouseEnter={() => !field.disabled && setHoverRating(prev => ({ ...prev, [field.name]: star }))}
               style={{
-                fontSize: 24, cursor: field.disabled ? 'default' : 'pointer',
-                color: star <= displayRating ? '#fbbf24' : tc('--rk-bg-tertiary'),
+                fontSize:parseInt(tcss('--rk-text-2xl')), cursor: field.disabled ? 'default' : 'pointer',
+                color: star <= displayRating ? '#fbbf24' : tcss('--rk-bg-tertiary'),
                 transition: 'color 0.15s',
               }}>★</span>
           ))}
-          <span style={{ fontSize: 13, color: tc('--rk-text-secondary'), marginLeft: 6, lineHeight: '28px' }}>
+          <span style={{ fontSize:parseInt(tcss('--rk-text-base')), color: tcss('--rk-text-secondary'), marginLeft: 6, lineHeight: '28px' }}>
             {currentRating}/{maxStars}
           </span>
         </div>
@@ -357,7 +357,7 @@ export function FormBuilder({ props, bindings }: { props: FormBuilderProps; bind
           onChange={(e) => { if (e.target.files?.[0]) updateField(field.name, e.target.files[0].name) }}
           style={{ display: 'none' }} />
         <div onClick={(e) => (e.currentTarget.previousElementSibling as HTMLInputElement)?.click()}
-          style={{ ...inputStyle, textAlign: 'center', cursor: 'pointer', padding: '16px 12px', border: '2px dashed #2a2a2a' }}>
+          style={{ ...inputStyle, textAlign: 'center', cursor: 'pointer', padding: '16px 12px', border: `2px dashed ${tcss('--rk-border-subtle')}` }}>
           {value ? String(value) : 'Click to upload'}
         </div>
         {renderError(field, error)}
@@ -389,7 +389,7 @@ export function FormBuilder({ props, bindings }: { props: FormBuilderProps; bind
   }
 
   return <div>
-    {props.title && <h3 style={{ fontSize: 16, fontWeight: 600, marginBottom: 16, color: tc('--rk-text-primary') }}>{props.title}</h3>}
+    {props.title && <h3 style={{ fontSize:parseInt(tcss('--rk-text-lg')), fontWeight:parseInt(tcss('--rk-weight-semibold')), marginBottom: 16, color: tcss('--rk-text-primary') }}>{props.title}</h3>}
     <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: '0 24px' }}>
       {visibleFields.map(renderField)}
     </div>

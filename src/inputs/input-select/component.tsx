@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useBoundProp } from '@json-render/react'
-import { tc } from '../../core/theme-colors'
+import { tcss, tc } from '../../core/theme-colors'
 import type { InputSelectProps } from './schema'
 
 /**
@@ -16,11 +16,11 @@ export function InputSelect({ props, bindings }: { props: InputSelectProps; bind
 
   return <div style={{ marginBottom: 12 }}>
     {props.label && <label style={{
-      display: 'block', fontSize: 13, fontWeight: 500,
-      color: tc('--rk-text-secondary'), marginBottom: 4,
+      display: 'block', fontSize:parseInt(tcss('--rk-text-base')), fontWeight:parseInt(tcss('--rk-weight-medium')),
+      color: tcss('--rk-text-secondary'), marginBottom: 4,
     }}>
       {props.label}
-      {props.required && <span style={{ color: tc('--rk-error'), marginLeft: 2 }}>*</span>}
+      {props.required && <span style={{ color: tcss('--rk-error'), marginLeft: 2 }}>*</span>}
     </label>}
     <select
       value={value}
@@ -31,9 +31,9 @@ export function InputSelect({ props, bindings }: { props: InputSelectProps; bind
           ? Number(v) : v)
       }}
       style={{
-        width: '100%', padding: '8px 12px', fontSize: 14,
-        background: tc('--rk-bg-primary'), border: `1px solid ${props.error ? tc('--rk-error') : tc('--rk-border-subtle')}`,
-        borderRadius: 6, color: tc('--rk-text-primary'), outline: 'none',
+        width: '100%', padding: '8px 12px', fontSize:parseInt(tcss('--rk-text-md')),
+        background: tcss('--rk-bg-primary'), border: `1px solid ${props.error ? tcss('--rk-error') : tcss('--rk-border-subtle')}`,
+        borderRadius:parseInt(tcss('--rk-radius-md')), color: tcss('--rk-text-primary'), outline: 'none',
         boxSizing: 'border-box',
       }}
     >
@@ -41,8 +41,8 @@ export function InputSelect({ props, bindings }: { props: InputSelectProps; bind
       {props.options.map((opt, i) => <option key={i} value={opt.value}>{opt.label}</option>)}
     </select>
     {(props.error || props.description) && <div style={{
-      fontSize: 12, marginTop: 4,
-      color: props.error ? tc('--rk-error') : tc('--rk-text-tertiary'),
+      fontSize:parseInt(tcss('--rk-text-sm')), marginTop: 4,
+      color: props.error ? tcss('--rk-error') : tcss('--rk-text-tertiary'),
     }}>
       {props.error || props.description}
     </div>}

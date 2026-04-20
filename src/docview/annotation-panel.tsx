@@ -1,5 +1,5 @@
 import type { Annotation, AnnotationStatus } from './types'
-import { tc } from '../core/theme-colors'
+import { tcss, tc } from '../core/theme-colors'
 
 export interface AnnotationPanelProps {
   /** Current annotations to display */
@@ -18,21 +18,6 @@ export interface AnnotationPanelProps {
   orphans?: Annotation[]
   /** Submit all drafts for AI revision */
   onSubmitAllDrafts?: () => void
-}
-
-const statusLabels: Record<AnnotationStatus, { label: string; color: string; bg: string }> = {
-  draft: { label: '草稿', color: '#fbbf24', bg: '#fbbf2420' },
-  active: { label: '已提交', color: tc('--rk-accent'), bg: '#3b82f620' },
-  resolved: { label: '已解决', color: tc('--rk-success'), bg: '#22c55e20' },
-  orphaned: { label: '孤立', color: tc('--rk-text-secondary'), bg: '#88888820' },
-}
-
-const panelContainer: React.CSSProperties = {
-  background: tc('--rk-bg-primary'),
-  borderLeft: `1px solid ${tc('--rk-border-subtle')}`,
-  display: 'flex',
-  flexDirection: 'column',
-  overflow: 'hidden',
 }
 
 /**
@@ -58,14 +43,25 @@ export function AnnotationPanel({
   orphans = [],
   onSubmitAllDrafts,
 }: AnnotationPanelProps) {
+  // Computed at render time to pick up theme changes
+  const statusLabels: Record<AnnotationStatus, { label: string; color: string; bg: string }> = {
+    draft: { label: '草稿', color: '#fbbf24', bg: '#fbbf2420' },
+    active: { label: '已提交', color: tcss('--rk-accent'), bg: tcss('--rk-accent-muted') },
+    resolved: { label: '已解决', color: tcss('--rk-success'), bg: tcss('--rk-success-muted') },
+    orphaned: { label: '孤立', color: tcss('--rk-text-secondary'), bg: tcss('--rk-bg-tertiary') },
+  }
+
   const panelStyle: React.CSSProperties = {
-    ...panelContainer,
+    background: tcss('--rk-bg-primary'),
+    display: 'flex',
+    flexDirection: 'column',
+    overflow: 'hidden',
     width: position === 'bottom' ? '100%' : 320,
     height: position === 'bottom' ? 240 : 'auto',
     maxHeight: position === 'bottom' ? '40vh' : '100%',
-    borderLeft: position === 'right' ? `1px solid ${tc('--rk-border-subtle')}` : undefined,
-    borderRight: position === 'left' ? `1px solid ${tc('--rk-border-subtle')}` : undefined,
-    borderTop: position === 'bottom' ? `1px solid ${tc('--rk-border-subtle')}` : undefined,
+    borderLeft: position === 'right' ? `1px solid ${tcss('--rk-border-subtle')}` : undefined,
+    borderRight: position === 'left' ? `1px solid ${tcss('--rk-border-subtle')}` : undefined,
+    borderTop: position === 'bottom' ? `1px solid ${tcss('--rk-border-subtle')}` : undefined,
   }
 
   return (
@@ -73,27 +69,27 @@ export function AnnotationPanel({
       {/* Header */}
       <div style={{
         padding: '12px 16px',
-        borderBottom: `1px solid ${tc('--rk-border-subtle')}`,
+        borderBottom: `1px solid ${tcss('--rk-border-subtle')}`,
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
       }}>
         <div>
-          <span style={{ fontSize: 14, fontWeight: 600, color: tc('--rk-text-primary') }}>
+          <span style={{ fontSize:parseInt(tcss('--rk-text-md')), fontWeight:parseInt(tcss('--rk-weight-semibold')), color: tcss('--rk-text-primary') }}>
             批注
           </span>
-          <span style={{ fontSize: 12, color: tc('--rk-text-secondary'), marginLeft: 8 }}>
+          <span style={{ fontSize:parseInt(tcss('--rk-text-sm')), color: tcss('--rk-text-secondary'), marginLeft: 8 }}>
             {annotations.length}
           </span>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
           {drafts.length > 0 && (
-            <span style={{ fontSize: 11, color: '#fbbf24', background: '#fbbf2420', padding: '2px 8px', borderRadius: 10 }}>
+            <span style={{ fontSize:parseInt(tcss('--rk-text-xs')), color: '#fbbf24', background: '#fbbf2420', padding: '2px 8px', borderRadius:parseInt(tcss('--rk-radius-lg')) }}>
               {drafts.length} 草稿
             </span>
           )}
           {orphans.length > 0 && (
-            <span style={{ fontSize: 11, color: tc('--rk-text-secondary'), background: '#88888820', padding: '2px 8px', borderRadius: 10 }}>
+            <span style={{ fontSize:parseInt(tcss('--rk-text-xs')), color: tcss('--rk-text-secondary'), background: tcss('--rk-bg-tertiary'), padding: '2px 8px', borderRadius:parseInt(tcss('--rk-radius-lg')) }}>
               {orphans.length} 孤立
             </span>
           )}
@@ -102,16 +98,16 @@ export function AnnotationPanel({
 
       {/* Batch submit button */}
       {drafts.length > 0 && (
-        <div style={{ padding: '8px 16px', borderBottom: `1px solid ${tc('--rk-border-subtle')}` }}>
+        <div style={{ padding: '8px 16px', borderBottom: `1px solid ${tcss('--rk-border-subtle')}` }}>
           <button
             onClick={onSubmitAllDrafts}
             style={{
-              width: '100%', padding: '8px 12px', fontSize: 13, fontWeight: 500,
-              background: tc('--rk-accent'), color: '#fff', border: 'none', borderRadius: 6,
+              width: '100%', padding: '8px 12px', fontSize:parseInt(tcss('--rk-text-base')), fontWeight:parseInt(tcss('--rk-weight-medium')),
+              background: tcss('--rk-accent'), color: '#fff', border: 'none', borderRadius:parseInt(tcss('--rk-radius-md')),
               cursor: 'pointer', transition: 'background 0.15s',
             }}
-            onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = tc('--rk-accent-hover') }}
-            onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = tc('--rk-accent') }}
+            onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = tcss('--rk-accent-hover') }}
+            onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = tcss('--rk-accent') }}
           >
             批量提交 ({drafts.length})
           </button>
@@ -121,7 +117,7 @@ export function AnnotationPanel({
       {/* Annotation list */}
       <div style={{ flex: 1, overflowY: 'auto', padding: '8px 0' }}>
         {annotations.length === 0 && (
-          <div style={{ padding: '24px 16px', textAlign: 'center', color: tc('--rk-text-tertiary'), fontSize: 13 }}>
+          <div style={{ padding: '24px 16px', textAlign: 'center', color: tcss('--rk-text-tertiary'), fontSize:parseInt(tcss('--rk-text-base')) }}>
             选中文档中的文字以添加批注
           </div>
         )}
@@ -133,13 +129,13 @@ export function AnnotationPanel({
               onClick={() => onClickAnnotation?.(ann)}
               style={{
                 padding: '10px 16px',
-                borderBottom: `1px solid ${tc('--rk-border-subtle')}`,
+                borderBottom: `1px solid ${tcss('--rk-border-subtle')}`,
                 cursor: 'pointer',
                 transition: 'background 0.15s',
                 opacity: ann.status === 'orphaned' ? 0.6 : 1,
               }}
               onMouseEnter={(e) => {
-                (e.currentTarget as HTMLElement).style.background = tc('--rk-bg-secondary')
+                (e.currentTarget as HTMLElement).style.background = tcss('--rk-bg-secondary')
               }}
               onMouseLeave={(e) => {
                 (e.currentTarget as HTMLElement).style.background = 'transparent'
@@ -153,32 +149,32 @@ export function AnnotationPanel({
                   flexShrink: 0,
                 }} />
                 <span style={{
-                  fontSize: 10, fontWeight: 500,
+                  fontSize:parseInt(tcss('--rk-text-xs')), fontWeight:parseInt(tcss('--rk-weight-medium')),
                   color: status.color,
                   background: status.bg,
                   padding: '1px 6px',
-                  borderRadius: 8,
+                  borderRadius:parseInt(tcss('--rk-radius-md')),
                 }}>
                   {status.label}
                 </span>
                 {ann.target && (
                   <span style={{
-                    fontSize: 10, fontWeight: 500,
-                    color: '#a855f7', background: '#a855f720',
-                    padding: '1px 6px', borderRadius: 8,
+                    fontSize:parseInt(tcss('--rk-text-xs')), fontWeight:parseInt(tcss('--rk-weight-medium')),
+                    color: tcss('--rk-accent'), background: tcss('--rk-accent-muted'),
+                    padding: '1px 6px', borderRadius:parseInt(tcss('--rk-radius-md')),
                   }}>
                     {ann.target.targetType === 'chart' ? '📊 ' : ''}{ann.target.targetType}
                     {ann.target.chartDataPoint ? ' › 数据点' : ''}
                   </span>
                 )}
-                <span style={{ fontSize: 10, color: tc('--rk-text-tertiary'), marginLeft: 'auto' }}>
+                <span style={{ fontSize:parseInt(tcss('--rk-text-xs')), color: tcss('--rk-text-tertiary'), marginLeft: 'auto' }}>
                   {formatTime(ann.createdAt)}
                 </span>
               </div>
 
               {/* Text excerpt */}
               <div style={{
-                fontSize: 12, color: tc('--rk-text-primary'), lineHeight: 1.4,
+                fontSize:parseInt(tcss('--rk-text-sm')), color: tcss('--rk-text-primary'), lineHeight: 1.4,
                 marginBottom: ann.note ? 4 : 0,
                 textDecoration: ann.status === 'orphaned' ? 'line-through' : 'none',
               }}>
@@ -187,7 +183,7 @@ export function AnnotationPanel({
 
               {/* Note */}
               {ann.note && (
-                <div style={{ fontSize: 12, color: tc('--rk-text-secondary'), lineHeight: 1.3 }}>
+                <div style={{ fontSize:parseInt(tcss('--rk-text-sm')), color: tcss('--rk-text-secondary'), lineHeight: 1.3 }}>
                   {ann.note}
                 </div>
               )}
@@ -197,12 +193,12 @@ export function AnnotationPanel({
                 {ann.status === 'orphaned' && (
                   <button
                     onClick={(e) => { e.stopPropagation(); onUpdateStatus(ann.id, 'resolved') }}
-                    style={{ fontSize: 11, color: tc('--rk-success'), background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+                    style={{ fontSize:parseInt(tcss('--rk-text-xs')), color: tcss('--rk-success'), background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
                   >确认</button>
                 )}
                 <button
                   onClick={(e) => { e.stopPropagation(); onDelete(ann.id) }}
-                  style={{ fontSize: 11, color: tc('--rk-error'), background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+                  style={{ fontSize:parseInt(tcss('--rk-text-xs')), color: tcss('--rk-error'), background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
                 >删除</button>
               </div>
             </div>

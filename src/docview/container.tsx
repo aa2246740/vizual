@@ -1,4 +1,5 @@
 import { useRef, useCallback, useState, useEffect } from 'react'
+import { tcss, tc } from '../core/theme-colors'
 import { useTextSelection } from './use-text-selection'
 import { useAnnotations } from './use-annotations'
 import { useRevisionLoop } from './use-revision-loop'
@@ -171,6 +172,7 @@ export function DocView({
     position: 'relative',
     overflow: 'auto',
     minHeight: 0,
+    background: tcss('--rk-bg-primary'),
   }
 
   return (

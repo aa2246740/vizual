@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback } from 'react'
-import { tc } from '../../core/theme-colors'
+import { tcss, tc } from '../../core/theme-colors'
 import type { InputFileProps } from './schema'
 
 interface FileInfo { name: string; size: string }
@@ -47,8 +47,8 @@ export function InputFile({ props }: { props: InputFileProps }) {
 
   return <div style={{ marginBottom: 12 }}>
     {props.label && <label style={{
-      display: 'block', fontSize: 13, fontWeight: 500,
-      color: tc('--rk-text-secondary'), marginBottom: 4,
+      display: 'block', fontSize:parseInt(tcss('--rk-text-base')), fontWeight:parseInt(tcss('--rk-weight-medium')),
+      color: tcss('--rk-text-secondary'), marginBottom: 4,
     }}>
       {props.label}
     </label>}
@@ -56,20 +56,20 @@ export function InputFile({ props }: { props: InputFileProps }) {
     {/* File list */}
     {files.length > 0 && <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: showUploadArea ? 8 : 0 }}>
       {files.map((f, i) => <div key={i} style={{
-        fontSize: 13, color: tc('--rk-text-primary'), display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '8px 10px', background: tc('--rk-bg-primary'), borderRadius: 6, border: `1px solid ${tc('--rk-border')}`,
+        fontSize:parseInt(tcss('--rk-text-base')), color: tcss('--rk-text-primary'), display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        padding: '8px 10px', background: tcss('--rk-bg-primary'), borderRadius:parseInt(tcss('--rk-radius-md')), border: `1px solid ${tcss('--rk-border')}`,
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, overflow: 'hidden' }}>
-          <span style={{ fontSize: 16 }}>📎</span>
+          <span style={{ fontSize:parseInt(tcss('--rk-text-lg')) }}>📎</span>
           <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.name}</span>
-          <span style={{ color: tc('--rk-text-tertiary'), fontSize: 11, flexShrink: 0 }}>{f.size}</span>
+          <span style={{ color: tcss('--rk-text-tertiary'), fontSize:parseInt(tcss('--rk-text-xs')), flexShrink: 0 }}>{f.size}</span>
         </div>
         <button onClick={() => removeFile(i)} style={{
-          background: 'none', border: 'none', color: tc('--rk-text-tertiary'), cursor: 'pointer',
-          fontSize: 16, padding: '0 4px', lineHeight: 1, flexShrink: 0,
+          background: 'none', border: 'none', color: tcss('--rk-text-tertiary'), cursor: 'pointer',
+          fontSize:parseInt(tcss('--rk-text-lg')), padding: '0 4px', lineHeight: 1, flexShrink: 0,
         }} title="Remove file"
-          onMouseEnter={(e) => (e.currentTarget.style.color = tc('--rk-error'))}
-          onMouseLeave={(e) => (e.currentTarget.style.color = tc('--rk-text-tertiary'))}>✕</button>
+          onMouseEnter={(e) => (e.currentTarget.style.color = tcss('--rk-error'))}
+          onMouseLeave={(e) => (e.currentTarget.style.color = tcss('--rk-text-tertiary'))}>✕</button>
       </div>)}
     </div>}
 
@@ -80,17 +80,17 @@ export function InputFile({ props }: { props: InputFileProps }) {
       onDragLeave={() => setDragOver(false)}
       onDrop={(e) => { e.preventDefault(); setDragOver(false); handleFiles(e.dataTransfer.files) }}
       style={{
-        padding: '20px 16px', border: `2px dashed ${dragOver ? tc('--rk-accent') : props.error ? tc('--rk-error') : tc('--rk-border-subtle')}`,
-        borderRadius: 8, textAlign: 'center',
+        padding: '20px 16px', border: `2px dashed ${dragOver ? tcss('--rk-accent') : props.error ? tcss('--rk-error') : tcss('--rk-border-subtle')}`,
+        borderRadius:parseInt(tcss('--rk-radius-md')), textAlign: 'center',
         cursor: props.disabled ? 'not-allowed' : 'pointer',
-        background: dragOver ? tc('--rk-accent-muted') : tc('--rk-bg-primary'), opacity: props.disabled ? 0.5 : 1,
+        background: dragOver ? tcss('--rk-accent-muted') : tcss('--rk-bg-primary'), opacity: props.disabled ? 0.5 : 1,
       }}
     >
-      <div style={{ fontSize: 14, color: tc('--rk-text-secondary') }}>
+      <div style={{ fontSize:parseInt(tcss('--rk-text-md')), color: tcss('--rk-text-secondary') }}>
         {isMulti ? 'Drop files here or click to browse' : 'Drop a file here or click to browse'}
       </div>
-      {props.accept && <div style={{ fontSize: 11, color: tc('--rk-text-tertiary'), marginTop: 4 }}>Accepts: {props.accept}</div>}
-      {isMulti && maxFiles > 0 && <div style={{ fontSize: 11, color: tc('--rk-text-tertiary'), marginTop: 2 }}>
+      {props.accept && <div style={{ fontSize:parseInt(tcss('--rk-text-xs')), color: tcss('--rk-text-tertiary'), marginTop: 4 }}>Accepts: {props.accept}</div>}
+      {isMulti && maxFiles > 0 && <div style={{ fontSize:parseInt(tcss('--rk-text-xs')), color: tcss('--rk-text-tertiary'), marginTop: 2 }}>
         Max {maxFiles} files
       </div>}
     </div>}
@@ -106,8 +106,8 @@ export function InputFile({ props }: { props: InputFileProps }) {
     />
 
     {(props.error || props.description) && <div style={{
-      fontSize: 12, marginTop: 4,
-      color: props.error ? tc('--rk-error') : tc('--rk-text-tertiary'),
+      fontSize:parseInt(tcss('--rk-text-sm')), marginTop: 4,
+      color: props.error ? tcss('--rk-error') : tcss('--rk-text-tertiary'),
     }}>
       {props.error || props.description}
     </div>}

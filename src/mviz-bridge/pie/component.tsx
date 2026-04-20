@@ -1,5 +1,6 @@
 import type { PieChartProps } from './schema'
 import { createEChartsBridge } from '../../core/echarts-bridge-factory'
+import { tcss, tc } from '../../core/theme-colors'
 
 /**
  * Build ECharts pie option from schema props.
@@ -40,7 +41,7 @@ function buildPieFallback(props: PieChartProps): Record<string, unknown> {
       label: {
         show: true,
         formatter: '{b}: {d}%',
-        fontSize: 12,
+        fontSize:parseInt(tc('--rk-text-sm')),
       },
       labelLine: {
         show: true,

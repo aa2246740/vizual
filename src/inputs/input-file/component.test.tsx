@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vitest'
+import { tc } from '../core/theme-colors'
 import { InputFileSchema } from './schema'
+import { tc } from '../core/theme-colors'
 
 describe('InputFile Schema', () => {
   it('accepts valid input_file spec', () => {

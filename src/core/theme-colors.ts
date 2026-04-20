@@ -4,9 +4,13 @@
  * 所有 renderer 通过此模块获取颜色值，而非硬编码。
  * 当 setGlobalTheme() 被调用时，颜色缓存自动更新。
  *
- * 使用方式：
- *   import { tc } from '../core/theme-colors'
- *   container.style.background = tc('--rk-bg-primary')
+ * 两个获取函数：
+ *   tc(varName)  → 解析后的具体值，如 '#c8152d'（仅用于 ECharts 等 JS-only 场景）
+ *   tcss(varName) → CSS var() 引用，如 'var(--rk-accent)'（用于 React inline style，永远响应主题切换）
+ *
+ * 使用原则：
+ *   React 组件 inline style → 用 tcss()
+ *   ECharts option / JS 计算 → 用 tc()
  */
 
 import { defaultDarkTheme } from '../themes/default-dark'
@@ -38,15 +42,33 @@ export function updateActiveColors(themeName: string): void {
 }
 
 /**
- * 获取主题颜色值
+ * 获取主题颜色的已解析值（具体色值）
+ *
+ * 用途：ECharts option、JS 数值计算等需要具体颜色值的场景。
+ * React inline style 中应优先使用 tcss()。
+ *
  * @param varName CSS 变量名，如 '--rk-bg-primary'
- * @returns 颜色值，如 '#0f1117'
+ * @returns 解析后的颜色值，如 '#0f1117'
  */
 export function tc(varName: string): string {
   return activeColors[varName] || defaultDarkColors[varName] || ''
 }
 
-/** 便捷方法：获取图表调色板 */
+/**
+ * 获取主题颜色的 CSS var() 引用
+ *
+ * 用途：React inline style 中使用。返回 CSS 变量引用，
+ * 由浏览器在 paint 时解析，天然响应主题切换，
+ * 无需担心模块级调用或缓存失效问题。
+ *
+ * @param varName CSS 变量名，如 '--rk-bg-primary'
+ * @returns CSS 变量引用，如 'var(--rk-bg-primary)'
+ */
+export function tcss(varName: string): string {
+  return `var(${varName})`
+}
+
+/** 便捷方法：获取图表调色板（已解析值，用于 ECharts） */
 export function chartColors(count: number): string[] {
   const colors: string[] = []
   for (let i = 1; i <= count; i++) {

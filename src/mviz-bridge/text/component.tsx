@@ -1,5 +1,5 @@
 import type { TextBlockProps } from './schema'
-import { tc } from '../../core/theme-colors'
+import { tcss, tc } from '../../core/theme-colors'
 
 /**
  * Styled text display
@@ -9,7 +9,7 @@ export function TextBlock({ props }: { props: TextBlockProps }) {
     fontSize: props.fontSize ?? 14,
     fontWeight: props.fontWeight ?? 'normal',
     textAlign: props.align ?? 'left',
-    color: props.color ?? tc('--rk-text-primary'),
+    color: props.color ?? tcss('--rk-text-primary'),
     lineHeight: 1.6,
   }}>{props.content}</div>
 }

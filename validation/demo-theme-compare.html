@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>DESIGN.md Theme Comparison — AI Parser vs Regex Parser</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, sans-serif; background: #1a1a2e; color: #e2e8f0; padding: 20px; }
+
+  h1 { font-size: 20px; margin-bottom: 16px; color: #fff; }
+  .subtitle { font-size: 13px; color: #94a3b8; margin-bottom: 20px; }
+
+  .controls {
+    display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; align-items: center;
+  }
+  .controls button {
+    padding: 8px 16px; border: 1px solid #334155; border-radius: 6px;
+    background: #1e293b; color: #e2e8f0; cursor: pointer; font-size: 13px;
+    transition: all 0.15s;
+  }
+  .controls button:hover { background: #334155; }
+  .controls button.active { background: #667eea; border-color: #667eea; color: #fff; }
+  .controls .sep { width: 1px; height: 24px; background: #334155; margin: 0 4px; }
+
+  #stats {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 12px; margin-bottom: 20px;
+  }
+  .stat-card {
+    background: #1e293b; border: 1px solid #334155; border-radius: 8px;
+    padding: 12px 16px;
+  }
+  .stat-card .label { font-size: 11px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; }
+  .stat-card .value { font-size: 24px; font-weight: 700; margin-top: 4px; }
+  .stat-card .detail { font-size: 11px; color: #64748b; margin-top: 4px; }
+
+  .compare-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px;
+  }
+  .compare-col h3 { font-size: 14px; margin-bottom: 8px; color: #94a3b8; }
+  .compare-col pre {
+    background: #0f172a; border: 1px solid #1e293b; border-radius: 8px;
+    padding: 16px; font-size: 11px; font-family: 'SF Mono', monospace;
+    overflow: auto; max-height: 400px; color: #94a3b8; line-height: 1.6;
+  }
+
+  #vizual-root {
+    background: var(--rk-bg-primary, #0f1117);
+    border-radius: 12px; padding: 20px; min-height: 300px;
+    border: 1px solid var(--rk-border, #1e293b);
+    transition: all 0.3s ease;
+  }
+  #vizual-root h2 { font-size: 16px; margin-bottom: 12px; color: var(--rk-text-primary, #e2e8f0); }
+</style>
+</head>
+<body>
+
+<h1>DESIGN.md Theme Comparison</h1>
+<p class="subtitle">AI-powered parser (skill) vs old regex parser — Verge & Apple design systems</p>
+
+<div class="controls">
+  <button onclick="applyOldParser()" id="btn-old">Old Regex Parser</button>
+  <div class="sep"></div>
+  <button onclick="applyVerge()" id="btn-verge">Verge (AI Parsed)</button>
+  <button onclick="applyApple()" id="btn-apple">Apple (AI Parsed)</button>
+  <button onclick="applyDefault()" id="btn-default">Default Dark</button>
+  <div class="sep"></div>
+  <button onclick="toggleMode()" id="btn-toggle">Light/Dark Toggle</button>
+</div>
+
+<div id="stats"></div>
+
+<div class="compare-grid">
+  <div class="compare-col">
+    <h3>Old Regex Parser Output (Verge)</h3>
+    <pre id="old-output">Colors: 10
+  color-1 → #3cffd0
+  color-2 → #5200ff
+  color-3 → #3cffd0
+  color-4 → #131313
+  color-5 → #5200ff
+  color-6 → #ffffff
+  color-7 → #ffffff
+  color-8 → #949494
+  color-9 → #ffffff
+  color-10 → #3860be
+
+Typography: empty
+Spacing: empty
+Radius: empty
+
+Result: Only colors extracted.
+Typography, spacing, radius all missing.
+Background mapped to wrong color.</pre>
+  </div>
+  <div class="compare-col">
+    <h3>New AI Parser Output (Verge)</h3>
+    <pre id="new-output">Loading...</pre>
+  </div>
+</div>
+
+<div id="vizual-root">
+  <h2>Live Theme Preview</h2>
+  <div id="preview-content"></div>
+</div>
+
+<script src="dist/vizual.standalone.js"></script>
+<script>
+// Load theme JSON
+let vergeThemeData, appleThemeData;
+
+fetch('validation/verge-theme.json').then(r=>r.json()).then(d => {
+  vergeThemeData = d;
+  document.getElementById('new-output').textContent = formatNewOutput(d.theme);
+  showStats('verge');
+}).catch(e => console.error('Load verge theme failed:', e));
+
+fetch('validation/apple-theme.json').then(r=>r.json()).then(d => {
+  appleThemeData = d;
+}).catch(e => console.error('Load apple theme failed:', e));
+
+function formatNewOutput(theme) {
+  const vars = theme.cssVariables;
+  const lines = [
+    `Mode: ${theme.mode}`,
+    `Colors extracted: 28 (vs 10 with regex)`,
+    `Typography sizes: 13 levels`,
+    `Typography weights: 6 levels`,
+    `Spacing scale: 6 levels`,
+    `Radius scale: 8 levels`,
+    ``,
+    `Key mappings:`,
+    `  --rk-bg-primary: ${vars['--rk-bg-primary']}`,
+    `  --rk-bg-secondary: ${vars['--rk-bg-secondary']}`,
+    `  --rk-accent: ${vars['--rk-accent']}`,
+    `  --rk-accent-hover: ${vars['--rk-accent-hover']}`,
+    `  --rk-text-primary: ${vars['--rk-text-primary']}`,
+    `  --rk-text-secondary: ${vars['--rk-text-secondary']}`,
+    `  --rk-border: ${vars['--rk-border']}`,
+    `  --rk-border-subtle: ${vars['--rk-border-subtle']}`,
+    `  --rk-font-sans: ${vars['--rk-font-sans']}`,
+    `  --rk-radius-lg: ${vars['--rk-radius-lg']}`,
+    `  --rk-chart-1: ${vars['--rk-chart-1']}`,
+    `  --rk-chart-2: ${vars['--rk-chart-2']}`,
+    `  --rk-chart-3: ${vars['--rk-chart-3']}`,
+  ];
+  return lines.join('\n');
+}
+
+function showStats(which) {
+  const el = document.getElementById('stats');
+  if (which === 'verge') {
+    el.innerHTML = `
+      <div class="stat-card"><div class="label">Colors (Old)</div><div class="value" style="color:#ef4444">10</div><div class="detail">Regex only found 10 hex values</div></div>
+      <div class="stat-card"><div class="label">Colors (New)</div><div class="value" style="color:#10b981">28</div><div class="detail">AI + role-hint names</div></div>
+      <div class="stat-card"><div class="label">Typography (Old)</div><div class="value" style="color:#ef4444">0</div><div class="detail">Not extracted at all</div></div>
+      <div class="stat-card"><div class="label">Typography (New)</div><div class="value" style="color:#10b981">19</div><div class="detail">13 sizes + 6 weights</div></div>
+      <div class="stat-card"><div class="label">Spacing (Old)</div><div class="value" style="color:#ef4444">0</div><div class="detail">Not extracted</div></div>
+      <div class="stat-card"><div class="label">Spacing (New)</div><div class="value" style="color:#10b981">6</div><div class="detail">Full scale extracted</div></div>
+      <div class="stat-card"><div class="label">Radius (Old)</div><div class="value" style="color:#ef4444">0</div><div class="detail">Not extracted</div></div>
+      <div class="stat-card"><div class="label">Radius (New)</div><div class="value" style="color:#10b981">8</div><div class="detail">xs → full scale</div></div>
+    `;
+  }
+}
+
+let currentThemeName = null;
+
+function setActiveBtn(id) {
+  document.querySelectorAll('.controls button').forEach(b => b.classList.remove('active'));
+  document.getElementById(id)?.classList.add('active');
+}
+
+function applyThemeObject(themeObj) {
+  const root = document.documentElement;
+  for (const [key, value] of Object.entries(themeObj.cssVariables)) {
+    root.style.setProperty(key, value);
+  }
+  currentThemeName = themeObj.name;
+  updatePreview(themeObj);
+}
+
+function applyVerge() {
+  if (!vergeThemeData) return alert('Verge theme not loaded yet');
+  applyThemeObject(vergeThemeData.theme);
+  document.getElementById('new-output').textContent = formatNewOutput(vergeThemeData.theme);
+  showStats('verge');
+  setActiveBtn('btn-verge');
+}
+
+function applyApple() {
+  if (!appleThemeData) return alert('Apple theme not loaded yet');
+  applyThemeObject(appleThemeData.theme);
+  document.getElementById('new-output').textContent = formatNewOutput(appleThemeData.theme);
+  setActiveBtn('btn-apple');
+}
+
+function applyDefault() {
+  // Reset to default dark
+  fetch('dist/vizual.standalone.js').then(() => {
+    const root = document.documentElement;
+    const defaults = {
+      '--rk-bg-primary': '#0f1117', '--rk-bg-secondary': '#1e293b', '--rk-bg-tertiary': '#252836',
+      '--rk-border': '#1e293b', '--rk-border-subtle': '#2d3148',
+      '--rk-text-primary': '#e2e8f0', '--rk-text-secondary': '#94a3b8', '--rk-text-tertiary': '#64748b',
+      '--rk-accent': '#667eea', '--rk-accent-hover': '#7c8ff5',
+      '--rk-radius-md': '8px', '--rk-radius-lg': '10px',
+    };
+    for (const [k,v] of Object.entries(defaults)) root.style.setProperty(k, v);
+    document.getElementById('new-output').textContent = 'Default Dark Theme\nNo DESIGN.md applied.\nAll values from default-dark.ts';
+    setActiveBtn('btn-default');
+    updatePreview({ cssVariables: defaults, mode: 'dark' });
+  });
+}
+
+function applyOldParser() {
+  // Show what old regex parser produced — wrong accent, wrong bg
+  const root = document.documentElement;
+  root.style.setProperty('--rk-bg-primary', '#2d2d2d');  // Wrong! Should be #131313
+  root.style.setProperty('--rk-accent', '#ffffff');        // Wrong! Should be #3cffd0
+  root.style.setProperty('--rk-text-primary', '#949494');  // Wrong! Should be #ffffff
+  setActiveBtn('btn-old');
+  document.getElementById('new-output').textContent =
+    'OLD REGEX PARSER APPLIED (shown in preview)\n\n' +
+    'Errors:\n' +
+    '  bg-primary → #2d2d2d (wrong, should be #131313)\n' +
+    '  accent → #ffffff (wrong, should be #3cffd0)\n' +
+    '  text-primary → #949494 (wrong, should be #ffffff)\n' +
+    '  No typography/spacing/radius extracted';
+  updatePreview({ cssVariables: {
+    '--rk-bg-primary': '#2d2d2d', '--rk-accent': '#ffffff',
+    '--rk-text-primary': '#949494', '--rk-text-secondary': '#e9e9e9',
+    '--rk-border': '#1e293b', '--rk-bg-secondary': '#1e293b',
+  }, mode: 'dark' });
+}
+
+function toggleMode() {
+  if (!currentThemeName) return;
+  let inverted;
+  if (currentThemeName === 'verge' && vergeThemeData) {
+    inverted = vergeThemeData.inverted;
+    vergeThemeData.inverted = vergeThemeData.theme;
+    vergeThemeData.theme = inverted;
+  } else if (currentThemeName === 'apple' && appleThemeData) {
+    inverted = appleThemeData.inverted;
+    appleThemeData.inverted = appleThemeData.theme;
+    appleThemeData.theme = inverted;
+  }
+  if (inverted) applyThemeObject(inverted);
+}
+
+function updatePreview(theme) {
+  const vars = theme.cssVariables || {};
+  const bg = vars['--rk-bg-primary'] || '#0f1117';
+  const bg2 = vars['--rk-bg-secondary'] || '#1e293b';
+  const accent = vars['--rk-accent'] || '#667eea';
+  const text = vars['--rk-text-primary'] || '#e2e8f0';
+  const text2 = vars['--rk-text-secondary'] || '#94a3b8';
+  const border = vars['--rk-border'] || '#1e293b';
+  const radius = vars['--rk-radius-md'] || '8px';
+
+  document.getElementById('preview-content').innerHTML = `
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;">
+      <div style="background:${bg2};border:1px solid ${border};border-radius:${radius};padding:16px;">
+        <div style="font-size:11px;color:${text2};margin-bottom:8px">CARD</div>
+        <div style="font-size:16px;font-weight:600;color:${text};margin-bottom:4px">Revenue</div>
+        <div style="font-size:24px;font-weight:700;color:${accent}">$2.4M</div>
+        <div style="font-size:12px;color:${text2};margin-top:4px">+12.5% from last quarter</div>
+      </div>
+      <div style="background:${bg2};border:1px solid ${border};border-radius:${radius};padding:16px;">
+        <div style="font-size:11px;color:${text2};margin-bottom:8px">CARD</div>
+        <div style="font-size:16px;font-weight:600;color:${text};margin-bottom:4px">Users</div>
+        <div style="font-size:24px;font-weight:700;color:${accent}">1.2M</div>
+        <div style="font-size:12px;color:${text2};margin-top:4px">+8.3% growth</div>
+      </div>
+      <div style="background:${bg2};border:1px solid ${border};border-radius:${radius};padding:16px;">
+        <div style="font-size:11px;color:${text2};margin-bottom:8px">STATUS</div>
+        <div style="display:flex;gap:8px;margin-top:8px">
+          <span style="background:${vars['--rk-success'] || '#10b981'}22;color:${vars['--rk-success'] || '#10b981'};padding:4px 8px;border-radius:9999px;font-size:11px">Active</span>
+          <span style="background:${vars['--rk-warning'] || '#f59e0b'}22;color:${vars['--rk-warning'] || '#f59e0b'};padding:4px 8px;border-radius:9999px;font-size:11px">Pending</span>
+          <span style="background:${vars['--rk-error'] || '#ef4444'}22;color:${vars['--rk-error'] || '#ef4444'};padding:4px 8px;border-radius:9999px;font-size:11px">Failed</span>
+        </div>
+      </div>
+    </div>
+    <div style="margin-top:12px;display:flex;gap:8px;align-items:center;">
+      <button style="background:${accent};color:${bg};border:none;border-radius:${vars['--rk-radius-md'] || '8px'};padding:8px 16px;font-size:13px;cursor:pointer">Primary CTA</button>
+      <button style="background:${bg2};color:${text};border:1px solid ${border};border-radius:${vars['--rk-radius-md'] || '8px'};padding:8px 16px;font-size:13px;cursor:pointer">Secondary</button>
+      <span style="color:${accent};font-size:13px;cursor:pointer;margin-left:8px">Learn more →</span>
+    </div>
+    <div style="margin-top:12px;display:flex;gap:4px;">
+      ${(vars['--rk-chart-1'] || '#667eea').match(/#/g) ? `<div style="width:40px;height:8px;background:${vars['--rk-chart-1'] || '#667eea'};border-radius:4px"></div>` : ''}
+      ${(vars['--rk-chart-2'] || '#10b981').match(/#/g) ? `<div style="width:30px;height:8px;background:${vars['--rk-chart-2'] || '#10b981'};border-radius:4px"></div>` : ''}
+      ${(vars['--rk-chart-3'] || '#f59e0b').match(/#/g) ? `<div style="width:50px;height:8px;background:${vars['--rk-chart-3'] || '#f59e0b'};border-radius:4px"></div>` : ''}
+      ${(vars['--rk-chart-4'] || '#ec4899').match(/#/g) ? `<div style="width:20px;height:8px;background:${vars['--rk-chart-4'] || '#ec4899'};border-radius:4px"></div>` : ''}
+      ${(vars['--rk-chart-5'] || '#8b5cf6').match(/#/g) ? `<div style="width:35px;height:8px;background:${vars['--rk-chart-5'] || '#8b5cf6'};border-radius:4px"></div>` : ''}
+      ${(vars['--rk-chart-6'] || '#06b6d4').match(/#/g) ? `<div style="width:25px;height:8px;background:${vars['--rk-chart-6'] || '#06b6d4'};border-radius:4px"></div>` : ''}
+    </div>
+  `;
+
+  // Also update the vizual-root background
+  const root = document.getElementById('vizual-root');
+  root.style.background = bg;
+  root.style.borderColor = border;
+  root.style.color = text;
+}
+</script>
+
+</body>
+</html>
