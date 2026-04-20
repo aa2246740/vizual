@@ -1,5 +1,6 @@
 import React, { useMemo, useEffect, useRef, useCallback } from 'react'
 import type { Annotation } from './types'
+import { tc } from '../core/theme-colors'
 
 export interface AnnotationOverlayProps {
   /** Content to render with annotations overlaid */

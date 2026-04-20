@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react'
 import { useBoundProp } from '@json-render/react'
+import { tc } from '../../core/theme-colors'
 import type { FormBuilderProps } from './schema'
 
 type Field = FormBuilderProps['fields'][0]
@@ -75,29 +76,29 @@ export function FormBuilder({ props, bindings }: { props: FormBuilderProps; bind
 
   const labelStyle: React.CSSProperties = {
     display: 'block', fontSize: 13, fontWeight: 500,
-    color: 'var(--rk-text-secondary,#888)', marginBottom: 4,
+    color: tc('--rk-text-secondary'), marginBottom: 4,
   }
   const inputStyle: React.CSSProperties = {
     width: '100%', padding: '8px 12px', fontSize: 14,
-    background: '#111', border: '1px solid #2a2a2a',
-    borderRadius: 6, color: '#e5e5e5', outline: 'none', boxSizing: 'border-box',
+    background: tc('--rk-bg-primary'), border: `1px solid ${tc('--rk-border-subtle')}`,
+    borderRadius: 6, color: tc('--rk-text-primary'), outline: 'none', boxSizing: 'border-box',
   }
 
   const renderLabel = (field: Field) =>
     field.label && <label style={labelStyle}>
       {field.label}
-      {field.required && <span style={{ color: '#ef4444', marginLeft: 2 }}>*</span>}
+      {field.required && <span style={{ color: tc('--rk-error'), marginLeft: 2 }}>*</span>}
     </label>
 
   const renderError = (field: Field, error?: string) =>
     (error || field.description) && <div style={{
-      fontSize: 12, marginTop: 4, color: error ? '#ef4444' : '#666',
+      fontSize: 12, marginTop: 4, color: error ? tc('--rk-error') : tc('--rk-text-tertiary'),
     }}>{error || field.description}</div>
 
   const renderField = (field: Field) => {
     const value = formData?.[field.name]
     const error = touched[field.name] ? errors[field.name] : undefined
-    const borderStyle = error ? '#ef4444' : '#2a2a2a'
+    const borderStyle = error ? tc('--rk-error') : tc('--rk-border-subtle')
 
     // === SELECT ===
     if (field.type === 'select') {
@@ -126,9 +127,9 @@ export function FormBuilder({ props, bindings }: { props: FormBuilderProps; bind
             return <label key={i} style={{
               display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer',
               padding: '6px 12px', borderRadius: 6,
-              border: `1px solid ${selected ? '#3b82f6' : '#2a2a2a'}`,
-              background: selected ? '#0a1628' : '#0a0a0a',
-              color: selected ? '#3b82f6' : '#aaa', fontSize: 13,
+              border: `1px solid ${selected ? tc('--rk-accent') : tc('--rk-border-subtle')}`,
+              background: selected ? tc('--rk-accent-muted') : tc('--rk-bg-primary'),
+              color: selected ? tc('--rk-accent') : tc('--rk-text-secondary'), fontSize: 13,
             }}>
               <input type="radio" name={field.name} value={opt.value}
                 checked={selected} disabled={field.disabled}
@@ -136,10 +137,10 @@ export function FormBuilder({ props, bindings }: { props: FormBuilderProps; bind
                 style={{ display: 'none' }} />
               <span style={{
                 width: 14, height: 14, borderRadius: '50%',
-                border: `2px solid ${selected ? '#3b82f6' : '#555'}`,
+                border: `2px solid ${selected ? tc('--rk-accent') : tc('--rk-text-tertiary')}`,
                 display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
               }}>
-                {selected && <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#3b82f6' }} />}
+                {selected && <span style={{ width: 6, height: 6, borderRadius: '50%', background: tc('--rk-accent') }} />}
               </span>
               {opt.label}
             </label>
@@ -161,9 +162,9 @@ export function FormBuilder({ props, bindings }: { props: FormBuilderProps; bind
             return <label key={i} style={{
               display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer',
               padding: '6px 12px', borderRadius: 6,
-              border: `1px solid ${checked ? '#3b82f6' : '#2a2a2a'}`,
-              background: checked ? '#0a1628' : '#0a0a0a',
-              color: checked ? '#3b82f6' : '#aaa', fontSize: 13,
+              border: `1px solid ${checked ? tc('--rk-accent') : tc('--rk-border-subtle')}`,
+              background: checked ? tc('--rk-accent-muted') : tc('--rk-bg-primary'),
+              color: checked ? tc('--rk-accent') : tc('--rk-text-secondary'), fontSize: 13,
             }}>
               <input type="checkbox" checked={checked} disabled={field.disabled}
                 onChange={() => {
@@ -175,10 +176,10 @@ export function FormBuilder({ props, bindings }: { props: FormBuilderProps; bind
                 style={{ display: 'none' }} />
               <span style={{
                 width: 14, height: 14, borderRadius: 3,
-                border: `2px solid ${checked ? '#3b82f6' : '#555'}`,
+                border: `2px solid ${checked ? tc('--rk-accent') : tc('--rk-text-tertiary')}`,
                 display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                background: checked ? '#3b82f6' : 'transparent',
-                color: '#fff', fontSize: 10, lineHeight: 1,
+                background: checked ? tc('--rk-accent') : 'transparent',
+                color: tc('--rk-text-primary'), fontSize: 10, lineHeight: 1,
               }}>{checked ? '✓' : ''}</span>
               {opt.label}
             </label>
@@ -201,15 +202,15 @@ export function FormBuilder({ props, bindings }: { props: FormBuilderProps; bind
           }}>
           <div style={{
             width: 40, height: 22, borderRadius: 11, position: 'relative',
-            background: on ? '#3b82f6' : '#333', transition: 'background 0.2s',
+            background: on ? tc('--rk-accent') : tc('--rk-bg-tertiary'), transition: 'background 0.2s',
           }}>
             <div style={{
-              width: 18, height: 18, borderRadius: '50%', background: '#fff',
+              width: 18, height: 18, borderRadius: '50%', background: tc('--rk-text-primary'),
               position: 'absolute', top: 2,
               left: on ? 20 : 2, transition: 'left 0.2s',
             }} />
           </div>
-          <span style={{ fontSize: 13, color: '#aaa' }}>{on ? 'On' : 'Off'}</span>
+          <span style={{ fontSize: 13, color: tc('--rk-text-secondary') }}>{on ? 'On' : 'Off'}</span>
         </div>
         {renderError(field, error)}
       </div>
@@ -227,8 +228,8 @@ export function FormBuilder({ props, bindings }: { props: FormBuilderProps; bind
           <input type="range" min={min} max={max} step={step} value={numVal}
             disabled={field.disabled}
             onChange={(e) => updateField(field.name, Number(e.target.value))}
-            style={{ flex: 1, accentColor: '#3b82f6' }} />
-          <span style={{ fontSize: 14, color: '#e5e5e5', minWidth: 40, textAlign: 'right' }}>{numVal}</span>
+            style={{ flex: 1, accentColor: tc('--rk-accent') }} />
+          <span style={{ fontSize: 14, color: tc('--rk-text-primary'), minWidth: 40, textAlign: 'right' }}>{numVal}</span>
         </div>
         {renderError(field, error)}
       </div>
@@ -236,7 +237,7 @@ export function FormBuilder({ props, bindings }: { props: FormBuilderProps; bind
 
     // === COLOR ===
     if (field.type === 'color') {
-      const colorVal = String(value || '#3b82f6')
+      const colorVal = String(value || tc('--rk-accent'))
       return <div key={field.name} style={{ marginBottom: 12 }}>
         {renderLabel(field)}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -251,7 +252,7 @@ export function FormBuilder({ props, bindings }: { props: FormBuilderProps; bind
             disabled={field.disabled}
             onChange={(e) => updateField(field.name, e.target.value)}
             style={{ position: 'absolute', opacity: 0, pointerEvents: 'none' }} />
-          <span style={{ fontSize: 13, color: '#aaa', fontFamily: 'monospace' }}>{colorVal}</span>
+          <span style={{ fontSize: 13, color: tc('--rk-text-secondary'), fontFamily: 'monospace' }}>{colorVal}</span>
         </div>
         {renderError(field, error)}
       </div>
@@ -265,7 +266,7 @@ export function FormBuilder({ props, bindings }: { props: FormBuilderProps; bind
         <div style={{ position: 'relative' }}>
           {!dateVal && <div style={{
             position: 'absolute', top: '50%', left: 12, transform: 'translateY(-50%)',
-            fontSize: 14, color: '#555', pointerEvents: 'none',
+            fontSize: 14, color: tc('--rk-text-tertiary'), pointerEvents: 'none',
           }}>{field.placeholder || 'Select a date'}</div>}
           <input type="date" value={dateVal}
             disabled={field.disabled}
@@ -285,7 +286,7 @@ export function FormBuilder({ props, bindings }: { props: FormBuilderProps; bind
         <div style={{ position: 'relative' }}>
           {!dtVal && <div style={{
             position: 'absolute', top: '50%', left: 12, transform: 'translateY(-50%)',
-            fontSize: 14, color: '#555', pointerEvents: 'none',
+            fontSize: 14, color: tc('--rk-text-tertiary'), pointerEvents: 'none',
           }}>{field.placeholder || 'Select date & time'}</div>}
           <input type="datetime-local" value={dtVal}
             disabled={field.disabled}
@@ -305,7 +306,7 @@ export function FormBuilder({ props, bindings }: { props: FormBuilderProps; bind
         <div style={{ position: 'relative' }}>
           {!timeVal && <div style={{
             position: 'absolute', top: '50%', left: 12, transform: 'translateY(-50%)',
-            fontSize: 14, color: '#555', pointerEvents: 'none',
+            fontSize: 14, color: tc('--rk-text-tertiary'), pointerEvents: 'none',
           }}>{field.placeholder || 'Select time'}</div>}
           <input type="time" value={timeVal}
             disabled={field.disabled}
@@ -336,11 +337,11 @@ export function FormBuilder({ props, bindings }: { props: FormBuilderProps; bind
               onMouseEnter={() => !field.disabled && setHoverRating(prev => ({ ...prev, [field.name]: star }))}
               style={{
                 fontSize: 24, cursor: field.disabled ? 'default' : 'pointer',
-                color: star <= displayRating ? '#fbbf24' : '#333',
+                color: star <= displayRating ? '#fbbf24' : tc('--rk-bg-tertiary'),
                 transition: 'color 0.15s',
               }}>★</span>
           ))}
-          <span style={{ fontSize: 13, color: '#aaa', marginLeft: 6, lineHeight: '28px' }}>
+          <span style={{ fontSize: 13, color: tc('--rk-text-secondary'), marginLeft: 6, lineHeight: '28px' }}>
             {currentRating}/{maxStars}
           </span>
         </div>
@@ -388,7 +389,7 @@ export function FormBuilder({ props, bindings }: { props: FormBuilderProps; bind
   }
 
   return <div>
-    {props.title && <h3 style={{ fontSize: 16, fontWeight: 600, marginBottom: 16, color: '#e5e5e5' }}>{props.title}</h3>}
+    {props.title && <h3 style={{ fontSize: 16, fontWeight: 600, marginBottom: 16, color: tc('--rk-text-primary') }}>{props.title}</h3>}
     <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: '0 24px' }}>
       {visibleFields.map(renderField)}
     </div>

@@ -4,11 +4,12 @@
 
 | 文档 | 说明 |
 |------|------|
-| [README.md](../README.md) | 项目概览、快速开始、AI 接入方式、42 组件一览 |
-| [INSTALL.md](../INSTALL.md) | **安装指南** — NPM / CDN / AI Prompt 三种方式 |
+| [README.md](../README.md) | 项目概览、快速开始、AI 接入方式、43 组件一览 |
+| [INSTALL.md](../INSTALL.md) | **安装指南** — NPM / Standalone 两种方式 |
+| [CONTRIBUTING.md](../CONTRIBUTING.md) | **组件开发规范** — 颜色规则、主题系统、新增组件步骤 |
 | [GETTING-STARTED.md](GETTING-STARTED.md) | 开发者快速上手指南（安装、使用、FAQ） |
-| [COMPONENTS.md](COMPONENTS.md) | 42 个组件完整参考（Schema、Props、示例） |
-| [ARCHITECTURE.md](ARCHITECTURE.md) | 架构设计、数据流、源码结构、依赖关系图 |
+| [COMPONENTS.md](COMPONENTS.md) | 43 个组件完整参考（Schema、Props、示例） |
+| [ARCHITECTURE.md](ARCHITECTURE.md) | 架构设计、数据流、主题系统、依赖关系图 |
 | [AI-INTEGRATION.md](AI-INTEGRATION.md) | AI 集成指南（Claude/GPT 接入、流式输出） |
 | [LICENSES.md](LICENSES.md) | 开源许可证说明、依赖合规 |
 

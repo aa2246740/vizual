@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>DESIGN.md Theme System Test</title>
+  <style>
+    :root {
+      --shell-bg: #0a0a14;
+      --shell-text: #e0e0e0;
+      --shell-text-muted: #888;
+      --shell-text-dim: #555;
+      --shell-surface: #0d0d1a;
+      --shell-surface2: #0f0f1a;
+      --shell-border: #1e1e32;
+      --shell-border-btn: #2a2a4a;
+      --shell-btn-bg: #111122;
+      --shell-btn-hover: #1a1a2e;
+      --shell-status-bg: #111;
+    }
+    :root.light-mode {
+      --shell-bg: #f5f5f5;
+      --shell-text: #1a1a1a;
+      --shell-text-muted: #666;
+      --shell-text-dim: #999;
+      --shell-surface: #ffffff;
+      --shell-surface2: #ffffff;
+      --shell-border: #e0e0e0;
+      --shell-border-btn: #d0d0d0;
+      --shell-btn-bg: #ffffff;
+      --shell-btn-hover: #f0f0f0;
+      --shell-status-bg: #fff;
+    }
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:system-ui;background-color:var(--shell-bg);color:var(--shell-text);padding:20px}
+
+    h1{font-size:20px;margin-bottom:4px}
+    h2{font-size:16px;margin:20px 0 8px;color:#a78bfa}
+    .subtitle{font-size:13px;color:var(--shell-text-muted);margin-bottom:16px}
+
+    /* Controls bar: theme buttons + mode toggle */
+    .controls-bar{display:flex;align-items:center;gap:16px;margin-bottom:16px;flex-wrap:wrap}
+
+    .theme-bar{display:flex;gap:8px;flex-wrap:wrap}
+    .theme-btn{padding:8px 16px;border-radius:8px;border:1px solid var(--shell-border-btn);background:var(--shell-btn-bg);color:var(--shell-text);cursor:pointer;font-size:13px;transition:all .15s}
+    .theme-btn:hover{border-color:#7c3aed;background:var(--shell-btn-hover)}
+    .theme-btn.active{border-color:#7c3aed;background:#7c3aed;color:#fff}
+
+    /* Mode toggle switch */
+    .mode-toggle{display:flex;align-items:center;gap:8px;margin-left:auto}
+    .mode-label{font-size:12px;color:var(--shell-text-muted);cursor:pointer;user-select:none}
+    .mode-label.active{color:var(--shell-text)}
+    .toggle-track{width:48px;height:26px;border-radius:13px;background:#333;cursor:pointer;position:relative;transition:background .2s}
+    .toggle-track.light{background:#3b82f6}
+    .toggle-thumb{width:22px;height:22px;border-radius:50%;background:#fff;position:absolute;top:2px;left:2px;transition:left .2s}
+    .toggle-track.light .toggle-thumb{left:24px}
+
+    /* Layout: editor + preview side by side */
+    .main-layout{display:flex;gap:16px;height:calc(100vh - 180px);min-height:400px}
+
+    /* Left: DESIGN.md editor */
+    .editor-panel{width:420px;flex-shrink:0;display:flex;flex-direction:column}
+    .editor-panel label{font-size:12px;color:var(--shell-text-muted);margin-bottom:4px}
+    .editor-panel textarea{flex:1;background:var(--shell-surface);border:1px solid var(--shell-border);border-radius:8px;color:var(--shell-text);font-family:'SF Mono',Monaco,Consolas,monospace;font-size:12px;line-height:1.5;padding:12px;resize:none;outline:none;transition:background .3s,border-color .3s,color .3s}
+    .editor-panel textarea:focus{border-color:#7c3aed}
+    .parse-btn{margin-top:8px;padding:10px;background:#7c3aed;border:none;color:#fff;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600}
+    .parse-btn:hover{background:#6d28d9}
+
+    /* Right: component preview */
+    .preview-panel{flex:1;overflow-y:auto;border:1px solid var(--shell-border);border-radius:8px;padding:16px;background:var(--shell-surface2);transition:background .3s,border-color .3s}
+    .preview-label{font-size:10px;color:var(--shell-text-dim);margin-bottom:8px;text-transform:uppercase;letter-spacing:1px}
+
+    /* Parse result */
+    .parse-result{margin-top:12px;background:var(--shell-surface);border:1px solid var(--shell-border);border-radius:8px;padding:12px;font-size:12px;max-height:200px;overflow-y:auto;transition:background .3s,border-color .3s}
+    .parse-result .label{color:#7c3aed;font-weight:600;margin-bottom:4px}
+    .parse-result pre{color:var(--shell-text-muted);font-family:monospace;white-space:pre-wrap}
+
+    /* Status */
+    .status{position:fixed;bottom:16px;right:16px;background:var(--shell-status-bg);border:1px solid var(--shell-border);border-radius:8px;padding:8px 14px;font-size:11px;color:var(--shell-text-muted);z-index:100;transition:background .3s,border-color .3s}
+    .status .ok{color:#22c55e}.status .err{color:#ef4444}
+
+    /* Component render area */
+    .component-slot{margin-bottom:12px}
+    .component-slot .slot-label{font-size:11px;color:var(--shell-text-dim);margin-bottom:4px;border-bottom:1px solid var(--shell-border);padding-bottom:4px}
+  </style>
+</head>
+<body>
+  <h1>DESIGN.md Theme System Test</h1>
+  <div class="subtitle">选择风格 + 切换 Dark/Light 模式，或编辑自定义 DESIGN.md</div>
+
+  <!-- Controls: style buttons + mode toggle -->
+  <div class="controls-bar">
+    <div class="theme-bar">
+      <button class="theme-btn active" onclick="applyStyle('default', this)">Default</button>
+      <button class="theme-btn" onclick="applyStyle('linear', this)">Linear</button>
+      <button class="theme-btn" onclick="applyStyle('vercel', this)">Vercel</button>
+      <button class="theme-btn" onclick="applyCustom(this)">Custom DESIGN.md →</button>
+    </div>
+    <div class="mode-toggle">
+      <span class="mode-label active" id="labelDark" onclick="setMode('dark')">Dark</span>
+      <div class="toggle-track" id="toggleTrack" onclick="toggleDarkLight()">
+        <div class="toggle-thumb"></div>
+      </div>
+      <span class="mode-label" id="labelLight" onclick="setMode('light')">Light</span>
+    </div>
+  </div>
+
+  <div class="main-layout">
+    <!-- Left: DESIGN.md Editor -->
+    <div class="editor-panel">
+      <label>DESIGN.md Source</label>
+      <textarea id="designInput">## Colors
+Primary: #0052ef
+CTA: #f36458
+Canvas: #0b0b0b
+Surface: #141414
+Surface Hover: #1a1a1a
+Text: #e8e8e8
+Text Secondary: #888888
+Text Muted: #555555
+Border: #2a2a2a
+Success: #4caf50
+Warning: #fbbf24
+Error: #ef4444
+
+## Typography
+Font Family: waldenburgNormal, -apple-system, sans-serif
+Mono: IBM Plex Mono, monospace
+
+## Spacing
+Base unit: 4px
+space-1: 4px
+space-2: 8px
+space-4: 16px
+
+## Border Radius
+sm: 4px
+md: 8px
+lg: 12px
+pill: 9999px</textarea>
+      <button class="parse-btn" onclick="applyFromEditor()">Apply Theme</button>
+      <div class="parse-result" id="parseResult" style="display:none">
+        <div class="label">Parsed Tokens</div>
+        <pre id="parseOutput"></pre>
+      </div>
+    </div>
+
+    <!-- Right: Component Preview -->
+    <div class="preview-panel" id="previewPanel">
+      <div class="preview-label">Live Preview — All component types</div>
+
+      <!-- KPI Dashboard -->
+      <div class="component-slot">
+        <div class="slot-label">KpiDashboard</div>
+        <div id="slot-kpi"></div>
+      </div>
+
+      <!-- Bar Chart -->
+      <div class="component-slot">
+        <div class="slot-label">BarChart</div>
+        <div id="slot-bar"></div>
+      </div>
+
+      <!-- Line Chart -->
+      <div class="component-slot">
+        <div class="slot-label">LineChart</div>
+        <div id="slot-line"></div>
+      </div>
+
+      <!-- Pie Chart -->
+      <div class="component-slot">
+        <div class="slot-label">PieChart</div>
+        <div id="slot-pie"></div>
+      </div>
+
+      <!-- Timeline -->
+      <div class="component-slot">
+        <div class="slot-label">Timeline</div>
+        <div id="slot-timeline"></div>
+      </div>
+
+      <!-- DataTable -->
+      <div class="component-slot">
+        <div class="slot-label">DataTable</div>
+        <div id="slot-table"></div>
+      </div>
+
+      <!-- Alert + Note -->
+      <div class="component-slot">
+        <div class="slot-label">Alert + Note</div>
+        <div id="slot-alert"></div>
+        <div id="slot-note" style="margin-top:8px"></div>
+      </div>
+
+      <!-- BigValue -->
+      <div class="component-slot">
+        <div class="slot-label">BigValue</div>
+        <div id="slot-bigvalue"></div>
+      </div>
+
+      <!-- Kanban -->
+      <div class="component-slot">
+        <div class="slot-label">Kanban</div>
+        <div id="slot-kanban"></div>
+      </div>
+
+      <!-- FormBuilder -->
+      <div class="component-slot">
+        <div class="slot-label">FormBuilder</div>
+        <div id="slot-form"></div>
+      </div>
+
+      <!-- Audit Log -->
+      <div class="component-slot">
+        <div class="slot-label">AuditLog</div>
+        <div id="slot-audit"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="status" id="status">Ready</div>
+
+  <script src="../dist/vizual.standalone.js"></script>
+  <script>
+    var React = Vizual.React
+    var ReactDOM = Vizual.ReactDOM
+    var renderSpec = Vizual.renderSpec
+    var loadDesignMd = Vizual.loadDesignMd
+    var parseDesignMd = Vizual.parseDesignMd
+    var setGlobalTheme = Vizual.setGlobalTheme
+    var toggleMode = Vizual.toggleMode
+    var registry = Vizual.registry
+
+    // State
+    var currentStyle = 'default'   // 'default' | 'linear' | 'vercel' | 'custom'
+    var currentMode = 'light'       // 'dark' | 'light'
+    var customThemeName = null      // name of loaded custom theme
+
+    // === Spec data for rendering components ===
+    var specs = {
+      kpi: { root:'m', elements:{ m:{ type:'KpiDashboard', props:{ type:'kpi_dashboard', title:'Business Overview', columns:4, metrics:[ {label:'DAU',value:'12,345',trend:'up',trendValue:'+5.2%'}, {label:'Revenue',value:'$89.2K',trend:'up',trendValue:'+12%'}, {label:'Conversion',value:'3.8%',trend:'down',trendValue:'-0.4%'}, {label:'AOV',value:'$128',trend:'flat',trendValue:'0%'} ]}, children:[] }}},
+      bar: { root:'m', elements:{ m:{ type:'BarChart', props:{ type:'bar', title:'Monthly Revenue', x:'month', y:'revenue', data:[{month:'Jan',revenue:120},{month:'Feb',revenue:200},{month:'Mar',revenue:150},{month:'Apr',revenue:280}]}, children:[] }}},
+      line: { root:'m', elements:{ m:{ type:'LineChart', props:{ type:'line', title:'User Growth', x:'month', y:'users', smooth:true, data:[{month:'Jan',users:1200},{month:'Feb',users:1800},{month:'Mar',users:2400},{month:'Apr',users:3100}]}, children:[] }}},
+      pie: { root:'m', elements:{ m:{ type:'PieChart', props:{ type:'pie', title:'Market Share', category:'product', value:'share', data:[{product:'Cloud',share:35},{product:'SaaS',share:28},{product:'AI',share:22},{product:'Consulting',share:15}]}, children:[] }}},
+      timeline: { root:'m', elements:{ m:{ type:'Timeline', props:{ type:'timeline', title:'Project Timeline', events:[ {date:'2024-01',title:'Kickoff',description:'Project started'}, {date:'2024-03',title:'Alpha',description:'First release'}, {date:'2024-06',title:'Beta',description:'Public beta'}, {date:'2024-09',title:'Launch',description:'General availability'} ]}, children:[] }}},
+      table: { root:'m', elements:{ m:{ type:'DataTable', props:{ type:'table', title:'Users', columns:[{key:'name',label:'Name'},{key:'role',label:'Role'},{key:'status',label:'Status'}], data:[{name:'Alice',role:'Admin',status:'Active'},{name:'Bob',role:'User',status:'Active'},{name:'Carol',role:'User',status:'Inactive'}]}, children:[] }}},
+      alert: { root:'m', elements:{ m:{ type:'Alert', props:{ type:'alert', severity:'warning', message:'High traffic detected — consider scaling resources.'}, children:[] }}},
+      note: { root:'m', elements:{ m:{ type:'Note', props:{ type:'note', variant:'tip', content:'Tip: Use DESIGN.md to customize your dashboard colors without code.'}, children:[] }}},
+      bigvalue: { root:'m', elements:{ m:{ type:'BigValue', props:{ type:'big_value', title:'Total Revenue', value:'$1.2M', trend:'up', trendValue:'+23%'}, children:[] }}},
+      kanban: { root:'m', elements:{ m:{ type:'Kanban', props:{ type:'kanban', title:'Sprint Board', columns:[ {id:'todo',title:'To Do',cards:[{id:1,title:'Design API',tags:['backend'],priority:'high'}]}, {id:'doing',title:'In Progress',cards:[{id:2,title:'Build UI',tags:['frontend'],assignee:'Alice',priority:'medium'}]}, {id:'done',title:'Done',cards:[{id:3,title:'Write Tests',tags:['qa']},{id:4,title:'Setup CI',assignee:'Bob'}]} ]}, children:[] }}},
+      form: { root:'m', elements:{ m:{ type:'FormBuilder', props:{ type:'form_builder', title:'Quick Survey', columns:2, fields:[ {name:'name',label:'Name',type:'text',required:true}, {name:'email',label:'Email',type:'email',required:true}, {name:'role',label:'Role',type:'select',options:['Developer','Designer','Manager']}, {name:'satisfaction',label:'Satisfaction',type:'rating',max:5,defaultValue:4}, {name:'remote',label:'Work remotely',type:'switch',defaultValue:true}, {name:'experience',label:'Years',type:'slider',min:0,max:20} ]}, children:[] }}},
+      audit: { root:'m', elements:{ m:{ type:'AuditLog', props:{ type:'audit_log', title:'Recent Activity', entries:[ {timestamp:'2024-06-01 10:30',user:'alice',action:'Deployed',target:'v2.1.0',severity:'info'}, {timestamp:'2024-06-01 11:15',user:'bob',action:'Deleted',target:'test-db',severity:'warning'}, {timestamp:'2024-06-01 14:00',user:'system',action:'Alert',target:'CPU > 90%',severity:'error'} ]}, children:[] }}},
+    }
+
+    // === Get theme name for style + mode ===
+    function getThemeName(style, mode) {
+      if (style === 'custom' && customThemeName) {
+        // Custom theme: append mode if exists
+        var variant = customThemeName + '-' + mode
+        // Check if variant exists
+        if (Vizual.getTheme(variant)) return variant
+        return customThemeName
+      }
+      // Preset themes: 'default-dark', 'default-light', 'linear', 'linear-light', etc
+      if (style === 'default') return 'default-' + mode
+      return style + (mode === 'light' ? '-light' : '')
+    }
+
+    // === Render all components ===
+    function renderAll() {
+      var pairs = [
+        ['slot-kpi', 'kpi'], ['slot-bar', 'bar'], ['slot-line', 'line'],
+        ['slot-pie', 'pie'], ['slot-timeline', 'timeline'], ['slot-table', 'table'],
+        ['slot-alert', 'alert'], ['slot-note', 'note'], ['slot-bigvalue', 'bigvalue'],
+        ['slot-kanban', 'kanban'], ['slot-form', 'form'], ['slot-audit', 'audit']
+      ]
+      pairs.forEach(function(pair) {
+        var el = document.getElementById(pair[0])
+        if (el) {
+          el.innerHTML = ''
+          try {
+            renderSpec(specs[pair[1]], el)
+          } catch(e) {
+            el.innerHTML = '<div style="color:#ef4444;font-size:12px">Error: ' + e.message + '</div>'
+          }
+        }
+      })
+    }
+
+    // === Update toggle UI ===
+    function updateToggleUI() {
+      var track = document.getElementById('toggleTrack')
+      var labelDark = document.getElementById('labelDark')
+      var labelLight = document.getElementById('labelLight')
+      if (currentMode === 'light') {
+        track.classList.add('light')
+        labelDark.classList.remove('active')
+        labelLight.classList.add('active')
+        document.documentElement.classList.add('light-mode')
+      } else {
+        track.classList.remove('light')
+        labelDark.classList.add('active')
+        labelLight.classList.remove('active')
+        document.documentElement.classList.remove('light-mode')
+      }
+    }
+
+    // Sync page shell colors with current mode
+    function syncShellColors() {
+      if (currentMode === 'light') {
+        document.body.style.backgroundColor = '#f5f5f5'
+        document.body.style.color = '#1a1a1a'
+      } else {
+        document.body.style.backgroundColor = '#0a0a14'
+        document.body.style.color = '#e0e0e0'
+      }
+    }
+
+    // === Apply current style + mode ===
+    function applyCurrentTheme() {
+      var themeName = getThemeName(currentStyle, currentMode)
+      setGlobalTheme(themeName)
+      syncShellColors()
+      renderAll()
+      document.getElementById('status').innerHTML = '<span class="ok">Theme: ' + themeName + '</span>'
+    }
+
+    // === Style button clicked ===
+    function applyStyle(style, btn) {
+      currentStyle = style
+      document.querySelectorAll('.theme-btn').forEach(function(b){ b.classList.remove('active') })
+      btn.classList.add('active')
+      applyCurrentTheme()
+    }
+
+    // === Toggle dark/light ===
+    function toggleDarkLight() {
+      currentMode = currentMode === 'dark' ? 'light' : 'dark'
+      updateToggleUI()
+      applyCurrentTheme()
+    }
+
+    // === Set mode directly ===
+    function setMode(mode) {
+      currentMode = mode
+      updateToggleUI()
+      applyCurrentTheme()
+    }
+
+    // === Apply custom DESIGN.md from editor ===
+    function applyFromEditor() {
+      var markdown = document.getElementById('designInput').value
+      try {
+        // Parse first to show tokens
+        var tokens = parseDesignMd(markdown)
+        var parseResult = document.getElementById('parseResult')
+        var parseOutput = document.getElementById('parseOutput')
+        parseResult.style.display = 'block'
+
+        var summary = 'Colors: ' + tokens.colors.length + '\n'
+        tokens.colors.forEach(function(c) { summary += '  ' + c.name + ' → ' + c.value + '\n' })
+        if (tokens.typography.fontFamily) summary += 'Font: ' + tokens.typography.fontFamily + '\n'
+        if (tokens.spacing.baseUnit) summary += 'Base unit: ' + tokens.spacing.baseUnit + '\n'
+        if (tokens.radius.scale) {
+          summary += 'Radius: '
+          Object.keys(tokens.radius.scale).forEach(function(k) { summary += k + '=' + tokens.radius.scale[k] + ' ' })
+          summary += '\n'
+        }
+        parseOutput.textContent = summary
+
+        // Apply theme (loadDesignMd auto-registers dark + inverted light variant)
+        var theme = loadDesignMd(markdown, { apply: true })
+        customThemeName = theme.name
+
+        // Apply the correct variant based on current mode (preserve user's toggle choice)
+        var targetTheme = getThemeName(currentStyle, currentMode)
+        if (targetTheme !== theme.name) {
+          setGlobalTheme(targetTheme)
+        }
+        syncShellColors()
+
+        // Re-render
+        renderAll()
+        document.getElementById('status').innerHTML = '<span class="ok">Custom theme: ' + targetTheme + '</span>'
+      } catch(e) {
+        document.getElementById('status').innerHTML = '<span class="err">Parse error: ' + e.message + '</span>'
+      }
+    }
+
+    function applyCustom(btn) {
+      currentStyle = 'custom'
+      document.querySelectorAll('.theme-btn').forEach(function(b){ b.classList.remove('active') })
+      btn.classList.add('active')
+      applyFromEditor()
+      // On first click, detect mode from parsed theme
+      var theme = Vizual.getTheme(customThemeName)
+      if (theme) {
+        currentMode = theme.mode || 'dark'
+        updateToggleUI()
+        applyCurrentTheme()
+      }
+    }
+
+    // Initial render with default light theme
+    setGlobalTheme('default-light')
+    updateToggleUI()
+    syncShellColors()
+    renderAll()
+    document.getElementById('status').innerHTML = '<span class="ok">Ready — 12 components rendered with Default Light</span>'
+  </script>
+</body>
+</html>

@@ -246,6 +246,76 @@ export function Timeline(props: TimelineProps) {
     [peer] react-dom >=18
 ```
 
+## 主题系统
+
+### 设计目标
+
+所有 43 个组件的颜色统一由主题系统管理。用户提供一份 DESIGN.md 或选择预设主题，`loadDesignMd()` 解析后注入 CSS 变量，组件通过 `tc()` 自动换肤。
+
+### 数据流
+
+```
+DESIGN.md (markdown)
+    │
+    ▼ parseDesignMd()        — 启发式解析（颜色/字体/间距/圆角）
+DesignTokens
+    │
+    ▼ mapDesignTokensToTheme() — 语义匹配 → --rk-* CSS 变量
+Theme { name, cssVariables }
+    │
+    ▼ registerTheme() + applyTheme()
+CSS 变量注入 DOM
+    │
+    ▼ tc('--rk-bg-primary') → '#0b0b0b'
+所有组件通过 tc() 读取主题色
+```
+
+### 关键文件
+
+| 文件 | 职责 |
+|------|------|
+| `src/themes/design-md-parser.ts` | DESIGN.md 解析器，支持多种格式（有/无 ## 标题、表格、列表） |
+| `src/themes/design-md-mapper.ts` | DesignTokens → --rk-* 映射，自动衍生 muted/hover 版本 |
+| `src/themes/index.ts` | 主题注册表 + `loadDesignMd()` 公共 API |
+| `src/themes/default-dark.ts` | 默认暗色主题（30 个 CSS 变量） |
+| `src/themes/linear.ts` | Linear.app 风格主题 |
+| `src/themes/vercel.ts` | Vercel 风格主题 |
+| `src/core/theme-colors.ts` | `tc()` 颜色访问器 + `chartColors()` 调色板 |
+
+### 组件集成规则
+
+```tsx
+// 每个组件必须：
+import { tc } from '../../core/theme-colors'
+
+// 用 tc() 取色，不硬编码
+<div style={{
+  background: tc('--rk-bg-primary'),      // 不是 '#111'
+  color: tc('--rk-text-primary'),          // 不是 '#e5e5e5'
+  border: `1px solid ${tc('--rk-border-subtle')}`,  // 不是 '#2a2a2a'
+}}>
+```
+
+### DESIGN.md 支持的语义名映射
+
+| DESIGN.md 语义名 | 映射到 | 说明 |
+|-----------------|--------|------|
+| Primary, Brand, Accent | `--rk-accent` | 品牌强调色 |
+| Canvas, Surface, Background | `--rk-bg-primary` | 主背景 |
+| Surface Secondary, Card | `--rk-bg-secondary` | 卡片背景 |
+| Text, Foreground | `--rk-text-primary` | 主文字 |
+| Text Secondary, Muted | `--rk-text-secondary` | 次要文字 |
+| Border, Divider | `--rk-border-subtle` | 边框 |
+| Error, Danger | `--rk-error` | 错误色 |
+| Success, Green | `--rk-success` | 成功色 |
+| Warning, Amber | `--rk-warning` | 警告色 |
+
+未匹配的颜色自动分配给图表调色板 `--rk-chart-1` ~ `--rk-chart-6`。
+
+### 30 个 CSS 变量完整列表
+
+见 [CONTRIBUTING.md](../CONTRIBUTING.md) 的「完整主题变量表」。
+
 ## 构建流程
 
 ```

@@ -22,6 +22,12 @@ import { Renderer, StateProvider, JSONUIProvider } from '@json-render/react'
 // Expose React runtimes for standalone consumers
 export { React, ReactDOM, ReactDOMClient, echarts }
 
+// Theme system (DESIGN.md support + Dark/Light mode toggle)
+export { loadDesignMd, setGlobalTheme, applyTheme, registerTheme, getTheme, getThemeNames, toggleMode, getCurrentThemeName } from './themes'
+export { parseDesignMd, mapDesignTokensToTheme, detectMode, invertTheme } from './themes'
+export { defaultDarkTheme, defaultLightTheme, linearTheme, vercelTheme } from './themes'
+export { tc, chartColors } from './core/theme-colors'
+
 // Re-export everything from index
 // @deprecated Use vizual skill for AI integration instead
 export { renderKitCatalog } from './catalog'
@@ -97,13 +103,13 @@ export type { DocViewProps } from './docview/types'
  * Convenience: render a spec into a DOM container.
  *
  * Usage (CDN):
- *   AIRenderKit.renderSpec(spec, document.getElementById('app'))
+ *   Vizual.renderSpec(spec, document.getElementById('app'))
  */
 export function renderSpec(spec: any, container: HTMLElement) {
-  const root = createRoot(container)
+  const root = ReactDOMClient.createRoot(container)
   root.render(
-    createElement(JSONUIProvider, { registry } as any,
-      createElement(Renderer, { spec, registry })
+    React.createElement(JSONUIProvider, { registry } as any,
+      React.createElement(Renderer, { spec, registry })
     )
   )
   return root

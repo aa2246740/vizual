@@ -221,8 +221,31 @@ See [docs/AI-INTEGRATION.md](docs/AI-INTEGRATION.md) for details.
 ```bash
 npm install      # Install all dependencies
 npm test         # Run tests (vitest)
-npm run build    # Build all formats (ESM + CJS + CDN + Standalone)
+npm run build    # Build all formats (ESM + CJS + Standalone)
 ```
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for component development guidelines.
+
+## Theme System & DESIGN.md
+
+Every component in Vizual reads colors from the theme system. Users can customize the entire look by providing a DESIGN.md:
+
+```tsx
+import { loadDesignMd } from 'vizual'
+
+// Parse a DESIGN.md file and apply it globally
+loadDesignMd(`
+Primary: #0052ef
+Canvas: #0b0b0b
+Surface: #141414
+Text: #e8e8e8
+Border: #2a2a2a
+`, { apply: true })
+```
+
+All 43 components instantly reflect the new theme — no per-component configuration needed.
+
+**Preset themes**: `default-dark` (default), `linear`, `vercel` — applied via `setGlobalTheme('linear')`.
 
 ## Tech Stack
 
@@ -239,11 +262,12 @@ npm run build    # Build all formats (ESM + CJS + CDN + Standalone)
 
 | Document | Description |
 |----------|-------------|
-| [INSTALL.md](INSTALL.md) | Installation guide (NPM / CDN / Offline) |
+| [INSTALL.md](INSTALL.md) | Installation guide (NPM / Standalone) |
 | [GETTING-STARTED.md](docs/GETTING-STARTED.md) | Developer quickstart |
-| [COMPONENTS.md](docs/COMPONENTS.md) | All 42 component schemas & examples |
-| [ARCHITECTURE.md](docs/ARCHITECTURE.md) | Architecture, data flow, dependency graph |
+| [COMPONENTS.md](docs/COMPONENTS.md) | All 43 component schemas & examples |
+| [ARCHITECTURE.md](docs/ARCHITECTURE.md) | Architecture, data flow, theme system |
 | [AI-INTEGRATION.md](docs/AI-INTEGRATION.md) | AI integration guide (Claude / GPT) |
+| [CONTRIBUTING.md](CONTRIBUTING.md) | Component development guide & conventions |
 | [LICENSES.md](docs/LICENSES.md) | License compliance for all dependencies |
 | [validation/test-all-42.html](validation/test-all-42.html) | Live test — all 42 components with real data |
 | [validation/demo-streaming.html](validation/demo-streaming.html) | LLM chat demo — streaming JSON → rendered components |
@@ -390,6 +414,27 @@ npm run build  # 构建全部格式
 ```
 
 构建产物：ESM 11MB + CJS 11MB + Standalone 6.3MB (包含所有依赖)
+
+贡献者请阅读 [CONTRIBUTING.md](CONTRIBUTING.md) 了解组件开发规范。
+
+## 主题系统 & DESIGN.md
+
+所有组件的颜色从主题系统读取。用户提供一份 DESIGN.md 即可自定义全局外观：
+
+```tsx
+import { loadDesignMd } from 'vizual'
+
+loadDesignMd(`
+Primary: #0052ef
+Canvas: #0b0b0b
+Text: #e8e8e8
+Border: #2a2a2a
+`, { apply: true })
+```
+
+43 个组件立即反映新主题，无需逐个配置。
+
+**预设主题**：`default-dark`（默认）、`linear`、`vercel` — 通过 `setGlobalTheme('linear')` 切换。
 
 ## 技术栈
 

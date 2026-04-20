@@ -1,21 +1,69 @@
 import type { PieChartProps } from './schema'
 import { createEChartsBridge } from '../../core/echarts-bridge-factory'
 
+/**
+ * Build ECharts pie option from schema props.
+ *
+ * Pie charts do NOT use xAxis/yAxis.
+ * Data format: [{ name: string, value: number }]
+ */
 function buildPieFallback(props: PieChartProps): Record<string, unknown> {
-  const x = props.x ?? 'name'
-  const y = props.y ?? (Array.isArray(props.y) ? props.y[0] : 'value')
-  const yFields = Array.isArray(y) ? y : [y]
+  // Support both x/y and category/value field naming conventions
+  const rawProps = props as Record<string, unknown>
+  const x = (props.x ?? rawProps.category ?? 'name') as string
+  const y = (props.y ?? rawProps.value ?? 'value') as string | string[]
+  const yField = Array.isArray(y) ? y[0] : y
+  const data = Array.isArray(props.data) ? props.data : []
+
+  const pieData = data.map(d => ({
+    name: String(d[x] ?? ''),
+    value: Number(d[yField]) || 0,
+  }))
+
+  const hasTitle = !!props.title
+
   return {
-    title: props.title ? { text: props.title } : undefined,
-    tooltip: { trigger: 'axis' },
-    xAxis: { type: 'category', data: props.data.map(d => String(d[x] ?? '')) },
-    yAxis: { type: 'value' },
-    series: yFields.map(f => ({
+    title: hasTitle ? { text: props.title, top: 0, left: 'center' } : undefined,
+    tooltip: { trigger: 'item' },
+    legend: {
+      orient: 'horizontal',
+      bottom: 0,
+      left: 'center',
+      type: 'scroll',
+    },
+    series: [{
       type: 'pie',
-      name: f, data: props.data.map(d => Number(d[f]) || 0),
-      
-    })),
+      radius: ['0%', '65%'],
+      center: ['50%', hasTitle ? '52%' : '48%'],
+      top: hasTitle ? 40 : 10,
+      bottom: 40,
+      label: {
+        show: true,
+        formatter: '{b}: {d}%',
+        fontSize: 12,
+      },
+      labelLine: {
+        show: true,
+        length: 15,
+        length2: 10,
+      },
+      data: pieData,
+    }],
   }
 }
 
-export const PieChart = createEChartsBridge('pie', buildPieFallback)
+/**
+ * Map schema props to mviz format.
+ * mviz uses spec.name / spec.value for pie dimension fields.
+ * Our schema supports x/y and category/value as aliases.
+ */
+function toMvizProps(props: PieChartProps): Record<string, unknown> {
+  const rawProps = props as Record<string, unknown>
+  return {
+    ...props,
+    name: props.x ?? rawProps.category ?? rawProps.name ?? 'name',
+    value: Array.isArray(props.y) ? props.y[0] : (props.y ?? rawProps.value ?? 'value'),
+  }
+}
+
+export const PieChart = createEChartsBridge('pie', buildPieFallback, toMvizProps)

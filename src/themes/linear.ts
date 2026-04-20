@@ -55,7 +55,8 @@ export const linearTheme = {
     '--rk-chart-4': '#ec4899',
     '--rk-chart-5': '#06b6d4',
     '--rk-chart-6': '#f97316',
-  }
+  },
+  mode: 'dark' as const,
 }
 
 export default linearTheme

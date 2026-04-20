@@ -19,11 +19,24 @@ function buildRadarFallback(props: RadarChartProps): Record<string, unknown> {
       value: s.values,
       name: s.name ?? '',
     }))
+
+    const hasTitle = !!props.title
+    const hasLegend = seriesData.length > 1
+
     return {
-      title: props.title ? { text: props.title } : undefined,
+      title: hasTitle ? { text: props.title, top: 0, left: 'center' } : undefined,
       tooltip: {},
-      legend: seriesData.length > 1 ? {} : undefined,
-      radar: { indicator: indicators },
+      legend: hasLegend ? { bottom: 0, left: 'center' } : undefined,
+      radar: {
+        indicator: indicators,
+        center: ['50%', '54%'],
+        radius: '60%',
+        name: {
+          textStyle: {
+            fontSize: 12,
+          },
+        },
+      },
       series: [{
         type: 'radar',
         data: seriesData,
@@ -40,7 +53,7 @@ function buildRadarFallback(props: RadarChartProps): Record<string, unknown> {
   const dimensions = [...new Set(data.map(d => String(d[xField] ?? '')))]
   if (dimensions.length === 0) {
     return {
-      title: props.title ? { text: props.title } : undefined,
+      title: props.title ? { text: props.title, top: 0, left: 'center' } : undefined,
       tooltip: {},
       radar: { indicator: [{ name: '-', max: 100 }] },
       series: [{ type: 'radar', data: [] }],
@@ -74,11 +87,23 @@ function buildRadarFallback(props: RadarChartProps): Record<string, unknown> {
     name: field,
   }))
 
+  const hasTitle = !!props.title
+  const hasLegend = yFields.length > 1
+
   return {
-    title: props.title ? { text: props.title } : undefined,
+    title: hasTitle ? { text: props.title, top: 0, left: 'center' } : undefined,
     tooltip: {},
-    legend: yFields.length > 1 ? {} : undefined,
-    radar: { indicator: indicators },
+    legend: hasLegend ? { bottom: 0, left: 'center' } : undefined,
+    radar: {
+      indicator: indicators,
+      center: ['50%', '54%'],
+      radius: '60%',
+      name: {
+        textStyle: {
+          fontSize: 12,
+        },
+      },
+    },
     series: [{
       type: 'radar',
       data: seriesData,

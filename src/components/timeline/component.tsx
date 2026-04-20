@@ -1,10 +1,11 @@
 import type { TimelineProps } from './schema'
+import { tc } from '../../core/theme-colors'
 
 const styles = {
   container: {
     position: 'relative' as const,
     paddingLeft: 24,
-    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontFamily: tc('--rk-font-sans'),
   },
   line: {
     position: 'absolute' as const,
@@ -12,7 +13,7 @@ const styles = {
     top: 8,
     bottom: 8,
     width: 2,
-    background: 'var(--rk-border, #e2e8f0)',
+    background: tc('--rk-border'),
   },
   event: {
     position: 'relative' as const,
@@ -26,23 +27,23 @@ const styles = {
     width: 10,
     height: 10,
     borderRadius: '50%',
-    background: 'var(--rk-primary, #3b82f6)',
-    border: '2px solid var(--rk-bg-primary, #fff)',
+    background: tc('--rk-accent'),
+    border: `2px solid ${tc('--rk-bg-primary')}`,
   },
   date: {
     fontSize: 12,
-    color: 'var(--rk-text-secondary, #64748b)',
+    color: tc('--rk-text-secondary'),
     marginBottom: 2,
   },
   title: {
     fontSize: 14,
     fontWeight: 600 as const,
-    color: 'var(--rk-text-primary, #1e293b)',
+    color: tc('--rk-text-primary'),
     marginBottom: 2,
   },
   description: {
     fontSize: 13,
-    color: 'var(--rk-text-secondary, #64748b)',
+    color: tc('--rk-text-secondary'),
     lineHeight: 1.5,
   },
 }
@@ -54,7 +55,7 @@ export function Timeline({ props }: { props: TimelineProps }) {
   return (
     <div style={styles.container}>
       {props.title && (
-        <h3 style={{ fontSize: 16, fontWeight: 600, marginBottom: 12, color: 'var(--rk-text-primary, #1e293b)' }}>
+        <h3 style={{ fontSize: 16, fontWeight: 600, marginBottom: 12, color: tc('--rk-text-primary') }}>
           {props.title}
         </h3>
       )}

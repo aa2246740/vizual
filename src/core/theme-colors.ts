@@ -10,21 +10,30 @@
  */
 
 import { defaultDarkTheme } from '../themes/default-dark'
+import { defaultLightTheme } from '../themes/default-light'
 import { getTheme } from '../themes'
 
-/** 默认颜色表（来自 default-dark 主题） */
-const defaultColors: Record<string, string> = { ...defaultDarkTheme.cssVariables }
+/** 暗色默认颜色表 */
+const defaultDarkColors: Record<string, string> = { ...defaultDarkTheme.cssVariables }
+
+/** 亮色默认颜色表 */
+const defaultLightColors: Record<string, string> = { ...defaultLightTheme.cssVariables }
 
 /** 当前生效的颜色缓存 */
-let activeColors: Record<string, string> = { ...defaultColors }
+let activeColors: Record<string, string> = { ...defaultDarkColors }
 
 /**
  * 更新颜色缓存 — 在主题切换时由 themes/index.ts 调用
+ *
+ * 根据主题的 mode 选择正确的 fallback 基底：
+ *   - dark 模式 → defaultDarkTheme 作为缺失变量的 fallback
+ *   - light 模式 → defaultLightTheme 作为缺失变量的 fallback
  */
 export function updateActiveColors(themeName: string): void {
   const theme = getTheme(themeName)
   if (theme) {
-    activeColors = { ...defaultColors, ...theme.cssVariables }
+    const fallbackBase = theme.mode === 'light' ? defaultLightColors : defaultDarkColors
+    activeColors = { ...fallbackBase, ...theme.cssVariables }
   }
 }
 
@@ -34,7 +43,7 @@ export function updateActiveColors(themeName: string): void {
  * @returns 颜色值，如 '#0f1117'
  */
 export function tc(varName: string): string {
-  return activeColors[varName] || defaultColors[varName] || ''
+  return activeColors[varName] || defaultDarkColors[varName] || ''
 }
 
 /** 便捷方法：获取图表调色板 */
@@ -48,5 +57,5 @@ export function chartColors(count: number): string[] {
 
 /** 重置为默认颜色（测试用） */
 export function resetColors(): void {
-  activeColors = { ...defaultColors }
+  activeColors = { ...defaultDarkColors }
 }

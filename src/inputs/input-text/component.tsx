@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useBoundProp } from '@json-render/react'
+import { tc } from '../../core/theme-colors'
 import type { InputTextProps } from './schema'
 
 /**
@@ -16,10 +17,10 @@ export function InputText({ props, bindings }: { props: InputTextProps; bindings
   return <div style={{ marginBottom: 12 }}>
     {props.label && <label style={{
       display: 'block', fontSize: 13, fontWeight: 500,
-      color: 'var(--rk-text-secondary,#888)', marginBottom: 4,
+      color: tc('--rk-text-secondary'), marginBottom: 4,
     }}>
       {props.label}
-      {props.required && <span style={{ color: '#ef4444', marginLeft: 2 }}>*</span>}
+      {props.required && <span style={{ color: tc('--rk-error'), marginLeft: 2 }}>*</span>}
     </label>}
     <input
       type={props.inputType ?? 'text'}
@@ -29,14 +30,14 @@ export function InputText({ props, bindings }: { props: InputTextProps; bindings
       onChange={(e) => setValue(e.target.value)}
       style={{
         width: '100%', padding: '8px 12px', fontSize: 14,
-        background: '#111', border: `1px solid ${props.error ? '#ef4444' : '#2a2a2a'}`,
-        borderRadius: 6, color: '#e5e5e5', outline: 'none',
+        background: tc('--rk-bg-primary'), border: `1px solid ${props.error ? tc('--rk-error') : tc('--rk-border-subtle')}`,
+        borderRadius: 6, color: tc('--rk-text-primary'), outline: 'none',
         boxSizing: 'border-box',
       }}
     />
     {(props.error || props.description) && <div style={{
       fontSize: 12, marginTop: 4,
-      color: props.error ? '#ef4444' : '#666',
+      color: props.error ? tc('--rk-error') : tc('--rk-text-tertiary'),
     }}>
       {props.error || props.description}
     </div>}

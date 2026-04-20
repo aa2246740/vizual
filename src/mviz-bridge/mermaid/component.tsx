@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { MermaidProps } from './schema'
+import { tc } from '../../core/theme-colors'
 
 /**
  * Mermaid diagram component — renders mermaid syntax via mermaid.js
@@ -48,16 +49,16 @@ export function MermaidChart({ props }: { props: MermaidProps }) {
   if (error) {
     return (
       <div style={{ width: '100%', minHeight: props.height ?? 200 }}>
-        {props.title && <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 8, color: '#e0e0e0' }}>{props.title}</h3>}
-        <pre style={{ color: '#888', fontSize: 13, padding: 12, background: '#1a1a2e', borderRadius: 4, whiteSpace: 'pre-wrap' }}>{props.code}</pre>
-        <div style={{ color: '#ef4444', fontSize: 11, marginTop: 4 }}>{error}</div>
+        {props.title && <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 8, color: tc('--rk-text-primary') }}>{props.title}</h3>}
+        <pre style={{ color: tc('--rk-text-secondary'), fontSize: 13, padding: 12, background: tc('--rk-bg-secondary'), borderRadius: 4, whiteSpace: 'pre-wrap' }}>{props.code}</pre>
+        <div style={{ color: tc('--rk-error'), fontSize: 11, marginTop: 4 }}>{error}</div>
       </div>
     )
   }
 
   return (
     <div style={{ width: '100%', minHeight: props.height ?? 200 }}>
-      {props.title && <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 8, color: '#e0e0e0' }}>{props.title}</h3>}
+      {props.title && <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 8, color: tc('--rk-text-primary') }}>{props.title}</h3>}
       <div dangerouslySetInnerHTML={{ __html: html }} />
     </div>
   )

@@ -127,3 +127,19 @@ export { ANNOTATION_COLORS } from './docview/types'
 // Core utilities
 export { EChartsWrapper } from './core/echarts-wrapper'
 export type { EChartsWrapperProps } from './core/echarts-wrapper'
+
+// Theme system
+export { registerTheme, getTheme, getThemeNames, applyTheme, setGlobalTheme, loadDesignMd, toggleMode, getCurrentThemeName } from './themes'
+export type { Theme as ThemeDefinition, LoadDesignMdOptions } from './themes'
+export { parseDesignMd, mapDesignTokensToTheme, invertTheme } from './themes'
+export { detectMode } from './themes/design-md-parser'
+export type { DesignTokens, ColorToken, TypographyToken, SpacingToken, RadiusToken } from './themes'
+
+// Theme presets
+export { defaultDarkTheme } from './themes/default-dark'
+export { defaultLightTheme } from './themes/default-light'
+export { linearTheme } from './themes/linear'
+export { vercelTheme } from './themes/vercel'
+
+// Theme color accessor
+export { tc, chartColors, updateActiveColors } from './core/theme-colors'

@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import type { AnnotationColor } from './types'
+import { tc } from '../core/theme-colors'
 
 /** Default annotation color — amber yellow for clear visibility in dark mode */
 const DEFAULT_COLOR: AnnotationColor = '#fbbf24'
@@ -23,8 +24,8 @@ const POPUP_HALF = POPUP_WIDTH / 2
 const popupStyle: React.CSSProperties = {
   position: 'absolute',
   zIndex: 1000,
-  background: '#1a1a2e',
-  border: '1px solid #2a2a4a',
+  background: tc('--rk-bg-secondary'),
+  border: `1px solid ${tc('--rk-border-subtle')}`,
   borderRadius: 10,
   padding: 12,
   width: POPUP_WIDTH,
@@ -38,10 +39,10 @@ const textareaStyle: React.CSSProperties = {
   padding: '8px 10px',
   fontSize: 13,
   lineHeight: 1.4,
-  background: '#111',
-  border: '1px solid #2a2a2a',
+  background: tc('--rk-bg-primary'),
+  border: `1px solid ${tc('--rk-border-subtle')}`,
   borderRadius: 6,
-  color: '#e5e5e5',
+  color: tc('--rk-text-primary'),
   resize: 'vertical',
   outline: 'none',
   boxSizing: 'border-box',
@@ -98,8 +99,8 @@ export function AnnotationInput({ position, selectedText, onConfirm, onCancel, c
     <div style={{ ...popupStyle, top: position.top, left: clampedLeft }} data-annotation-input>
       {/* Selected text preview */}
       <div style={{
-        fontSize: 12, color: '#999', marginBottom: 8,
-        padding: '4px 8px', background: '#111', borderRadius: 4,
+        fontSize: 12, color: tc('--rk-text-secondary'), marginBottom: 8,
+        padding: '4px 8px', background: tc('--rk-bg-primary'), borderRadius: 4,
         maxHeight: 60, overflow: 'hidden', lineHeight: 1.3,
         borderLeft: `3px solid #fbbf24`,
       }}>
@@ -119,15 +120,15 @@ export function AnnotationInput({ position, selectedText, onConfirm, onCancel, c
       <div style={{ display: 'flex', gap: 8, marginTop: 10, justifyContent: 'flex-end' }}>
         <button onClick={onCancel} style={{
           ...buttonBase,
-          background: '#2a2a2a', color: '#aaa',
+          background: tc('--rk-border-subtle'), color: tc('--rk-text-secondary'),
         }}>取消</button>
         <button
           onClick={handleSubmit}
           disabled={!note.trim()}
           style={{
             ...buttonBase,
-            background: note.trim() ? '#fbbf24' : '#2a2a2a',
-            color: note.trim() ? '#000' : '#666',
+            background: note.trim() ? '#fbbf24' : tc('--rk-border-subtle'),
+            color: note.trim() ? '#000' : tc('--rk-text-tertiary'),
             cursor: note.trim() ? 'pointer' : 'not-allowed',
           }}
         >确认</button>

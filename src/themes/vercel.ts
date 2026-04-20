@@ -55,7 +55,8 @@ export const vercelTheme = {
     '--rk-chart-4': '#444444',
     '--rk-chart-5': '#cccccc',
     '--rk-chart-6': '#333333',
-  }
+  },
+  mode: 'dark' as const,
 }
 
 export default vercelTheme

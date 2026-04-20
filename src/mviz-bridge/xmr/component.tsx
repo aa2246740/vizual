@@ -1,5 +1,6 @@
 import type { XmrChartProps } from './schema'
 import { createEChartsBridge } from '../../core/echarts-bridge-factory'
+import { tc } from '../../core/theme-colors'
 
 /**
  * Map schema props to mviz format.
@@ -33,10 +34,10 @@ function buildXmrFallback(props: XmrChartProps): Record<string, unknown> {
     xAxis: { type: 'category', data: labels },
     yAxis: { type: 'value', min: lcl - stdDev },
     series: [
-      { type: 'line', name: 'UCL', data: Array(values.length).fill(ucl), lineStyle: { type: 'dashed', color: '#ef4444' }, symbol: 'none' },
-      { type: 'line', name: 'CL', data: Array(values.length).fill(mean), lineStyle: { type: 'dashed', color: '#f59e0b' }, symbol: 'none' },
-      { type: 'line', name: 'LCL', data: Array(values.length).fill(lcl), lineStyle: { type: 'dashed', color: '#ef4444' }, symbol: 'none' },
-      { type: 'line', name: '测量值', data: values, lineStyle: { color: '#3b82f6' }, itemStyle: { color: '#3b82f6' } },
+      { type: 'line', name: 'UCL', data: Array(values.length).fill(ucl), lineStyle: { type: 'dashed', color: tc('--rk-error') }, symbol: 'none' },
+      { type: 'line', name: 'CL', data: Array(values.length).fill(mean), lineStyle: { type: 'dashed', color: tc('--rk-warning') }, symbol: 'none' },
+      { type: 'line', name: 'LCL', data: Array(values.length).fill(lcl), lineStyle: { type: 'dashed', color: tc('--rk-error') }, symbol: 'none' },
+      { type: 'line', name: '测量值', data: values, lineStyle: { color: tc('--rk-accent') }, itemStyle: { color: tc('--rk-accent') } },
     ],
   }
 }

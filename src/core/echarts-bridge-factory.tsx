@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 import * as echarts from 'echarts'
+import { chartColors } from './theme-colors'
 
 // Static imports from mviz — bundled by esbuild, works in browser
 import {
@@ -150,20 +151,32 @@ function buildOption(
   fallback: (props: ChartProps) => Record<string, unknown>,
   mapToMviz?: (props: ChartProps) => ChartProps,
 ): Record<string, unknown> {
+  let option: Record<string, unknown>
+
   const builder = mvizBuilders[chartType]
   if (builder) {
     try {
       const mvizProps = mapToMviz ? mapToMviz(props) : props
       const rawOption = builder(mvizProps)
-      return hydrateJsFunctions(rawOption) as Record<string, unknown>
+      option = hydrateJsFunctions(rawOption) as Record<string, unknown>
     } catch (e) {
       console.warn(`[vizual] mviz builder for "${chartType}" failed, using fallback:`, e)
+      option = fallback(props)
+    }
+  } else {
+    try {
+      option = fallback(props)
+    } catch (e) {
+      console.error(`[vizual] Fallback builder for "${chartType}" also failed:`, e)
+      return { title: { text: `Error: ${(e as Error).message}` } }
     }
   }
-  try {
-    return fallback(props)
-  } catch (e) {
-    console.error(`[vizual] Fallback builder for "${chartType}" also failed:`, e)
-    return { title: { text: `Error: ${(e as Error).message}` } }
+
+  // Inject theme chart palette — all charts follow DESIGN.md / theme colors
+  const palette = chartColors(6)
+  if (palette.length > 0) {
+    option.color = palette
   }
+
+  return option
 }

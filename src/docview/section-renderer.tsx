@@ -1,6 +1,7 @@
 import React, { useRef, useEffect } from 'react'
 import * as echarts from 'echarts'
 import type { AnnotationTarget, Annotation, ChartDataPoint } from './types'
+import { tc } from '../core/theme-colors'
 
 /** Props for the SectionRenderer component */
 export interface SectionRendererProps {
@@ -22,11 +23,11 @@ export interface SectionRendererProps {
 
 /** Variant-to-color mapping for callout sections */
 const variantColors: Record<string, string> = {
-  info: '#3b82f6',
+  info: tc('--rk-accent'),
   warning: '#fbbf24',
-  success: '#22c55e',
-  error: '#ef4444',
-  neutral: '#888',
+  success: tc('--rk-success'),
+  error: tc('--rk-error'),
+  neutral: tc('--rk-text-secondary'),
 }
 
 /** Heading font sizes by level (h1=32px down to h6=14px) */
@@ -97,7 +98,7 @@ function renderText(section: SectionRendererProps['sections'][number], _index: n
     <p
       key={`text-${_index}`}
       style={{
-        color: '#e5e5e5',
+        color: tc('--rk-text-primary'),
         fontSize: 14,
         lineHeight: 1.6,
         marginBottom: 16,
@@ -119,7 +120,7 @@ function renderHeading(section: SectionRendererProps['sections'][number], _index
     <Tag
       key={`heading-${_index}`}
       style={{
-        color: '#e5e5e5',
+        color: tc('--rk-text-primary'),
         fontSize: size,
         fontWeight: 700,
         marginBottom: 12,
@@ -239,24 +240,24 @@ function ChartSection({
         handleClick(e, index, 'chart', section.title || '图表')
       }}
       style={{
-        background: '#111',
-        border: '1px solid #2a2a4a',
+        background: tc('--rk-bg-primary'),
+        border: `1px solid ${tc('--rk-border-subtle')}`,
         borderRadius: 8,
         padding: 16,
         marginBottom: 16,
         cursor: 'pointer',
         transition: 'border-color 0.15s',
       }}
-      onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.borderColor = '#4a4a6a' }}
-      onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.borderColor = '#2a2a4a' }}
+      onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.borderColor = tc('--rk-border') }}
+      onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.borderColor = tc('--rk-border-subtle') }}
     >
-      <span style={{ color: '#888', fontSize: 13, marginBottom: 8, display: 'block' }}>
+      <span style={{ color: tc('--rk-text-secondary'), fontSize: 13, marginBottom: 8, display: 'block' }}>
         {section.title || '图表'}
       </span>
       {hasChartData ? (
         <div ref={chartRef} style={{ width: '100%', height: 250 }} />
       ) : (
-        <div style={{ height: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#555', fontSize: 12 }}>
+        <div style={{ height: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', color: tc('--rk-text-tertiary'), fontSize: 12 }}>
           点击以添加批注
         </div>
       )}
@@ -274,7 +275,7 @@ function buildChartOptions(title: string, data: Record<string, unknown>): Record
     title: { text: '', show: false },
     tooltip: { trigger: seriesType === 'pie' ? 'item' : 'axis' },
     grid: { left: 50, right: 20, top: 20, bottom: 30 },
-    legend: seriesType === 'pie' ? { bottom: 0, textStyle: { color: '#888', fontSize: 11 } } : undefined,
+    legend: seriesType === 'pie' ? { bottom: 0, textStyle: { color: tc('--rk-text-secondary'), fontSize: 11 } } : undefined,
     ...data,
     series: series?.map((s: Record<string, unknown>) => ({
       ...s,
@@ -308,22 +309,22 @@ function renderKpi(
             data-target-type="kpi"
             onClick={(e) => handleClick(e, index, 'kpi', metric.label)}
             style={{
-              background: '#111',
-              border: '1px solid #2a2a4a',
+              background: tc('--rk-bg-primary'),
+              border: `1px solid ${tc('--rk-border-subtle')}`,
               borderRadius: 8,
               padding: '12px 16px',
               minWidth: 140,
               cursor: 'pointer',
               transition: 'border-color 0.15s',
             }}
-            onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.borderColor = '#4a4a6a' }}
-            onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.borderColor = '#2a2a4a' }}
+            onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.borderColor = tc('--rk-border') }}
+            onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.borderColor = tc('--rk-border-subtle') }}
           >
-            <div style={{ fontSize: 12, color: '#888', marginBottom: 4 }}>{metric.label}</div>
+            <div style={{ fontSize: 12, color: tc('--rk-text-secondary'), marginBottom: 4 }}>{metric.label}</div>
             <div style={{
               fontSize: 24,
               fontWeight: 700,
-              color: metric.color || '#e5e5e5',
+              color: metric.color || tc('--rk-text-primary'),
               lineHeight: 1.2,
             }}>
               {metric.value}
@@ -331,7 +332,7 @@ function renderKpi(
             {metric.change && (
               <div style={{
                 fontSize: 11,
-                color: metric.change.startsWith('-') ? '#ef4444' : '#22c55e',
+                color: metric.change.startsWith('-') ? tc('--rk-error') : tc('--rk-success'),
                 marginTop: 4,
               }}>
                 {metric.change}
@@ -352,8 +353,8 @@ function renderKpi(
       data-target-type="kpi"
       onClick={(e) => handleClick(e, index, 'kpi', section.content || 'KPI')}
       style={{
-        background: '#111',
-        border: '1px solid #2a2a4a',
+        background: tc('--rk-bg-primary'),
+        border: `1px solid ${tc('--rk-border-subtle')}`,
         borderRadius: 8,
         padding: '12px 16px',
         minWidth: 140,
@@ -361,11 +362,11 @@ function renderKpi(
         marginBottom: 16,
         transition: 'border-color 0.15s',
       }}
-      onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.borderColor = '#4a4a6a' }}
-      onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.borderColor = '#2a2a4a' }}
+      onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.borderColor = tc('--rk-border') }}
+      onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.borderColor = tc('--rk-border-subtle') }}
     >
-      <div style={{ fontSize: 12, color: '#888' }}>KPI</div>
-      <div style={{ fontSize: 24, fontWeight: 700, color: '#e5e5e5' }}>{section.content}</div>
+      <div style={{ fontSize: 12, color: tc('--rk-text-secondary') }}>KPI</div>
+      <div style={{ fontSize: 24, fontWeight: 700, color: tc('--rk-text-primary') }}>{section.content}</div>
     </div>
   )
 }
@@ -384,8 +385,8 @@ function renderTable(
       <div
         key={`table-${index}`}
         style={{
-          background: '#111',
-          border: '1px solid #2a2a4a',
+          background: tc('--rk-bg-primary'),
+          border: `1px solid ${tc('--rk-border-subtle')}`,
           borderRadius: 8,
           overflow: 'hidden',
           marginBottom: 16,
@@ -401,9 +402,9 @@ function renderTable(
                     padding: '10px 14px',
                     fontSize: 12,
                     fontWeight: 600,
-                    color: '#aaa',
-                    background: '#0d0d14',
-                    borderBottom: '1px solid #2a2a4a',
+                    color: tc('--rk-text-secondary'),
+                    background: tc('--rk-bg-primary'),
+                    borderBottom: `1px solid ${tc('--rk-border-subtle')}`,
                     textAlign: 'left',
                   }}
                 >
@@ -428,12 +429,12 @@ function renderTable(
                       style={{
                         padding: '8px 14px',
                         fontSize: 13,
-                        color: '#e5e5e5',
-                        borderBottom: rIdx < rows.length - 1 ? '1px solid #1a1a2e' : 'none',
+                        color: tc('--rk-text-primary'),
+                        borderBottom: rIdx < rows.length - 1 ? `1px solid ${tc('--rk-border-subtle')}` : 'none',
                         cursor: 'pointer',
                         transition: 'background 0.15s',
                       }}
-                      onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = '#1a1a2e' }}
+                      onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = tc('--rk-bg-secondary') }}
                       onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = 'transparent' }}
                     >
                       {String(cell)}
@@ -457,18 +458,18 @@ function renderTable(
       data-target-type="table"
       onClick={(e) => handleClick(e, index, 'table', section.title || 'Table')}
       style={{
-        background: '#111',
-        border: '1px solid #2a2a4a',
+        background: tc('--rk-bg-primary'),
+        border: `1px solid ${tc('--rk-border-subtle')}`,
         borderRadius: 8,
         padding: 16,
         marginBottom: 16,
         cursor: 'pointer',
         transition: 'border-color 0.15s',
       }}
-      onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.borderColor = '#4a4a6a' }}
-      onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.borderColor = '#2a2a4a' }}
+      onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.borderColor = tc('--rk-border') }}
+      onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.borderColor = tc('--rk-border-subtle') }}
     >
-      <span style={{ color: '#888', fontSize: 13 }}>{section.content}</span>
+      <span style={{ color: tc('--rk-text-secondary'), fontSize: 13 }}>{section.content}</span>
     </div>
   )
 }
@@ -479,7 +480,7 @@ function renderCallout(
   index: number,
   handleClick: (e: React.MouseEvent, idx: number, type: AnnotationTarget['targetType'], label: string) => void,
 ): React.ReactNode {
-  const borderColor = variantColors[section.variant || 'neutral'] || '#888'
+  const borderColor = variantColors[section.variant || 'neutral'] || tc('--rk-text-secondary')
 
   return (
     <div
@@ -489,7 +490,7 @@ function renderCallout(
       data-target-type="callout"
       onClick={(e) => handleClick(e, index, 'callout', section.content.slice(0, 40) || 'Callout')}
       style={{
-        background: '#111',
+        background: tc('--rk-bg-primary'),
         borderLeft: `3px solid ${borderColor}`,
         padding: '12px 16px',
         borderRadius: 4,
@@ -497,10 +498,10 @@ function renderCallout(
         cursor: 'pointer',
         transition: 'background 0.15s',
       }}
-      onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = '#151525' }}
-      onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = '#111' }}
+      onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = tc('--rk-bg-secondary') }}
+      onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = tc('--rk-bg-primary') }}
     >
-      <p style={{ color: '#e5e5e5', fontSize: 14, lineHeight: 1.5, margin: 0 }}>
+      <p style={{ color: tc('--rk-text-primary'), fontSize: 14, lineHeight: 1.5, margin: 0 }}>
         {section.content}
       </p>
     </div>
@@ -523,8 +524,8 @@ function renderComponent(
       data-target-type="component"
       onClick={(e) => handleClick(e, index, 'component', label)}
       style={{
-        background: '#111',
-        border: '1px solid #2a2a4a',
+        background: tc('--rk-bg-primary'),
+        border: `1px solid ${tc('--rk-border-subtle')}`,
         borderRadius: 8,
         padding: 16,
         marginBottom: 16,
@@ -535,10 +536,10 @@ function renderComponent(
         justifyContent: 'center',
         transition: 'border-color 0.15s',
       }}
-      onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.borderColor = '#4a4a6a' }}
-      onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.borderColor = '#2a2a4a' }}
+      onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.borderColor = tc('--rk-border') }}
+      onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.borderColor = tc('--rk-border-subtle') }}
     >
-      <span style={{ color: '#888', fontSize: 13 }}>{label}</span>
+      <span style={{ color: tc('--rk-text-secondary'), fontSize: 13 }}>{label}</span>
     </div>
   )
 }

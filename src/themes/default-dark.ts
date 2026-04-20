@@ -55,7 +55,7 @@ export const defaultDarkTheme = {
     '--rk-chart-4': '#ec4899',
     '--rk-chart-5': '#8b5cf6',
     '--rk-chart-6': '#06b6d4',
-  }
+    '--rk-chart-6': '#06b6d4',
+  },
+  mode: 'dark' as const,
 }
-
-export default defaultDarkTheme
