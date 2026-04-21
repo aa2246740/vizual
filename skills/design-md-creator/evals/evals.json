@@ -1,0 +1,53 @@
+{
+  "skill_name": "design-md-creator",
+  "evals": [
+    {
+      "id": 1,
+      "name": "pet-ecommerce-warm",
+      "prompt": "我是一个做宠物用品电商的初创公司，想要一个温暖友好的设计风格。我们的品牌色是橙色 #FF6B35，logo 用的是 Nunito 字体。帮我创建一份 DESIGN.md。",
+      "expected_output": "一个完整的 HTML 预览页面文件，基于 design-md-creator 的 preview-template.html 模板，填入了适合宠物电商的参数（暖色调、#FF6B35 品牌色、Nunito 字体、较大圆角、友好的 UI 文案）。页面应引用 vizual.standalone.js，包含 Vizual 组件（DataTable、KpiDashboard、BarChart、PieChart），左侧有完整的设计控件面板，底部有 DESIGN.md 导出功能。",
+      "assertions": [
+        {"name": "uses_template", "description": "输出基于 preview-template.html 模板结构"},
+        {"name": "correct_accent", "description": "品牌色设为 #FF6B35"},
+        {"name": "correct_font", "description": "标题字体选了 Nunito"},
+        {"name": "warm_style", "description": "设计风格温暖友好（正色温暖度、较大圆角、亮色模式）"},
+        {"name": "includes_vizual", "description": "引用 vizual.standalone.js 并包含 Vizual 组件渲染"},
+        {"name": "has_export", "description": "包含 DESIGN.md 导出功能（下载/复制按钮）"},
+        {"name": "working_html", "description": "生成的 HTML 文件语法正确，可以在浏览器中打开"}
+      ],
+      "files": []
+    },
+    {
+      "id": 2,
+      "name": "linear-style-legaltech",
+      "prompt": "我喜欢 Linear 的设计风格 — 暗色、紧凑、专业。但我们不是开发者工具，我们是做法律科技的。帮我生成一份 DESIGN.md，保持那种精致感但不要用紫色。我们的品牌色用 #2563EB（深蓝）。",
+      "expected_output": "一个完整的 HTML 预览页面，暗色主题，紧凑间距，border 代替 shadow 的深度方式，品牌色 #2563EB。Design philosophy 应体现法律科技的专业可信。控件面板的初始值应反映 Linear 风格：暗色模式、低色温暖度、Inter 字体、小圆角。",
+      "assertions": [
+        {"name": "uses_template", "description": "输出基于 preview-template.html 模板结构"},
+        {"name": "correct_accent", "description": "品牌色设为 #2563EB"},
+        {"name": "dark_mode", "description": "初始为暗色模式"},
+        {"name": "linear_style", "description": "Linear 风格特征：紧凑间距、border 深度方式、小圆角、Inter 字体"},
+        {"name": "includes_vizual", "description": "引用 vizual.standalone.js 并包含 Vizual 组件渲染"},
+        {"name": "legal_tone", "description": "UI 文案体现法律科技（如案件、合同等而非开发者工具术语）"},
+        {"name": "working_html", "description": "生成的 HTML 文件语法正确，可以在浏览器中打开"}
+      ],
+      "files": []
+    },
+    {
+      "id": 3,
+      "name": "stripe-brand-tokens",
+      "prompt": "我们公司有一份品牌规范，我粘贴给你：\n\n主色：#0A2540（深海军蓝），辅助色：#635BFF（Stripe 紫），背景：#F6F9FC（冷灰白），文字：#425466\n字体：标题用 Plus Jakarta Sans，正文用 System UI\n按钮圆角 6px，卡片圆角 12px\n间距基准 4px\n\n帮我转换成标准的 DESIGN.md 格式。",
+      "expected_output": "一个完整的 HTML 预览页面，所有颜色来自用户提供的 token（但应合理映射到模板控件：#635BFF 作为品牌色、#F6F9FC 作为亮色背景、Plus Jakarta Sans 作为标题字体）。应补全缺失的部分（暖度、间距、深度方式等），生成完整的 9 章节 DESIGN.md。",
+      "assertions": [
+        {"name": "uses_template", "description": "输出基于 preview-template.html 模板结构"},
+        {"name": "correct_accent", "description": "品牌色正确使用用户提供的颜色（#635BFF 或 #0A2540）"},
+        {"name": "correct_fonts", "description": "标题字体用 Plus Jakarta Sans"},
+        {"name": "light_cool", "description": "亮色模式 + 冷色调"},
+        {"name": "includes_vizual", "description": "引用 vizual.standalone.js 并包含 Vizual 组件渲染"},
+        {"name": "preserves_tokens", "description": "用户提供的品牌规范 token 被正确反映在参数中"},
+        {"name": "working_html", "description": "生成的 HTML 文件语法正确，可以在浏览器中打开"}
+      ],
+      "files": []
+    }
+  ]
+}
