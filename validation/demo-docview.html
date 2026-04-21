@@ -41,7 +41,9 @@
 
   <div class="toolbar">
     <button onclick="resetDemo()">重置</button>
+    <button class="primary" onclick="exportDocPNG()">导出 PNG</button>
     <span id="status" class="badge badge-info">就绪</span>
+    <span id="export-msg" style="font-size:12px;margin-left:8px"></span>
   </div>
 
   <div id="app"></div>
@@ -257,6 +259,20 @@
       render(originalSections);
       actionLog.innerHTML = '<div class="log-entry"><span class="log-time">--:--:--</span> 已重置</div>';
       setStatus('就绪', 'info');
+    }
+
+    // --- Export (target viewport only, exclude annotation sidebar) ---
+    function getExportTarget() {
+      // 只导出正文 viewport，不包含批注侧边栏
+      return document.querySelector('[data-docview-viewport]') || document.getElementById('app');
+    }
+    function exportDocPNG() {
+      var el = getExportTarget();
+      var msg = document.getElementById('export-msg');
+      msg.textContent = '导出中...'; msg.style.color = 'var(--rk-warning)';
+      Vizual.downloadPNG(el, { filename: 'docview-运营月报', scale: 2 })
+        .then(function() { msg.textContent = 'PNG 已下载!'; msg.style.color = 'var(--rk-success)'; })
+        .catch(function(e) { msg.textContent = '失败: ' + e.message; msg.style.color = 'var(--rk-error)'; });
     }
 
     // --- 启动 ---

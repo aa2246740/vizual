@@ -173,12 +173,14 @@ export function DocView({
     overflow: 'auto',
     minHeight: 0,
     background: tcss('--rk-bg-primary'),
+    display: 'flex',
+    justifyContent: 'center',
   }
 
   return (
     <div ref={containerRef} className={className} style={containerStyle}>
-      {/* Main content area */}
-      <div ref={contentRef} style={contentStyle}>
+      {/* Main content area — export target should use [data-docview-viewport] */}
+      <div ref={contentRef} data-docview-viewport style={contentStyle}>
         <AnnotationOverlay
           annotations={annotations}
           onHighlightClick={(ann) => onAction?.('annotationClicked', { annotation: ann })}

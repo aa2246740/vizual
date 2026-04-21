@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>用户增长趋势</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: #0f1117;
+      color: #e2e8f0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 24px;
+    }
+
+    .page-wrapper {
+      width: 100%;
+      max-width: 960px;
+    }
+
+    .page-header {
+      margin-bottom: 32px;
+    }
+
+    .page-header h1 {
+      font-size: 28px;
+      font-weight: 700;
+      color: #f1f5f9;
+      letter-spacing: -0.5px;
+    }
+
+    .page-header p {
+      margin-top: 8px;
+      font-size: 15px;
+      color: #94a3b8;
+    }
+
+    .chart-container {
+      background: #1e293b;
+      border: 1px solid #2d3148;
+      border-radius: 10px;
+      padding: 24px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+  </style>
+</head>
+<body>
+  <div class="page-wrapper">
+    <div class="page-header">
+      <h1>用户增长趋势</h1>
+      <p>最近 12 个月新增用户数据总览</p>
+    </div>
+    <div class="chart-container">
+      <div id="chart"></div>
+    </div>
+  </div>
+
+  <script src="../../dist/vizual.standalone.js"></script>
+  <script>
+    const spec = {
+      root: 'main',
+      elements: {
+        main: {
+          type: 'LineChart',
+          props: {
+            type: 'line',
+            title: '月度新增用户数（2025.05 - 2026.04）',
+            theme: 'dark',
+            height: 420,
+            x: 'month',
+            y: 'users',
+            smooth: true,
+            data: [
+              { month: '2025-05', users: 12400 },
+              { month: '2025-06', users: 14800 },
+              { month: '2025-07', users: 17200 },
+              { month: '2025-08', users: 19500 },
+              { month: '2025-09', users: 16300 },
+              { month: '2025-10', users: 18900 },
+              { month: '2025-11', users: 22100 },
+              { month: '2025-12', users: 25600 },
+              { month: '2026-01', users: 28400 },
+              { month: '2026-02', users: 31200 },
+              { month: '2026-03', users: 35800 },
+              { month: '2026-04', users: 39500 }
+            ]
+          },
+          children: []
+        }
+      }
+    };
+
+    Vizual.renderSpec(spec, document.getElementById('chart'));
+  </script>
+</body>
+</html>

@@ -1,0 +1,23 @@
+{
+  "skill_name": "vizual",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "帮我做一个销售仪表盘，展示月度收入趋势（柱状图）、各产品线占比（饼图）、关键指标卡片（总营收、增长率、客单价、活跃客户数），再加一个数据表格显示前10个客户的明细。",
+      "expected_output": "多组件 JSON spec，使用 VerticalLayout 组合 KpiDashboard + BarChart + PieChart + DataTable，data 字段包含合理数据",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "我需要一个独立的 HTML 页面，里面有一个折线图显示最近12个月的用户增长数据。页面背景是深色的，图表要有标题。要求只用一个 HTML 文件，不依赖构建工具。",
+      "expected_output": "完整的 HTML 文件，包含 vizual.standalone.js 引用和 Vizual.renderSpec() 调用，使用 LineChart 组件",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "把这个数据画成图表：[['Q1', 450], ['Q2', 620], ['Q3', 580], ['Q4', 890]]，用最合适的图表类型。",
+      "expected_output": "单个组件 JSON spec，正确选择 BarChart，type 为 'bar'，数据映射正确",
+      "files": []
+    }
+  ]
+}

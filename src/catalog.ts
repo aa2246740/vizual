@@ -55,6 +55,10 @@ import { FormBuilderSchema } from './inputs/form-builder/schema'
 // DocView schema
 import { DocViewSchema } from './docview/schema'
 
+// New component schemas
+import { ProgressBarSchema } from './components/progress-bar/schema'
+import { TreeViewSchema } from './components/tree-view/schema'
+
 // InteractivePlayground schema
 import { InteractivePlaygroundSchema } from './components/interactive-playground/schema'
 
@@ -238,6 +242,16 @@ export const renderKitCatalog = defineCatalog(schema, {
     FormBuilder: {
       props: FormBuilderSchema as any,
       description: 'Dynamic form builder with validation, cascading fields, and grid layout. Use $bindState to capture form data.',
+    },
+
+    // New components — 2
+    ProgressBar: {
+      props: ProgressBarSchema as any,
+      description: 'Progress bar with single/multi-segment, variants, and striped animation.',
+    },
+    TreeView: {
+      props: TreeViewSchema as any,
+      description: 'Recursive tree view with expand/collapse, badges, and selection.',
     },
 
     // InteractivePlayground — Meta component — 1

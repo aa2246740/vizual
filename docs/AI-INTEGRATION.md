@@ -17,7 +17,7 @@ Vizual **不支持** ChatGPT / Claude.ai 等聊天机器人场景。我们专注
 ### 安装 Skill
 
 ```bash
-cp -r skill/ ~/.claude/skills/vizual/
+cp -r skills/vizual/ ~/.claude/skills/vizual/
 ```
 
 ### 使用方式
@@ -51,7 +51,7 @@ Vizual Skill 采用**渐进式披露**设计：
 
 ## 其他 AI Agent 集成
 
-对于 Cursor、Windsurf 等 AI Agent，将 `skill/prompt.md` 内容作为 System Prompt 传入。
+对于 Cursor、Windsurf 等 AI Agent，将 `skills/vizual/prompt.md` 内容作为 System Prompt 传入。
 
 ## 前端渲染
 

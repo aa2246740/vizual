@@ -29,9 +29,10 @@ export function InputText({ props, bindings }: { props: InputTextProps; bindings
       disabled={props.disabled}
       onChange={(e) => setValue(e.target.value)}
       style={{
-        width: '100%', padding: '8px 12px', fontSize:parseInt(tcss('--rk-text-md')),
+        width: '100%', padding: '8px 12px', fontSize: parseInt(tcss('--rk-text-md')),
+        lineHeight: '20px',
         background: tcss('--rk-bg-primary'), border: `1px solid ${props.error ? tcss('--rk-error') : tcss('--rk-border-subtle')}`,
-        borderRadius:parseInt(tcss('--rk-radius-md')), color: tcss('--rk-text-primary'), outline: 'none',
+        borderRadius: parseInt(tcss('--rk-radius-md')), color: tcss('--rk-text-primary'), outline: 'none',
         boxSizing: 'border-box',
       }}
     />

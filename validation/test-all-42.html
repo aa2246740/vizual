@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>Full 42-Component Test — Correct Registry Names</title>
+  <title>Full 44-Component Test + Export API</title>
   <style>
     body{font-family:system-ui;background:var(--rk-bg-primary,#0f0f1a);color:var(--rk-text-primary,#e0e0e0);padding:24px;margin:0}
     h2{margin-top:0}
@@ -11,11 +11,13 @@
     table{width:100%;border-collapse:collapse;margin-top:12px}
     th,td{text-align:left;padding:6px 10px;border-bottom:1px solid var(--rk-border-subtle,#2a2a3e);font-size:12px}
     th{background:var(--rk-bg-secondary,#161625);color:var(--rk-text-secondary,#aaa);font-weight:600}
+    .exp-btn{font-size:10px;padding:2px 8px;border-radius:3px;border:1px solid var(--rk-border-subtle,#2a2a3e);background:var(--rk-bg-tertiary,#252836);color:var(--rk-text-secondary,#aaa);cursor:pointer;margin-left:6px}
+    .exp-btn:hover{background:var(--rk-accent,#667eea);color:#fff}
     .row-pass td{color:var(--rk-success,#22c55e)}.row-fail td{color:var(--rk-error,#ef4444)}.row-skip td{color:var(--rk-warning,#f59e0b)}
   </style>
 </head>
 <body>
-  <h2>Full 42-Component Test (correct names + data)</h2>
+  <h2>Full 44-Component Test + Export API</h2>
   <div id="summary">Running...</div>
   <table>
     <thead><tr><th>#</th><th>Component</th><th>Status</th><th>Details</th></tr></thead>
@@ -24,6 +26,28 @@
 
   <!-- vizual.standalone.js includes React, ReactDOM, ECharts, and mermaid — zero CDN needed -->
   <script src="../dist/vizual.standalone.js"></script>
+  <div id="export-section" style="display:none;margin-top:32px;border-top:2px solid var(--rk-border-subtle,#2a2a3e);padding-top:20px">
+    <h2 style="margin-bottom:8px">Export API Test</h2>
+    <p style="font-size:12px;color:var(--rk-text-secondary);margin-bottom:16px">导出任意已渲染的组件为 PNG。点击按钮下载。</p>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">
+      <button class="export-btn" data-format="png" style="padding:8px 20px;border-radius:6px;border:1px solid var(--rk-border-subtle,#2a2a3e);background:var(--rk-bg-secondary);color:var(--rk-text-primary);cursor:pointer;font-size:13px;transition:all .15s">Export Full Page → PNG</button>
+    </div>
+    <div id="export-status" style="font-size:12px;color:var(--rk-success)"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px">
+      <div style="border:1px solid var(--rk-border-subtle);border-radius:8px;overflow:hidden">
+        <div style="font-size:10px;color:var(--rk-text-tertiary);padding:4px 8px;background:var(--rk-bg-secondary);border-bottom:1px solid var(--rk-border-subtle)">BarChart Export Target</div>
+        <div id="export-chart" style="padding:8px"></div>
+      </div>
+      <div style="border:1px solid var(--rk-border-subtle);border-radius:8px;overflow:hidden">
+        <div style="font-size:10px;color:var(--rk-text-tertiary);padding:4px 8px;background:var(--rk-bg-secondary);border-bottom:1px solid var(--rk-border-subtle)">KpiDashboard Export Target</div>
+        <div id="export-kpi" style="padding:8px"></div>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:12px">
+      <button class="export-single-btn" data-target="export-chart" data-format="png" style="padding:6px 14px;border-radius:6px;border:1px solid var(--rk-border-subtle,#2a2a3e);background:var(--rk-bg-secondary);color:var(--rk-text-primary);cursor:pointer;font-size:12px">Export Chart Only → PNG</button>
+      <button class="export-single-btn" data-target="export-kpi" data-format="png" style="padding:6px 14px;border-radius:6px;border:1px solid var(--rk-border-subtle,#2a2a3e);background:var(--rk-bg-secondary);color:var(--rk-text-primary);cursor:pointer;font-size:12px">Export KPI Only → PNG</button>
+    </div>
+  </div>
   <script>
     // Claude / Anthropic light theme
     var claudeTokens = {"colors":[{"name":"terracotta","value":"#c96442"},{"name":"accent","value":"#c96442"},{"name":"coral","value":"#d97757"},{"name":"text","value":"#141413"},{"name":"background","value":"#f5f4ed"},{"name":"card","value":"#faf9f5"},{"name":"ivory","value":"#faf9f5"},{"name":"parchment","value":"#f5f4ed"},{"name":"text-secondary","value":"#5e5d59"},{"name":"text-tertiary","value":"#87867f"},{"name":"border","value":"#f0eee6"},{"name":"border-subtle","value":"#e8e6dc"},{"name":"dark-surface","value":"#30302e"},{"name":"charcoal","value":"#4d4c48"},{"name":"success","value":"#10b981"},{"name":"warning","value":"#f59e0b"},{"name":"error","value":"#b53333"}],"typography":{"fontFamily":"Georgia, system-ui, serif","sizes":{"body":"16px","h3":"25px"},"weights":{"regular":"400","bold":"500"}},"spacing":{"baseUnit":"8px","scale":{"space-1":"4px","space-2":"8px","space-3":"16px"}},"radius":{"scale":{"sm":"6px","md":"8px","lg":"12px"}}};
@@ -50,7 +74,18 @@
       { type: 'FunnelChart', category: 'chart', props: { title: 'Conversion', category: 'stage', value: 'count', data: [{stage:'Visit',count:1000},{stage:'Signup',count:500},{stage:'Buy',count:100}] } },
       { type: 'SankeyChart', category: 'chart', props: { title: 'Flow', nodes: [{name:'A'},{name:'B'},{name:'C'}], links: [{source:'A',target:'B',value:10},{source:'B',target:'C',value:5}] } },
       { type: 'ComboChart', category: 'chart', props: { title: 'Mixed', x: 'month', y: ['sales','cost'], data: [{month:'Jan',sales:100,cost:80},{month:'Feb',sales:120,cost:90}] } },
-      { type: 'WaterfallChart', category: 'chart', props: { title: 'P&L', category: 'item', value: 'amount', data: [{item:'Revenue',amount:500},{item:'COGS',amount:-200},{item:'Profit',amount:300}] } },
+      { type: 'WaterfallChart', category: 'chart', props: { title: 'Q3 P&L Waterfall (万元)', x: 'item', value: 'amount', data: [
+        {item:'总营收',amount:1200},
+        {item:'产品成本',amount:-420},
+        {item:'毛利润',amount:0},
+        {item:'研发费用',amount:-180},
+        {item:'销售费用',amount:-150},
+        {item:'管理费用',amount:-90},
+        {item:'运营利润',amount:0},
+        {item:'利息收入',amount:25},
+        {item:'其他支出',amount:-35},
+        {item:'净利润',amount:0}
+      ] } },
       { type: 'XmrChart', category: 'chart', props: { title: 'SPC', x: 'sample', y: 'measurement', data: [{sample:1,measurement:10.2},{sample:2,measurement:10.5},{sample:3,measurement:9.8}] } },
       { type: 'DumbbellChart', category: 'chart', props: { title: 'Range', x: 'name', low: 'low', high: 'high', data: [{name:'A',low:10,high:80},{name:'B',low:20,high:90}] } },
       { type: 'RadarChart', category: 'chart', props: { title: 'Skills', indicators: [{name:'Speed',max:100},{name:'Power',max:100},{name:'Range',max:100},{name:'Efficiency',max:100},{name:'Safety',max:100}], series: [{name:'Car A',values:[85,70,90,60,80]},{name:'Car B',values:[60,85,70,90,65]}] } },
@@ -94,6 +129,16 @@
         {name:'meeting',label:'Meeting time',type:'datetime',defaultValue:'2024-07-20T14:30'},
         {name:'alarm',label:'Alarm',type:'time',defaultValue:'08:30'},
         {name:'rating',label:'Overall rating',type:'rating',max:5,defaultValue:4},
+      ] } },
+
+      // === 2 New Components (v1.1) ===
+      { type: 'ProgressBar', category: 'ui', props: { title: 'Upload', value: 72, variant: 'default', size: 'md', striped: true } },
+      { type: 'TreeView', category: 'ui', props: { title: 'Files', selectable: true, data: [
+        {id:'src',label:'src',expanded:true,children:[
+          {id:'cmp',label:'components',children:[{id:'pb',label:'progress-bar.tsx'},{id:'tv',label:'tree-view.tsx'}]},
+          {id:'core',label:'core',children:[{id:'exp',label:'export.ts'}]}
+        ]},
+        {id:'pkg',label:'package.json'}
       ] } },
     ];
 
@@ -167,8 +212,11 @@
       var tbody = document.getElementById('results');
       var tr = document.createElement('tr');
       tr.className = info.skip ? 'row-skip' : (info.pass ? 'row-pass' : 'row-fail');
-      tr.innerHTML = '<td>' + num + '</td><td>' + type + '</td><td>' +
-        (info.skip ? 'SKIP' : (info.pass ? 'PASS' : 'FAIL')) + '</td><td>' + info.detail + '</td>';
+      var status = info.skip ? 'SKIP' : (info.pass ? 'PASS' : 'FAIL');
+      tr.innerHTML = '<td>' + num + '</td><td>' + type + '</td><td>' + status +
+        '</td><td>' + info.detail +
+        ' <button class="exp-btn" data-idx="' + (num - 1) + '" data-name="' + type + '">PNG</button>' +
+        '</td>';
       tbody.appendChild(tr);
     }
 
@@ -176,8 +224,22 @@
       var el = document.getElementById('summary');
       el.textContent = 'DONE: ' + PASS_COUNT + '/' + tests.length + ' passed, ' + FAIL_COUNT + ' failed, ' + SKIP_COUNT + ' skipped';
       el.className = FAIL_COUNT === 0 ? 'pass' : 'fail';
-      // After 42-component test, launch theme adaptation test
+
+      // Bind per-row export buttons via event delegation
+      document.getElementById('results').addEventListener('click', function(e) {
+        var btn = e.target.closest('.exp-btn');
+        if (!btn) return;
+        var i = parseInt(btn.dataset.idx);
+        var name = btn.dataset.name;
+        var el = document.getElementById('chart-' + i);
+        if (!el) return;
+        Vizual.downloadPNG(el, { filename: name, scale: 2 })
+          .catch(function(err) { console.error('Export PNG failed:', err); });
+      });
+
+      // After 44-component test, launch theme + export tests
       setTimeout(initThemeTest, 300);
+      setTimeout(initExportTest, 600);
     }
 
     runNext();
@@ -507,6 +569,67 @@
 
       grid.appendChild(slot('Alert — semantic colors', 'Alert',
         { type:'success', message:'Operation completed — verifying semantic color tokens' }));
+
+      // New components row
+      grid.appendChild(slot('ProgressBar — multi-segment', 'ProgressBar',
+        { title:'Resource Allocation', segments:[
+          {value:40,label:'CPU',color:'#667eea'},{value:25,label:'Memory',color:'#10b981'},{value:15,label:'GPU',color:'#f59e0b'}
+        ] }));
+      grid.appendChild(slot('TreeView — selectable', 'TreeView',
+        { title:'Project Files', selectable:true, data:[
+          {id:'s',label:'src',icon:'📁',expanded:true,children:[
+            {id:'c',label:'components',children:[{id:'a',label:'progress-bar'},{id:'b',label:'tree-view'},{id:'d',label:'kanban'}]},
+            {id:'m',label:'mviz-bridge',children:[{id:'e',label:'bar-chart'},{id:'f',label:'map'},{id:'g',label:'line'}]}
+          ]},
+          {id:'t',label:'tests',icon:'🧪',badge:12}
+        ] }));
+    }
+
+    // === Export API Test ===
+    function initExportTest() {
+      var sec = document.getElementById('export-section');
+      sec.style.display = 'block';
+
+      Vizual.renderSpec({ root:'m', elements:{ m:{ type:'BarChart', props:{ title:'Export Target — Revenue', x:'month', y:'revenue', data:[{month:'Jan',revenue:86},{month:'Feb',revenue:72},{month:'Mar',revenue:98},{month:'Apr',revenue:105},{month:'May',revenue:112},{month:'Jun',revenue:121}] }, children:[] } } }, document.getElementById('export-chart'));
+
+      Vizual.renderSpec({ root:'m', elements:{ m:{ type:'KpiDashboard', props:{ metrics:[{label:'Revenue',value:'$1.2M',trend:'up',trendValue:'+15%'},{label:'Users',value:'45K',trend:'up',trendValue:'+8%'},{label:'NPS',value:'72',trend:'up',trendValue:'+5'},{label:'Churn',value:'3.2%',trend:'down',trendValue:'-1.1%'}] }, children:[] } } }, document.getElementById('export-kpi'));
+
+      var statusEl = document.getElementById('export-status');
+
+      document.querySelectorAll('.export-btn').forEach(function(btn) {
+        btn.onclick = function() {
+          statusEl.textContent = 'Exporting PNG...';
+          statusEl.style.color = 'var(--rk-warning)';
+          Vizual.downloadPNG(document.body, { filename: 'vizual-all-44', scale: 2 }).then(function() {
+            statusEl.textContent = 'PNG downloaded!';
+            statusEl.style.color = 'var(--rk-success)';
+          }).catch(function(e) {
+            statusEl.textContent = 'Error: ' + e.message;
+            statusEl.style.color = 'var(--rk-error)';
+          });
+        };
+        btn.onmouseenter = function() { btn.style.background = 'var(--rk-accent)'; btn.style.color = '#fff'; };
+        btn.onmouseleave = function() { btn.style.background = 'var(--rk-bg-secondary)'; btn.style.color = 'var(--rk-text-primary)'; };
+      });
+
+      document.querySelectorAll('.export-single-btn').forEach(function(btn) {
+        btn.onclick = function() {
+          var targetId = btn.dataset.target;
+          var target = document.getElementById(targetId);
+          if (!target || !target.firstChild) { statusEl.textContent = 'Target not rendered yet'; return; }
+          statusEl.textContent = 'Exporting ' + targetId + ' as PNG...';
+          statusEl.style.color = 'var(--rk-warning)';
+          Vizual.downloadPNG(target.firstChild, { filename: targetId, scale: 2 }).then(function() {
+            statusEl.textContent = targetId + '.png downloaded!';
+            statusEl.style.color = 'var(--rk-success)';
+          }).catch(function(e) {
+            statusEl.textContent = 'Error: ' + e.message;
+            statusEl.style.color = 'var(--rk-error)';
+          });
+        };
+        btn.onmouseenter = function() { btn.style.background = 'var(--rk-accent)'; btn.style.color = '#fff'; };
+        btn.onmouseleave = function() { btn.style.background = 'var(--rk-bg-secondary)'; btn.style.color = 'var(--rk-text-primary)'; };
+      });
     }
   </script>
 </body>

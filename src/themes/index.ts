@@ -34,7 +34,7 @@ export type { ThemeMappingReport } from './design-md-mapper'
 const themes = new Map<string, Theme>()
 
 /** 当前生效的主题名 */
-let currentThemeName: string = 'default-dark'
+let currentThemeName: string = 'claude-dark'
 
 /**
  * Register a new theme with the registry
@@ -203,12 +203,16 @@ export type { Theme as ThemeDefinition }
 // ─── 预设主题自动注册 ──────────────────────────────────
 import { defaultDarkTheme } from './default-dark'
 import { defaultLightTheme } from './default-light'
+import { claudeDarkTheme } from './claude-dark'
+import { claudeLightTheme } from './claude-light'
 import { linearTheme } from './linear'
 import { vercelTheme } from './vercel'
 import { invertTheme as invertThemeFn } from './design-md-mapper'
 
 registerTheme('default-dark', defaultDarkTheme)
 registerTheme('default-light', defaultLightTheme)
+registerTheme('claude-dark', claudeDarkTheme)
+registerTheme('claude-light', claudeLightTheme)
 registerTheme('linear', linearTheme)
 registerTheme('vercel', vercelTheme)
 

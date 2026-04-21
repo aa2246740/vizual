@@ -27,6 +27,12 @@ export { loadDesignMd, setGlobalTheme, applyTheme, registerTheme, getTheme, getT
 export { parseDesignMd, mapDesignTokensToTheme, invertTheme } from './themes'
 export { tc, tcss, chartColors } from './core/theme-colors'
 
+// Export API
+export {
+  exportToPNG,
+  downloadPNG,
+} from './core/export'
+
 // Re-export everything from index
 // @deprecated Use vizual skill for AI integration instead
 export { renderKitCatalog } from './catalog'
@@ -82,6 +88,10 @@ export { InputText, InputTextSchema } from './inputs/input-text'
 export { InputSelect, InputSelectSchema } from './inputs/input-select'
 export { InputFile, InputFileSchema } from './inputs/input-file'
 export { FormBuilder, FormBuilderSchema } from './inputs/form-builder'
+
+// New components (v1.1)
+export { ProgressBar, ProgressBarSchema } from './components/progress-bar'
+export { TreeView, TreeViewSchema } from './components/tree-view'
 
 // InteractivePlayground
 export { InteractivePlayground, InteractivePlaygroundSchema } from './components/interactive-playground'

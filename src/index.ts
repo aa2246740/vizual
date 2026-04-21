@@ -94,6 +94,12 @@ export type { InputFileProps } from './inputs/input-file'
 export { FormBuilder, FormBuilderSchema } from './inputs/form-builder'
 export type { FormBuilderProps } from './inputs/form-builder'
 
+// New components
+export { ProgressBar, ProgressBarSchema } from './components/progress-bar'
+export type { ProgressBarProps } from './components/progress-bar'
+export { TreeView, TreeViewSchema } from './components/tree-view'
+export type { TreeViewProps, TreeNode } from './components/tree-view'
+
 // InteractivePlayground — Interactive parameter exploration wrapper
 export { InteractivePlayground, InteractivePlaygroundSchema } from './components/interactive-playground'
 export type { InteractivePlaygroundProps, Control } from './components/interactive-playground'
@@ -147,3 +153,10 @@ export { vercelTheme } from './themes/vercel'
 
 // Theme color accessor
 export { tc, tcss, chartColors, updateActiveColors } from './core/theme-colors'
+
+// Export API
+export {
+  exportToPNG,
+  downloadPNG,
+} from './core/export'
+export type { ExportOptions } from './core/export'

@@ -1,0 +1,57 @@
+{
+  "colors": [
+    { "name": "Electric Blue", "value": "#2563eb" },
+    { "name": "accent", "value": "#2563eb" },
+    { "name": "Midnight", "value": "#0f172a" },
+    { "name": "background", "value": "#0f172a" },
+    { "name": "Cloud", "value": "#f8fafc" },
+    { "name": "surface", "value": "#f8fafc" },
+    { "name": "Steel", "value": "#64748b" },
+    { "name": "text-secondary", "value": "#64748b" },
+    { "name": "Neon Green", "value": "#22c55e" },
+    { "name": "success", "value": "#22c55e" },
+    { "name": "Hot Coral", "value": "#ef4444" },
+    { "name": "error", "value": "#ef4444" },
+    { "name": "text", "value": "#f8fafc" },
+    { "name": "border", "value": "#64748b" },
+    { "name": "card", "value": "#1e293b" },
+    { "name": "input-bg", "value": "#1e293b" }
+  ],
+  "typography": {
+    "fontFamily": "\"Inter\", sans-serif",
+    "sizes": {
+      "caption": "11px",
+      "body": "14px",
+      "subtitle": "18px",
+      "h3": "20px",
+      "h2": "24px",
+      "h1": "32px",
+      "display": "48px"
+    },
+    "weights": {
+      "regular": "400",
+      "medium": "500",
+      "semibold": "600",
+      "bold": "700"
+    }
+  },
+  "spacing": {
+    "baseUnit": "8px",
+    "scale": {
+      "space-1": "4px",
+      "space-2": "8px",
+      "space-3": "12px",
+      "space-4": "16px",
+      "space-5": "24px",
+      "space-6": "32px"
+    }
+  },
+  "radius": {
+    "scale": {
+      "sm": "4px",
+      "md": "8px",
+      "lg": "12px",
+      "pill": "9999px"
+    }
+  }
+}

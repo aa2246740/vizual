@@ -1,0 +1,21 @@
+{
+  "root": "main",
+  "elements": {
+    "main": {
+      "type": "BarChart",
+      "props": {
+        "type": "bar",
+        "title": "Quarterly Performance",
+        "x": "quarter",
+        "y": "value",
+        "data": [
+          { "quarter": "Q1", "value": 450 },
+          { "quarter": "Q2", "value": 620 },
+          { "quarter": "Q3", "value": 580 },
+          { "quarter": "Q4", "value": 890 }
+        ]
+      },
+      "children": []
+    }
+  }
+}

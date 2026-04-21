@@ -48,7 +48,8 @@ const mvizBuilders: Record<string, (props: any) => any> = {
   funnel: buildFunnelOptions,
   sankey: buildSankeyOptions,
   combo: buildComboOptions,
-  waterfall: buildWaterfallOptions,
+  // waterfall: use custom fallback — mviz builder doesn't produce proper floating bars
+  // waterfall: buildWaterfallOptions,
   xmr: buildXmrOptions,
   dumbbell: buildDumbbellOptions,
 }
@@ -190,7 +191,12 @@ function buildOption(
         const is = s.itemStyle as Record<string, unknown> | undefined
         const sType = s.type as string | undefined
         if (is && typeof is === 'object' && 'color' in is) {
-          is.color = palette[i % palette.length]
+          // Skip override when series data has per-item itemStyle (e.g. waterfall)
+          const data = s.data as Record<string, unknown>[] | undefined
+          const hasPerItemStyle = Array.isArray(data) && data.some(d => d && typeof d === 'object' && d.itemStyle && typeof d.itemStyle === 'object')
+          if (!hasPerItemStyle) {
+            is.color = palette[i % palette.length]
+          }
         } else if (sType && whiteDefaultTypes.has(sType)) {
           if (!s.itemStyle || typeof s.itemStyle !== 'object') s.itemStyle = {}
           ;(s.itemStyle as Record<string, unknown>).color = palette[i % palette.length]

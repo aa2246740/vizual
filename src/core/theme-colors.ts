@@ -15,6 +15,8 @@
 
 import { defaultDarkTheme } from '../themes/default-dark'
 import { defaultLightTheme } from '../themes/default-light'
+import { claudeDarkTheme } from '../themes/claude-dark'
+import { claudeLightTheme } from '../themes/claude-light'
 import { getTheme } from '../themes'
 
 /** 暗色默认颜色表 */
@@ -23,8 +25,8 @@ const defaultDarkColors: Record<string, string> = { ...defaultDarkTheme.cssVaria
 /** 亮色默认颜色表 */
 const defaultLightColors: Record<string, string> = { ...defaultLightTheme.cssVariables }
 
-/** 当前生效的颜色缓存 */
-let activeColors: Record<string, string> = { ...defaultDarkColors }
+/** 当前生效的颜色缓存 — 初始化为 Claude Dark（全局默认主题） */
+let activeColors: Record<string, string> = { ...claudeDarkTheme.cssVariables }
 
 /**
  * 更新颜色缓存 — 在主题切换时由 themes/index.ts 调用

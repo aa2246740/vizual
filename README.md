@@ -72,13 +72,13 @@ const docSpec = {
 
 | Skill | 路径 | 一句话说明 |
 |-------|------|-----------|
-| **Vizual** | `skill/` | AI 输出 JSON → 自动渲染 43 种可视化组件 |
+| **Vizual** | `skills/vizual/` | AI 输出 JSON → 自动渲染 43 种可视化组件 |
 | **DESIGN.md Parser** | `skills/design-md-parser/` | 从设计文档提取 token → 全局一键换肤 |
 | **LiveKit** | `skills/livekit/` | 任何"调一下看看"场景 → 实时交互页面 |
 
 ```bash
 # 一键安装全部 Skills
-cp -r skill/ ~/.claude/skills/vizual/
+cp -r skills/vizual/ ~/.claude/skills/vizual/
 cp -r skills/design-md-parser/ ~/.claude/skills/design-md-parser/
 cp -r skills/livekit/ ~/.claude/skills/livekit/
 ```
@@ -231,7 +231,7 @@ Install the 3 skills listed above. Each auto-triggers based on user intent — n
 
 ### Other AI Agents
 
-For Cursor, Windsurf, and other AI agents, use `skill/prompt.md` as the System Prompt.
+For Cursor, Windsurf, and other AI agents, use `skills/vizual/prompt.md` as the System Prompt.
 
 **Note**: Vizual is designed for AI agents, not chatbots. We don't support ChatGPT / Claude.ai conversational interfaces.
 
@@ -291,7 +291,7 @@ All 43 components instantly reflect the new theme — no per-component configura
 | [AI-INTEGRATION](docs/AI-INTEGRATION.md) | AI integration guide (Claude / Cursor / GPT) |
 | [CONTRIBUTING](docs/CONTRIBUTING.md) | Component development guide & conventions |
 | [LICENSES](docs/LICENSES.md) | License compliance for all dependencies |
-| [Vizual Skill](skill/SKILL.md) | Main Skill — AI auto-generates charts & dashboards |
+| [Vizual Skill](skills/vizual/SKILL.md) | Main Skill — AI auto-generates charts & dashboards |
 | [DESIGN.md Parser Skill](skills/design-md-parser/SKILL.md) | Parse design docs → theme tokens → auto re-skin |
 | [LiveKit Skill](skills/livekit/SKILL.md) | Real-time adjust & preview for any scenario |
 
@@ -419,7 +419,7 @@ python3 -m http.server 8790
 
 ### 其他 AI Agent
 
-对于 Cursor、Windsurf 等 AI Agent，使用 `skill/prompt.md` 作为 System Prompt。
+对于 Cursor、Windsurf 等 AI Agent，使用 `skills/vizual/prompt.md` 作为 System Prompt。
 
 **注意**：Vizual 专为 AI Agent 设计，不支持聊天机器人场景。
 

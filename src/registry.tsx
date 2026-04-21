@@ -51,6 +51,10 @@ import { InputSelect } from './inputs/input-select/component'
 import { InputFile } from './inputs/input-file/component'
 import { FormBuilder } from './inputs/form-builder/component'
 
+// New components
+import { ProgressBar } from './components/progress-bar/component'
+import { TreeView } from './components/tree-view/component'
+
 // DocView
 import { DocView } from './docview/container'
 
@@ -76,6 +80,7 @@ export const { registry, handlers, executeAction } = defineRegistry(renderKitCat
     BigValue, Delta, Alert, Note, TextBlock, TextArea, DataTable, EmptySpace,
     Timeline, Kanban, GanttChart, OrgChart, KpiDashboard, BudgetReport,
     FeatureTable, AuditLog, JsonViewer, CodeBlock, FormView,
+    ProgressBar, TreeView,
     InputText, InputSelect, InputFile, FormBuilder,
     InteractivePlayground,
     DocView,

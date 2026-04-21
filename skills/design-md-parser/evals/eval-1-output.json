@@ -1,0 +1,35 @@
+{
+  "colors": [
+    { "name": "primary", "value": "#0052ef" },
+    { "name": "accent", "value": "#0052ef" },
+    { "name": "canvas", "value": "#0b0b0b" },
+    { "name": "background", "value": "#0b0b0b" },
+    { "name": "surface", "value": "#141414" },
+    { "name": "card", "value": "#141414" },
+    { "name": "surface-elevated", "value": "#1a1a1a" },
+    { "name": "input-bg", "value": "#1a1a1a" },
+    { "name": "text-primary", "value": "#e8e8e8" },
+    { "name": "text", "value": "#e8e8e8" },
+    { "name": "text-secondary", "value": "#9ca3af" },
+    { "name": "text-muted", "value": "#9ca3af" },
+    { "name": "border", "value": "#2a2a2a" },
+    { "name": "border-subtle", "value": "#1f1f1f" },
+    { "name": "accent-blue", "value": "#3b82f6" },
+    { "name": "accent-hover", "value": "#2563eb" },
+    { "name": "success", "value": "#10b981" },
+    { "name": "warning", "value": "#f59e0b" },
+    { "name": "error", "value": "#ef4444" },
+    { "name": "primary-muted", "value": "rgba(0,82,239,0.15)" },
+    { "name": "accent-muted", "value": "rgba(0,82,239,0.15)" },
+    { "name": "success-muted", "value": "rgba(16,185,129,0.15)" },
+    { "name": "warning-muted", "value": "rgba(245,158,11,0.15)" },
+    { "name": "error-muted", "value": "rgba(239,68,68,0.15)" }
+  ],
+  "typography": {
+    "fontFamily": "\"Inter\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "sizes": {},
+    "weights": {}
+  },
+  "spacing": {},
+  "radius": {}
+}

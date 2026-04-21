@@ -3,20 +3,14 @@
   "evals": [
     {
       "id": 1,
-      "prompt": "我想看看我们产品如果用不同品牌色，图表会是什么效果。现在用的是红色，想试试蓝色和绿色。项目在 /Users/wu/Documents/renderKit/ai-renderkit-pkg/",
-      "expected_output": "应该生成一个主题试衣 HTML 页面，包含至少2-3个预设主题（红/蓝/绿），带有暗亮切换、调色板显示、多个图表组件预览。使用 vizual.standalone.js。",
+      "prompt": "我想对比一下柱状图和饼图哪个更适合展示我的数据：[['Product A', 40], ['Product B', 35], ['Product C', 25]]。能不能让我切换看看？",
+      "expected_output": "InteractivePlayground JSON spec 或自定义 HTML，包含切换图表类型的控件",
       "files": []
     },
     {
       "id": 2,
-      "prompt": "帮我做一个柱状图的参数探索器，用户可以切换堆叠/水平方向，还能改标题。用在 AI 对话场景里输出 JSON。",
-      "expected_output": "应该输出 InteractivePlayground + BarChart 的 JSON spec，包含 stacked toggle、horizontal toggle、title text 控件。是 JSON spec 不是 HTML。",
-      "files": []
-    },
-    {
-      "id": 3,
-      "prompt": "我在研究 OKLCH 色彩空间，想直观感受 L、C、H 三个参数变化对颜色的影响。能不能做一个可以实时拖动 LCH 看颜色变化的页面？",
-      "expected_output": "应该生成自定义 LiveKit HTML 页面，包含 L/C/H 三个 slider，实时显示对应的颜色和 hex 值。不需要 vizual 组件，纯色彩可视化。",
+      "prompt": "我们正在讨论一个排序算法的性能，我想调一下数据量和范围，看看不同情况下算法的行为变化。帮我做一个可以调参数的页面。",
+      "expected_output": "自定义 HTML 页面，包含 slider 控件实时调整排序可视化",
       "files": []
     }
   ]
