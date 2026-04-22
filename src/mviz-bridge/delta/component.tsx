@@ -11,10 +11,10 @@ export function Delta({ props }: { props: DeltaProps }) {
     pct = (((Number(props.value) - Number(props.previousValue)) / Number(props.previousValue)) * 100).toFixed(1) + '%'
   }
   return <div style={{padding: '8px 0',textAlign:'center'}}>
-    {props.label && <div style={{fontSize:parseInt(tcss('--rk-text-sm')),color:tcss('--rk-text-secondary'),marginBottom:4}}>{props.label}</div>}
-    <div style={{fontSize:parseInt(tcss('--rk-text-2xl')),fontWeight:parseInt(tcss('--rk-weight-bold')),color:isUp?tcss('--rk-success'):isDown?tcss('--rk-error'):tcss('--rk-text-primary')}}>
+    {props.label && <div style={{fontSize:tcss('--rk-text-sm'),color:tcss('--rk-text-secondary'),marginBottom:4}}>{props.label}</div>}
+    <div style={{fontSize:tcss('--rk-text-2xl'),fontWeight:tcss('--rk-weight-bold'),color:isUp?tcss('--rk-success'):isDown?tcss('--rk-error'):tcss('--rk-text-primary')}}>
       {isUp?'↑ ':isDown?'↓ ':'→ '}{String(props.value)}
-      {props.showPercentage && pct && <span style={{fontSize:parseInt(tcss('--rk-text-md')),marginLeft:8}}>{pct}</span>}
+      {props.showPercentage && pct && <span style={{fontSize:tcss('--rk-text-md'),marginLeft:8}}>{pct}</span>}
     </div>
   </div>
 }

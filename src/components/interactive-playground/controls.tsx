@@ -4,11 +4,11 @@ import { tcss, tc } from '../../core/theme-colors'
 
 /** 通用标签样式 */
 const labelStyle: React.CSSProperties = {
-  fontSize: parseInt(tc('--rk-text-sm')),
+  fontSize: tcss('--rk-text-sm'),
   color: tcss('--rk-text-secondary'),
   marginBottom: 4,
   display: 'block',
-  fontWeight: parseInt(tc('--rk-weight-medium')),
+  fontWeight: tcss('--rk-weight-medium'),
 }
 
 /** 通用控件容器 */
@@ -20,10 +20,10 @@ const controlContainerStyle: React.CSSProperties = {
 const inputBase: React.CSSProperties = {
   width: '100%',
   padding: '6px 10px',
-  fontSize: parseInt(tc('--rk-text-sm')),
+  fontSize: tcss('--rk-text-sm'),
   background: tcss('--rk-bg-primary'),
   border: `1px solid ${tcss('--rk-border-subtle')}`,
-  borderRadius: parseInt(tc('--rk-radius-md')),
+  borderRadius: tcss('--rk-radius-md'),
   color: tcss('--rk-text-primary'),
   outline: 'none',
   boxSizing: 'border-box' as const,
@@ -122,7 +122,7 @@ function ColorControl({ control, value, onChange }: {
           onChange={(e) => onChange(e.target.value)}
           style={{ width: 32, height: 32, border: 'none', cursor: 'pointer', padding: 0, background: 'none' }}
         />
-        <span style={{ fontSize: parseInt(tc('--rk-text-sm')), color: tcss('--rk-text-tertiary') }}>{value}</span>
+        <span style={{ fontSize: tcss('--rk-text-sm'), color: tcss('--rk-text-tertiary') }}>{value}</span>
       </div>
     </div>
   )
@@ -191,11 +191,11 @@ function ButtonGroupControl({ control, value, onChange }: {
               onClick={() => onChange(val)}
               style={{
                 padding: '4px 12px',
-                borderRadius: parseInt(tc('--rk-radius-md')),
+                borderRadius: tcss('--rk-radius-md'),
                 border: `1px solid ${active ? tcss('--rk-accent') : tcss('--rk-border-subtle')}`,
                 background: active ? tcss('--rk-accent') : tcss('--rk-bg-primary'),
                 color: active ? '#fff' : tcss('--rk-text-secondary'),
-                fontSize: parseInt(tc('--rk-text-sm')),
+                fontSize: tcss('--rk-text-sm'),
                 cursor: 'pointer',
                 transition: 'all .15s',
               }}

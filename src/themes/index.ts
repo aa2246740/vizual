@@ -119,9 +119,8 @@ export function toggleMode(): 'dark' | 'light' {
     return targetMode
   }
 
-  // 没有已注册变体 → 自动生成
-  const { invertTheme } = require('./design-md-mapper') as typeof import('./design-md-mapper')
-  const inverted = invertTheme(current)
+  // 没有已注册变体 → 自动生成（使用顶层已导入的 invertThemeFn）
+  const inverted = invertThemeFn(current)
 
   registerTheme(inverted.name, inverted)
   setGlobalTheme(inverted.name)
@@ -181,7 +180,7 @@ ${cssRules}
 
   // Sync theme colors to the runtime color cache synchronously
   // Must be sync so that renderAll() after setGlobalTheme() uses correct colors
-  require('../core/theme-colors').updateActiveColors(themeName)
+  updateActiveColors(themeName)
 
   currentThemeName = themeName
   return true
@@ -208,6 +207,7 @@ import { claudeLightTheme } from './claude-light'
 import { linearTheme } from './linear'
 import { vercelTheme } from './vercel'
 import { invertTheme as invertThemeFn } from './design-md-mapper'
+import { updateActiveColors } from '../core/theme-colors'
 
 registerTheme('default-dark', defaultDarkTheme)
 registerTheme('default-light', defaultLightTheme)

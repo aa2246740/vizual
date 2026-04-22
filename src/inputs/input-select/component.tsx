@@ -16,7 +16,7 @@ export function InputSelect({ props, bindings }: { props: InputSelectProps; bind
 
   return <div style={{ marginBottom: 12 }}>
     {props.label && <label style={{
-      display: 'block', fontSize:parseInt(tcss('--rk-text-base')), fontWeight:parseInt(tcss('--rk-weight-medium')),
+      display: 'block', fontSize:tcss('--rk-text-base'), fontWeight:tcss('--rk-weight-medium'),
       color: tcss('--rk-text-secondary'), marginBottom: 4,
     }}>
       {props.label}
@@ -31,9 +31,9 @@ export function InputSelect({ props, bindings }: { props: InputSelectProps; bind
           ? Number(v) : v)
       }}
       style={{
-        width: '100%', padding: '8px 12px', fontSize:parseInt(tcss('--rk-text-md')),
+        width: '100%', padding: '8px 12px', fontSize:tcss('--rk-text-md'),
         background: tcss('--rk-bg-primary'), border: `1px solid ${props.error ? tcss('--rk-error') : tcss('--rk-border-subtle')}`,
-        borderRadius:parseInt(tcss('--rk-radius-md')), color: tcss('--rk-text-primary'), outline: 'none',
+        borderRadius:tcss('--rk-radius-md'), color: tcss('--rk-text-primary'), outline: 'none',
         boxSizing: 'border-box',
       }}
     >
@@ -41,7 +41,7 @@ export function InputSelect({ props, bindings }: { props: InputSelectProps; bind
       {props.options.map((opt, i) => <option key={i} value={opt.value}>{opt.label}</option>)}
     </select>
     {(props.error || props.description) && <div style={{
-      fontSize:parseInt(tcss('--rk-text-sm')), marginTop: 4,
+      fontSize:tcss('--rk-text-sm'), marginTop: 4,
       color: props.error ? tcss('--rk-error') : tcss('--rk-text-tertiary'),
     }}>
       {props.error || props.description}

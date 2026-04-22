@@ -27,8 +27,8 @@ const popupStyle: React.CSSProperties = {
   zIndex: 1000,
   background: tcss('--rk-bg-secondary'),
   border: `1px solid ${tcss('--rk-border-subtle')}`,
-  borderRadius: parseInt(tc('--rk-radius-lg')),
-  padding: parseInt(tc('--rk-space-3')),
+  borderRadius: tcss('--rk-radius-lg'),
+  padding: tcss('--rk-space-3'),
   width: POPUP_WIDTH,
   boxShadow: tcss('--rk-shadow'),
   transform: 'translateX(-50%)',
@@ -38,11 +38,11 @@ const textareaStyle: React.CSSProperties = {
   width: '100%',
   minHeight: 60,
   padding: '8px 10px',
-  fontSize: parseInt(tc('--rk-text-base')),
+  fontSize: tcss('--rk-text-base'),
   lineHeight: 1.4,
   background: tcss('--rk-bg-primary'),
   border: `1px solid ${tcss('--rk-border-subtle')}`,
-  borderRadius: parseInt(tc('--rk-radius-md')),
+  borderRadius: tcss('--rk-radius-md'),
   color: tcss('--rk-text-primary'),
   resize: 'vertical',
   outline: 'none',
@@ -52,11 +52,11 @@ const textareaStyle: React.CSSProperties = {
 
 const buttonBase: React.CSSProperties = {
   padding: '6px 14px',
-  borderRadius: parseInt(tc('--rk-radius-md')),
-  fontSize: parseInt(tc('--rk-text-base')),
+  borderRadius: tcss('--rk-radius-md'),
+  fontSize: tcss('--rk-text-base'),
   cursor: 'pointer',
   border: 'none',
-  fontWeight: parseInt(tc('--rk-weight-medium')),
+  fontWeight: tcss('--rk-weight-medium'),
 }
 
 /**
@@ -100,8 +100,8 @@ export function AnnotationInput({ position, selectedText, onConfirm, onCancel, c
     <div style={{ ...popupStyle, top: position.top, left: clampedLeft }} data-annotation-input>
       {/* Selected text preview */}
       <div style={{
-        fontSize: parseInt(tc('--rk-text-sm')), color: tcss('--rk-text-secondary'), marginBottom: 8,
-        padding: '4px 8px', background: tcss('--rk-bg-primary'), borderRadius: parseInt(tc('--rk-radius-sm')),
+        fontSize: tcss('--rk-text-sm'), color: tcss('--rk-text-secondary'), marginBottom: 8,
+        padding: '4px 8px', background: tcss('--rk-bg-primary'), borderRadius: tcss('--rk-radius-sm'),
         maxHeight: 60, overflow: 'hidden', lineHeight: 1.3,
         borderLeft: `3px solid ${DEFAULT_COLOR}`,
       }}>

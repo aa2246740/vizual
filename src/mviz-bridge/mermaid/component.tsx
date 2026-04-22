@@ -49,16 +49,16 @@ export function MermaidChart({ props }: { props: MermaidProps }) {
   if (error) {
     return (
       <div style={{ width: '100%', minHeight: props.height ?? 200 }}>
-        {props.title && <h3 style={{ fontSize:parseInt(tcss('--rk-text-md')), fontWeight:parseInt(tcss('--rk-weight-semibold')), marginBottom: 8, color: tcss('--rk-text-primary') }}>{props.title}</h3>}
-        <pre style={{ color: tcss('--rk-text-secondary'), fontSize:parseInt(tcss('--rk-text-base')), padding: 12, background: tcss('--rk-bg-secondary'), borderRadius:parseInt(tcss('--rk-radius-sm')), whiteSpace: 'pre-wrap' }}>{props.code}</pre>
-        <div style={{ color: tcss('--rk-error'), fontSize:parseInt(tcss('--rk-text-xs')), marginTop: 4 }}>{error}</div>
+        {props.title && <h3 style={{ fontSize:tcss('--rk-text-md'), fontWeight:tcss('--rk-weight-semibold'), marginBottom: 8, color: tcss('--rk-text-primary') }}>{props.title}</h3>}
+        <pre style={{ color: tcss('--rk-text-secondary'), fontSize:tcss('--rk-text-base'), padding: 12, background: tcss('--rk-bg-secondary'), borderRadius:tcss('--rk-radius-sm'), whiteSpace: 'pre-wrap' }}>{props.code}</pre>
+        <div style={{ color: tcss('--rk-error'), fontSize:tcss('--rk-text-xs'), marginTop: 4 }}>{error}</div>
       </div>
     )
   }
 
   return (
     <div style={{ width: '100%', minHeight: props.height ?? 200 }}>
-      {props.title && <h3 style={{ fontSize:parseInt(tcss('--rk-text-md')), fontWeight:parseInt(tcss('--rk-weight-semibold')), marginBottom: 8, color: tcss('--rk-text-primary') }}>{props.title}</h3>}
+      {props.title && <h3 style={{ fontSize:tcss('--rk-text-md'), fontWeight:tcss('--rk-weight-semibold'), marginBottom: 8, color: tcss('--rk-text-primary') }}>{props.title}</h3>}
       <div dangerouslySetInnerHTML={{ __html: html }} />
     </div>
   )

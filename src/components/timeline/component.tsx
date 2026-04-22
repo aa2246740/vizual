@@ -31,18 +31,18 @@ const styles = {
     border: `2px solid ${tcss('--rk-bg-primary')}`,
   },
   date: {
-    fontSize:parseInt(tcss('--rk-text-sm')),
+    fontSize:tcss('--rk-text-sm'),
     color: tcss('--rk-text-secondary'),
     marginBottom: 2,
   },
   title: {
-    fontSize:parseInt(tcss('--rk-text-md')),
-    fontWeight:parseInt(tcss('--rk-weight-semibold')) as const,
+    fontSize:tcss('--rk-text-md'),
+    fontWeight:tcss('--rk-weight-semibold') as const,
     color: tcss('--rk-text-primary'),
     marginBottom: 2,
   },
   description: {
-    fontSize:parseInt(tcss('--rk-text-base')),
+    fontSize:tcss('--rk-text-base'),
     color: tcss('--rk-text-secondary'),
     lineHeight: 1.5,
   },
@@ -55,7 +55,7 @@ export function Timeline({ props }: { props: TimelineProps }) {
   return (
     <div style={styles.container}>
       {props.title && (
-        <h3 style={{ fontSize:parseInt(tcss('--rk-text-lg')), fontWeight:parseInt(tcss('--rk-weight-semibold')), marginBottom: 12, color: tcss('--rk-text-primary') }}>
+        <h3 style={{ fontSize:tcss('--rk-text-lg'), fontWeight:tcss('--rk-weight-semibold'), marginBottom: 12, color: tcss('--rk-text-primary') }}>
           {props.title}
         </h3>
       )}

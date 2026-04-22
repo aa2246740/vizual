@@ -81,7 +81,7 @@ export function InteractivePlayground({ props }: { props: InteractivePlaygroundP
     padding: '4px 8px',
     borderRadius: 4,
     color: tcss('--rk-text-tertiary'),
-    fontSize: parseInt(tc('--rk-text-sm')),
+    fontSize: tcss('--rk-text-sm'),
     display: 'flex',
     alignItems: 'center',
     gap: 4,
@@ -91,7 +91,7 @@ export function InteractivePlayground({ props }: { props: InteractivePlaygroundP
   return (
     <div style={{
       border: `1px solid ${tcss('--rk-border-subtle')}`,
-      borderRadius: parseInt(tc('--rk-radius-lg')),
+      borderRadius: tcss('--rk-radius-lg'),
       overflow: 'hidden',
       background: tcss('--rk-bg-primary'),
     }}>
@@ -107,8 +107,8 @@ export function InteractivePlayground({ props }: { props: InteractivePlaygroundP
         <div style={{ flex: 1, minWidth: 0 }}>
           {title && (
             <div style={{
-              fontSize: parseInt(tc('--rk-text-sm')),
-              fontWeight: parseInt(tc('--rk-weight-semibold')),
+              fontSize: tcss('--rk-text-sm'),
+              fontWeight: tcss('--rk-weight-semibold'),
               color: tcss('--rk-text-primary'),
             }}>
               {title}
@@ -116,7 +116,7 @@ export function InteractivePlayground({ props }: { props: InteractivePlaygroundP
           )}
           {description && (
             <div style={{
-              fontSize: parseInt(tc('--rk-text-xs')),
+              fontSize: tcss('--rk-text-xs'),
               color: tcss('--rk-text-tertiary'),
             }}>
               {description}
