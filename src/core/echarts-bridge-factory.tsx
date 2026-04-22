@@ -114,20 +114,78 @@ export function createEChartsBridge(
 }
 
 /**
+ * Identifiers that must never appear in a hydrated mviz formatter.
+ *
+ * mviz builds `_js_` strings by concatenating caller-supplied values
+ * (e.g. `spec.currency.symbol`, `spec.locale`) into plain JS source. When
+ * a schema prop reaches mviz unsanitized, an attacker-controlled string
+ * can break out of the surrounding single-quoted literal and inject
+ * arbitrary code, which then executes via `new Function(...)`.
+ *
+ * mviz's legitimate formatter output only references a tiny identifier
+ * set (Math, Array.isArray, toFixed, toLocaleString,
+ * minimumFractionDigits, maximumFractionDigits, etc.), so a conservative
+ * denylist covers all realistic exploitation vectors without breaking
+ * existing charts.
+ */
+const FORBIDDEN_JS_IDENTIFIERS = [
+  'eval', 'Function', 'constructor', 'prototype', '__proto__',
+  'import', 'require', 'fetch', 'XMLHttpRequest', 'WebSocket', 'Worker', 'SharedWorker',
+  'globalThis', 'window', 'document', 'self', 'top', 'parent', 'frames',
+  'location', 'history', 'navigator',
+  'setTimeout', 'setInterval', 'setImmediate', 'queueMicrotask', 'postMessage',
+  'alert', 'prompt', 'confirm', 'open', 'close',
+  'localStorage', 'sessionStorage', 'indexedDB', 'cookie',
+  'WebAssembly', 'atob', 'btoa', 'crypto',
+]
+const FORBIDDEN_JS_PATTERN = new RegExp(
+  '\\b(?:' + FORBIDDEN_JS_IDENTIFIERS.join('|') + ')\\b',
+)
+const MAX_JS_LENGTH = 4096
+const FUNCTION_PREFIX = /^\s*function\s*\(/
+
+/**
+ * Validate that a `_js_` payload looks like a trusted mviz formatter
+ * before compiling it. Returns false for any string that could plausibly
+ * be an injection rather than mviz's own output.
+ */
+export function isSafeMvizJs(src: string): boolean {
+  if (src.length > MAX_JS_LENGTH) return false
+  if (!FUNCTION_PREFIX.test(src)) return false
+  // mviz never emits template literals or comments; reject them as
+  // obfuscation channels for the denylist below.
+  if (src.indexOf('`') !== -1) return false
+  if (src.indexOf('//') !== -1) return false
+  if (src.indexOf('/*') !== -1) return false
+  if (FORBIDDEN_JS_PATTERN.test(src)) return false
+  return true
+}
+
+/**
  * Recursively convert mviz's `_js_` pseudo-functions to real JS functions.
  *
  * mviz serializes functions as `{ "_js_": "function(x){...}" }` objects.
  * ECharts needs actual callable functions for formatters, renderItems, etc.
- * This walks the option tree and evaluates every `_js_` value into a Function.
+ * This walks the option tree and compiles every `_js_` value into a Function,
+ * gated by `isSafeMvizJs` to prevent RCE when attacker-controlled props
+ * (e.g. `currency.symbol`) get interpolated into mviz's string-built code.
+ * Rejected payloads resolve to `undefined`, which lets ECharts fall back to
+ * its default formatter/renderItem rather than rendering broken output.
  */
-function hydrateJsFunctions(obj: unknown): unknown {
+export function hydrateJsFunctions(obj: unknown): unknown {
   if (obj && typeof obj === 'object' && !Array.isArray(obj)) {
     const rec = obj as Record<string, unknown>
     if (typeof rec._js_ === 'string') {
+      const src = rec._js_
+      if (!isSafeMvizJs(src)) {
+        console.warn('[vizual] rejected unsafe _js_ payload from mviz; using default formatter')
+        return undefined
+      }
       try {
-        return new Function('return (' + rec._js_ + ')')()
+        // eslint-disable-next-line @typescript-eslint/no-implied-eval, no-new-func
+        return new Function('return (' + src + ')')()
       } catch {
-        return rec._js_
+        return undefined
       }
     }
     const result: Record<string, unknown> = {}
