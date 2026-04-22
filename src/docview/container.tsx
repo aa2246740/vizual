@@ -1,4 +1,4 @@
-import { useRef, useCallback, useState, useEffect } from 'react'
+import React, { useRef, useCallback, useState, useEffect } from 'react'
 import { tcss, tc } from '../core/theme-colors'
 import { useTextSelection } from './use-text-selection'
 import { useAnnotations } from './use-annotations'
@@ -45,7 +45,16 @@ import type { DocViewProps, AnnotationColor, AnnotationStatus, AnnotationTarget 
  * />
  * ```
  */
-export function DocView({
+/**
+ * json-render 适配 wrapper
+ * 所有 vizual 组件接收 { props } 格式，DocView 也必须遵循
+ */
+export function DocView({ props, children }: { props?: DocViewProps; children?: React.ReactNode }) {
+  const p = props ?? {}
+  return <DocViewInner {...p}>{children ?? p.children}</DocViewInner>
+}
+
+function DocViewInner({
   children,
   sections,
   annotations: controlledAnnotations,
