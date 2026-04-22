@@ -220,6 +220,11 @@ registerTheme('vercel', vercelTheme)
 registerTheme('linear-light', invertThemeFn(linearTheme))
 registerTheme('vercel-light', invertThemeFn(vercelTheme))
 
+// 自动应用默认主题，确保 CSS 变量在首次渲染前就已注入 DOM
+if (typeof document !== 'undefined') {
+  applyTheme(document.body as unknown as HTMLElement, currentThemeName)
+}
+
 // ─── DESIGN.md 公共 API ──────────────────────────────────
 
 import { parseDesignMd } from './design-md-parser'

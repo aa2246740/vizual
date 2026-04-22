@@ -154,8 +154,10 @@ function ChartSection({
   const chartRef = useRef<HTMLDivElement>(null)
   const chartInstanceRef = useRef<echarts.ECharts | null>(null)
   const dataPointClickedRef = useRef(false)
-  const data = section.data as Record<string, unknown> | undefined
-  const hasChartData = !!(data?.series && Array.isArray(data.series) && (data.series as Array<Record<string, unknown>>[])?.[0]?.data)
+  const rawData = section.data as Record<string, unknown> | undefined
+  // Normalize chart data: support both ECharts format and mviz format
+  const data = normalizeChartData(rawData)
+  const hasChartData = !!(data?.series && Array.isArray(data.series) && ((data.series as Record<string, unknown>[])?.[0] as Record<string, unknown>)?.data != null)
 
   // Initialize ECharts instance and register data point click handler
   useEffect(() => {
@@ -563,7 +565,14 @@ function extractDataSummary(data: unknown): string | null {
   return null
 }
 
-/** Parse KPI metrics from section data — expects { metrics: Array<{label, value, color?, change?}> } */
+/**
+ * Parse KPI metrics from section data.
+ * Accepts two metric field naming conventions:
+ *   { metrics: [{ label, value, color?, change? }] }        — canonical format
+ *   { metrics: [{ label, value, color?, trend? }] }          — alias format (trend → change)
+ * The `trend` field accepts 'up'/'down'/'neutral' strings and is converted
+ * to a display-friendly change indicator.
+ */
 function parseKpiMetrics(data: unknown): Array<{ label: string; value: string; color?: string; change?: string }> {
   if (!data || typeof data !== 'object') return []
   const obj = data as Record<string, unknown>
@@ -571,29 +580,101 @@ function parseKpiMetrics(data: unknown): Array<{ label: string; value: string; c
   if (Array.isArray(obj.metrics)) {
     return obj.metrics
       .filter((m): m is Record<string, unknown> => typeof m === 'object' && m !== null)
-      .map((m) => ({
-        label: String(m.label || ''),
-        value: String(m.value ?? ''),
-        color: typeof m.color === 'string' ? m.color : undefined,
-        change: typeof m.change === 'string' ? m.change : undefined,
-      }))
+      .map((m) => {
+        const change = typeof m.change === 'string'
+          ? m.change
+          : typeof m.trend === 'string'
+            ? trendToChange(m.trend)
+            : undefined
+        return {
+          label: String(m.label || ''),
+          value: String(m.value ?? ''),
+          color: typeof m.color === 'string' ? m.color : undefined,
+          change,
+        }
+      })
       .filter((m) => m.label && m.value)
   }
   return []
 }
 
-/** Parse table data from section data — expects { columns: string[], rows: any[][] | Record<string, any>[] } */
+/** Convert trend direction ('up'/'down'/'neutral') to a display string */
+function trendToChange(trend: string): string | undefined {
+  switch (trend) {
+    case 'up': return '↑'
+    case 'down': return '↓'
+    case 'neutral': return '—'
+    default: return trend
+  }
+}
+
+/**
+ * Parse table data from section data.
+ * Accepts two formats:
+ *   1) { columns: string[], rows: any[][] | Record<string,any>[] }   — canonical
+ *   2) { columns: [{key,label}], data: Record<string,any>[] }        — object-column format
+ * Format 2 is converted to canonical: column labels become headers, rows are extracted by key.
+ */
 function parseTableData(
   data: unknown,
 ): { columns: string[]; rows: unknown[][] | Record<string, unknown>[] } | null {
   if (!data || typeof data !== 'object') return null
   const obj = data as Record<string, unknown>
 
+  // Format 1: columns (string[]) + rows
   if (Array.isArray(obj.columns) && Array.isArray(obj.rows)) {
     return {
       columns: obj.columns.map(String),
       rows: obj.rows as unknown[][] | Record<string, unknown>[],
     }
   }
+
+  // Format 2: columns ([{key,label}]) + data (object rows)
+  if (Array.isArray(obj.columns) && Array.isArray(obj.data)) {
+    const colDefs = obj.columns as Array<Record<string, unknown>>
+    // Check if columns are objects with key/label fields
+    const isObjectColumns = colDefs.length > 0 && typeof colDefs[0] === 'object' && colDefs[0] !== null && ('key' in colDefs[0] || 'label' in colDefs[0])
+    if (isObjectColumns) {
+      const keys = colDefs.map(c => String(c.key ?? ''))
+      const labels = colDefs.map(c => String(c.label ?? c.key ?? ''))
+      const dataRows = (obj.data as Array<Record<string, unknown>>).map(row =>
+        keys.map(k => row[k] ?? '')
+      )
+      return { columns: labels, rows: dataRows }
+    }
+  }
+
   return null
+}
+
+/**
+ * Normalize chart data to ECharts format.
+ * Accepts:
+ *   1) ECharts format: { xAxis?, yAxis?, series: [{type, data}] }  — returned as-is
+ *   2) mviz format:    { type, x, y, data: [{xField, yField}] }   — converted to ECharts
+ */
+function normalizeChartData(data: Record<string, unknown> | undefined): Record<string, unknown> | undefined {
+  if (!data || typeof data !== 'object') return data
+
+  // Already ECharts format — has series array
+  if (Array.isArray(data.series)) return data
+
+  // mviz format: { type, x, y, data: [...] }
+  if (typeof data.x === 'string' && typeof data.y === 'string' && Array.isArray(data.data)) {
+    const xField = data.x
+    const yField = data.y
+    const chartType = (data.type as string) || 'bar'
+    const items = data.data as Array<Record<string, unknown>>
+
+    const categories = items.map(item => String(item[xField] ?? ''))
+    const values = items.map(item => item[yField] ?? 0)
+
+    return {
+      xAxis: { type: 'category', data: categories },
+      yAxis: { type: 'value' },
+      series: [{ type: chartType, data: values }],
+    }
+  }
+
+  return data
 }

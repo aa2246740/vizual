@@ -48,10 +48,15 @@ import type { DocViewProps, AnnotationColor, AnnotationStatus, AnnotationTarget 
 /**
  * json-render 适配 wrapper
  * 所有 vizual 组件接收 { props } 格式，DocView 也必须遵循
+ *
+ * 同时支持两种调用方式：
+ * 1. json-render 格式: <DocView props={{ sections, showPanel }} />
+ * 2. 直接传 props:     <DocView sections={sections} showPanel={showPanel} />
  */
-export function DocView({ props, children }: { props?: DocViewProps; children?: React.ReactNode }) {
-  const p = props ?? {}
-  return <DocViewInner {...p}>{children ?? p.children}</DocViewInner>
+export function DocView(rawProps: DocViewProps & { props?: DocViewProps; children?: React.ReactNode }) {
+  const { props, children, ...directProps } = rawProps
+  const p = (props && Object.keys(props).length > 0) ? props : directProps
+  return <DocViewInner {...p}>{children ?? (props as DocViewProps)?.children}</DocViewInner>
 }
 
 function DocViewInner({
