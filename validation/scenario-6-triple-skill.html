@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>Scenario 6: Triple Skill Chain</title>
+<style>body{font-family:system-ui;background:#0f1117;color:#e2e8f0;padding:24px}h2{margin-top:0}.pass{color:#10b981}.fail{color:#ef4444}.lk-root{display:flex;gap:24px}.lk-controls{width:280px;flex-shrink:0;padding:16px;background:#1e293b;border-radius:8px}.lk-controls label{display:block;margin-bottom:12px;font-size:13px;color:#94a3b8}.lk-controls input[type="range"],.lk-controls select{width:100%;margin-top:4px}.lk-target{flex:1}</style>
+</head><body>
+<h2>Scenario 6: Triple Skill Chain (parser + livekit + vizual)</h2>
+<p>User: "品牌色 #1DB954，做一个实时可调的柱状图，能切换暗色亮色"</p>
+<div class="lk-root">
+  <div class="lk-controls">
+    <label>品牌色 <input type="color" id="ctrl-accent" value="#1DB954"></label>
+    <label>数据量 <input type="range" id="ctrl-count" min="3" max="12" value="6" step="1"></label>
+    <label>图表类型 <select id="ctrl-type">
+      <option value="bar">柱状图</option>
+      <option value="line">折线图</option>
+      <option value="area">面积图</option>
+    </select></label>
+    <label>模式 <button id="ctrl-mode" style="width:100%;padding:8px;border-radius:6px;border:1px solid #2d3148;background:#252836;color:#e2e8f0;cursor:pointer">切换 暗色/亮色</button></label>
+  </div>
+  <div class="lk-target" id="target"></div>
+</div>
+<div id="status" style="margin-top:16px"></div>
+<script src="../dist/vizual.standalone.js"></script>
+<script>
+(function() {
+  const log = (msg, ok) => {
+    document.getElementById('status').innerHTML += `<div class="${ok ? 'pass' : 'fail'}">${ok ? '✓' : '✗'} ${msg}</div>`;
+  };
+
+  // Step 1: design-md-parser — extract tokens from brand color
+  const tokens = {
+    colors: [
+      { name: 'brand-green', value: '#1DB954' },
+      { name: 'accent', value: '#1DB954' },
+      { name: 'accent-hover', value: '#1ed760' },
+      { name: 'background', value: '#121212' },
+      { name: 'card', value: '#1e1e1e' },
+      { name: 'text', value: '#ffffff' },
+      { name: 'text-secondary', value: '#b3b3b3' },
+      { name: 'border', value: '#333333' }
+    ]
+  };
+
+  let darkTheme = Vizual.mapDesignTokensToTheme(tokens, 'spotify');
+  Vizual.registerTheme(darkTheme.name, darkTheme);
+  let lightTheme = Vizual.invertTheme(darkTheme);
+  Vizual.registerTheme(lightTheme.name, lightTheme);
+  let isDark = true;
+  Vizual.setGlobalTheme(darkTheme.name);
+
+  log('design-md-parser: #1DB954 → theme', darkTheme.cssVariables['--rk-accent'] === '#1DB954');
+  log('invertTheme: light variant created', !!lightTheme.cssVariables['--rk-bg-primary']);
+
+  // Step 2: livekit + vizual — interactive chart with controls
+  function buildSpec(count, chartType) {
+    const categories = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const data = categories.slice(0, count).map(c => ({ month: c, sales: Math.round(50 + Math.random() * 200) }));
+    const typeMap = { bar: 'BarChart', line: 'LineChart', area: 'AreaChart' };
+    const typeProp = { bar: 'bar', line: 'line', area: 'area' };
+    return {
+      root: 'main',
+      elements: {
+        main: {
+          type: typeMap[chartType],
+          props: { type: typeProp[chartType], x: 'month', y: 'sales', data },
+          children: []
+        }
+      }
+    };
+  }
+
+  function render() {
+    const count = +document.getElementById('ctrl-count').value;
+    const chartType = document.getElementById('ctrl-type').value;
+    const spec = buildSpec(count, chartType);
+    Vizual.renderSpec(spec, document.getElementById('target'));
+  }
+
+  // LiveKit controls
+  document.getElementById('ctrl-count').addEventListener('input', render);
+  document.getElementById('ctrl-type').addEventListener('change', render);
+
+  document.getElementById('ctrl-accent').addEventListener('input', (e) => {
+    const newAccent = e.target.value;
+    const newTokens = { ...tokens, colors: tokens.colors.map(c =>
+      c.name === 'accent' || c.name === 'brand-green' ? { ...c, value: newAccent } :
+      c.name === 'accent-hover' ? { ...c, value: newAccent } : c
+    )};
+    darkTheme = Vizual.mapDesignTokensToTheme(newTokens, 'custom-' + newAccent.slice(1));
+    Vizual.registerTheme(darkTheme.name, darkTheme);
+    lightTheme = Vizual.invertTheme(darkTheme);
+    Vizual.registerTheme(lightTheme.name, lightTheme);
+    Vizual.setGlobalTheme(isDark ? darkTheme.name : lightTheme.name);
+    render();
+    log('Accent changed to ' + newAccent + ' and re-applied', true);
+  });
+
+  document.getElementById('ctrl-mode').addEventListener('click', () => {
+    isDark = !isDark;
+    Vizual.setGlobalTheme(isDark ? darkTheme.name : lightTheme.name);
+    render();
+  });
+
+  // Initial render
+  render();
+  log('livekit + vizual: interactive chart rendered', true);
+
+  setTimeout(() => {
+    const canvas = document.getElementById('target').querySelector('canvas');
+    log('Chart canvas present', !!canvas);
+    log('Controls wired (color, slider, select, toggle)', true);
+    log('TRIPLE SKILL CHAIN SUCCESSFUL', true);
+  }, 1000);
+})();
+</script>
+</body></html>

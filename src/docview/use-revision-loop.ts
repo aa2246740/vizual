@@ -1,15 +1,26 @@
 import { useCallback } from 'react'
 import type { Annotation, OnAction } from './types'
+import { buildSectionContext } from './section-context'
+import type { SectionContext } from './section-context'
 
 export interface UseRevisionLoopOptions {
   /** Current annotations */
   annotations: Annotation[]
-  /** Update annotation status */
-  updateAnnotation: (id: string, updates: Partial<Pick<Annotation, 'note' | 'color' | 'status'>>) => void
+  /** Update annotation status and other fields */
+  updateAnnotation: (id: string, updates: Partial<Pick<Annotation, 'note' | 'color' | 'status' | 'target'>>) => void
   /** Mark orphaned annotations */
   markOrphans: (content: string) => void
   /** Fire an action event */
   onAction?: OnAction
+  /** Current sections array for building semantic context in annotation payloads */
+  sections?: Array<{
+    type: string
+    content: string
+    data?: unknown
+    title?: string
+    aiContext?: string
+    componentType?: string
+  }>
 }
 
 export interface UseRevisionLoopReturn {
@@ -30,16 +41,20 @@ export interface UseRevisionLoopReturn {
  *
  * Lifecycle:
  * 1. User creates annotations (status: draft)
- * 2. User submits drafts → status becomes active, batchSubmit action fires
- * 3. AI revises content → host calls onContentRevised(newContent)
+ * 2. User submits drafts -> status becomes active, batchSubmit action fires
+ * 3. AI revises content -> host calls onContentRevised(newContent)
  * 4. Orphaned annotations are detected (text no longer found)
  * 5. User can resolve or delete orphaned annotations
+ *
+ * Enriched payloads include sectionContext for each annotation that has a target,
+ * giving the AI receiver enough semantic context to understand what the user is commenting on.
  */
 export function useRevisionLoop({
   annotations,
   updateAnnotation,
   markOrphans,
   onAction,
+  sections,
 }: UseRevisionLoopOptions): UseRevisionLoopReturn {
 
   const drafts = annotations.filter(a => a.status === 'draft')
@@ -53,16 +68,26 @@ export function useRevisionLoop({
       updateAnnotation(draft.id, { status: 'active' })
     }
 
-    // Fire batchSubmit action with all draft data
-    onAction?.('batchSubmit', {
-      annotations: drafts.map(d => ({
+    // Enriched payload: each annotation gets its sectionContext + target
+    const enrichedAnnotations = drafts.map(d => {
+      const entry: Record<string, unknown> = {
         id: d.id,
         text: d.text,
         note: d.note,
         color: d.color,
-      })),
+      }
+      if (d.target) {
+        entry.target = d.target
+      }
+      // Add section context for this annotation
+      if (sections && d.target?.sectionIndex !== undefined && d.target.sectionIndex < sections.length) {
+        entry.sectionContext = buildSectionContext(sections[d.target.sectionIndex], d.target.sectionIndex)
+      }
+      return entry
     })
-  }, [drafts, updateAnnotation, onAction])
+
+    onAction?.('batchSubmit', { annotations: enrichedAnnotations })
+  }, [drafts, updateAnnotation, onAction, sections])
 
   const requestRevision = useCallback((annotationId: string) => {
     const ann = annotations.find(a => a.id === annotationId)
@@ -70,12 +95,21 @@ export function useRevisionLoop({
 
     updateAnnotation(annotationId, { status: 'active' })
 
-    onAction?.('requestRevision', {
+    // Enriched payload with section context
+    const payload: Record<string, unknown> = {
       annotationId,
       text: ann.text,
       note: ann.note,
-    })
-  }, [annotations, updateAnnotation, onAction])
+    }
+    if (ann.target) {
+      payload.target = ann.target
+    }
+    if (sections && ann.target?.sectionIndex !== undefined && ann.target.sectionIndex < sections.length) {
+      payload.sectionContext = buildSectionContext(sections[ann.target.sectionIndex], ann.target.sectionIndex)
+    }
+
+    onAction?.('requestRevision', payload)
+  }, [annotations, updateAnnotation, onAction, sections])
 
   const onContentRevised = useCallback((newContent: string) => {
     markOrphans(newContent)

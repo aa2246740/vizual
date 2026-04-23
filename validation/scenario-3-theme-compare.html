@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>Scenario 3: Theme Compare (parser + livekit)</title>
+<style>body{font-family:system-ui;background:#0f1117;color:#e2e8f0;padding:24px}h2{margin-top:0}.pass{color:#10b981}.fail{color:#ef4444}.lk-root{display:flex;gap:24px;padding:24px}.lk-panel{flex:1;border:1px solid #2d3148;border-radius:8px;padding:16px;min-height:300px}.lk-controls{margin-bottom:16px;display:flex;gap:8px}</style>
+</head><body>
+<h2>Scenario 3: Theme Compare (design-md-parser + livekit)</h2>
+<p>User: "这是我们的 DESIGN.md，帮我做一个暗色亮色对比页面"</p>
+<div class="lk-controls">
+  <button id="btn-dark" style="padding:8px 16px;border-radius:6px;border:1px solid #2d3148;background:#1e293b;color:#e2e8f0;cursor:pointer">暗色模式</button>
+  <button id="btn-light" style="padding:8px 16px;border-radius:6px;border:1px solid #2d3148;background:#1e293b;color:#e2e8f0;cursor:pointer">亮色模式</button>
+</div>
+<div class="lk-root">
+  <div id="panel1" class="lk-panel"></div>
+  <div id="panel2" class="lk-panel"></div>
+</div>
+<div id="status" style="margin-top:16px"></div>
+<script src="../dist/vizual.standalone.js"></script>
+<script>
+(function() {
+  const log = (msg, ok) => {
+    document.getElementById('status').innerHTML += `<div class="${ok ? 'pass' : 'fail'}">${ok ? '✓' : '✗'} ${msg}</div>`;
+  };
+
+  // Step 1: Use parseDesignMd to extract tokens from DESIGN.md (design-md-parser skill)
+  const designMd = `
+## Colors
+Primary: #6C5CE7
+Background: #0a0a1a
+Surface: #1a1a2e
+Text: #eaeaea
+Border: #2d2d44
+  `;
+  const tokens = Vizual.parseDesignMd(designMd);
+  log('design-md-parser: extracted ' + tokens.colors.length + ' color tokens', tokens.colors.length > 0);
+
+  // Step 2: Map tokens → theme (mapDesignTokensToTheme)
+  const theme = Vizual.mapDesignTokensToTheme(tokens, 'custom');
+  Vizual.registerTheme(theme.name, theme);
+  log('design-md-parser: tokens → theme', !!theme.cssVariables['--rk-accent']);
+  log('accent #6C5CE7 mapped', theme.cssVariables['--rk-accent'] === '#6C5CE7');
+
+  // Step 3: Generate inverted theme (invertTheme)
+  const inverted = Vizual.invertTheme(theme);
+  Vizual.registerTheme(inverted.name, inverted);
+  log('invertTheme: generated light variant', !!inverted.cssVariables['--rk-bg-primary']);
+  log('light bg is light-colored', parseInt(inverted.cssVariables['--rk-bg-primary']?.substr(1,2)||'0',16) > 200);
+
+  // Step 4: livekit theme-level — render side-by-side
+  const spec = {
+    root: 'main',
+    elements: {
+      main: {
+        type: 'BarChart',
+        props: {
+          type: 'bar', x: 'month', y: 'sales',
+          data: [{ month: 'Jan', sales: 65 }, { month: 'Feb', sales: 80 }, { month: 'Mar', sales: 95 }]
+        },
+        children: []
+      }
+    }
+  };
+
+  // Render dark version
+  Vizual.setGlobalTheme(theme.name);
+  try {
+    Vizual.renderSpec(spec, document.getElementById('panel1'));
+    log('Dark theme chart rendered', true);
+  } catch(e) {
+    log('Dark render failed: ' + e.message, false);
+  }
+
+  // Render light version
+  Vizual.setGlobalTheme(inverted.name);
+  try {
+    Vizual.renderSpec(spec, document.getElementById('panel2'));
+    log('Light theme chart rendered', true);
+  } catch(e) {
+    log('Light render failed: ' + e.message, false);
+  }
+
+  // Toggle buttons (livekit interactivity)
+  document.getElementById('btn-dark').onclick = () => {
+    Vizual.setGlobalTheme(theme.name);
+    log('Switched to dark', true);
+  };
+  document.getElementById('btn-light').onclick = () => {
+    Vizual.setGlobalTheme(inverted.name);
+    log('Switched to light', true);
+  };
+})();
+</script>
+</body></html>

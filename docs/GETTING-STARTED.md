@@ -19,12 +19,17 @@ npm install vizual
 - `mviz` ^1.6.4 — Chart option builder
 - `@json-render/core` ^0.17.0 + `@json-render/react` ^0.17.0 — json-render 平台
 - `zod` ^3.25.0 — Schema 校验
+- `dompurify` ^3.4.0 — HTML 消毒（DocView 组件）
+- `html2canvas` ^1.4.1 — PNG 导出
+- `marked` ^15.0.12 — Markdown 渲染（DocView 组件）
+- `mermaid` ^11.14.0 — 图表渲染
+- `react-highlight-words` ^0.20.0 — 文本高亮（DocView 批注）
 
 你不需要额外安装任何图表或渲染依赖。
 
 ## 第二步：注册 Registry
 
-`vizual` 导出了一个预构建的 `registry`，包含 42 个组件的 type → React 组件映射：
+`vizual` 导出了一个预构建的 `registry`，包含 32 个组件的 type → React 组件映射：
 
 ```tsx
 import { registry } from 'vizual'
@@ -87,6 +92,61 @@ cp -r skills/vizual/ ~/.claude/skills/vizual/
 对于其他 AI Agent（如 Cursor、Windsurf 等），将 `skills/vizual/prompt.md` 内容作为 System Prompt 传入。
 
 **注意**：Vizual 不支持 ChatGPT / Claude.ai 等聊天机器人场景。我们专注于 AI Agent 的代码生成能力，而非对话式交互。
+
+## 更多功能
+
+### 布局组件
+
+Vizual 提供了三种布局组件用于组合内容：
+
+- `GridLayout` — 网格布局，支持自定义行列和间距
+- `SplitLayout` — 分栏布局，支持左右或上下分割
+- `HeroLayout` — 英雄区域布局，适合标题 + 内容的组合
+
+### InteractivePlayground
+
+`InteractivePlayground` 组件提供可交互的代码/配置演练面板，适用于文档和教程场景。
+
+### PNG 导出 API
+
+Vizual 导出了 PNG 导出工具函数：
+
+```ts
+import { exportToPNG, downloadPNG } from 'vizual'
+
+// 导出为 Blob
+const blob = await exportToPNG(element, { scale: 2, backgroundColor: '#0f1117' })
+
+// 直接触发浏览器下载
+await downloadPNG(element, { filename: 'my-chart', scale: 2 })
+```
+
+### executeAction
+
+Vizual 导出了 `executeAction` 函数，用于通过 action name 执行交互输入组件的行为：
+
+```ts
+import { executeAction } from 'vizual'
+
+executeAction('form-submit', { formId: 'myForm' })
+```
+
+### 主题色函数：tc() 和 tcss()
+
+Vizual 的主题系统提供两个颜色访问函数：
+
+- `tc(varName)` — 返回解析后的具体色值（如 `#e2e8f0`），适用于 ECharts option 和 JS 逻辑
+- `tcss(varName)` — 返回 CSS `var()` 引用（如 `var(--rk-text-primary)`），适用于 React inline style，主题切换时自动响应
+
+```tsx
+import { tc, tcss } from 'vizual'
+
+// React inline style — 用 tcss()
+<div style={{ background: tcss('--rk-bg-primary'), color: tcss('--rk-text-primary') }} />
+
+// ECharts option — 用 tc()
+const option = { textStyle: { color: tc('--rk-text-primary') } }
+```
 
 ## 完整示例：Vite + React 项目
 
@@ -172,3 +232,6 @@ const Dashboard = dynamic(
   { ssr: false }
 )
 ```
+
+### Q: package.json 描述说 "32 interactive visualization components"？
+当前实际组件数为 32（19 个图表 + 1 个 DataTable + 6 个业务组件 + 1 个 FormBuilder + 1 个 InteractivePlayground + 1 个 DocView + 3 个布局组件）。

@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>DocView Agent 回环测试</title>
+  <style>
+    body { font-family: system-ui; background: #0f1117; color: #e2e8f0; margin: 0; }
+    #app { width: 100%; height: 100vh; }
+    #agent-bar {
+      position: fixed; bottom: 0; left: 0; right: 0; z-index: 9999;
+      background: #1a1a2e; border-top: 2px solid #667eea;
+      padding: 10px 20px; display: flex; gap: 12px; align-items: center;
+      font-size: 13px;
+    }
+    #agent-bar button {
+      padding: 6px 14px; border-radius: 6px; border: 1px solid #667eea;
+      background: #667eea; color: #fff; cursor: pointer; font-size: 13px;
+    }
+    #agent-bar button:hover { background: #7c8ff5; }
+    #agent-status { color: #94a3b8; }
+    .agent-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+    .dot-idle { background: #64748b; }
+    .dot-active { background: #fbbf24; animation: pulse 1s infinite; }
+    .dot-done { background: #22c55e; }
+    @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+  <div id="agent-bar">
+    <span class="agent-dot dot-idle" id="agent-dot"></span>
+    <span style="color:#667eea;font-weight:600;">Agent</span>
+    <span id="agent-status">等待批注...</span>
+  </div>
+  <script src="../dist/vizual.standalone.js"></script>
+  <script>
+    // ── Agent 事件桥 ──
+    // 所有批注事件写入 localStorage，供外部 Agent (Claude Code) 轮询读取
+    var EVENT_KEY = 'docview_agent_events';
+    var RESULT_KEY = 'docview_agent_result';
+
+    function pushEvent(event) {
+      var events = JSON.parse(localStorage.getItem(EVENT_KEY) || '[]');
+      event.timestamp = Date.now();
+      events.push(event);
+      localStorage.setItem(EVENT_KEY, JSON.stringify(events));
+      // 更新状态栏
+      document.getElementById('agent-dot').className = 'agent-dot dot-active';
+      document.getElementById('agent-status').textContent =
+        '📥 收到: ' + event.action + ' — 等待 Agent 处理...';
+    }
+
+    // 检查 Agent 返回的修订结果
+    function checkResult() {
+      var raw = localStorage.getItem(RESULT_KEY);
+      if (!raw) return;
+      var result = JSON.parse(raw);
+      if (result.consumed) return;
+      // 应用修订
+      if (result.sections) {
+        window._currentSections = result.sections;
+        renderDocView(result.sections);
+        localStorage.setItem(RESULT_KEY, JSON.stringify({ consumed: true }));
+        document.getElementById('agent-dot').className = 'agent-dot dot-done';
+        document.getElementById('agent-status').textContent =
+          '✅ 修订完成 (' + new Date().toLocaleTimeString() + ')';
+      }
+    }
+    setInterval(checkResult, 500);
+
+    // ── 渲染 DocView ──
+    function renderDocView(sections) {
+      var app = document.getElementById('app');
+      app.innerHTML = '';
+      window._currentSections = sections;
+      Vizual.renderSpec({
+        root: 'm',
+        elements: { m: {
+          type: 'DocView',
+          props: {
+            type: 'doc_view',
+            title: 'Q1 2024 产品数据报告',
+            showPanel: true,
+            panelPosition: 'right',
+            sections: sections,
+            onAction: function(name, params) {
+              pushEvent({ action: name, params: params });
+            }
+          },
+          children: []
+        }}
+      }, app);
+    }
+
+    // ── 初始内容 ──
+    var sections = [
+      {"type":"heading","content":"Q1 2024 产品数据报告","level":1},
+      {"type":"text","content":"本报告总结了 2024 年第一季度的核心产品指标。总体来看，产品表现良好，用户增长稳健，收入达到预期目标。以下是详细数据分析。"},
+      {"type":"heading","content":"关键指标","level":2},
+      {"type":"kpi","content":"","data":{"metrics":[
+        {"label":"月活用户","value":"128万","trend":"up","color":"#3b82f6"},
+        {"label":"季度收入","value":"$3.2M","trend":"up","color":"#22c55e"},
+        {"label":"用户留存","value":"72%","trend":"down","color":"#fbbf24"},
+        {"label":"NPS 评分","value":"45","trend":"up","color":"#a855f7"}
+      ]}},
+      {"type":"callout","content":"⚠️ 留存率下降需要关注。Q1 留存从 75% 降至 72%，主要流失发生在注册后第 7 天。建议加强新手引导和推送策略。","variant":"warning"},
+      {"type":"heading","content":"月度收入趋势","level":2},
+      {"type":"chart","content":"月度收入（万元）","componentType":"bar","data":{"type":"bar","x":"month","y":"revenue","data":[
+        {"month":"1月","revenue":820},
+        {"month":"2月","revenue":932},
+        {"month":"3月","revenue":1034},
+        {"month":"4月","revenue":1090},
+        {"month":"5月","revenue":1190},
+        {"month":"6月","revenue":1330}
+      ]}},
+      {"type":"heading","content":"用户增长数据","level":2},
+      {"type":"table","content":"各渠道用户数据","data":{"columns":[
+        {"key":"channel","label":"渠道"},
+        {"key":"users","label":"新增用户"},
+        {"key":"conversion","label":"转化率"},
+        {"key":"revenue","label":"贡献收入"}
+      ],"data":[
+        {"channel":"自然搜索","users":"45,200","conversion":"3.2%","revenue":"$1.2M"},
+        {"channel":"社交媒体","users":"38,100","conversion":"2.8%","revenue":"$890K"},
+        {"channel":"付费投放","users":"28,500","conversion":"4.1%","revenue":"$760K"},
+        {"channel":"口碑推荐","users":"16,200","conversion":"5.6%","revenue":"$350K"}
+      ]}},
+      {"type":"heading","content":"结论与建议","level":2},
+      {"type":"text","content":"Q1 整体表现超出预期。收入同比增长 18%，主要受益于付费投放渠道的优化。但留存率下降 3 个百分点需要重视，建议在下个季度重点改进新用户引导流程。"},
+      {"type":"callout","content":"✅ 推荐行动：1) 优化新手引导流程；2) 增加第 3/7 天推送；3) 扩大口碑推荐奖励机制；4) 持续优化付费投放 ROI。","variant":"success"}
+    ];
+
+    window._currentSections = sections;
+    renderDocView(sections);
+  </script>
+</body>
+</html>

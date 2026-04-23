@@ -17,7 +17,7 @@ import { defaultDarkTheme } from '../themes/default-dark'
 import { defaultLightTheme } from '../themes/default-light'
 import { claudeDarkTheme } from '../themes/claude-dark'
 import { claudeLightTheme } from '../themes/claude-light'
-import { getTheme } from '../themes'
+import type { Theme } from '../themes'
 
 /** 暗色默认颜色表 */
 const defaultDarkColors: Record<string, string> = { ...defaultDarkTheme.cssVariables }
@@ -35,12 +35,9 @@ let activeColors: Record<string, string> = { ...claudeDarkTheme.cssVariables }
  *   - dark 模式 → defaultDarkTheme 作为缺失变量的 fallback
  *   - light 模式 → defaultLightTheme 作为缺失变量的 fallback
  */
-export function updateActiveColors(themeName: string): void {
-  const theme = getTheme(themeName)
-  if (theme) {
-    const fallbackBase = theme.mode === 'light' ? defaultLightColors : defaultDarkColors
-    activeColors = { ...fallbackBase, ...theme.cssVariables }
-  }
+export function updateActiveColors(theme: Theme): void {
+  const fallbackBase = theme.mode === 'light' ? defaultLightColors : defaultDarkColors
+  activeColors = { ...fallbackBase, ...theme.cssVariables }
 }
 
 /**

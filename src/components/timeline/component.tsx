@@ -1,5 +1,6 @@
 import type { TimelineProps } from './schema'
 import { tcss, tc } from '../../core/theme-colors'
+import { useAnnotationContext } from '../../docview/annotation-context'
 
 const styles = {
   container: {
@@ -49,9 +50,11 @@ const styles = {
 }
 
 /**
- * Timeline custom component — vertical event flow
+ * Timeline custom component — vertical event flow.
+ * 在 DocView 内时，每个事件支持独立批注。
  */
 export function Timeline({ props }: { props: TimelineProps }) {
+  const ctx = useAnnotationContext()
   return (
     <div style={styles.container}>
       {props.title && (
@@ -59,15 +62,34 @@ export function Timeline({ props }: { props: TimelineProps }) {
           {props.title}
         </h3>
       )}
+      <div style={{maxHeight:400,overflowY:'auto',position:'relative'}}>
       <div style={styles.line} />
-      {props.events.map((event, i) => (
-        <div key={i} style={styles.event}>
-          <div style={styles.dot} />
-          <div style={styles.date}>{event.date}</div>
-          <div style={styles.title}>{event.title}</div>
-          {event.description && <div style={styles.description}>{event.description}</div>}
-        </div>
-      ))}
+      {props.events.map((event, i) => {
+        const eventAnnotationProps = ctx ? {
+          'data-docview-target': `timeline-${ctx.sectionIndex}-${i}`,
+          'data-section-index': ctx.sectionIndex,
+          'data-target-type': 'component',
+          onClick: (e: React.MouseEvent) => {
+            e.stopPropagation()
+            ctx.onTargetClick?.({
+              sectionIndex: ctx.sectionIndex,
+              targetType: 'component',
+              label: `${event.date} - ${event.title}`,
+              targetId: `timeline-${ctx.sectionIndex}-${i}`,
+            }, e.currentTarget as HTMLElement)
+          },
+          style: { ...styles.event, cursor: 'pointer' as const },
+        } : { style: styles.event }
+        return (
+          <div key={i} {...eventAnnotationProps}>
+            <div style={styles.dot} />
+            <div style={styles.date}>{event.date}</div>
+            <div style={styles.title}>{event.title}</div>
+            {event.description && <div style={styles.description}>{event.description}</div>}
+          </div>
+        )
+      })}
+      </div>
     </div>
   )
 }

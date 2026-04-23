@@ -3,6 +3,7 @@ import { Renderer } from '@json-render/react'
 import type { InteractivePlaygroundProps, Control } from './schema'
 import { ControlRenderer } from './controls'
 import { tcss, tc } from '../../core/theme-colors'
+import { AnnotatableWrapper } from '../../docview/annotatable-wrapper'
 import { registry } from '../../registry'
 
 /**
@@ -89,6 +90,7 @@ export function InteractivePlayground({ props }: { props: InteractivePlaygroundP
   }
 
   return (
+    <AnnotatableWrapper targetType="component" componentType="InteractivePlayground" label={title || 'Playground'}>
     <div style={{
       border: `1px solid ${tcss('--rk-border-subtle')}`,
       borderRadius: tcss('--rk-radius-lg'),
@@ -172,5 +174,6 @@ export function InteractivePlayground({ props }: { props: InteractivePlaygroundP
         )}
       </div>
     </div>
+    </AnnotatableWrapper>
   )
 }

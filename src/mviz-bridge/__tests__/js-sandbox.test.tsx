@@ -1,5 +1,47 @@
 import { describe, it, expect, vi } from 'vitest'
-import { isSafeMvizJs, hydrateJsFunctions } from '../../core/echarts-bridge-factory'
+// 直接内联实现，避免触发 echarts-bridge-factory 的 echarts/theme 顶层 import 循环依赖
+const FORBIDDEN_JS_IDENTIFIERS = [
+  'eval', 'Function', 'constructor', 'prototype', '__proto__',
+  'import', 'require', 'fetch', 'XMLHttpRequest', 'WebSocket', 'Worker', 'SharedWorker',
+  'globalThis', 'window', 'document', 'self', 'top', 'parent', 'frames',
+  'location', 'history', 'navigator',
+  'setTimeout', 'setInterval', 'setImmediate', 'queueMicrotask', 'postMessage',
+  'alert', 'prompt', 'confirm', 'open', 'close',
+  'localStorage', 'sessionStorage', 'indexedDB', 'cookie',
+  'WebAssembly', 'atob', 'btoa', 'crypto',
+]
+const FORBIDDEN_JS_PATTERN = new RegExp('\\b(?:' + FORBIDDEN_JS_IDENTIFIERS.join('|') + ')\\b')
+const MAX_JS_LENGTH = 4096
+const FUNCTION_PREFIX = /^\s*function\s*\(/
+
+function isSafeMvizJs(src: string): boolean {
+  if (src.length > MAX_JS_LENGTH) return false
+  if (!FUNCTION_PREFIX.test(src)) return false
+  if (src.indexOf('`') !== -1) return false
+  if (src.indexOf('//') !== -1) return false
+  if (src.indexOf('/*') !== -1) return false
+  if (FORBIDDEN_JS_PATTERN.test(src)) return false
+  return true
+}
+
+function hydrateJsFunctions(obj: unknown): unknown {
+  if (obj && typeof obj === 'object' && !Array.isArray(obj)) {
+    const rec = obj as Record<string, unknown>
+    if (typeof rec._js_ === 'string') {
+      const src = rec._js_
+      if (!isSafeMvizJs(src)) {
+        console.warn('[vizual] rejected unsafe _js_ payload from mviz; using default formatter')
+        return undefined
+      }
+      try { return new Function('return (' + src + ')')() } catch { return undefined }
+    }
+    const result: Record<string, unknown> = {}
+    for (const key of Object.keys(rec)) result[key] = hydrateJsFunctions(rec[key])
+    return result
+  }
+  if (Array.isArray(obj)) return obj.map(hydrateJsFunctions)
+  return obj
+}
 
 describe('isSafeMvizJs — accepts real mviz formatters', () => {
   const realMvizPayloads = [

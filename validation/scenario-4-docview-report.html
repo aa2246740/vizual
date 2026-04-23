@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>Scenario 4: DocView Mixed Report (vizual)</title>
+<style>body{font-family:system-ui;background:#0f1117;color:#e2e8f0;padding:24px}h2{margin-top:0}.pass{color:#10b981}.fail{color:#ef4444}</style>
+</head><body>
+<h2>Scenario 4: DocView Mixed Report (vizual)</h2>
+<p>User: "做一个销售报表，有 KPI 卡片、柱状图和表格，用户能批注"</p>
+<div id="result" style="margin:20px 0;border:1px solid #2d3148;border-radius:8px;overflow:hidden"></div>
+<div id="status"></div>
+<script src="../dist/vizual.standalone.js"></script>
+<script>
+(function() {
+  const log = (msg, ok) => {
+    document.getElementById('status').innerHTML += `<div class="${ok ? 'pass' : 'fail'}">${ok ? '✓' : '✗'} ${msg}</div>`;
+  };
+
+  // vizual skill: DocView with mixed content (freeform KPI + chart + table)
+  const spec = {
+    root: 'main',
+    elements: {
+      main: {
+        type: 'DocView',
+        props: {
+          type: 'doc_view',
+          title: 'Q3 销售报表',
+          sections: [
+            { type: 'heading', content: 'Q3 核心指标' },
+            {
+              type: 'freeform',
+              content: '<div style="display:flex;gap:16px;margin-bottom:24px"><div style="flex:1;padding:20px;background:var(--rk-bg-secondary,#1e293b);border-radius:8px"><div style="color:var(--rk-text-secondary,#94a3b8);font-size:12px">总收入</div><div style="color:var(--rk-text-primary,#e2e8f0);font-size:32px;font-weight:bold">$12.3M</div><div style="color:var(--rk-success,#10b981);font-size:13px">+15% YoY</div></div><div style="flex:1;padding:20px;background:var(--rk-bg-secondary,#1e293b);border-radius:8px"><div style="color:var(--rk-text-secondary,#94a3b8);font-size:12px">订单量</div><div style="color:var(--rk-text-primary,#e2e8f0);font-size:32px;font-weight:bold">8,429</div><div style="color:var(--rk-success,#10b981);font-size:13px">+8% YoY</div></div><div style="flex:1;padding:20px;background:var(--rk-bg-secondary,#1e293b);border-radius:8px"><div style="color:var(--rk-text-secondary,#94a3b8);font-size:12px">客单价</div><div style="color:var(--rk-text-primary,#e2e8f0);font-size:32px;font-weight:bold">$1,460</div><div style="color:var(--rk-warning,#f59e0b);font-size:13px">-2% YoY</div></div></div>'
+            },
+            { type: 'heading', content: '季度趋势' },
+            {
+              type: 'chart',
+              content: '',
+              data: {
+                chartType: 'BarChart',
+                x: 'quarter',
+                y: 'revenue',
+                data: [
+                  { quarter: 'Q1', revenue: 8.5 },
+                  { quarter: 'Q2', revenue: 10.2 },
+                  { quarter: 'Q3', revenue: 12.3 }
+                ]
+              }
+            },
+            { type: 'heading', content: '产品明细' },
+            {
+              type: 'table',
+              content: '',
+              data: {
+                columns: [
+                  { key: 'product', label: '产品' },
+                  { key: 'revenue', label: '收入(万)' },
+                  { key: 'growth', label: '增长' }
+                ],
+                data: [
+                  { product: '宠物粮', revenue: '4,200', growth: '+18%' },
+                  { product: '猫砂', revenue: '3,100', growth: '+12%' },
+                  { product: '玩具', revenue: '2,800', growth: '+5%' },
+                  { product: '保健品', revenue: '2,200', growth: '+25%' }
+                ]
+              }
+            }
+          ],
+          showPanel: true
+        },
+        children: []
+      }
+    }
+  };
+
+  const container = document.getElementById('result');
+  try {
+    Vizual.renderSpec(spec, container);
+    log('vizual: DocView mixed report rendered', true);
+
+    setTimeout(() => {
+      // Check DocView structure
+      const viewport = container.querySelector('[data-docview-viewport]');
+      log('DocView viewport created', !!viewport);
+
+      // Check annotation panel
+      const panel = container.querySelector('[data-annotation-panel]');
+      log('Annotation panel present', !!panel);
+
+      // Check chart inside DocView
+      const chartCanvas = container.querySelector('canvas');
+      log('Chart rendered inside DocView', !!chartCanvas);
+
+      // Check KPI freeform HTML
+      const freeform = container.querySelector('[data-section-type="freeform"]');
+      log('Freeform KPI section rendered', !!freeform);
+
+      // Check table section
+      const table = container.querySelector('table');
+      log('Table section rendered', !!table);
+    }, 1000);
+  } catch(e) {
+    log('Render failed — ' + e.message, false);
+  }
+})();
+</script>
+</body></html>

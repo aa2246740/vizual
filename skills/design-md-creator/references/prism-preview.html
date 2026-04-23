@@ -722,9 +722,9 @@ function renderVizualComponents() {
   renderVizSpec('viz-kpi', 'KpiDashboard', {
     type: 'kpi_dashboard', columns: 3,
     metrics: [
-      { label: '日调用量', value: '2.4M', trend: '+18.3%', trendDirection: 'up' },
-      { label: '平均延迟', value: '21ms', trend: '-3.2ms', trendDirection: 'up' },
-      { label: '模型数量', value: '47', trend: '-2', trendDirection: 'down' }
+      { label: '日调用量', value: '2.4M', trend: 'up', trendValue: '+18.3%' },
+      { label: '平均延迟', value: '21ms', trend: 'up', trendValue: '-3.2ms' },
+      { label: '模型数量', value: '47', trend: 'down', trendValue: '-2' }
     ]
   });
 

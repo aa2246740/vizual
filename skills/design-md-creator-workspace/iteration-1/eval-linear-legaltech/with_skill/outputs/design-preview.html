@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>LexFrame — Design System Preview</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Nunito:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Outfit:wght@400;500;600;700&family=Sora:wght@400;500;600;700&family=Manrope:wght@400;500;600;700&family=Figtree:wght@400;500;600;700&family=Onest:wght@400;500;600;700&family=Bricolage+Grotesque:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&family=Lora:wght@400;500;600;700&family=Merriweather:wght@400;700&family=Source+Serif+4:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: var(--rk-font-sans, system-ui), sans-serif;
+    background: var(--rk-bg-primary); color: var(--rk-text-primary);
+    display: flex; min-height: 100vh;
+    transition: background 0.3s, color 0.3s;
+  }
+
+  /* -- Left Controls -- */
+  #controls {
+    width: 280px; flex-shrink: 0; padding: var(--pady2, 12px) var(--padx2, 20px);
+    border-right: 1px solid var(--rk-border-subtle);
+    background: var(--rk-bg-secondary); overflow-y: auto; height: 100vh; position: sticky; top: 0;
+  }
+  #controls h3 { font-size: 16px; font-weight: 700; margin-bottom: var(--gapy, 16px); }
+  .ctrl-group { margin-bottom: var(--pady, 6px); }
+  .ctrl-group > label {
+    display: block; font-size: 11px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.5px;
+    opacity: 0.5; margin-bottom: 4px;
+  }
+  .ctrl-group input[type="color"] {
+    width: 100%; height: 32px; border: 1px solid var(--rk-border-subtle);
+    border-radius: var(--rk-radius-sm, 4px); cursor: pointer; background: none; padding: 2px;
+  }
+  .ctrl-group select, .ctrl-group input[type="range"] {
+    width: 100%; padding: 4px 6px; border: 1px solid var(--rk-border-subtle);
+    border-radius: var(--rk-radius-sm, 4px); background: var(--rk-bg-primary);
+    color: var(--rk-text-primary); font-size: 12px;
+  }
+  .ctrl-group input[type="range"] { padding: 0; height: 4px; -webkit-appearance: none; appearance: none; border: none; }
+  .ctrl-group input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 14px; height: 14px; border-radius: 50%;
+    background: var(--rk-accent); cursor: pointer;
+  }
+  .ctrl-group .range-val { font-size: 10px; opacity: 0.4; margin-top: 2px; }
+  .toggle-row { display: flex; align-items: center; justify-content: space-between; }
+  .toggle-row span { font-size: 12px; }
+  .toggle-switch {
+    width: 40px; height: 22px; border-radius: 11px;
+    background: var(--rk-border-subtle); cursor: pointer; position: relative; transition: background 0.2s;
+  }
+  .toggle-switch.active { background: var(--rk-accent); }
+  .toggle-switch::after {
+    content: ''; position: absolute; width: 16px; height: 16px;
+    border-radius: 50%; background: #fff; top: 3px; left: 3px; transition: left 0.2s;
+  }
+  .toggle-switch.active::after { left: 21px; }
+  .btn-random {
+    width: 100%; padding: 6px; border: 1px dashed var(--rk-border-subtle);
+    border-radius: var(--rk-radius-sm, 4px); background: none; color: var(--rk-text-secondary);
+    cursor: pointer; font-size: 12px; opacity: 0.6;
+  }
+  .btn-random:hover { opacity: 1; }
+  .divider { height: 1px; background: var(--rk-border-subtle); margin: var(--pady2, 12px) 0; }
+
+  /* Depth mode buttons */
+  .depth-options { display: flex; gap: 4px; }
+  .depth-btn {
+    flex: 1; padding: 5px 0; border: 1px solid var(--rk-border-subtle);
+    border-radius: var(--rk-radius-sm, 4px); background: none;
+    color: var(--rk-text-secondary); cursor: pointer; font-size: 11px;
+    transition: all 0.15s;
+  }
+  .depth-btn.active { background: var(--rk-accent-muted); color: var(--rk-accent); border-color: var(--rk-accent); }
+
+  /* -- Right Preview -- */
+  #right { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+  #preview {
+    flex: 1; padding: var(--gapy2, 32px) var(--gapx2, 24px); overflow-y: auto; max-height: calc(100vh - 200px);
+  }
+  #preview h2 { font-family: var(--heading-font), Georgia, serif; margin-bottom: 4px; }
+  .section { margin-bottom: var(--gapy2, 32px); }
+  .section-title {
+    font-size: 11px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 1px; opacity: 0.4; margin-bottom: var(--pady2, 12px);
+    border-bottom: 1px solid var(--rk-border-subtle); padding-bottom: 6px;
+  }
+
+  /* Color swatches */
+  .swatch-row { display: flex; gap: var(--gapx, 12px); flex-wrap: wrap; }
+  .swatch { text-align: center; flex: 1; min-width: 60px; }
+  .swatch-color {
+    height: 48px; border-radius: var(--rk-radius-md, 6px);
+    border: 1px solid var(--rk-border-subtle); margin-bottom: 4px;
+  }
+  .swatch-name { font-size: 10px; font-weight: 600; }
+  .swatch-hex { font-size: 9px; font-family: var(--rk-font-mono, monospace); opacity: 0.5; }
+
+  /* Typography */
+  .type-sample { margin-bottom: var(--pady, 6px); }
+  .type-label { font-size: 10px; font-family: var(--rk-font-mono, monospace); opacity: 0.4; margin-bottom: 2px; }
+
+  /* Buttons */
+  .sample-row { display: flex; gap: var(--gapx, 12px); flex-wrap: wrap; margin-bottom: var(--gapy, 16px); align-items: flex-start; }
+  .sample-btn {
+    padding: var(--pady, 6px) var(--padx2, 20px);
+    border-radius: var(--rk-radius-md, 6px);
+    font-size: 14px; font-weight: 500; cursor: pointer;
+    border: none; transition: transform 0.1s, filter 0.15s;
+  }
+  .sample-btn:hover { filter: brightness(1.1); transform: translateY(-1px); }
+  .sample-btn.primary { background: var(--rk-accent); color: #fff; }
+  .sample-btn.secondary { background: var(--rk-bg-secondary); color: var(--rk-text-primary); border: 1px solid var(--rk-border-subtle); }
+  .sample-btn.outline { background: none; color: var(--rk-accent); border: 2px solid var(--rk-accent); }
+
+  /* Cards -- depth mode controlled by JS */
+  .sample-card {
+    flex: 1; min-width: 180px; max-width: 300px;
+    background: var(--rk-bg-secondary);
+    border-radius: var(--rk-radius-lg, 8px);
+    padding: var(--pady2, 12px) var(--padx2, 20px);
+  }
+  .sample-card.depth-border { border: 1px solid var(--rk-border-subtle); box-shadow: none; }
+  .sample-card.depth-shadow { border: none; box-shadow: var(--rk-shadow, 0 4px 12px rgba(0,0,0,0.3)); }
+  .sample-card.depth-flat { border: none; box-shadow: none; }
+  .sample-card h4 {
+    font-family: var(--heading-font), Georgia, serif;
+    font-size: 16px; font-weight: 600; margin-bottom: var(--pady, 6px);
+  }
+  .sample-card p { font-size: 13px; color: var(--rk-text-secondary); line-height: 1.5; margin-bottom: var(--pady, 6px); }
+
+  /* Alerts */
+  .alert {
+    padding: var(--pady, 6px) var(--padx2, 20px);
+    border-radius: var(--rk-radius-md, 6px); font-size: 14px;
+    line-height: 1.5; border-left: 4px solid; margin-bottom: var(--pady, 6px);
+  }
+  .alert-success { background: var(--rk-success-muted); border-color: var(--rk-success); }
+  .alert-warning { background: var(--rk-warning-muted); border-color: var(--rk-warning); }
+  .alert-error   { background: var(--rk-error-muted);   border-color: var(--rk-error); }
+  .alert-icon { margin-right: var(--padx, 10px); font-weight: 700; }
+
+  /* Badges */
+  .badge {
+    display: inline-block; padding: 3px 10px; border-radius: 99px;
+    font-size: 12px; font-weight: 600; line-height: 1.4; margin-right: 4px; margin-bottom: 4px;
+  }
+  .badge-accent  { background: var(--rk-accent-muted); color: var(--rk-accent); }
+  .badge-success { background: var(--rk-success-muted); color: var(--rk-success); }
+  .badge-warning { background: var(--rk-warning-muted); color: var(--rk-warning); }
+  .badge-error   { background: var(--rk-error-muted);   color: var(--rk-error); }
+  .badge-neutral { background: var(--rk-bg-tertiary);    color: var(--rk-text-secondary); }
+
+  /* Notifications */
+  .notification-card {
+    display: flex; gap: var(--padx, 10px); align-items: flex-start;
+    padding: var(--pady, 6px) var(--padx2, 20px);
+    border-radius: var(--rk-radius-md, 6px);
+    background: var(--rk-bg-secondary); border: 1px solid var(--rk-border-subtle);
+    margin-bottom: var(--pady, 6px);
+  }
+  .notif-dot { width: 10px; height: 10px; border-radius: 50%; margin-top: 5px; flex-shrink: 0; }
+  .notif-body { flex: 1; }
+  .notif-title { font-size: 14px; font-weight: 600; margin-bottom: 2px; }
+  .notif-desc { font-size: 12px; color: var(--rk-text-secondary); }
+  .notif-time { font-size: 10px; color: var(--rk-text-tertiary); }
+
+  /* Progress bars */
+  .progress-bar { height: 8px; border-radius: 99px; background: var(--rk-border-subtle); overflow: hidden; margin-top: 4px; }
+  .progress-fill { height: 100%; border-radius: 99px; transition: width 0.3s; }
+
+  /* Inputs */
+  .sample-input {
+    width: 100%; padding: var(--pady, 6px) var(--padx, 10px);
+    border: 1px solid var(--rk-border-subtle);
+    border-radius: var(--rk-radius-md, 6px); background: var(--rk-bg-primary);
+    color: var(--rk-text-primary); font-size: 14px;
+  }
+  .sample-input:focus { outline: none; border-color: var(--rk-accent); }
+
+  /* Vizual component containers */
+  .viz-slot {
+    border: 1px solid var(--rk-border-subtle);
+    border-radius: var(--rk-radius-md, 6px); overflow: hidden; margin-bottom: var(--gapy, 16px);
+  }
+  .viz-slot-label {
+    font-size: 10px; color: var(--rk-text-tertiary);
+    padding: 4px 10px; background: var(--rk-bg-tertiary);
+    border-bottom: 1px solid var(--rk-border-subtle);
+  }
+  .viz-slot-content { padding: var(--pady, 6px); }
+
+  /* -- Export area -- */
+  #export {
+    border-top: 1px solid var(--rk-border-subtle); background: var(--rk-bg-secondary);
+    padding: var(--pady, 6px) var(--gapx2, 24px);
+  }
+  #export-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+  #export-header h4 { font-size: 13px; font-weight: 600; }
+  #export-btns { display: flex; gap: var(--padx, 10px); }
+  #export-btns button {
+    padding: 5px 14px; border-radius: var(--rk-radius-sm, 4px); font-size: 12px;
+    font-weight: 600; cursor: pointer; border: none;
+  }
+  #download-btn { background: var(--rk-accent); color: #fff; }
+  #copy-btn { background: none; color: var(--rk-text-primary); border: 1px solid var(--rk-border-subtle) !important; }
+  #copy-btn.copied { background: var(--rk-success); color: #fff; border-color: var(--rk-success) !important; }
+  #design-md-output {
+    width: 100%; height: 120px; font-family: var(--rk-font-mono, monospace);
+    font-size: 11px; line-height: 1.5; padding: 8px 12px;
+    border: 1px solid var(--rk-border-subtle); border-radius: var(--rk-radius-sm, 4px);
+    background: var(--rk-bg-primary); color: var(--rk-text-primary); resize: vertical;
+  }
+</style>
+</head>
+<body>
+
+<!-- Left Controls -- Based on 7 key design decisions -->
+<aside id="controls">
+  <h3>LexFrame Design</h3>
+
+  <!-- 1 Light/Dark -- Visual Theme -->
+  <div class="ctrl-group toggle-row">
+    <label style="margin-bottom:0;opacity:1;font-size:12px">Dark Mode</label>
+    <div class="toggle-switch active" id="ctrl-dark"></div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- 2 Brand Color -- Color Palette -->
+  <div class="ctrl-group">
+    <label>Brand Color</label>
+    <input type="color" id="ctrl-accent" value="#2563EB">
+  </div>
+
+  <!-- 3 Warmth -- Color Temperature -->
+  <div class="ctrl-group">
+    <label>Warmth</label>
+    <input type="range" id="ctrl-warmth" min="-20" max="20" step="1" value="-5">
+    <div class="range-val" id="warmth-val">-5</div>
+  </div>
+
+  <!-- 4 Lightness -- Background Lightness -->
+  <div class="ctrl-group">
+    <label>Brightness</label>
+    <input type="range" id="ctrl-lightness" min="0" max="100" step="1" value="8">
+    <div class="range-val" id="lightness-val">8</div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- 5 Font -- Typography -->
+  <div class="ctrl-group">
+    <label>Heading Font</label>
+    <select id="ctrl-heading-font">
+      <option value="Inter" selected>Inter</option>
+      <option value="Plus Jakarta Sans">Plus Jakarta Sans</option>
+      <option value="Space Grotesk">Space Grotesk</option>
+      <option value="Nunito">Nunito</option>
+      <option value="DM Sans">DM Sans</option>
+      <option value="Outfit">Outfit</option>
+      <option value="Sora">Sora</option>
+      <option value="Manrope">Manrope</option>
+      <option value="Figtree">Figtree</option>
+      <option value="Onest">Onest</option>
+      <option value="Bricolage Grotesque">Bricolage Grotesque</option>
+      <option value="Noto Sans SC">Noto Sans SC</option>
+      <option value="Georgia">Georgia (serif)</option>
+      <option value="Lora">Lora (serif)</option>
+      <option value="Merriweather">Merriweather (serif)</option>
+      <option value="Source Serif 4">Source Serif 4</option>
+    </select>
+  </div>
+  <div class="ctrl-group">
+    <label>Body Font</label>
+    <select id="ctrl-body-font">
+      <option value="Inter" selected>Inter</option>
+      <option value="Plus Jakarta Sans">Plus Jakarta Sans</option>
+      <option value="Nunito">Nunito</option>
+      <option value="DM Sans">DM Sans</option>
+      <option value="Outfit">Outfit</option>
+      <option value="Manrope">Manrope</option>
+      <option value="Figtree">Figtree</option>
+      <option value="Noto Sans SC">Noto Sans SC</option>
+      <option value="system-ui">System UI</option>
+    </select>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- 6 Padding -- Layout -->
+  <div class="ctrl-group">
+    <label>Padding</label>
+    <div style="display:flex;gap:6px">
+      <div style="flex:1"><div style="font-size:9px;opacity:0.5;margin-bottom:2px">Vert</div><input type="range" id="ctrl-pad-y" min="4" max="16" step="2" value="6"><div class="range-val" id="pad-y-val">6px</div></div>
+      <div style="flex:1"><div style="font-size:9px;opacity:0.5;margin-bottom:2px">Horiz</div><input type="range" id="ctrl-pad-x" min="4" max="20" step="2" value="10"><div class="range-val" id="pad-x-val">10px</div></div>
+    </div>
+  </div>
+
+  <!-- 7 Gap -- Layout -->
+  <div class="ctrl-group">
+    <label>Gap</label>
+    <div style="display:flex;gap:6px">
+      <div style="flex:1"><div style="font-size:9px;opacity:0.5;margin-bottom:2px">Vert</div><input type="range" id="ctrl-gap-y" min="8" max="32" step="4" value="16"><div class="range-val" id="gap-y-val">16px</div></div>
+      <div style="flex:1"><div style="font-size:9px;opacity:0.5;margin-bottom:2px">Horiz</div><input type="range" id="ctrl-gap-x" min="8" max="32" step="4" value="12"><div class="range-val" id="gap-x-val">12px</div></div>
+    </div>
+  </div>
+
+  <!-- 8 Radius -- Layout -->
+  <div class="ctrl-group">
+    <label>Border Radius</label>
+    <input type="range" id="ctrl-radius" min="0" max="24" step="2" value="6">
+    <div class="range-val" id="radius-val">6px</div>
+  </div>
+
+  <!-- 9 Depth mode -- Depth & Elevation -->
+  <div class="ctrl-group">
+    <label>Depth Style</label>
+    <div class="depth-options">
+      <button class="depth-btn active" id="depth-border" onclick="setDepth('border')">Border</button>
+      <button class="depth-btn" id="depth-shadow" onclick="setDepth('shadow')">Shadow</button>
+      <button class="depth-btn" id="depth-flat" onclick="setDepth('flat')">Flat</button>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+  <div class="ctrl-group">
+    <button class="btn-random" onclick="randomize()">Randomize</button>
+  </div>
+</aside>
+
+<!-- Right Preview -->
+<div id="right">
+  <div id="preview">
+    <h2>LexFrame Design System</h2>
+    <p style="color:var(--rk-text-secondary);margin-bottom:var(--gapy2,32px)">Dark, precise, professional — built for legal teams who demand clarity and control.</p>
+
+    <!-- Color palette -->
+    <div class="section">
+      <div class="section-title">Color Palette</div>
+      <div class="swatch-row" id="swatch-row"></div>
+    </div>
+
+    <!-- Typography -->
+    <div class="section">
+      <div class="section-title">Typography</div>
+      <div id="type-preview"></div>
+    </div>
+
+    <!-- Buttons -->
+    <div class="section">
+      <div class="section-title">Buttons</div>
+      <div class="sample-row">
+        <button class="sample-btn primary">New Case</button>
+        <button class="sample-btn secondary">Review Contract</button>
+        <button class="sample-btn outline">Export Report</button>
+      </div>
+    </div>
+
+    <!-- Alerts -->
+    <div class="section">
+      <div class="section-title">Alerts</div>
+      <div class="alert alert-success"><span class="alert-icon">&#10003;</span> Contract approved by all parties. Ready for execution.</div>
+      <div class="alert alert-warning"><span class="alert-icon">&#9888;</span> 3 compliance deadlines approaching within the next 48 hours.</div>
+      <div class="alert alert-error"><span class="alert-icon">&#10005;</span> Document version conflict detected. Manual review required.</div>
+    </div>
+
+    <!-- Badges -->
+    <div class="section">
+      <div class="section-title">Status Tags</div>
+      <span class="badge badge-accent">Flagship</span>
+      <span class="badge badge-success">Active</span>
+      <span class="badge badge-warning">Pending</span>
+      <span class="badge badge-error">Overdue</span>
+      <span class="badge badge-neutral">Draft</span>
+    </div>
+
+    <!-- Notifications -->
+    <div class="section">
+      <div class="section-title">Notifications</div>
+      <div class="notification-card">
+        <div class="notif-dot" style="background:var(--rk-success)"></div>
+        <div class="notif-body"><div class="notif-title">Contract Signed</div><div class="notif-desc">Merger Agreement v3.2 fully executed by all counter-parties.</div></div>
+        <div class="notif-time">2 min ago</div>
+      </div>
+      <div class="notification-card">
+        <div class="notif-dot" style="background:var(--rk-warning)"></div>
+        <div class="notif-body"><div class="notif-title">Compliance Review</div><div class="notif-desc">GDPR audit findings require response by end of business.</div></div>
+        <div class="notif-time">1 hr ago</div>
+      </div>
+      <div class="notification-card">
+        <div class="notif-dot" style="background:var(--rk-error)"></div>
+        <div class="notif-body"><div class="notif-title">Deadline Breached</div><div class="notif-desc">Filing deadline for Case #2024-0891 has passed without submission.</div></div>
+        <div class="notif-time">3 hrs ago</div>
+      </div>
+    </div>
+
+    <!-- Progress bars -->
+    <div class="section">
+      <div class="section-title">Progress</div>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div>
+          <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px"><span>Contract Review</span><span style="color:var(--rk-success)">87%</span></div>
+          <div class="progress-bar"><div class="progress-fill" style="width:87%;background:var(--rk-success)"></div></div>
+        </div>
+        <div>
+          <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px"><span>Compliance Audit</span><span style="color:var(--rk-warning)">54%</span></div>
+          <div class="progress-bar"><div class="progress-fill" style="width:54%;background:var(--rk-warning)"></div></div>
+        </div>
+        <div>
+          <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px"><span>Case Discovery</span><span style="color:var(--rk-accent)">31%</span></div>
+          <div class="progress-bar"><div class="progress-fill" style="width:31%;background:var(--rk-accent)"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Cards -->
+    <div class="section">
+      <div class="section-title">Cards</div>
+      <div class="sample-row">
+        <div class="sample-card depth-border">
+          <h4>Case Analytics</h4>
+          <p>Real-time tracking of case progression, milestones, and risk indicators across your entire portfolio.</p>
+          <button class="sample-btn primary" style="font-size:12px;padding:5px 14px">Open Dashboard</button>
+        </div>
+        <div class="sample-card depth-border">
+          <h4>Contract Vault</h4>
+          <p>Centralized repository with AI-powered clause extraction, version diffing, and obligation tracking.</p>
+          <button class="sample-btn secondary" style="font-size:12px;padding:5px 14px">Browse Contracts</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Vizual component: Data table -->
+    <div class="section">
+      <div class="section-title">Data Table</div>
+      <div class="viz-slot"><div class="viz-slot-label">DataTable</div><div class="viz-slot-content" id="viz-table"></div></div>
+    </div>
+
+    <!-- Vizual component: KPI -->
+    <div class="section">
+      <div class="section-title">Key Metrics</div>
+      <div class="viz-slot"><div class="viz-slot-label">KpiDashboard</div><div class="viz-slot-content" id="viz-kpi"></div></div>
+    </div>
+
+    <!-- Vizual component: Charts -->
+    <div class="section">
+      <div class="section-title">Charts</div>
+      <div class="sample-row">
+        <div class="viz-slot" style="flex:1;min-width:300px"><div class="viz-slot-label">BarChart</div><div class="viz-slot-content" id="viz-bar"></div></div>
+        <div class="viz-slot" style="flex:1;min-width:300px"><div class="viz-slot-label">PieChart</div><div class="viz-slot-content" id="viz-pie"></div></div>
+      </div>
+    </div>
+
+    <!-- Input -->
+    <div class="section">
+      <div class="section-title">Input</div>
+      <input class="sample-input" type="text" placeholder="Search cases, contracts, or statutes...">
+    </div>
+  </div>
+
+  <!-- Export -->
+  <div id="export">
+    <div id="export-header">
+      <h4>DESIGN.md Preview</h4>
+      <div id="export-btns">
+        <button id="copy-btn" onclick="copyMD()">Copy to Clipboard</button>
+        <button id="download-btn" onclick="downloadMD()">Download DESIGN.md</button>
+      </div>
+    </div>
+    <textarea id="design-md-output" readonly></textarea>
+  </div>
+</div>
+
+<script src="../../../dist/vizual.standalone.js"></script>
+<script>
+var design = {
+  brandName: 'LexFrame',
+  accent: '#2563EB',
+  warmth: -5,
+  bgLightness: 8,
+  isDark: true,
+  headingFont: 'Inter',
+  bodyFont: 'Inter',
+  padY: 6,
+  padX: 10,
+  gapY: 16,
+  gapX: 12,
+  radiusMd: 6,
+  headingWeight: 600,
+  bodyWeight: 400,
+  depthMode: 'border'
+};
+
+// -- HSL utilities --
+function hexToHSL(hex) {
+  var r=parseInt(hex.slice(1,3),16)/255, g=parseInt(hex.slice(3,5),16)/255, b=parseInt(hex.slice(5,7),16)/255;
+  var max=Math.max(r,g,b), min=Math.min(r,g,b), h,s,l=(max+min)/2;
+  if(max===min){h=s=0;}else{var d=max-min;s=l>0.5?d/(2-max-min):d/(max+min);
+  if(max===r)h=((g-b)/d+(g<b?6:0))/6;else if(max===g)h=((b-r)/d+2)/6;else h=((r-g)/d+4)/6;}
+  return{h:Math.round(h*360),s:Math.round(s*100),l:Math.round(l*100)};
+}
+function hslToHex(h,s,l){
+  h=((h%360)+360)%360;s/=100;l/=100;
+  var c=(1-Math.abs(2*l-1))*s,x=c*(1-Math.abs((h/60)%2-1)),m=l-c/2,r,g,b;
+  if(h<60){r=c;g=x;b=0;}else if(h<120){r=x;g=c;b=0;}else if(h<180){r=0;g=c;b=x;}
+  else if(h<240){r=0;g=x;b=c;}else if(h<300){r=x;g=0;b=c;}else{r=c;g=0;b=x;}
+  return '#'+[r+m,g+m,b+m].map(function(v){return Math.round(v*255).toString(16).padStart(2,'0');}).join('');
+}
+
+// -- Derive DesignTokens -> Vizual theme --
+function deriveTokens(d) {
+  var a = hexToHSL(d.accent);
+  var w = d.warmth, absW = Math.abs(w), lightness = d.bgLightness, dark = d.isDark;
+  var warmHue = 40, coolHue = 220;
+  var neutralHue = w > 0 ? warmHue : (w < 0 ? coolHue : 0);
+  var baseSat = absW === 0 ? 0 : (4 + absW * 1.3);
+  var bgSat = dark ? baseSat * 0.7 : baseSat;
+  var bgL = dark ? Math.max(lightness * 0.12, 3) : Math.min(lightness * 0.97 + 3, 99);
+  var bgHue = absW === 0 ? 0 : neutralHue + (a.h - neutralHue) * 0.1;
+  var bg = hslToHex(bgHue, bgSat, bgL);
+  var cardBg = dark ? hslToHex(bgHue, bgSat * 0.6, Math.min(bgL + 5, 22)) : hslToHex(bgHue, bgSat * 0.7, Math.min(bgL + 3, 100));
+  var text = dark ? hslToHex(bgHue, bgSat * 0.3, Math.min(bgL + 72, 95)) : hslToHex(bgHue, bgSat * 0.5, Math.max(bgL - 78, 8));
+  var textSec = dark ? hslToHex(bgHue, bgSat * 0.3, Math.min(bgL + 48, 68)) : hslToHex(bgHue, bgSat * 0.4, Math.max(bgL - 52, 28));
+  var border = dark ? hslToHex(bgHue, bgSat * 0.5, Math.min(bgL + 10, 28)) : hslToHex(bgHue, bgSat * 0.6, Math.max(bgL - 8, 82));
+  return {
+    colors: [
+      { name: 'accent', value: d.accent },
+      { name: 'background', value: bg },
+      { name: 'card', value: cardBg },
+      { name: 'text', value: text },
+      { name: 'text-secondary', value: textSec },
+      { name: 'border', value: border },
+      { name: 'success', value: '#10b981' },
+      { name: 'warning', value: '#f59e0b' },
+      { name: 'error', value: '#ef4444' }
+    ],
+    typography: {
+      fontFamily: d.headingFont + ', ' + d.bodyFont + ', system-ui, sans-serif',
+      sizes: { body: '14px' },
+      weights: { regular: String(d.bodyWeight), bold: String(d.headingWeight) }
+    },
+    spacing: {
+      baseUnit: d.padY + 'px',
+      scale: {
+        'space-1': d.padY + 'px', 'space-2': (d.padY * 2) + 'px', 'space-3': (d.padY * 3) + 'px', 'space-4': (d.padY * 4) + 'px', 'space-6': (d.gapY) + 'px'
+      }
+    },
+    radius: { scale: { sm: Math.max(d.radiusMd - 4, 0) + 'px', md: d.radiusMd + 'px', lg: (d.radiusMd + 4) + 'px' } }
+  };
+}
+
+// -- Apply theme --
+function applyDesign() {
+  var tokens = deriveTokens(design);
+  var themeName = design.isDark ? 'preview-dark' : 'preview-light';
+  var theme = Vizual.mapDesignTokensToTheme(tokens, themeName);
+  Vizual.registerTheme(theme.name, theme);
+  var inv = Vizual.invertTheme(theme);
+  Vizual.registerTheme(inv.name, inv);
+  Vizual.setGlobalTheme(themeName);
+
+  // Set heading font as CSS variable
+  document.documentElement.style.setProperty('--heading-font', design.headingFont);
+
+  // Set spacing CSS variables
+  var py = design.padY, px = design.padX, gy = design.gapY, gx = design.gapX;
+  var root = document.documentElement.style;
+  root.setProperty('--pady', py + 'px'); root.setProperty('--pady2', (py * 2) + 'px'); root.setProperty('--pady3', (py * 3) + 'px');
+  root.setProperty('--padx', px + 'px'); root.setProperty('--padx2', (px * 2) + 'px'); root.setProperty('--padx3', (px * 3) + 'px');
+  root.setProperty('--gapy', gy + 'px'); root.setProperty('--gapy2', (gy * 2) + 'px');
+  root.setProperty('--gapx', gx + 'px'); root.setProperty('--gapx2', (gx * 2) + 'px');
+
+  renderSwatches();
+  renderTypography();
+  renderVizualComponents();
+  applyDepth();
+  generateDesignMd();
+}
+
+function toggleDarkMode() {
+  var newMode = Vizual.toggleMode();
+  design.isDark = newMode === 'dark';
+  document.getElementById('ctrl-dark').classList.toggle('active', design.isDark);
+  renderSwatches();
+  renderTypography();
+  renderVizualComponents();
+  generateDesignMd();
+}
+
+function setDepth(mode) {
+  design.depthMode = mode;
+  document.querySelectorAll('.depth-btn').forEach(function(b) { b.classList.remove('active'); });
+  document.getElementById('depth-' + mode).classList.add('active');
+  applyDepth();
+  generateDesignMd();
+}
+
+function applyDepth() {
+  var cards = document.querySelectorAll('.sample-card, .notification-card, .viz-slot');
+  cards.forEach(function(c) {
+    c.classList.remove('depth-border', 'depth-shadow', 'depth-flat');
+    c.classList.add('depth-' + design.depthMode);
+  });
+}
+
+// -- Color swatches --
+function renderSwatches() {
+  var roles = [
+    { n: 'Brand', v: 'var(--rk-accent)' },
+    { n: 'Background', v: 'var(--rk-bg-primary)' },
+    { n: 'Surface', v: 'var(--rk-bg-secondary)' },
+    { n: 'Text', v: 'var(--rk-text-primary)' },
+    { n: 'Secondary', v: 'var(--rk-text-secondary)' },
+    { n: 'Border', v: 'var(--rk-border-subtle)' },
+    { n: 'Success', v: 'var(--rk-success)' },
+    { n: 'Warning', v: 'var(--rk-warning)' },
+    { n: 'Error', v: 'var(--rk-error)' }
+  ];
+  var html = '';
+  roles.forEach(function(r) {
+    var hex = Vizual.tc(r.v.replace('var(', '').replace(')', ''));
+    html += '<div class="swatch"><div class="swatch-color" style="background:' + r.v + '"></div>'
+      + '<div class="swatch-name">' + r.n + '</div><div class="swatch-hex">' + hex + '</div></div>';
+  });
+  document.getElementById('swatch-row').innerHTML = html;
+}
+
+// -- Typography preview --
+function renderTypography() {
+  var levels = [
+    { l: 'Display', sz: 48, w: design.headingWeight, lh: 1.1, useHeading: true },
+    { l: 'H1', sz: 32, w: design.headingWeight, lh: 1.2, useHeading: true },
+    { l: 'H2', sz: 24, w: design.headingWeight, lh: 1.3, useHeading: true },
+    { l: 'Body Large', sz: 18, w: design.bodyWeight, lh: 1.6 },
+    { l: 'Body', sz: 16, w: design.bodyWeight, lh: 1.5 },
+    { l: 'Caption', sz: 13, w: design.bodyWeight, lh: 1.4 },
+    { l: 'Label', sz: 11, w: 500, lh: 1.3 }
+  ];
+  var html = '';
+  levels.forEach(function(lv) {
+    var f = lv.useHeading ? design.headingFont : design.bodyFont;
+    html += '<div class="type-sample"><div class="type-label">' + lv.l + ' — ' + lv.sz + 'px / ' + lv.w + ' / lh ' + lv.lh + '</div>'
+      + '<div style="font-family:' + f + ',system-ui,sans-serif;font-size:' + lv.sz + 'px;font-weight:' + lv.w + ';line-height:' + lv.lh + '">Legal Intelligence, Delivered with Precision</div></div>';
+  });
+  document.getElementById('type-preview').innerHTML = html;
+}
+
+// -- Vizual component rendering --
+function renderVizSpec(id, type, props) {
+  var el = document.getElementById(id);
+  if (!el) return;
+  el.innerHTML = '';
+  try { Vizual.renderSpec({ root: 'm', elements: { m: { type: type, props: props, children: [] } } }, el); }
+  catch(e) { el.innerHTML = '<div style="color:var(--rk-error);font-size:11px">Error: ' + e.message + '</div>'; }
+}
+
+function renderVizualComponents() {
+  renderVizSpec('viz-table', 'DataTable', {
+    type: 'table',
+    columns: [
+      { key: 'product', label: 'Case Name' },
+      { key: 'revenue', label: 'Claim Value' },
+      { key: 'growth', label: 'Progress' },
+      { key: 'status', label: 'Status' }
+    ],
+    data: [
+      { product: 'Meridian Corp v. Helix', revenue: '$2.4M', growth: '+12%', status: 'Active' },
+      { product: 'In re: DataVault IPO', revenue: '$8.1M', growth: '+28%', status: 'Discovery' },
+      { product: 'Apex Partners LLC', revenue: '$1.7M', growth: '-5%', status: 'Settled' },
+      { product: 'GDPR Compliance Audit', revenue: '$450K', growth: '+3%', status: 'Review' }
+    ]
+  });
+
+  renderVizSpec('viz-kpi', 'KpiDashboard', {
+    type: 'kpi_dashboard', columns: 3,
+    metrics: [
+      { label: 'Active Cases', value: '127', trend: '+8.2%', trendDirection: 'up' },
+      { label: 'Contracts Executed', value: '342', trend: '+15.7%', trendDirection: 'up' },
+      { label: 'Compliance Score', value: '94.2%', trend: '-0.3%', trendDirection: 'down' }
+    ]
+  });
+
+  renderVizSpec('viz-bar', 'BarChart', {
+    type: 'bar', title: 'Monthly Case Filings', x: 'month', y: 'revenue',
+    data: [
+      { month: 'Jan', revenue: 42 },
+      { month: 'Feb', revenue: 38 },
+      { month: 'Mar', revenue: 55 },
+      { month: 'Apr', revenue: 47 },
+      { month: 'May', revenue: 63 },
+      { month: 'Jun', revenue: 71 }
+    ]
+  });
+
+  renderVizSpec('viz-pie', 'PieChart', {
+    type: 'pie', title: 'Practice Area Distribution', category: 'name', value: 'share',
+    data: [
+      { name: 'Corporate', share: 35 },
+      { name: 'Litigation', share: 25 },
+      { name: 'IP / Tech', share: 20 },
+      { name: 'Compliance', share: 12 },
+      { name: 'Employment', share: 8 }
+    ]
+  });
+}
+
+// -- DESIGN.md generation --
+function generateDesignMd() {
+  var tokens = deriveTokens(design);
+  var d = design;
+  var colors = {};
+  tokens.colors.forEach(function(c) { colors[c.name] = c.value; });
+  var mood = d.isDark ? 'dark, sophisticated, precision-engineered' : 'clean, approachable, professional';
+  var md = '# Design System — ' + d.brandName + '\n\n';
+  md += '## 1. Visual Theme & Atmosphere\n\n';
+  md += d.brandName + '\'s design language is ' + mood + '. ';
+  md += 'Inspired by the restrained elegance of tools like Linear, the interface prioritizes density and clarity over decoration. ';
+  md += 'Every surface, border, and typographic choice serves a single purpose: reducing cognitive load for legal professionals who deal with complexity all day.\n\n';
+  md += 'The dark canvas (' + colors.background + ') is deliberately restrained—not the inky black of a developer terminal, but a calibrated dark neutral that reads as authoritative without feeling oppressive. ';
+  md += 'The brand blue (' + d.accent + ') provides a single, confident accent. Cool-toned neutrals (warmth: -5) keep the palette clinical and precise, befitting an industry where accuracy is non-negotiable. ';
+  md += 'Borders, not shadows, define depth—crisp 1px edges that feel architectural rather than decorative.\n\n';
+  md += d.headingFont + ' is used exclusively for both headings and body, creating a unified typographic voice with weight and size as the primary differentiators. ';
+  md += 'Tight padding (6/10px) and moderate gaps (16/12px) create a compact, information-dense layout that respects the user\'s screen real estate. ';
+  md += 'Border radius at 6px is just enough to soften edges without undermining the professional tone.\n\n';
+  md += '**Key Characteristics:**\n';
+  md += '- Dark-mode-first with cool neutral undertone (warmth -5)\n';
+  md += '- Single brand accent (' + d.accent + ') for maximum impact and trust signaling\n';
+  md += '- Border-defined depth, no drop shadows—architectural precision\n';
+  md += '- Compact spacing: inner ' + d.padY + '/' + d.padX + 'px, outer ' + d.gapY + '/' + d.gapX + 'px grid, ' + d.radiusMd + 'px radius\n';
+  md += '- ' + d.headingFont + ' throughout—weight/size differentiation, not font switching\n';
+  md += '- Legal-industry content semantics: cases, contracts, compliance, obligations\n\n';
+  md += '## 2. Color Palette & Roles\n\n';
+  md += '### Primary\n- **Trust Blue** (`' + colors.accent + '`): CTAs, active states, links, and key interactions—conveys reliability and institutional authority.\n\n';
+  md += '### Surface\n- **Dark Canvas** (`' + colors.background + '`): Primary page background—a calibrated dark neutral, not pure black, to reduce eye strain during extended use.\n- **Elevated Surface** (`' + colors.card + '`): Cards, panels, and containers—subtly lighter than the canvas, defined by 1px borders.\n\n';
+  md += '### Text\n- **Primary Text** (`' + colors.text + '`): Headlines, body copy, and form labels—high contrast for long-form legal text.\n- **Secondary Text** (`' colors['text-secondary'] + '`): Metadata, timestamps, captions—readable but de-emphasized.\n\n';
+  md += '### Borders\n- **Subtle Border** (`' + colors.border + '`): 1px dividers, card edges, input borders—visible enough for structure, not enough to distract.\n\n';
+  md += '### Semantic\n- **Success** (`' + colors.success + '`): Contract signed, case resolved, compliance passed.\n- **Warning** (`' + colors.warning + '`): Approaching deadline, pending review.\n- **Error** (`' + colors.error + '`): Deadline breached, version conflict, filing failure.\n\n';
+  md += '## 3. Typography Rules\n\n';
+  md += '### Font Family\n- **All contexts**: `' + d.headingFont + '`, fallback: `system-ui`\n- **Code/Data**: `JetBrains Mono`\n\n';
+  md += '### Hierarchy\n\n';
+  md += '| Role | Size | Weight | Line Height |\n|------|------|--------|-------------|\n';
+  md += '| Display | 48px | ' + d.headingWeight + ' | 1.10 |\n| H1 | 32px | ' + d.headingWeight + ' | 1.20 |\n| H2 | 24px | ' + d.headingWeight + ' | 1.30 |\n| Body | 16px | ' + d.bodyWeight + ' | 1.50 |\n| Caption | 13px | ' + d.bodyWeight + ' | 1.40 |\n\n';
+  md += '### Principles\n- One font family throughout. Differentiate with weight (400/500/600) and size.\n- Tight line-heights for headings (1.10–1.30), relaxed for body (1.50) to aid readability in legal text.\n- No letter-spacing adjustments—' + d.headingFont + '\'s native spacing is well-calibrated.\n\n';
+  md += '## 4. Component Styles\n\n';
+  md += '### Buttons\n- **Primary**: bg `' + colors.accent + '`, white text, radius ' + d.radiusMd + 'px—used for main CTAs ("New Case", "Submit Filing").\n- **Secondary**: bg `' + colors.card + '`, 1px border `' + colors.border + '`, radius ' + d.radiusMd + 'px—supportive actions.\n- **Outline**: no fill, 2px border `' + colors.accent + '`, radius ' + d.radiusMd + 'px—tertiary/alternative actions.\n\n';
+  md += '### Cards\n- bg `' + colors.card + '`, 1px solid border `' + colors.border + '` (no shadow), radius ' + (d.radiusMd + 2) + 'px—crisp, architectural containment.\n\n';
+  md += '### Inputs\n- bg `' + colors.background + '`, border `' + colors.border + '`, radius ' + d.radiusMd + 'px—focus state highlights border with brand blue.\n\n';
+  md += '## 5. Layout Principles\n\n';
+  md += '- Padding (inner): vertical ' + d.padY + 'px, horizontal ' + d.padX + 'px\n- Gap (outer): vertical ' + d.gapY + 'px, horizontal ' + d.gapX + 'px\n- Radius scale: ' + Math.max(d.radiusMd - 4, 0) + 'px (sm) / ' + d.radiusMd + 'px (md) / ' + (d.radiusMd + 4) + 'px (lg)\n- Max width: 1200px, centered\n- Grid: 12-column with ' + d.gapX + 'px gutters\n\n';
+  md += '## 6. Depth & Elevation\n\n| Level | Treatment | Use Case |\n|-------|-----------|----------|\n| Flat | None | Page background |\n| Contained | 1px solid border | Cards, panels, notifications |\n| Elevated | Border + subtle shadow | Modals, dropdowns |\n\nDepth is defined by 1px borders, not drop shadows. This creates a sharp, precise feel consistent with the brand\'s professional positioning.\n\n';
+  md += '## 7. Do\'s and Don\'ts\n\n### Do\n- Use Trust Blue (' + colors.accent + ') exclusively for CTAs and active states\n- Maintain compact spacing: inner ' + d.padY + '/' + d.padX + 'px, outer ' + d.gapY + '/' + d.gapX + 'px\n- Ensure WCAG AA contrast on all text/background combinations\n- Use 1px borders for depth—shadows only for modals/dropdowns\n- Keep radius at 6px±2 (4–8px range)\n\n### Don\'t\n- Apply brand blue to large background areas—it\'s an accent, not a fill\n- Use more than one font family (Inter only)\n- Set line-height below 1.3 for any text\n- Use drop shadows on cards or list items\n- Exceed 8px border radius—roundness undermines the professional tone\n- Use warm-toned grays—keep all neutrals cool\n\n';
+  md += '## 8. Responsive Behavior\n\n| Breakpoint | Width | Behavior |\n|-----------|-------|----------|\n| Mobile | <640px | Single column, stacked cards |\n| Tablet | 640–1024px | 2-column grid, collapsible sidebar |\n| Desktop | >1024px | Full layout, sidebar + main + detail panel |\n\nTouch target minimum: 44x44px for all interactive elements.\n\n';
+  md += '## 9. Agent Prompt Guide\n\n### Quick Color Reference\n- CTA / Active: `' + colors.accent + '`\n- Background: `' + colors.background + '`\n- Surface / Card: `' + colors.card + '`\n- Text Primary: `' + colors.text + '`\n- Text Secondary: `' + colors['text-secondary'] + '`\n- Border: `' + colors.border + '`\n\n### Ready-to-Use Prompts\n- "Dashboard card on Dark Canvas, 1px Subtle Border, 6px radius, Trust Blue headline, Secondary Text metadata"\n- "Primary CTA button, Trust Blue background, white text, 6px radius, compact 6/10px padding"\n- "Data table on Elevated Surface, Subtle Border rows, Trust Blue header, alternating row tint"\n- "Notification toast, left border accent (success/warning/error), compact padding, Secondary Text timestamp"\n';
+  document.getElementById('design-md-output').value = md;
+}
+
+function randomize() {
+  design.accent = hslToHex(Math.floor(Math.random() * 360), 70, 50);
+  document.getElementById('ctrl-accent').value = design.accent;
+  applyDesign();
+}
+
+function downloadMD() {
+  var md = document.getElementById('design-md-output').value;
+  var blob = new Blob([md], { type: 'text/markdown' });
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = 'DESIGN.md';
+  a.style.display = 'none'; document.body.appendChild(a); a.click();
+  setTimeout(function() { document.body.removeChild(a); URL.revokeObjectURL(a.href); }, 100);
+}
+
+function copyMD() {
+  navigator.clipboard.writeText(document.getElementById('design-md-output').value).then(function() {
+    var btn = document.getElementById('copy-btn');
+    btn.textContent = '✓ Copied'; btn.classList.add('copied');
+    setTimeout(function() { btn.textContent = 'Copy to Clipboard'; btn.classList.remove('copied'); }, 2000);
+  });
+}
+
+// -- Bind controls --
+document.getElementById('ctrl-accent').addEventListener('input', function(e) { design.accent = e.target.value; applyDesign(); });
+document.getElementById('ctrl-warmth').addEventListener('input', function(e) { design.warmth = parseInt(e.target.value); document.getElementById('warmth-val').textContent = design.warmth; applyDesign(); });
+document.getElementById('ctrl-lightness').addEventListener('input', function(e) { design.bgLightness = parseInt(e.target.value); document.getElementById('lightness-val').textContent = design.bgLightness; applyDesign(); });
+document.getElementById('ctrl-dark').addEventListener('click', toggleDarkMode);
+document.getElementById('ctrl-heading-font').addEventListener('change', function(e) { design.headingFont = e.target.value; applyDesign(); });
+document.getElementById('ctrl-body-font').addEventListener('change', function(e) { design.bodyFont = e.target.value; applyDesign(); });
+document.getElementById('ctrl-pad-y').addEventListener('input', function(e) {
+  design.padY = parseInt(e.target.value);
+  document.getElementById('pad-y-val').textContent = design.padY + 'px';
+  applyDesign();
+});
+document.getElementById('ctrl-pad-x').addEventListener('input', function(e) {
+  design.padX = parseInt(e.target.value);
+  document.getElementById('pad-x-val').textContent = design.padX + 'px';
+  applyDesign();
+});
+document.getElementById('ctrl-gap-y').addEventListener('input', function(e) {
+  design.gapY = parseInt(e.target.value);
+  document.getElementById('gap-y-val').textContent = design.gapY + 'px';
+  applyDesign();
+});
+document.getElementById('ctrl-gap-x').addEventListener('input', function(e) {
+  design.gapX = parseInt(e.target.value);
+  document.getElementById('gap-x-val').textContent = design.gapX + 'px';
+  applyDesign();
+});
+document.getElementById('ctrl-radius').addEventListener('input', function(e) { design.radiusMd = parseInt(e.target.value); document.getElementById('radius-val').textContent = design.radiusMd + 'px'; applyDesign(); });
+
+applyDesign();
+</script>
+</body>
+</html>

@@ -540,14 +540,14 @@ export function mapDesignTokensToTheme(
   }
 
   // 4. 映射字体
-  if (tokens.typography.fontFamily) {
+  if (tokens.typography?.fontFamily) {
     if (!mapped.has('--rk-font-sans')) {
       mapped.set('--rk-font-sans', tokens.typography.fontFamily)
     }
   }
 
   // 4b. 映射字号 → --rk-text-*
-  if (tokens.typography.sizes) {
+  if (tokens.typography?.sizes) {
     const sizeMap: Record<string, string> = {
       'micro': '--rk-text-xs', 'caption': '--rk-text-xs', 'xs': '--rk-text-xs',
       'small': '--rk-text-sm', 'sm': '--rk-text-sm',
@@ -561,7 +561,7 @@ export function mapDesignTokensToTheme(
       'h1': '--rk-text-2xl', 'heading-1': '--rk-text-2xl',
       'display': '--rk-text-2xl', 'xxl': '--rk-text-2xl',
     }
-    for (const [key, value] of Object.entries(tokens.typography.sizes)) {
+    for (const [key, value] of Object.entries(tokens.typography!.sizes)) {
       const varName = sizeMap[key]
       if (varName && !mapped.has(varName)) {
         mapped.set(varName, value)
@@ -570,14 +570,14 @@ export function mapDesignTokensToTheme(
   }
 
   // 4c. 映射字重 → --rk-weight-*
-  if (tokens.typography.weights) {
+  if (tokens.typography?.weights) {
     const weightMap: Record<string, string> = {
       'thin': '--rk-weight-normal', 'light': '--rk-weight-normal', 'regular': '--rk-weight-normal',
       'medium': '--rk-weight-medium',
       'semibold': '--rk-weight-semibold',
       'bold': '--rk-weight-bold', 'extrabold': '--rk-weight-bold',
     }
-    for (const [key, value] of Object.entries(tokens.typography.weights)) {
+    for (const [key, value] of Object.entries(tokens.typography!.weights)) {
       const varName = weightMap[key]
       if (varName && !mapped.has(varName)) {
         mapped.set(varName, value)
@@ -586,7 +586,7 @@ export function mapDesignTokensToTheme(
   }
 
   // 5. 映射圆角 → --rk-radius-*
-  if (tokens.radius.scale) {
+  if (tokens.radius?.scale) {
     const scale = tokens.radius.scale
     const radiusMap: Record<string, string> = {
       'xs': '--rk-radius-xs',
@@ -612,7 +612,7 @@ export function mapDesignTokensToTheme(
   }
 
   // 5b. 映射间距 → --rk-space-*
-  if (tokens.spacing.scale) {
+  if (tokens.spacing?.scale) {
     for (const [key, value] of Object.entries(tokens.spacing.scale)) {
       // space-1 → --rk-space-1, etc.
       const numMatch = key.match(/(\d+)/)

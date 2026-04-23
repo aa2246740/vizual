@@ -1,6 +1,8 @@
 import { useEffect, useRef } from 'react'
 import * as echarts from 'echarts'
 import { chartColors, tc } from './theme-colors'
+import { useAnnotationContext } from '../docview/annotation-context'
+import type { AnnotationTarget, ChartDataPoint } from '../docview/types'
 
 // Static imports from mviz — bundled by esbuild, works in browser
 import {
@@ -77,6 +79,10 @@ export function createEChartsBridge(
     const containerRef = useRef<HTMLDivElement>(null)
     const chartRef = useRef<echarts.ECharts | null>(null)
     const observerRef = useRef<ResizeObserver | null>(null)
+    const dataPointClickedRef = useRef(false)
+
+    // 批注上下文 — 在 DocView 内时有值，独立渲染时为 null
+    const annotationCtx = useAnnotationContext()
 
     // Build option synchronously from props (mviz is statically bundled)
     const option = buildOption(chartType, props, buildFallbackOption, mapToMviz)
@@ -106,8 +112,93 @@ export function createEChartsBridge(
       }
     }, [option])
 
+    // 注册 ECharts 点击事件 — 数据点钻取批注
+    useEffect(() => {
+      const chart = chartRef.current
+      if (!chart || !annotationCtx?.onTargetClick) return
+
+      const handler = (params: any) => {
+        if (params.componentType === 'series' && params.seriesIndex !== undefined && params.dataIndex !== undefined) {
+          dataPointClickedRef.current = true
+          const dp: ChartDataPoint = {
+            seriesIndex: params.seriesIndex,
+            dataIndex: params.dataIndex,
+            name: params.name || '',
+            value: params.value ?? '',
+          }
+          const si = annotationCtx.sectionIndex
+          const targetId = `chart-${si}-${params.seriesIndex}-${params.dataIndex}`
+          const label = `${annotationCtx.title || annotationCtx.componentType} › ${dp.name}: ${dp.value}`
+          const target: AnnotationTarget = {
+            sectionIndex: si,
+            targetType: 'chart',
+            label,
+            targetId,
+            chartDataPoint: dp,
+          }
+          annotationCtx.onTargetClick(target, containerRef.current!)
+        }
+      }
+      chart.on('click', handler)
+      return () => { chart.off('click', handler) }
+    }, [annotationCtx])
+
+    // 高亮已批注的数据点
+    useEffect(() => {
+      const chart = chartRef.current
+      if (!chart || !annotationCtx?.annotations) return
+
+      chart.dispatchAction({ type: 'downplay' })
+      const chartAnns = annotationCtx.annotations.filter(a =>
+        a.target?.targetType === 'chart' &&
+        a.target?.sectionIndex === annotationCtx.sectionIndex &&
+        a.target?.chartDataPoint &&
+        a.status !== 'orphaned'
+      )
+      for (const ann of chartAnns) {
+        const dp = ann.target!.chartDataPoint!
+        chart.dispatchAction({
+          type: 'highlight',
+          seriesIndex: dp.seriesIndex,
+          dataIndex: dp.dataIndex,
+        })
+      }
+    }, [annotationCtx?.annotations, annotationCtx?.sectionIndex])
+
+    // 整体图表点击 fallback（点击空白区域）
+    const handleContainerClick = (e: React.MouseEvent) => {
+      if (dataPointClickedRef.current) {
+        dataPointClickedRef.current = false
+        return
+      }
+      if (annotationCtx?.onTargetClick) {
+        const si = annotationCtx.sectionIndex
+        annotationCtx.onTargetClick({
+          sectionIndex: si,
+          targetType: 'chart',
+          label: (annotationCtx.title || annotationCtx.componentType || chartType) as string,
+          targetId: `chart-${si}`,
+        }, e.currentTarget as HTMLElement)
+      }
+    }
+
     const height = typeof props.height === 'number' ? props.height : (props.title ? 320 : 300)
-    return <div ref={containerRef} style={{ width: '100%', height }} />
+    return (
+      <div
+        ref={containerRef}
+        style={{
+          width: '100%',
+          height,
+          ...(annotationCtx ? { cursor: 'pointer' } : {}),
+        }}
+        {...(annotationCtx ? {
+          'data-docview-target': `chart-${annotationCtx.sectionIndex}`,
+          'data-section-index': annotationCtx.sectionIndex,
+          'data-target-type': 'chart',
+          onClick: handleContainerClick,
+        } : {})}
+      />
+    )
   }
   BridgeComponent.displayName = chartType
   return BridgeComponent

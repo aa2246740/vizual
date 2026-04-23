@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>Full 44-Component Test + Export API</title>
+  <title>Full 32-Component Test + Export API</title>
   <style>
     body{font-family:system-ui;background:var(--rk-bg-primary,#0f0f1a);color:var(--rk-text-primary,#e0e0e0);padding:24px;margin:0}
     h2{margin-top:0}
@@ -17,7 +17,7 @@
   </style>
 </head>
 <body>
-  <h2>Full 44-Component Test + Export API</h2>
+  <h2>Full 32-Component Test + Export API</h2>
   <div id="summary">Running...</div>
   <table>
     <thead><tr><th>#</th><th>Component</th><th>Status</th><th>Details</th></tr></thead>
@@ -57,7 +57,7 @@
     Vizual.registerTheme(claudeL.name, claudeL);
     Vizual.setGlobalTheme('claude');
 
-    // All 42 registered components with correct data format
+    // Retained components (17 simple ones removed in architecture refactor)
     var tests = [
       // === 19 Chart Components (mviz bridge via ECharts) ===
       { type: 'BarChart', category: 'chart', props: { title: 'Sales', x: 'quarter', y: 'revenue', data: [{quarter:'Q1',revenue:120},{quarter:'Q2',revenue:200},{quarter:'Q3',revenue:150},{quarter:'Q4',revenue:180}] } },
@@ -91,33 +91,18 @@
       { type: 'RadarChart', category: 'chart', props: { title: 'Skills', indicators: [{name:'Speed',max:100},{name:'Power',max:100},{name:'Range',max:100},{name:'Efficiency',max:100},{name:'Safety',max:100}], series: [{name:'Car A',values:[85,70,90,60,80]},{name:'Car B',values:[60,85,70,90,65]}] } },
       { type: 'MermaidDiagram', category: 'chart', props: { code: 'graph LR\n  A-->B\n  B-->C' } },
 
-      // === 8 UI Components (mviz bridge, non-chart) ===
-      { type: 'BigValue', category: 'ui', props: { title: 'Revenue', value: '$12.3M', trend: 'up', change: '+15%' } },
-      { type: 'Delta', category: 'ui', props: { value: '+12%', direction: 'up' } },
-      { type: 'Alert', category: 'ui', props: { type: 'success', message: 'Operation completed successfully' } },
-      { type: 'Note', category: 'ui', props: { content: 'This is an important note about the data shown above.' } },
-      { type: 'TextBlock', category: 'ui', props: { content: 'This is a text paragraph with some important information.' } },
-      { type: 'TextArea', category: 'ui', props: { content: 'Multi-line text content\nthat spans multiple lines\nfor display purposes.' } },
+      // === Data Components ===
       { type: 'DataTable', category: 'ui', props: { title: 'Users', columns: [{key:'name',label:'Name'},{key:'age',label:'Age'}], data: [{name:'Alice',age:30},{name:'Bob',age:25}] } },
-      { type: 'EmptySpace', category: 'ui', props: { height: 50 } },
 
-      // === 11 Business Components ===
+      // === Business Components ===
       { type: 'Timeline', category: 'business', props: { title: 'History', events: [{date:'2024-01-01',title:'Start',description:'Project kick-off'},{date:'2024-02-01',title:'MVP',description:'First release'}] } },
       { type: 'Kanban', category: 'business', props: { title: 'Sprint', columns: [{id:'todo',title:'To Do',cards:[{id:1,title:'Task A'}]},{id:'done',title:'Done',cards:[]}] } },
       { type: 'GanttChart', category: 'business', props: { title: 'Timeline', tasks: [{name:'Design',start:'2024-01-01',end:'2024-01-15'},{name:'Build',start:'2024-01-10',end:'2024-02-01'}] } },
       { type: 'OrgChart', category: 'business', props: { title: 'Team', nodes: [{id:1,name:'CEO',children:[{id:2,name:'CTO'},{id:3,name:'CFO'}]}] } },
       { type: 'KpiDashboard', category: 'business', props: { title: 'Dashboard', metrics: [{label:'Revenue',value:'$1.2M',trend:'up',trendValue:'+15%'},{label:'Users',value:'45K',trend:'up',trendValue:'+8%'}] } },
-      { type: 'BudgetReport', category: 'business', props: { title: 'Budget', categories: [{name:'Engineering',budget:500,actual:480},{name:'Marketing',budget:300,actual:320}] } },
-      { type: 'FeatureTable', category: 'business', props: { title: 'Features', products: ['Basic','Pro','Enterprise'], features: [{name:'Auth',values:[true,true,true]},{name:'SSO',values:[false,true,true]}] } },
       { type: 'AuditLog', category: 'business', props: { title: 'Log', entries: [{time:'10:00',user:'Alice',action:'Created',target:'Report A'},{time:'10:05',user:'Bob',action:'Updated',target:'Report B'}] } },
-      { type: 'JsonViewer', category: 'business', props: { data: { name: 'test', value: 42, nested: { a: 1 } } } },
-      { type: 'CodeBlock', category: 'business', props: { language: 'javascript', code: 'const x = 42;\nconsole.log(x);' } },
-      { type: 'FormView', category: 'business', props: { title: 'Contact', fields: [{label:'Email',value:'alice@example.com',type:'email'},{label:'Message',value:'Hello, I have a question.'},{label:'Status',value:true,type:'boolean'},{label:'Website',value:'https://example.com',type:'url'}] } },
 
-      // === 4 Input Components ===
-      { type: 'InputText', category: 'input', props: { label: 'Name', placeholder: 'Enter your name' } },
-      { type: 'InputSelect', category: 'input', props: { label: 'Color', options: [{label:'Red',value:'red'},{label:'Blue',value:'blue'}] } },
-      { type: 'InputFile', category: 'input', props: { label: 'Upload', accept: '.png,.jpg' } },
+      // === Input Components ===
       { type: 'FormBuilder', category: 'input', props: { title: 'Survey', fields: [
         {name:'satisfaction',label:'How satisfied?',type:'select',options:['Very','Somewhat','Not'],defaultValue:'Somewhat'},
         {name:'recommend',label:'Would recommend?',type:'radio',options:['Yes','No','Maybe']},
@@ -131,15 +116,44 @@
         {name:'rating',label:'Overall rating',type:'rating',max:5,defaultValue:4},
       ] } },
 
-      // === 2 New Components (v1.1) ===
-      { type: 'ProgressBar', category: 'ui', props: { title: 'Upload', value: 72, variant: 'default', size: 'md', striped: true } },
-      { type: 'TreeView', category: 'ui', props: { title: 'Files', selectable: true, data: [
-        {id:'src',label:'src',expanded:true,children:[
-          {id:'cmp',label:'components',children:[{id:'pb',label:'progress-bar.tsx'},{id:'tv',label:'tree-view.tsx'}]},
-          {id:'core',label:'core',children:[{id:'exp',label:'export.ts'}]}
-        ]},
-        {id:'pkg',label:'package.json'}
-      ] } },
+      // === 3 Layout Components ===
+      { type: 'GridLayout', category: 'layout', props: { columns: 2, gap: 12 }, childSpec: function(rootId) {
+        return {
+          root: rootId,
+          elements: (function() {
+            var els = {};
+            els[rootId] = { type: 'GridLayout', props: { columns: 2, gap: 12 }, children: ['g1','g2','g3','g4'] };
+            els['g1'] = { type: 'BarChart', props: { title: 'Revenue', x: 'q', y: 'v', data: [{q:'Q1',v:120},{q:'Q2',v:200}] }, children: [] };
+            els['g2'] = { type: 'PieChart', props: { title: 'Share', category: 'n', value: 'v', data: [{n:'A',v:60},{n:'B',v:40}] }, children: [] };
+            els['g3'] = { type: 'LineChart', props: { title: 'Trend', x: 'm', y: 'v', data: [{m:'Jan',v:30},{m:'Feb',v:45}] }, children: [] };
+            els['g4'] = { type: 'SparklineChart', props: { x: 'd', y: 'p', data: [{d:1,p:10},{d:2,p:15},{d:3,p:12}] }, children: [] };
+            return els;
+          })()
+        };
+      }},
+      { type: 'SplitLayout', category: 'layout', props: { direction: 'horizontal', ratio: 40, gap: 8 }, childSpec: function(rootId) {
+        return {
+          root: rootId,
+          elements: (function() {
+            var els = {};
+            els[rootId] = { type: 'SplitLayout', props: { direction: 'horizontal', ratio: 40, gap: 8 }, children: ['s1','s2'] };
+            els['s1'] = { type: 'BarChart', props: { title: 'Sales', x: 'q', y: 'v', data: [{q:'Q1',v:100},{q:'Q2',v:150}] }, children: [] };
+            els['s2'] = { type: 'PieChart', props: { title: 'Share', category: 'n', value: 'v', data: [{n:'A',v:60},{n:'B',v:40}] }, children: [] };
+            return els;
+          })()
+        };
+      }},
+      { type: 'HeroLayout', category: 'layout', props: { height: 120, background: 'gradient', align: 'center' }, childSpec: function(rootId) {
+        return {
+          root: rootId,
+          elements: (function() {
+            var els = {};
+            els[rootId] = { type: 'HeroLayout', props: { height: 120, background: 'gradient', align: 'center' }, children: ['h1'] };
+            els['h1'] = { type: 'AuditLog', props: { title: 'Welcome', entries: [{time:'Now',user:'Vizual',action:'Launched',target:'AI-powered data visualization'}] }, children: [] };
+            return els;
+          })()
+        };
+      }},
     ];
 
     var PASS_COUNT = 0, FAIL_COUNT = 0, SKIP_COUNT = 0;
@@ -155,7 +169,12 @@
       document.body.appendChild(div);
 
       try {
-        Vizual.renderSpec({ root: 'm', elements: { m: { type: test.type, props: test.props, children: [] } } }, div);
+        if (test.childSpec) {
+          // Layout components: use flat element map with ID references
+          Vizual.renderSpec(test.childSpec('m'), div);
+        } else {
+          Vizual.renderSpec({ root: 'm', elements: { m: { type: test.type, props: test.props, children: [] } } }, div);
+        }
       } catch(e) { /* caught */ }
 
       setTimeout(function() {
@@ -202,6 +221,16 @@
         return { pass: false, detail: 'No table (' + htmlLen + ')' };
       }
 
+      // Layout components: grid/flex CSS + child content
+      var layoutTypes = ['GridLayout', 'SplitLayout', 'HeroLayout'];
+      if (layoutTypes.indexOf(t) !== -1) {
+        var hasGrid = html.indexOf('grid') !== -1;
+        var hasFlex = html.indexOf('flex') !== -1;
+        if ((hasGrid || hasFlex) && htmlLen > 100) return { pass: true, detail: 'Layout rendered (' + htmlLen + ')' };
+        if (htmlLen > 100) return { pass: true, detail: 'Content present (' + htmlLen + ')' };
+        return { pass: false, detail: 'Empty/missing (' + htmlLen + ')' };
+      }
+
       // Everything else: meaningful HTML content
       if (htmlLen > 30 && hasText) return { pass: true, detail: 'Content OK (' + htmlLen + ')' };
       if (htmlLen > 30) return { pass: true, detail: 'HTML present (' + htmlLen + ')' };
@@ -237,7 +266,7 @@
           .catch(function(err) { console.error('Export PNG failed:', err); });
       });
 
-      // After 44-component test, launch theme + export tests
+      // After component test, launch theme + export tests
       setTimeout(initThemeTest, 300);
       setTimeout(initExportTest, 600);
     }
@@ -474,7 +503,7 @@
       // Helper: create slot with label
       function slot(label, type, props, wide) {
         var wrap = document.createElement('div');
-        wrap.style.cssText = 'border:1px solid var(--rk-border-subtle);border-radius:var(--rk-radius-md,8px);overflow:hidden' + (wide ? ';grid-column:1/-1' : '');
+        wrap.style.cssText = 'border:1px solid var(--rk-border-subtle);border-radius:var(--rk-radius-md,8px);overflow:visible' + (wide ? ';grid-column:1/-1' : '');
         var lbl = document.createElement('div');
         lbl.style.cssText = 'font-size:10px;color:var(--rk-text-tertiary);padding:4px 8px;background:var(--rk-bg-secondary);border-bottom:1px solid var(--rk-border-subtle)';
         lbl.textContent = label;
@@ -556,33 +585,25 @@
       grid.appendChild(slot('Timeline — ' + n + ' events', 'Timeline',
         { title:'Project History', events: events(n) }));
 
-      var features = function(count) {
-        var names = ['Auth','SSO','RBAC','API','Webhooks','Analytics','Export','Import','Audit','Backup','Restore','Encryption'];
-        var feats = [];
+      var logEntries = function(count) {
+        var actions = ['Created','Updated','Deleted','Reviewed','Deployed','Merged','Approved','Rejected','Archived','Restored','Published','Scheduled'];
+        var entries = [];
         for (var i = 0; i < count && i < 12; i++) {
-          feats.push({name:names[i], values:[i%3===0, i%2===0 || i%3===0, true]});
+          entries.push({time:String(9+i).padStart(2,'0')+':00', user:'User ' + String.fromCharCode(65+i), action:actions[i%actions.length], target:'Resource ' + (i+1)});
         }
-        return feats;
+        return entries;
       };
-      grid.appendChild(slot('FeatureTable — ' + n + ' features', 'FeatureTable',
-        { title:'Plan Comparison', products:['Basic','Pro','Enterprise'], features: features(n) }));
+      grid.appendChild(slot('AuditLog — ' + n + ' entries (semantic colors)', 'AuditLog',
+        { title:'Activity Log', entries: logEntries(n) }));
 
-      grid.appendChild(slot('Alert — semantic colors', 'Alert',
-        { type:'success', message:'Operation completed — verifying semantic color tokens' }));
+      grid.appendChild(slot('GanttChart — schedule (radius/spacing)', 'GanttChart',
+        { title:'Project Schedule', tasks: [{name:'Design',start:'2024-01-01',end:'2024-01-15'},{name:'Build',start:'2024-01-10',end:'2024-02-01'},{name:'Test',start:'2024-01-25',end:'2024-02-15'}] }));
 
-      // New components row
-      grid.appendChild(slot('ProgressBar — multi-segment', 'ProgressBar',
-        { title:'Resource Allocation', segments:[
-          {value:40,label:'CPU',color:'#667eea'},{value:25,label:'Memory',color:'#10b981'},{value:15,label:'GPU',color:'#f59e0b'}
-        ] }));
-      grid.appendChild(slot('TreeView — selectable', 'TreeView',
-        { title:'Project Files', selectable:true, data:[
-          {id:'s',label:'src',icon:'📁',expanded:true,children:[
-            {id:'c',label:'components',children:[{id:'a',label:'progress-bar'},{id:'b',label:'tree-view'},{id:'d',label:'kanban'}]},
-            {id:'m',label:'mviz-bridge',children:[{id:'e',label:'bar-chart'},{id:'f',label:'map'},{id:'g',label:'line'}]}
-          ]},
-          {id:'t',label:'tests',icon:'🧪',badge:12}
-        ] }));
+      // Additional chart row
+      grid.appendChild(slot('ScatterChart — correlation', 'ScatterChart',
+        { title:'Height vs Weight', x:'height', y:'weight', data:[{height:160,weight:50},{height:170,weight:65},{height:180,weight:80},{height:155,weight:48},{height:175,weight:72}] }));
+      grid.appendChild(slot('OrgChart — hierarchy', 'OrgChart',
+        { title:'Team Structure', nodes:[{id:1,name:'CEO',children:[{id:2,name:'CTO'},{id:3,name:'CFO'},{id:4,name:'COO'}]}] }));
     }
 
     // === Export API Test ===
@@ -600,7 +621,7 @@
         btn.onclick = function() {
           statusEl.textContent = 'Exporting PNG...';
           statusEl.style.color = 'var(--rk-warning)';
-          Vizual.downloadPNG(document.body, { filename: 'vizual-all-44', scale: 2 }).then(function() {
+          Vizual.downloadPNG(document.body, { filename: 'vizual-all-29', scale: 2 }).then(function() {
             statusEl.textContent = 'PNG downloaded!';
             statusEl.style.color = 'var(--rk-success)';
           }).catch(function(e) {

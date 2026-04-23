@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>Scenario 2: Interactive Chart (vizual + livekit)</title>
+<style>body{font-family:system-ui;background:#0f1117;color:#e2e8f0;padding:24px}h2{margin-top:0}.pass{color:#10b981}.fail{color:#ef4444}</style>
+</head><body>
+<h2>Scenario 2: Interactive Chart Tuning (vizual + livekit)</h2>
+<p>User: "画个柱状图，但我想能拖参数调一下堆叠/水平/数据量"</p>
+<div id="result" style="margin:20px 0"></div>
+<div id="status"></div>
+<script src="../dist/vizual.standalone.js"></script>
+<script>
+(function() {
+  const log = (msg, ok) => {
+    document.getElementById('status').innerHTML += `<div class="${ok ? 'pass' : 'fail'}">${ok ? '✓' : '✗'} ${msg}</div>`;
+  };
+
+  // AI uses livekit skill: InteractivePlayground wrapping a BarChart (vizual skill)
+  // Correct schema: component: { type, props } + controls with name + targetProp
+  const spec = {
+    root: 'main',
+    elements: {
+      main: {
+        type: 'InteractivePlayground',
+        props: {
+          type: 'interactive_playground',
+          title: 'BarChart 参数调试',
+          description: '通过控件实时调整柱状图参数',
+          component: {
+            type: 'BarChart',
+            props: {
+              type: 'bar',
+              x: 'category',
+              y: 'value',
+              data: [
+                { category: 'A', value: 100 },
+                { category: 'B', value: 200 },
+                { category: 'C', value: 150 },
+                { category: 'D', value: 280 },
+                { category: 'E', value: 190 },
+                { category: 'F', value: 230 }
+              ]
+            }
+          },
+          controls: [
+            { name: 'horizontal', label: '水平方向', type: 'toggle', defaultValue: false, targetProp: 'horizontal' },
+            { name: 'stacked', label: '堆叠模式', type: 'toggle', defaultValue: false, targetProp: 'stacked' },
+            { name: 'barWidth', label: '柱宽', type: 'slider', min: 20, max: 80, step: 5, defaultValue: 40, targetProp: 'barWidth' }
+          ],
+          layout: 'side-by-side'
+        },
+        children: []
+      }
+    }
+  };
+
+  const container = document.getElementById('result');
+  try {
+    Vizual.renderSpec(spec, container);
+    log('vizual + livekit: InteractivePlayground rendered', true);
+
+    setTimeout(() => {
+      // Check chart canvas exists (wrapped component rendered)
+      const canvas = container.querySelector('canvas');
+      log('Wrapped BarChart rendered inside playground', !!canvas);
+
+      // Check control panel toggle button exists (gear icon)
+      const toggleBtn = container.querySelector('button');
+      log('Control panel toggle button exists', !!toggleBtn);
+
+      // Click toggle to expand controls, then verify controls render
+      if (toggleBtn) {
+        toggleBtn.click();
+        setTimeout(() => {
+          const sliders = container.querySelectorAll('input[type="range"]');
+          // Toggle controls are custom div switches (not <input type="checkbox">)
+          // They have a parent div with cursor:pointer + a round child thumb (border-radius:50%)
+          const toggleSwitches = container.querySelectorAll('div[style*="border-radius: 11px"]');
+          const roundThumbs = container.querySelectorAll('div[style*="border-radius: 50%"]');
+          log('Slider control rendered after panel expand', sliders.length > 0);
+          log('Toggle controls rendered after panel expand (custom switch)', roundThumbs.length >= 2);
+        }, 300);
+      }
+    }, 800);
+  } catch(e) {
+    log('Render failed — ' + e.message, false);
+  }
+})();
+</script>
+</body></html>

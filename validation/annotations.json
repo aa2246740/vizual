@@ -1,0 +1,58 @@
+{
+  "annotations": [
+    {
+      "id": "ann_1776853581225_1",
+      "text": "页面加载速度",
+      "note": "换个指标",
+      "color": "#fbbf24",
+      "target": {
+        "sectionIndex": 3,
+        "targetType": "kpi",
+        "label": "页面加载速度",
+        "targetId": "kpi-3-0"
+      },
+      "sectionContext": {
+        "sectionIndex": 3,
+        "sectionType": "kpi",
+        "contentSummary": "页面加载速度: 1.2s: -40%, 用户满意度: 92分: +12分, DAU: 85.6万: +23%, 转化率: 5.8%: +1.2%"
+      }
+    },
+    {
+      "id": "ann_1776853597203_2",
+      "text": "页面加载时间趋势（秒）",
+      "note": "用红色的折线图。",
+      "color": "#fbbf24",
+      "target": {
+        "sectionIndex": 6,
+        "targetType": "chart",
+        "label": "页面加载时间趋势（秒）",
+        "targetId": "chart-6"
+      },
+      "sectionContext": {
+        "sectionIndex": 6,
+        "sectionType": "chart",
+        "title": "页面加载时间趋势（秒）",
+        "contentSummary": "页面加载时间趋势（秒） (chart), 1 series, 6 data points"
+      }
+    },
+    {
+      "id": "ann_1776853610792_3",
+      "text": "Row 1, Col 2",
+      "note": "一百人",
+      "color": "#fbbf24",
+      "target": {
+        "sectionIndex": 8,
+        "targetType": "table",
+        "label": "Row 1, Col 2",
+        "targetId": "table-8-0-1"
+      },
+      "sectionContext": {
+        "sectionIndex": 8,
+        "sectionType": "table",
+        "title": "各团队 Q2 资源分配",
+        "contentSummary": "Columns: [团队, 人数, 核心任务, 优先级, 进度], 4 rows"
+      }
+    }
+  ],
+  "timestamp": "2026-04-22T10:27:05.223Z"
+}

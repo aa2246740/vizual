@@ -1,6 +1,7 @@
 # Vizual Component Catalog — Complete Reference
 
-This file contains the complete schema for all 43 components.
+This file contains the complete schema for all 32 components.
+Simple display components (KPIs, alerts, notes, text, code, progress bars) are handled by DocView freeform HTML sections instead of dedicated components.
 Read this when you need to generate JSON specs for Vizual.
 
 ---
@@ -24,7 +25,7 @@ All Vizual output follows this structure:
 
 - `root`: the ID of the top-level element
 - `elements`: map of element IDs to their definitions
-- `type`: must match one of the 43 registered component names
+- `type`: must match one of the 32 registered component names
 - `props`: must match the component's Zod schema exactly
 - `children`: array of child element IDs (for composition)
 
@@ -35,8 +36,8 @@ All Vizual output follows this structure:
   "root": "root",
   "elements": {
     "root": {
-      "type": "VerticalLayout",
-      "props": {},
+      "type": "GridLayout",
+      "props": { "type": "grid_layout", "columns": 1 },
       "children": ["header", "chart", "footer"]
     },
     "header": {
@@ -381,79 +382,7 @@ Indicator mode:
 
 ---
 
-## UI Components (8)
-
-### BigValue
-**type value:** `"big_value"`
-
-Large metric display with trend indicator.
-
-| Prop | Type | Required | Description |
-|------|------|----------|-------------|
-| type | `"big_value"` | yes | |
-| title | string | no | label above value |
-| value | string \| number | yes | the main number |
-| prefix | string | no | e.g. "$" |
-| suffix | string | no | e.g. "%", "USD" |
-| trend | `"up"` \| `"down"` \| `"flat"` | no | direction |
-| trendValue | string | no | e.g. "+15.3%" |
-
-### Delta
-**type value:** `"delta"`
-
-Value change indicator.
-
-| Prop | Type | Required | Description |
-|------|------|----------|-------------|
-| value | string \| number | yes | current value |
-| previousValue | string \| number | no | previous value |
-| label | string | no | |
-| direction | `"up"` \| `"down"` \| `"flat"` | no | |
-| showPercentage | boolean | no | |
-
-### Alert
-**type value:** `"alert"`
-
-Banner with severity level.
-
-| Prop | Type | Required | Description |
-|------|------|----------|-------------|
-| message | string | yes | alert text |
-| severity | `"info"` \| `"warning"` \| `"error"` \| `"success"` | no | |
-
-### Note
-**type value:** `"note"`
-
-Callout with variant style.
-
-| Prop | Type | Required | Description |
-|------|------|----------|-------------|
-| content | string | yes | note text |
-| variant | `"info"` \| `"tip"` \| `"warning"` \| `"important"` | no | |
-
-### TextBlock
-**type value:** `"text"`
-
-Styled text display.
-
-| Prop | Type | Required | Description |
-|------|------|----------|-------------|
-| content | string | yes | text content |
-| fontSize | number | no | |
-| fontWeight | `"normal"` \| `"bold"` \| `"light"` | no | |
-| align | `"left"` \| `"center"` \| `"right"` | no | |
-| color | string | no | CSS color |
-
-### TextArea
-**type value:** `"textarea"`
-
-Monospace multi-line text.
-
-| Prop | Type | Required | Description |
-|------|------|----------|-------------|
-| content | string | yes | text content |
-| title | string | no | |
-| maxLines | number | no | |
+## Data Components (1)
 
 ### DataTable
 **type value:** `"table"`
@@ -467,18 +396,9 @@ Structured data table.
 | striped | boolean | no | alternate row colors |
 | compact | boolean | no | reduce padding |
 
-### EmptySpace
-**type value:** `"empty_space"`
-
-Vertical spacer.
-
-| Prop | Type | Required | Description |
-|------|------|----------|-------------|
-| height | number | no | pixels (default 16) |
-
 ---
 
-## Business Components (11)
+## Complex UI Components (4)
 
 ### Timeline
 **type value:** `"timeline"`
@@ -516,6 +436,10 @@ Organization hierarchy.
 |------|------|----------|-------------|
 | nodes | { id: string, name: string, role?: string, parentId?: string \| null, avatar?: string }[] | yes | |
 
+---
+
+## Business Components (2)
+
 ### KpiDashboard
 **type value:** `"kpi_dashboard"`
 
@@ -526,26 +450,6 @@ Multi-metric dashboard cards.
 | metrics | { label: string, value: string \| number, prefix?: string, suffix?: string, trend?: `"up"` \| `"down"` \| `"flat"`, trendValue?: string, color?: string }[] | yes | |
 | columns | number | no | grid columns |
 
-### BudgetReport
-**type value:** `"budget_report"`
-
-Budget vs actual with variance bars.
-
-| Prop | Type | Required | Description |
-|------|------|----------|-------------|
-| categories | { name: string, budget: number, actual: number, color?: string }[] | yes | |
-| showVariance | boolean | no | |
-
-### FeatureTable
-**type value:** `"feature_table"`
-
-Product comparison matrix.
-
-| Prop | Type | Required | Description |
-|------|------|----------|-------------|
-| products | string[] | yes | column headers |
-| features | { name: string, category?: string, values: (boolean \| string \| number)[] }[] | yes | one value per product |
-
 ### AuditLog
 **type value:** `"audit_log"`
 
@@ -555,142 +459,9 @@ Operation log with timestamps.
 |------|------|----------|-------------|
 | entries | { timestamp: string, user: string, action: string, target?: string, details?: string, severity?: `"info"` \| `"warning"` \| `"error"` }[] | yes | |
 
-### JsonViewer
-**type value:** `"json_viewer"`
-
-Syntax-highlighted JSON display.
-
-| Prop | Type | Required | Description |
-|------|------|----------|-------------|
-| data | any | yes | JSON data to display |
-| expanded | boolean | no | expand all by default |
-| maxDepth | number | no | max expansion depth |
-
-### CodeBlock
-**type value:** `"code_block"`
-
-Code display with syntax hints.
-
-| Prop | Type | Required | Description |
-|------|------|----------|-------------|
-| code | string | yes | source code |
-| language | string | no | language identifier |
-| showLineNumbers | boolean | no | |
-
-### FormView
-**type value:** `"form_view"`
-
-Key-value data display in form layout.
-
-| Prop | Type | Required | Description |
-|------|------|----------|-------------|
-| fields | { label: string, value: any, type?: `"text"` \| `"number"` \| `"date"` \| `"email"` \| `"url"` \| `"boolean"` }[] | yes | |
-| columns | number | no | layout columns |
-
 ---
 
-## Interactive/Input Components (4)
-
-### InputText
-**type value:** `"input_text"`
-
-Single-line text input field.
-
-| Prop | Type | Required | Description |
-|------|------|----------|-------------|
-| type | `"input_text"` | yes | fixed literal |
-| label | string | no | field label |
-| placeholder | string | no | placeholder text |
-| value | string | no | current value |
-| inputType | `"text"` \| `"email"` \| `"password"` \| `"number"` \| `"url"` \| `"tel"` | no | HTML input type (default `"text"`) |
-| disabled | boolean | no | disable input |
-| required | boolean | no | mark as required |
-| description | string | no | help text below input |
-| error | string | no | error message |
-
-```json
-{
-  "type": "input_text",
-  "label": "Email Address",
-  "placeholder": "you@example.com",
-  "inputType": "email",
-  "required": true,
-  "description": "We will never share your email."
-}
-```
-
-### InputSelect
-**type value:** `"input_select"`
-
-Dropdown select input.
-
-| Prop | Type | Required | Description |
-|------|------|----------|-------------|
-| type | `"input_select"` | yes | fixed literal |
-| label | string | no | field label |
-| placeholder | string | no | placeholder text |
-| value | string | no | currently selected value |
-| options | { label: string, value: string }[] | yes | selectable options |
-| disabled | boolean | no | disable select |
-| required | boolean | no | mark as required |
-| description | string | no | help text below select |
-| error | string | no | error message |
-
-```json
-{
-  "type": "input_select",
-  "label": "Department",
-  "placeholder": "Select a department",
-  "options": [
-    { "label": "Engineering", "value": "eng" },
-    { "label": "Marketing", "value": "mkt" },
-    { "label": "Sales", "value": "sales" },
-    { "label": "HR", "value": "hr" }
-  ],
-  "required": true
-}
-```
-
-### InputFile
-**type value:** `"input_file"`
-
-File upload input.
-
-| Prop | Type | Required | Description |
-|------|------|----------|-------------|
-| type | `"input_file"` | yes | fixed literal |
-| label | string | no | field label |
-| accept | string | no | accepted file types (e.g. `".png,.jpg"`, `"image/*"`) |
-| multiple | boolean | no | allow multiple file selection |
-| maxFiles | number | no | max number of files (only when `multiple` is true) |
-| disabled | boolean | no | disable input |
-| description | string | no | help text |
-| error | string | no | error message |
-| asBase64 | boolean | no | return file contents as base64 string |
-
-> **Note:** When `multiple` is false or omitted, the component operates in single-file mode and returns one file. When `multiple` is true, it accepts up to `maxFiles` files.
-
-```json
-{
-  "type": "input_file",
-  "label": "Upload Avatar",
-  "accept": "image/png,image/jpeg",
-  "description": "PNG or JPEG, max 2MB.",
-  "asBase64": true
-}
-```
-
-Multi-file mode:
-```json
-{
-  "type": "input_file",
-  "label": "Attach Documents",
-  "accept": ".pdf,.doc,.docx",
-  "multiple": true,
-  "maxFiles": 5,
-  "description": "Upload up to 5 documents."
-}
-```
+## Input Components (1)
 
 ### FormBuilder
 **type value:** `"form_builder"`
@@ -852,7 +623,7 @@ Interactive document with sections (text, headings, charts, KPIs, tables, callou
     { "type": "kpi", "content": "", "data": { "metrics": [{"label":"Revenue","value":"$12.3M","trend":"up","trendValue":"+15%"}] } },
     { "type": "table", "content": "", "data": { "columns": [{"key":"name","label":"Name"},{"key":"value","label":"Value"}], "data": [{"name":"Q1","value":120},{"name":"Q2","value":200}] } },
     { "type": "callout", "content": "Note: All figures are preliminary and subject to audit." },
-    { "type": "component", "content": "", "data": { "componentType": "BigValue", "value": "1.2M", "trend": "up" } }
+    { "type": "component", "content": "", "data": { "componentType": "KpiDashboard", "metrics": [{"label":"Revenue","value":"$1.2M","trend":"up"}] } }
   ],
   "showPanel": true,
   "panelPosition": "right"
@@ -870,6 +641,21 @@ Interactive document with sections (text, headings, charts, KPIs, tables, callou
 | onAnnotationsChange | function | no | Callback when annotations change |
 | onAction | function | no | Callback for annotation actions |
 
+**Section fields** (all section types support these optional fields):
+- `aiContext: string` — AI-written semantic description for annotation context. Helps the AI agent understand what a section contains when processing annotations.
+- `layout: "default" \| "hero" \| "split" \| "grid" \| "banner" \| "card" \| "compact"` — visual layout variant for the section.
+
+**Layout variants:**
+| Layout | Effect |
+|--------|--------|
+| `default` | No special wrapping |
+| `hero` | Gradient background, centered text, min-height 180px |
+| `split` | 1:1 two-column grid |
+| `grid` | N-column grid (KPI sections default to 3 columns) |
+| `banner` | Accent left border + secondary background |
+| `card` | Elevated card with shadow |
+| `compact` | Dense layout, small text |
+
 **Section Types:**
 
 | type | content | data | Description |
@@ -881,16 +667,29 @@ Interactive document with sections (text, headings, charts, KPIs, tables, callou
 | table | "" | { columns: [{key, label}], data: [...] } | Data table |
 | callout | string | - | Highlighted callout note |
 | component | "" | { componentType, ...props } | Embedded vizual component |
+| markdown | string (markdown content) | - | Renders markdown with headings, lists, code blocks, tables, blockquotes, links, images. Sanitized via DOMPurify with theme-aware scoped CSS. |
+| freeform | string (HTML with inline CSS) | - | Renders arbitrary HTML with inline `style` allowed. Blocks `class` attribute and event handlers. Semantic elements (h1-h6, section, article, aside, header, footer, figure, details) auto-receive annotation targeting. |
 
 **Annotation Actions (via onAction callback):**
 
 | Action | Trigger | Params |
 |--------|---------|--------|
-| annotationAdded | User creates annotation | { annotation } |
+| annotationAdded | User creates annotation | { annotation, sectionContexts: Map<sectionIndex, SectionContext>, sectionContext?: SectionContext } |
 | annotationDeleted | User deletes annotation | { annotation } |
 | annotationClicked | User clicks annotation | { annotation } |
-| requestRevision | User submits single annotation for revision | { annotationId, text, note } |
-| batchSubmit | User submits all draft annotations | { annotations: [{id, text, note, color}] } |
+| requestRevision | User submits single annotation for revision | { annotationId, text, note, target, sectionContext?: SectionContext } |
+| batchSubmit | User submits all draft annotations | { annotations: [{id, text, note, color, target, sectionContext?}] } |
+
+**SectionContext structure** (included in annotation payloads):
+```typescript
+interface SectionContext {
+  sectionIndex: number   // 0-based index in sections array
+  sectionType: string    // "heading", "text", "chart", "kpi", "markdown", etc.
+  title?: string         // heading text if applicable
+  aiContext?: string     // the aiContext field from the section
+  contentSummary: string // auto-generated summary, e.g. "Revenue: $12.3M (+15%)"
+}
+```
 
 **Annotation Lifecycle:**
 - draft -> active (submitted for revision)
@@ -908,3 +707,66 @@ Interactive document with sections (text, headings, charts, KPIs, tables, callou
 - `AnnotationPanel` — sidebar panel for annotation management
 - `AnnotationInput` — popup for creating new annotations
 - `SectionRenderer` — renders sections array into React elements
+
+---
+
+## Layout Components (3)
+
+### GridLayout
+**type value:** `"grid_layout"`
+
+CSS Grid container for arranging child components in a grid.
+
+| Prop | Type | Required | Description |
+|------|------|----------|-------------|
+| type | `"grid_layout"` | yes | fixed literal |
+| columns | number | no | number of grid columns (default 3) |
+| gap | number | no | gap between items in pixels (default 16) |
+| columnWidths | string[] | no | explicit column widths (CSS values) |
+
+```json
+{
+  "type": "GridLayout",
+  "props": { "type": "grid_layout", "columns": 3, "gap": 16 },
+  "children": ["card1", "card2", "card3"]
+}
+```
+
+### SplitLayout
+**type value:** `"split_layout"`
+
+Two-pane layout with configurable direction and ratio.
+
+| Prop | Type | Required | Description |
+|------|------|----------|-------------|
+| type | `"split_layout"` | yes | fixed literal |
+| direction | `"horizontal"` \| `"vertical"` | no | split direction (default horizontal) |
+| ratio | number | no | split ratio 10-90, percentage for first pane (default 50) |
+
+```json
+{
+  "type": "SplitLayout",
+  "props": { "type": "split_layout", "direction": "horizontal", "ratio": 40 },
+  "children": ["leftPane", "rightPane"]
+}
+```
+
+### HeroLayout
+**type value:** `"hero_layout"`
+
+Hero banner section with configurable height and background.
+
+| Prop | Type | Required | Description |
+|------|------|----------|-------------|
+| type | `"hero_layout"` | yes | fixed literal |
+| height | number | no | hero section height in pixels (default 240) |
+| background | `"gradient"` \| `"solid"` \| `"transparent"` | no | background style (default gradient) |
+| align | `"left"` \| `"center"` \| `"right"` | no | content alignment (default center) |
+
+```json
+{
+  "type": "HeroLayout",
+  "props": { "type": "hero_layout", "height": 300, "background": "gradient", "align": "center" },
+  "children": ["heroContent"]
+}
+```

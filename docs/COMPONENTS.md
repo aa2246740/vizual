@@ -1,12 +1,14 @@
 # 组件参考文档 — AI RenderKit
 
-完整列出 43 个组件的 Schema、props 说明和使用示例。
+完整列出 32 个注册组件的 Schema、props 说明和使用示例。
 
-> 所有图表组件共享以下可选 props：`title?: string`、`theme?: 'light' | 'dark'`、`height?: number`
+> 所有图表组件（Charts 19 种）共享以下可选 props：`title?: string`、`theme?: 'light' | 'dark'`、`height?: number`
 
 ---
 
 ## Charts (19) — ECharts via mviz Bridge
+
+所有图表组件基于 ECharts，通过 mviz Bridge 封装。每个组件接受 `type`（固定字面量）、`data`（数据数组）及图表特有 props。
 
 ### BarChart
 
@@ -37,6 +39,7 @@
 | stacked | boolean | 否 | 是否堆叠 |
 | horizontal | boolean | 否 | 是否横向 |
 | theme | `"light"` \| `"dark"` | 否 | 主题 |
+| height | number | 否 | 图表高度 |
 
 ### LineChart
 
@@ -57,12 +60,15 @@
 
 | Prop | 类型 | 必填 | 说明 |
 |------|------|------|------|
-| type | `"line"` | 是 | |
+| type | `"line"` | 是 | 固定值 |
+| title | string | 否 | 图表标题 |
 | x | string | 否 | X 轴字段 |
 | y | string \| string[] | 否 | Y 轴字段 |
-| data | object[] | 是 | 数据 |
+| data | object[] | 是 | 数据数组 |
 | smooth | boolean | 否 | 平滑曲线 |
 | multiSeries | boolean | 否 | 多系列模式 |
+| theme | `"light"` \| `"dark"` | 否 | 主题 |
+| height | number | 否 | 图表高度 |
 
 ### AreaChart
 
@@ -83,9 +89,15 @@
 
 | Prop | 类型 | 必填 | 说明 |
 |------|------|------|------|
-| type | `"area"` | 是 | |
+| type | `"area"` | 是 | 固定值 |
+| title | string | 否 | 图表标题 |
+| x | string | 否 | X 轴字段 |
+| y | string \| string[] | 否 | Y 轴字段 |
+| data | object[] | 是 | 数据数组 |
 | stacked | boolean | 否 | 堆叠面积 |
 | smooth | boolean | 否 | 平滑曲线 |
+| theme | `"light"` \| `"dark"` | 否 | 主题 |
+| height | number | 否 | 图表高度 |
 
 ### PieChart
 
@@ -106,10 +118,16 @@
 
 | Prop | 类型 | 必填 | 说明 |
 |------|------|------|------|
-| type | `"pie"` | 是 | |
+| type | `"pie"` | 是 | 固定值 |
+| title | string | 否 | 图表标题 |
+| x | string | 否 | 分类字段（替代 label） |
+| y | string \| string[] | 否 | 数值字段（替代 value） |
+| data | object[] | 是 | 数据数组 |
 | value | string | 否 | 数值字段 |
 | label | string | 否 | 标签字段 |
 | donut | boolean | 否 | 环形图模式 |
+| theme | `"light"` \| `"dark"` | 否 | 主题 |
+| height | number | 否 | 图表高度 |
 
 ### ScatterChart
 
@@ -130,9 +148,15 @@
 
 | Prop | 类型 | 必填 | 说明 |
 |------|------|------|------|
-| type | `"scatter"` | 是 | |
+| type | `"scatter"` | 是 | 固定值 |
+| title | string | 否 | 图表标题 |
+| x | string | 否 | X 轴字段 |
+| y | string \| string[] | 否 | Y 轴字段 |
+| data | object[] | 是 | 数据数组 |
 | size | string | 否 | 气泡大小字段 |
 | groupField | string | 否 | 分组字段 |
+| theme | `"light"` \| `"dark"` | 否 | 主题 |
+| height | number | 否 | 图表高度 |
 
 ### BubbleChart
 
@@ -150,6 +174,18 @@
 }
 ```
 
+| Prop | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| type | `"bubble"` | 是 | 固定值 |
+| title | string | 否 | 图表标题 |
+| x | string | 否 | X 轴字段 |
+| y | string \| string[] | 否 | Y 轴字段 |
+| data | object[] | 是 | 数据数组 |
+| size | string | 否 | 气泡大小字段 |
+| groupField | string | 否 | 分组字段 |
+| theme | `"light"` \| `"dark"` | 否 | 主题 |
+| height | number | 否 | 图表高度 |
+
 ### BoxplotChart
 
 箱线图。
@@ -166,6 +202,18 @@
 }
 ```
 
+| Prop | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| type | `"boxplot"` | 是 | 固定值 |
+| title | string | 否 | 图表标题 |
+| x | string | 否 | X 轴字段 |
+| y | string \| string[] | 否 | Y 轴字段 |
+| data | object[] | 是 | 数据数组 |
+| valueField | string | 否 | 数值字段 |
+| groupField | string | 否 | 分组字段 |
+| theme | `"light"` \| `"dark"` | 否 | 主题 |
+| height | number | 否 | 图表高度 |
+
 ### HistogramChart
 
 直方图。
@@ -180,6 +228,18 @@
   ]
 }
 ```
+
+| Prop | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| type | `"histogram"` | 是 | 固定值 |
+| title | string | 否 | 图表标题 |
+| x | string | 否 | X 轴字段 |
+| y | string \| string[] | 否 | Y 轴字段 |
+| data | object[] | 是 | 数据数组 |
+| value | string | 否 | 统计数值字段 |
+| bins | number | 否 | 分箱数量 |
+| theme | `"light"` \| `"dark"` | 否 | 主题 |
+| height | number | 否 | 图表高度 |
 
 ### WaterfallChart
 
@@ -197,6 +257,18 @@
 }
 ```
 
+| Prop | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| type | `"waterfall"` | 是 | 固定值 |
+| title | string | 否 | 图表标题 |
+| x | string | 否 | X 轴字段 |
+| y | string \| string[] | 否 | Y 轴字段 |
+| data | object[] | 是 | 数据数组 |
+| label | string | 否 | 标签字段 |
+| value | string | 否 | 数值字段 |
+| theme | `"light"` \| `"dark"` | 否 | 主题 |
+| height | number | 否 | 图表高度 |
+
 ### XmrChart
 
 XMR 控制图（过程监控）。
@@ -210,6 +282,17 @@ XMR 控制图（过程监控）。
   ]
 }
 ```
+
+| Prop | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| type | `"xmr"` | 是 | 固定值 |
+| title | string | 否 | 图表标题 |
+| x | string | 否 | X 轴字段 |
+| y | string \| string[] | 否 | Y 轴字段 |
+| data | object[] | 是 | 数据数组 |
+| value | string | 否 | 测量值字段 |
+| theme | `"light"` \| `"dark"` | 否 | 主题 |
+| height | number | 否 | 图表高度 |
 
 ### SankeyChart
 
@@ -230,8 +313,13 @@ XMR 控制图（过程监控）。
 
 | Prop | 类型 | 必填 | 说明 |
 |------|------|------|------|
+| type | `"sankey"` | 是 | 固定值 |
+| title | string | 否 | 图表标题 |
+| data | object[] | 是 | 数据数组 |
 | nodes | { name: string }[] | 否 | 节点列表 |
 | links | { source, target, value }[] | 否 | 连接列表 |
+| theme | `"light"` \| `"dark"` | 否 | 主题 |
+| height | number | 否 | 图表高度 |
 
 ### FunnelChart
 
@@ -250,6 +338,18 @@ XMR 控制图（过程监控）。
 }
 ```
 
+| Prop | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| type | `"funnel"` | 是 | 固定值 |
+| title | string | 否 | 图表标题 |
+| x | string | 否 | X 轴字段 |
+| y | string \| string[] | 否 | Y 轴字段 |
+| data | object[] | 是 | 数据数组 |
+| value | string | 否 | 数值字段 |
+| label | string | 否 | 标签字段 |
+| theme | `"light"` \| `"dark"` | 否 | 主题 |
+| height | number | 否 | 图表高度 |
+
 ### HeatmapChart
 
 热力图。
@@ -266,6 +366,19 @@ XMR 控制图（过程监控）。
 }
 ```
 
+| Prop | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| type | `"heatmap"` | 是 | 固定值 |
+| title | string | 否 | 图表标题 |
+| x | string | 否 | X 轴字段 |
+| y | string \| string[] | 否 | Y 轴字段 |
+| data | object[] | 是 | 数据数组 |
+| xField | string | 否 | X 维度字段 |
+| yField | string | 否 | Y 维度字段 |
+| valueField | string | 否 | 数值字段 |
+| theme | `"light"` \| `"dark"` | 否 | 主题 |
+| height | number | 否 | 图表高度 |
+
 ### CalendarChart
 
 日历热力图。
@@ -281,6 +394,19 @@ XMR 控制图（过程监控）。
   ]
 }
 ```
+
+| Prop | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| type | `"calendar"` | 是 | 固定值 |
+| title | string | 否 | 图表标题 |
+| x | string | 否 | X 轴字段 |
+| y | string \| string[] | 否 | Y 轴字段 |
+| data | object[] | 是 | 数据数组 |
+| dateField | string | 否 | 日期字段 |
+| valueField | string | 否 | 数值字段 |
+| range | string | 否 | 年份范围（如 "2024"） |
+| theme | `"light"` \| `"dark"` | 否 | 主题 |
+| height | number | 否 | 图表高度 |
 
 ### SparklineChart
 
@@ -299,7 +425,15 @@ XMR 控制图（过程监控）。
 
 | Prop | 类型 | 必填 | 说明 |
 |------|------|------|------|
+| type | `"sparkline"` | 是 | 固定值 |
+| title | string | 否 | 图表标题 |
+| x | string | 否 | X 轴字段 |
+| y | string \| string[] | 否 | Y 轴字段 |
+| data | object[] | 是 | 数据数组 |
 | sparkType | `"line"` \| `"bar"` \| `"pct_bar"` | 否 | 迷你图类型 |
+| value | string | 否 | 数值字段 |
+| theme | `"light"` \| `"dark"` | 否 | 主题 |
+| height | number | 否 | 图表高度 |
 
 ### ComboChart
 
@@ -321,7 +455,14 @@ XMR 控制图（过程监控）。
 
 | Prop | 类型 | 必填 | 说明 |
 |------|------|------|------|
+| type | `"combo"` | 是 | 固定值 |
+| title | string | 否 | 图表标题 |
+| x | string | 否 | X 轴字段 |
+| y | string \| string[] | 否 | Y 轴字段 |
+| data | object[] | 是 | 数据数组 |
 | series | { type: `"bar"` \| `"line"`, y: string }[] | 否 | 混合系列配置 |
+| theme | `"light"` \| `"dark"` | 否 | 主题 |
+| height | number | 否 | 图表高度 |
 
 ### DumbbellChart
 
@@ -340,6 +481,19 @@ XMR 控制图（过程监控）。
 }
 ```
 
+| Prop | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| type | `"dumbbell"` | 是 | 固定值 |
+| title | string | 否 | 图表标题 |
+| x | string | 否 | X 轴字段 |
+| y | string \| string[] | 否 | Y 轴字段 |
+| data | object[] | 是 | 数据数组 |
+| low | string | 否 | 最小值字段 |
+| high | string | 否 | 最大值字段 |
+| groupField | string | 否 | 分组字段 |
+| theme | `"light"` \| `"dark"` | 否 | 主题 |
+| height | number | 否 | 图表高度 |
+
 ### MermaidDiagram
 
 Mermaid 流程图/序列图/甘特图等。
@@ -354,9 +508,11 @@ Mermaid 流程图/序列图/甘特图等。
 
 | Prop | 类型 | 必填 | 说明 |
 |------|------|------|------|
-| type | `"mermaid"` | 是 | |
+| type | `"mermaid"` | 是 | 固定值 |
+| title | string | 否 | 图表标题 |
 | code | string | 是 | Mermaid 语法代码 |
-| theme | `"default"` \| `"dark"` \| `"forest"` \| `"neutral"` | 否 | Mermaid 主题 |
+| theme | `"default"` \| `"dark"` \| `"forest"` \| `"neutral"` | 否 | Mermaid 渲染主题 |
+| height | number | 否 | 图表高度 |
 
 ### RadarChart
 
@@ -384,118 +540,21 @@ Mermaid 流程图/序列图/甘特图等。
 |------|------|------|------|
 | type | `"radar"` | 是 | 固定值 |
 | title | string | 否 | 图表标题 |
-| indicators | { name: string, max?: number }[] | 否 | 维度定义 |
-| series | { name: string, values: number[] }[] | 否 | 数据系列 |
+| indicators | { name: string, max?: number }[] | 否 | 维度定义（indicator 模式） |
+| series | { name?: string, values: number[] }[] | 否 | 数据系列（indicator 模式） |
+| data | object[] | 否 | 数据数组（table 模式） |
 | x | string | 否 | 分类字段（table 模式） |
 | y | string \| string[] | 否 | 数值字段（table 模式） |
-| data | object[] | 否 | 数据数组（table 模式） |
+| theme | `"light"` \| `"dark"` | 否 | 主题 |
+| height | number | 否 | 图表高度 |
 
 ---
 
-## UI Components (8) — 纯 React
-
-### BigValue
-
-大数字指标展示。
-
-```json
-{
-  "type": "big_value",
-  "title": "月活用户",
-  "value": "1.2M",
-  "prefix": "$",
-  "suffix": "USD",
-  "trend": "up",
-  "trendValue": "+15.3%"
-}
-```
-
-| Prop | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| value | string \| number | 是 | 主数值 |
-| prefix | string | 否 | 前缀（如 $） |
-| suffix | string | 否 | 后缀（如 %, USD） |
-| trend | `"up"` \| `"down"` \| `"flat"` | 否 | 趋势方向 |
-| trendValue | string | 否 | 趋势值（如 +15%） |
-
-### Delta
-
-变化量指标。
-
-```json
-{
-  "type": "delta",
-  "value": 150,
-  "previousValue": 120,
-  "label": "月收入",
-  "direction": "up",
-  "showPercentage": true
-}
-```
-
-### Alert
-
-警告横幅。
-
-```json
-{
-  "type": "alert",
-  "message": "系统将于今晚 22:00 维护",
-  "severity": "warning"
-}
-```
-
-| Prop | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| message | string | 是 | 警告内容 |
-| severity | `"info"` \| `"warning"` \| `"error"` \| `"success"` | 否 | 级别 |
-
-### Note
-
-提示便签。
-
-```json
-{
-  "type": "note",
-  "content": "此数据基于 2024 年 Q1 的统计结果",
-  "variant": "tip"
-}
-```
-
-| Prop | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| content | string | 是 | 内容 |
-| variant | `"info"` \| `"tip"` \| `"warning"` \| `"important"` | 否 | 样式变体 |
-
-### TextBlock
-
-文本块。
-
-```json
-{
-  "type": "text",
-  "content": "这是一段重要说明文字",
-  "fontSize": 14,
-  "align": "center"
-}
-```
-
-### TextArea
-
-多行文本（等宽字体）。
-
-```json
-{
-  "type": "textarea",
-  "content": "SELECT * FROM users WHERE active = true",
-  "title": "SQL Query",
-  "maxLines": 10
-}
-```
+## Data Components (1)
 
 ### DataTable
 
-数据表格。
+数据表格，支持排序、分页、紧凑模式。
 
 ```json
 {
@@ -512,21 +571,22 @@ Mermaid 流程图/序列图/甘特图等。
 }
 ```
 
-### EmptySpace
-
-垂直间距。
-
-```json
-{ "type": "empty_space", "height": 24 }
-```
+| Prop | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| type | `"table"` | 是 | 固定值 |
+| title | string | 否 | 表格标题 |
+| columns | { key: string, label?: string, align?: `"left"` \| `"center"` \| `"right"` }[] | 否 | 列定义 |
+| data | object[] | 是 | 数据行数组 |
+| striped | boolean | 否 | 斑马纹 |
+| compact | boolean | 否 | 紧凑模式 |
 
 ---
 
-## Business Components (11) — 自定义 React
+## Business Components (6)
 
 ### Timeline
 
-垂直时间轴。
+垂直时间轴，展示事件序列。
 
 ```json
 {
@@ -540,9 +600,15 @@ Mermaid 流程图/序列图/甘特图等。
 }
 ```
 
+| Prop | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| type | `"timeline"` | 是 | 固定值 |
+| title | string | 否 | 时间轴标题 |
+| events | { date: string, title: string, description?: string }[] | 是 | 事件列表 |
+
 ### Kanban
 
-看板。
+看板，支持多列卡片和优先级标签。
 
 ```json
 {
@@ -566,9 +632,21 @@ Mermaid 流程图/序列图/甘特图等。
 }
 ```
 
+| Prop | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| type | `"kanban"` | 是 | 固定值 |
+| title | string | 否 | 看板标题 |
+| columns | { id: string, title: string, color?: string, cards: Card[] }[] | 是 | 列定义 |
+| Card.id | string | 是 | 卡片唯一标识 |
+| Card.title | string | 是 | 卡片标题 |
+| Card.description | string | 否 | 卡片描述 |
+| Card.tags | string[] | 否 | 标签列表 |
+| Card.assignee | string | 否 | 负责人 |
+| Card.priority | `"low"` \| `"medium"` \| `"high"` | 否 | 优先级 |
+
 ### GanttChart
 
-甘特图。
+甘特图，支持任务依赖和进度显示。
 
 ```json
 {
@@ -583,12 +661,15 @@ Mermaid 流程图/序列图/甘特图等。
 
 | Prop | 类型 | 必填 | 说明 |
 |------|------|------|------|
-| tasks | { id, name, start, end, progress?, color?, dependencies? }[] | 是 | 任务列表 |
-| progress | number (0-100) | 否 | 完成进度 |
+| type | `"gantt"` | 是 | 固定值 |
+| title | string | 否 | 甘特图标题 |
+| tasks | { id: string, name: string, start: string, end: string, progress?: number, color?: string, dependencies?: string[] }[] | 是 | 任务列表 |
+| Task.progress | number (0-100) | 否 | 完成进度百分比 |
+| Task.dependencies | string[] | 否 | 依赖的任务 ID 列表 |
 
 ### OrgChart
 
-组织架构图。
+组织架构图，树形层级展示。
 
 ```json
 {
@@ -602,9 +683,15 @@ Mermaid 流程图/序列图/甘特图等。
 }
 ```
 
+| Prop | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| type | `"org_chart"` | 是 | 固定值 |
+| title | string | 否 | 架构图标题 |
+| nodes | { id: string, name: string, role?: string, parentId?: string \| null, avatar?: string }[] | 是 | 节点列表（parentId 为 null 表示根节点） |
+
 ### KpiDashboard
 
-KPI 仪表盘。
+KPI 仪表盘，网格化展示关键指标。
 
 ```json
 {
@@ -619,43 +706,16 @@ KPI 仪表盘。
 }
 ```
 
-### BudgetReport
-
-预算报表。
-
-```json
-{
-  "type": "budget_report",
-  "title": "2024 年度预算",
-  "showVariance": true,
-  "categories": [
-    { "name": "研发", "budget": 500000, "actual": 480000 },
-    { "name": "市场", "budget": 300000, "actual": 320000 },
-    { "name": "运营", "budget": 200000, "actual": 180000 }
-  ]
-}
-```
-
-### FeatureTable
-
-功能对比表。
-
-```json
-{
-  "type": "feature_table",
-  "title": "套餐对比",
-  "products": ["基础版", "专业版", "企业版"],
-  "features": [
-    { "name": "用户数", "values": [5, 50, "无限"] },
-    { "name": "API 调用", "values": [1000, 50000, "无限"] },
-    { "name": "优先支持", "values": [false, true, true] }
-  ]
-}
-```
+| Prop | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| type | `"kpi_dashboard"` | 是 | 固定值 |
+| title | string | 否 | 仪表盘标题 |
+| columns | number | 否 | 网格列数 |
+| metrics | { label: string, value: string \| number, prefix?: string, suffix?: string, trend?: `"up"` \| `"down"` \| `"flat"`, trendValue?: string, color?: string }[] | 是 | 指标列表 |
 
 ### AuditLog
 
-审计日志。
+审计日志，按时间线展示操作记录。
 
 ```json
 {
@@ -668,149 +728,15 @@ KPI 仪表盘。
 }
 ```
 
-### JsonViewer
-
-JSON 查看器。
-
-```json
-{
-  "type": "json_viewer",
-  "title": "API 响应",
-  "data": { "status": "ok", "count": 42, "items": ["a", "b"] },
-  "expanded": true,
-  "maxDepth": 4
-}
-```
-
-### CodeBlock
-
-代码块。
-
-```json
-{
-  "type": "code_block",
-  "title": "main.py",
-  "code": "def hello():\n    print('Hello World')",
-  "language": "python",
-  "showLineNumbers": true
-}
-```
-
-### FormView
-
-表单/键值对视图。
-
-```json
-{
-  "type": "form_view",
-  "title": "用户信息",
-  "columns": 2,
-  "fields": [
-    { "label": "姓名", "value": "张三", "type": "text" },
-    { "label": "邮箱", "value": "zhang@example.com", "type": "email" },
-    { "label": "入职日期", "value": "2024-01-15", "type": "date" },
-    { "label": "在职", "value": true, "type": "boolean" }
-  ]
-}
-```
-
 | Prop | 类型 | 必填 | 说明 |
 |------|------|------|------|
-| fields | { label, value, type? }[] | 是 | 字段列表 |
-| type | `"text"` \| `"number"` \| `"date"` \| `"email"` \| `"url"` \| `"boolean"` | 否 | 字段类型 |
-| columns | number | 否 | 列数 |
+| type | `"audit_log"` | 是 | 固定值 |
+| title | string | 否 | 日志标题 |
+| entries | { timestamp: string, user: string, action: string, target?: string, details?: string, severity?: `"info"` \| `"warning"` \| `"error"` }[] | 是 | 日志条目列表 |
 
 ---
 
-## Interactive/Input Components (4) — 交互输入组件
-
-### InputText
-
-文本输入框，支持多种输入类型。
-
-```json
-{
-  "type": "InputText",
-  "props": {
-    "label": "姓名",
-    "placeholder": "请输入姓名",
-    "required": true
-  }
-}
-```
-
-| Prop | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| type | `"InputText"` | 是 | 固定值 |
-| label | string | 否 | 输入框标签 |
-| placeholder | string | 否 | 占位文本 |
-| value | string | 否 | 默认值 |
-| inputType | `"text"` \| `"email"` \| `"password"` \| `"number"` \| `"url"` \| `"tel"` | 否 | 输入类型，默认 `text` |
-| disabled | boolean | 否 | 是否禁用 |
-| required | boolean | 否 | 是否必填 |
-| description | string | 否 | 字段描述/提示文字 |
-| error | string | 否 | 错误提示信息 |
-
-### InputSelect
-
-下拉选择框。
-
-```json
-{
-  "type": "InputSelect",
-  "props": {
-    "label": "颜色",
-    "options": [
-      { "label": "红色", "value": "red" },
-      { "label": "蓝色", "value": "blue" }
-    ]
-  }
-}
-```
-
-| Prop | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| type | `"InputSelect"` | 是 | 固定值 |
-| label | string | 否 | 选择框标签 |
-| placeholder | string | 否 | 占位文本 |
-| value | string | 否 | 默认选中值 |
-| options | { label: string, value: string }[] | 是 | 选项列表 |
-| disabled | boolean | 否 | 是否禁用 |
-| required | boolean | 否 | 是否必填 |
-| description | string | 否 | 字段描述/提示文字 |
-| error | string | 否 | 错误提示信息 |
-
-### InputFile
-
-文件上传组件，支持单文件和多文件模式。
-
-```json
-{
-  "type": "InputFile",
-  "props": {
-    "label": "附件上传",
-    "accept": ".pdf,.doc,.docx",
-    "maxFiles": 3,
-    "description": "支持 PDF、Word 文档，最多 3 个文件"
-  }
-}
-```
-
-| Prop | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| type | `"InputFile"` | 是 | 固定值 |
-| label | string | 否 | 上传区域标签 |
-| accept | string | 否 | 接受的文件类型（MIME 或扩展名） |
-| multiple | boolean | 否 | 是否允许多文件上传 |
-| maxFiles | number | 否 | 最大文件数量，默认 1；0 表示不限制 |
-| disabled | boolean | 否 | 是否禁用 |
-| description | string | 否 | 上传说明文字 |
-| error | string | 否 | 错误提示信息 |
-| asBase64 | boolean | 否 | 是否以 Base64 编码返回文件内容 |
-
-**单文件模式**（maxFiles=1）：上传后上传区域消失，显示文件卡片和删除按钮。
-
-**多文件模式**（multiple=true 或 maxFiles>1）：显示文件列表，上传区域始终可见。
+## Form Components (1)
 
 ### FormBuilder
 
@@ -818,42 +744,40 @@ JSON 查看器。
 
 ```json
 {
-  "type": "FormBuilder",
-  "props": {
-    "title": "用户注册",
-    "columns": 2,
-    "submitLabel": "提交注册",
-    "fields": [
-      { "name": "username", "type": "text", "label": "用户名", "required": true, "placeholder": "请输入用户名" },
-      { "name": "email", "type": "email", "label": "邮箱", "required": true },
-      { "name": "password", "type": "password", "label": "密码", "required": true, "description": "至少 8 位字符" },
-      { "name": "role", "type": "select", "label": "角色", "options": [
-        { "label": "管理员", "value": "admin" },
-        { "label": "编辑", "value": "editor" },
-        { "label": "访客", "value": "viewer" }
-      ]},
-      { "name": "bio", "type": "textarea", "label": "个人简介", "description": "简要介绍自己" },
-      { "name": "notifications", "type": "switch", "label": "接收通知", "defaultValue": true },
-      { "name": "experience", "type": "slider", "label": "经验年限", "min": 0, "max": 20, "step": 1 },
-      { "name": "theme", "type": "color", "label": "主题色", "defaultValue": "#3B82F6" },
-      { "name": "birthday", "type": "date", "label": "生日", "defaultValue": "2000-01-01" },
-      { "name": "meeting", "type": "datetime", "label": "会议时间" },
-      { "name": "satisfaction", "type": "rating", "label": "满意度", "max": 5 },
-      { "name": "agree", "type": "checkbox", "label": "同意服务条款", "required": true },
-      { "name": "website", "type": "url", "label": "个人网站" },
-      { "name": "phone", "type": "tel", "label": "手机号" }
-    ]
-  }
+  "type": "form_builder",
+  "title": "用户注册",
+  "columns": 2,
+  "submitLabel": "提交注册",
+  "fields": [
+    { "name": "username", "type": "text", "label": "用户名", "required": true, "placeholder": "请输入用户名" },
+    { "name": "email", "type": "email", "label": "邮箱", "required": true },
+    { "name": "password", "type": "password", "label": "密码", "required": true, "description": "至少 8 位字符" },
+    { "name": "role", "type": "select", "label": "角色", "options": [
+      { "label": "管理员", "value": "admin" },
+      { "label": "编辑", "value": "editor" },
+      { "label": "访客", "value": "viewer" }
+    ]},
+    { "name": "bio", "type": "textarea", "label": "个人简介", "description": "简要介绍自己" },
+    { "name": "notifications", "type": "switch", "label": "接收通知", "defaultValue": true },
+    { "name": "experience", "type": "slider", "label": "经验年限", "min": 0, "max": 20, "step": 1 },
+    { "name": "theme", "type": "color", "label": "主题色", "defaultValue": "#3B82F6" },
+    { "name": "birthday", "type": "date", "label": "生日", "defaultValue": "2000-01-01" },
+    { "name": "meeting", "type": "datetime", "label": "会议时间" },
+    { "name": "satisfaction", "type": "rating", "label": "满意度", "max": 5 },
+    { "name": "agree", "type": "checkbox", "label": "同意服务条款", "required": true },
+    { "name": "website", "type": "url", "label": "个人网站" },
+    { "name": "phone", "type": "tel", "label": "手机号" }
+  ]
 }
 ```
 
 | Prop | 类型 | 必填 | 说明 |
 |------|------|------|------|
-| type | `"FormBuilder"` | 是 | 固定值 |
+| type | `"form_builder"` | 是 | 固定值 |
 | title | string | 否 | 表单标题 |
 | columns | number | 否 | 表单列数 |
 | submitLabel | string | 否 | 提交按钮文字 |
-| fields | object[] | 是 | 字段配置列表（见下方字段类型） |
+| fields | FieldConfig[] | 是 | 字段配置列表（见下方字段类型） |
 
 **支持的 18 种字段类型：**
 
@@ -865,10 +789,10 @@ JSON 查看器。
 | number | 数字 | — |
 | url | URL 地址 | — |
 | tel | 电话号码 | — |
-| select | 下拉选择 | `options: { label, value }[]` |
-| file | 文件上传 | — |
+| select | 下拉选择 | `options: { label, value }[]` 或 `string[]` |
+| file | 文件上传 | `accept`, `multiple` |
 | textarea | 多行文本 | — |
-| radio | 单选按钮组 | `options: { label, value }[]` |
+| radio | 单选按钮组 | `options: { label, value }[]` 或 `string[]` |
 | checkbox | 复选框 | — |
 | switch | 开关 | — |
 | slider | 滑动条 | `min`, `max`, `step` |
@@ -884,85 +808,233 @@ JSON 查看器。
 |------|------|------|------|
 | name | string | 是 | 字段标识，提交时作为 key |
 | label | string | 否 | 字段标签 |
+| type | string | 是 | 字段类型（见上表） |
+| placeholder | string | 否 | 占位文本 |
 | required | boolean | 否 | 是否必填 |
 | disabled | boolean | 否 | 是否禁用 |
 | description | string | 否 | 字段描述/提示文字 |
-| defaultValue | any | 否 | 默认值 |
+| defaultValue | string \| number \| boolean | 否 | 默认值 |
 | dependsOn | string | 否 | 依赖的字段 name |
-| showWhen | any | 否 | 当 dependsOn 字段值等于 showWhen 时显示 |
+| showWhen | string \| number | 否 | 当 dependsOn 字段值等于 showWhen 时显示 |
+| validation | { rule: string, value?: string \| number, message?: string }[] | 否 | 验证规则列表 |
 
 ---
 
-## DocView — Annotatable Document (1)
+## Layout Components (3)
+
+### GridLayout
+
+CSS Grid 布局容器，用于组合子组件的网格排列。
+
+```json
+{
+  "type": "grid_layout",
+  "columns": 3,
+  "gap": 16,
+  "columnWidths": ["1fr", "2fr", "1fr"]
+}
+```
+
+| Prop | 类型 | 必填 | 默认值 | 说明 |
+|------|------|------|--------|------|
+| type | `"grid_layout"` | 是 | — | 固定值 |
+| columns | number | 否 | 2 | 网格列数（1-12） |
+| gap | number | 否 | 12 | 网格间距（px） |
+| columnWidths | string[] | 否 | — | 自定义列宽（CSS Grid 值如 `"1fr"`, `"200px"`），覆盖 columns |
+
+GridLayout 使用 json-render 的 children 机制，子组件自动填入网格单元格。
+
+### SplitLayout
+
+双栏分割布局，支持水平/垂直方向和自定义比例。
+
+```json
+{
+  "type": "split_layout",
+  "direction": "horizontal",
+  "ratio": 60,
+  "gap": 8
+}
+```
+
+| Prop | 类型 | 必填 | 默认值 | 说明 |
+|------|------|------|--------|------|
+| type | `"split_layout"` | 是 | — | 固定值 |
+| direction | `"horizontal"` \| `"vertical"` | 否 | `"horizontal"` | 分割方向 |
+| ratio | number | 否 | 50 | 主面板占比（10-90） |
+| gap | number | 否 | 0 | 面板间距（px） |
+
+SplitLayout 将前两个子组件分别放入主面板和次面板。
+
+### HeroLayout
+
+大尺寸 Hero 横幅区域，用于突出展示内容。
+
+```json
+{
+  "type": "hero_layout",
+  "height": 300,
+  "background": "gradient",
+  "align": "center"
+}
+```
+
+| Prop | 类型 | 必填 | 默认值 | 说明 |
+|------|------|------|--------|------|
+| type | `"hero_layout"` | 是 | — | 固定值 |
+| height | number | 否 | 200 | 最小高度（px） |
+| background | `"gradient"` \| `"solid"` \| `"transparent"` | 否 | `"gradient"` | 背景样式 |
+| align | `"top"` \| `"center"` \| `"bottom"` | 否 | `"center"` | 内容垂直对齐 |
+
+---
+
+## Meta Components (1)
+
+### InteractivePlayground
+
+交互式组件包裹器。AI 定义交互控件（slider、select、toggle 等），用户操作控件实时重渲染被包裹的组件。适用于教学演示、参数探索、配色调优。
+
+```json
+{
+  "type": "interactive_playground",
+  "title": "柱状图参数探索",
+  "description": "调整参数查看图表变化",
+  "layout": "side-by-side",
+  "component": {
+    "type": "bar",
+    "props": {
+      "x": "category",
+      "y": "value",
+      "data": [
+        { "category": "A", "value": 120 },
+        { "category": "B", "value": 200 },
+        { "category": "C", "value": 150 }
+      ]
+    }
+  },
+  "controls": [
+    {
+      "name": "stackToggle",
+      "label": "堆叠模式",
+      "type": "toggle",
+      "defaultValue": false,
+      "targetProp": "stacked"
+    },
+    {
+      "name": "orientation",
+      "label": "方向",
+      "type": "select",
+      "options": ["纵向", "横向"],
+      "values": ["vertical", "horizontal"],
+      "defaultValue": "vertical",
+      "targetProp": "horizontal"
+    },
+    {
+      "name": "barCount",
+      "label": "数据条数",
+      "type": "slider",
+      "min": 3,
+      "max": 20,
+      "step": 1,
+      "defaultValue": 5,
+      "targetProp": "barCount"
+    }
+  ]
+}
+```
+
+| Prop | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| type | `"interactive_playground"` | 是 | 固定值 |
+| title | string | 否 | 标题 |
+| description | string | 否 | 描述文字 |
+| component | { type: string, props: object } | 是 | 被包裹的组件定义 |
+| controls | Control[] | 是 | 交互控件列表 |
+| layout | `"side-by-side"` \| `"stacked"` | 否 | 布局模式（默认 `"side-by-side"`） |
+
+**7 种控件类型：**
+
+| 控件 type | 说明 | 额外 props |
+|-----------|------|-----------|
+| slider | 滑动条 | `min`, `max`, `step`, `defaultValue` |
+| select | 下拉选择 | `options: string[]`, `values?: string[]`, `defaultValue` |
+| toggle | 开关 | `defaultValue: boolean` |
+| color | 颜色选择器 | `defaultValue: string` |
+| text | 文本输入 | `defaultValue`, `placeholder` |
+| number | 数字输入 | `min`, `max`, `step`, `defaultValue` |
+| buttonGroup | 按钮组 | `options: string[]`, `values?: string[]`, `defaultValue` |
+
+**通用控件 props：**
+
+| Prop | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| name | string | 是 | 控件唯一标识 |
+| label | string | 是 | 显示标签 |
+| type | string | 是 | 控件类型（见上表） |
+| targetProp | string | 是 | 映射到被包裹组件的 prop 名 |
+| defaultValue | any | 否 | 默认值 |
+
+控制面板默认收起（节省空间），点击齿轮图标展开。
+
+---
+
+## DocView (1)
 
 ### DocView
 
-Interactive document with sections (text, headings, charts, KPIs, tables, callouts, embedded components) and annotation support. Users can annotate any text or component target, submit annotations for AI revision, and the library automatically detects orphaned annotations when content changes.
+可批注文档组件，支持多种 section 类型（文本、标题、图表、KPI、表格、callout、嵌入组件等）和完整的批注系统。用户可以对任意文本或组件目标添加批注、提交 AI 修订请求，库自动检测内容变更后的孤立批注。
 
 ```json
 {
   "type": "doc_view",
-  "title": "Quarterly Report",
-  "sections": [
-    { "type": "heading", "content": "Q1 Performance Report" },
-    { "type": "text", "content": "Revenue grew 15% year-over-year." },
-    { "type": "chart", "content": "", "data": { "chartType": "BarChart", "x": "quarter", "y": "revenue", "data": [{"quarter":"Q1","revenue":120},{"quarter":"Q2","revenue":200}] } },
-    { "type": "kpi", "content": "", "data": { "metrics": [{"label":"Revenue","value":"$12.3M","trend":"up"}] } },
-    { "type": "table", "content": "", "data": { "columns": [{"key":"name","label":"Name"},{"key":"value","label":"Value"}], "data": [{"name":"Q1","value":120},{"name":"Q2","value":200}] } },
-    { "type": "callout", "content": "Note: All figures are preliminary." },
-    { "type": "component", "content": "", "data": { "componentType": "BigValue", "value": "1.2M", "trend": "up" } }
-  ],
+  "title": "季度报告",
   "showPanel": true,
-  "panelPosition": "right"
+  "panelPosition": "right",
+  "sections": [
+    { "type": "heading", "content": "Q1 业绩报告" },
+    { "type": "text", "content": "收入同比增长 15%。" },
+    { "type": "chart", "content": "", "data": { "chartType": "BarChart", "x": "quarter", "y": "revenue", "data": [{"quarter":"Q1","revenue":120},{"quarter":"Q2","revenue":200}] } },
+    { "type": "kpi", "content": "", "data": { "metrics": [{"label":"收入","value":"$12.3M","trend":"up"}] } },
+    { "type": "table", "content": "", "data": { "columns": [{"key":"name","label":"名称"},{"key":"value","label":"数值"}], "data": [{"name":"Q1","value":120},{"name":"Q2","value":200}] } },
+    { "type": "callout", "content": "注意：所有数据为初步统计。" },
+    { "type": "markdown", "content": "## 详细分析\n\n这是 **Markdown** 内容。" },
+    { "type": "component", "content": "", "componentType": "KpiDashboard", "data": { "metrics": [{"label":"DAU","value":"12.5K","trend":"up"}] } }
+  ]
 }
 ```
 
-| Prop | Type | Required | Description |
-|------|------|----------|-------------|
-| type | `"doc_view"` | yes | Fixed literal |
-| title | string | no | Document title |
-| sections | Section[] | yes | Array of document sections (see below) |
-| showPanel | boolean | no | Show annotation panel sidebar (default: true) |
-| panelPosition | `"right"` \| `"left"` \| `"bottom"` | no | Panel position (default: right) |
-| annotations | Annotation[] | no | Controlled annotations (external state) |
-| onAnnotationsChange | function | no | Callback when annotations change |
-| onAction | function | no | Callback for annotation actions |
+| Prop | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| type | `"doc_view"` | 是 | 固定值 |
+| title | string | 否 | 文档标题 |
+| sections | Section[] | 是 | 文档 section 数组（至少 1 个） |
+| showPanel | boolean | 否 | 显示批注面板侧边栏（默认 true） |
+| panelPosition | `"right"` \| `"left"` \| `"bottom"` | 否 | 面板位置（默认 right） |
 
-**Section Types:**
+**Section 类型：**
 
-| type | content | data | Description |
-|------|---------|------|-------------|
-| heading | string | - | Section heading |
-| text | string | - | Text paragraph |
-| chart | "" | { chartType, x, y, data, ... } | Embedded chart (uses chart component props) |
-| kpi | "" | { metrics: [{label, value, trend, trendValue}] } | KPI dashboard cards |
-| table | "" | { columns: [{key, label}], data: [...] } | Data table |
-| callout | string | - | Highlighted callout note |
-| component | "" | { componentType, ...props } | Embedded vizual component |
+| type | content | data | 说明 |
+|------|---------|------|------|
+| heading | string | — | 标题，可用 `level` (1-6) 控制层级 |
+| text | string | — | 文本段落 |
+| chart | "" | { chartType, x, y, data, ... } | 嵌入图表（使用图表组件 props） |
+| kpi | "" | { metrics: [{label, value, trend, trendValue}] } | KPI 指标卡片 |
+| table | "" | { columns: [{key, label}], data: [...] } | 数据表格 |
+| callout | string | — | 高亮提示，可用 `variant` (`info`/`warning`/`success`/`error`/`neutral`) |
+| component | "" | { ...props } | 嵌入 vizual 组件，用 `componentType` 指定组件 |
+| markdown | string | — | Markdown 内容 |
+| freeform | string (HTML) | — | 原始 HTML 内容 |
 
-**Annotation Actions (via onAction callback):**
+**通用 Section props：**
 
-| Action | Trigger | Params |
-|--------|---------|--------|
-| annotationAdded | User creates annotation | { annotation } |
-| annotationDeleted | User deletes annotation | { annotation } |
-| annotationClicked | User clicks annotation | { annotation } |
-| requestRevision | User submits single annotation for revision | { annotationId, text, note } |
-| batchSubmit | User submits all draft annotations | { annotations: [{id, text, note, color}] } |
-
-**Annotation Lifecycle:**
-- draft -> active (submitted for revision)
-- active -> resolved (AI has addressed the annotation)
-- active -> orphaned (AI revised the text, annotation no longer matches)
-
-**Hooks for Custom Integration:**
-- `useAnnotations` — annotation CRUD + orphan detection
-- `useTextSelection` — browser text selection detection
-- `useRevisionLoop` — submitAllDrafts, requestRevision, onContentRevised
-- `useVersionHistory` — document version snapshots and rollback
-
-**Sub-components for Custom Layouts:**
-- `AnnotationOverlay` — highlights annotations on text
-- `AnnotationPanel` — sidebar panel for annotation management
-- `AnnotationInput` — popup for creating new annotations
-- `SectionRenderer` — renders sections array into React elements
+| Prop | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| type | string | 是 | Section 类型 |
+| content | string | 是 | 文本内容（chart/kpi/table/component 设为 ""） |
+| data | object | 否 | 结构化数据（chart/kpi/table/component 使用） |
+| level | number (1-6) | 否 | heading 层级 |
+| variant | string | 否 | callout 样式变体 |
+| componentType | string | 否 | 嵌入的 vizual 组件类型名 |
+| title | string | 否 | section 标题 |
+| aiContext | string | 否 | AI 语义描述，包含在批注 payload 中供 AI 理解上下文 |
+| layout | `"default"` \| `"hero"` \| `"split"` \| `"grid"` \| `"banner"` \| `"card"` \| `"compact"` | 否 | section 布局变体 |

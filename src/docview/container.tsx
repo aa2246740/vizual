@@ -7,6 +7,7 @@ import { AnnotationOverlay } from './annotation-overlay'
 import { AnnotationPanel } from './annotation-panel'
 import { AnnotationInput } from './annotation-input'
 import { SectionRenderer } from './section-renderer'
+import { buildSectionContextMap, buildSectionContext } from './section-context'
 import type { DocViewProps, AnnotationColor, AnnotationStatus, AnnotationTarget } from './types'
 
 /**
@@ -93,6 +94,7 @@ function DocViewInner({
   const { selection, clearSelection } = useTextSelection({
     containerRef,
     ignoreSelectors: ['button', 'canvas', 'svg', '.echarts-for-html', '[data-docview-ignore]'],
+    onSelectionChange: () => { if (targetAnnotation) setTargetAnnotation(null) },
   })
 
   // Revision loop integration
@@ -101,6 +103,7 @@ function DocViewInner({
     updateAnnotation,
     markOrphans,
     onAction,
+    sections,  // Pass sections for context enrichment in revision payloads
   })
 
   // Auto-detect orphaned annotations when sections change (AI returns revised content)
@@ -125,12 +128,53 @@ function DocViewInner({
   const handleConfirmAnnotation = useCallback((note: string, color: AnnotationColor) => {
     if (!selection) return
     const ann = addAnnotation(selection.text, note, color)
+
+    // Resolve section index from the DOM range by walking up to [data-section-index]
+    let sectionIndex = -1
+    let sectionType = 'text'
+    try {
+      const node = selection.range.commonAncestorContainer
+      const el = node instanceof HTMLElement ? el : node.parentElement
+      const sectionEl = el?.closest('[data-section-index]')
+      if (sectionEl) {
+        sectionIndex = parseInt(sectionEl.getAttribute('data-section-index') || '-1', 10)
+        // Derive targetType from data-docview-target prefix (chart-*, kpi-*, table-*) or default to 'text'
+        const targetId = sectionEl.getAttribute('data-docview-target') || ''
+        if (targetId.startsWith('chart-')) sectionType = 'chart'
+        else if (targetId.startsWith('kpi-')) sectionType = 'kpi'
+        else if (targetId.startsWith('table-')) sectionType = 'table'
+        else if (targetId.startsWith('callout-')) sectionType = 'callout'
+        else if (targetId.startsWith('freeform-')) sectionType = 'freeform'
+        else if (targetId.startsWith('markdown-')) sectionType = 'markdown'
+        else if (targetId.startsWith('heading-')) sectionType = 'heading'
+        // text sections 没有显式 targetId 前缀，默认保持 'text'
+      }
+    } catch { /* DOM traversal failure, leave sectionIndex = -1 */ }
+
+    // Attach target so buildSectionContextMap can locate the section
+    if (sectionIndex >= 0 && sections && sectionIndex < sections.length) {
+      updateAnnotation(ann.id, {
+        target: {
+          sectionIndex,
+          targetType: sectionType as AnnotationTarget['targetType'],
+          label: sections[sectionIndex].content?.substring(0, 50) || sections[sectionIndex].type,
+        }
+      })
+    }
+
     clearSelection()
-    onAction?.('annotationAdded', { annotation: ann })
-  }, [selection, addAnnotation, clearSelection, onAction])
+    // Build section contexts — re-read the annotation with target attached
+    const annWithTarget = { ...ann, target: sectionIndex >= 0 ? { sectionIndex, targetType: sectionType, label: sections?.[sectionIndex]?.content?.substring(0, 50) || '' } : undefined }
+    const sectionContext = sectionIndex >= 0 && sections
+      ? buildSectionContext(sections[sectionIndex], sectionIndex)
+      : undefined
+    onAction?.('annotationAdded', { annotation: annWithTarget, sectionContext })
+  }, [selection, addAnnotation, updateAnnotation, clearSelection, onAction, sections])
 
   // Handle click on a non-text target element (chart, KPI, table cell, etc.)
   const handleTargetClick = useCallback((target: AnnotationTarget, element: HTMLElement) => {
+    // Close text selection popup when opening target popup — only one popup at a time
+    if (selection) clearSelection()
     const rect = element.getBoundingClientRect()
     const containerRect = containerRef.current?.getBoundingClientRect()
     if (!containerRect) return
@@ -141,7 +185,7 @@ function DocViewInner({
         left: rect.left - containerRect.left + rect.width / 2,
       },
     })
-  }, [])
+  }, [selection, clearSelection])
 
   // Confirm annotation from clicking a non-text target
   const handleConfirmTargetAnnotation = useCallback((note: string, color: AnnotationColor) => {
@@ -150,8 +194,12 @@ function DocViewInner({
     // Attach target metadata to the annotation
     updateAnnotation(ann.id, { target: targetAnnotation.target })
     setTargetAnnotation(null)
-    onAction?.('annotationAdded', { annotation: ann })
-  }, [targetAnnotation, addAnnotation, updateAnnotation, onAction])
+    // Build section context for the targeted section
+    const sectionContext = sections && targetAnnotation.target.sectionIndex < sections.length
+      ? buildSectionContext(sections[targetAnnotation.target.sectionIndex], targetAnnotation.target.sectionIndex)
+      : undefined
+    onAction?.('annotationAdded', { annotation: ann, sectionContext })
+  }, [targetAnnotation, addAnnotation, updateAnnotation, onAction, sections])
 
   const handleDeleteAnnotation = useCallback((id: string) => {
     const ann = annotations.find(a => a.id === id)

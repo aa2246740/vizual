@@ -4,6 +4,14 @@
 export { DocView } from './container'
 export type { DocViewProps } from './types'
 
+// Annotation context bridge (for components inside DocView)
+export { AnnotationContext, useAnnotationContext } from './annotation-context'
+export type { AnnotationContextValue } from './annotation-context'
+
+// Annotatable wrapper (for simple components)
+export { AnnotatableWrapper } from './annotatable-wrapper'
+export type { AnnotatableWrapperProps } from './annotatable-wrapper'
+
 // Hooks (for custom integrations)
 export { useAnnotations } from './use-annotations'
 export type { UseAnnotationsOptions, UseAnnotationsReturn } from './use-annotations'
@@ -27,6 +35,10 @@ export type { SectionRendererProps } from './section-renderer'
 // Zod schema for catalog registration
 export { DocViewSchema } from './schema'
 export type { DocViewSchemaProps } from './schema'
+
+// Section context enrichment for annotation payloads
+export type { SectionContext } from './section-context'
+export { buildSectionContext, buildSectionContextMap } from './section-context'
 
 // Types and constants
 export type { Annotation, AnnotationStatus, AnnotationColor, AnnotationTarget, OnAnnotationsChange, OnAction } from './types'

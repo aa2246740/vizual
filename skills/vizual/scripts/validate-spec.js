@@ -3,7 +3,7 @@
 /**
  * AI RenderKit Spec Validator
  *
- * Validates a JSON spec against the 42-component catalog.
+ * Validates a JSON spec against the 32-component catalog + 3 layout components.
  * Usage:
  *   node scripts/validate-spec.js < spec.json
  *   node scripts/validate-spec.js path/to/spec.json
@@ -14,7 +14,9 @@ const fs = require('fs')
 const path = require('path')
 
 // Component type → props type literal mapping
+// Matches the 32 registered components in src/catalog.ts
 const COMPONENT_TYPES = {
+  // Charts (19) — mviz bridge
   BarChart: 'bar',
   LineChart: 'line',
   AreaChart: 'area',
@@ -33,34 +35,26 @@ const COMPONENT_TYPES = {
   ComboChart: 'combo',
   DumbbellChart: 'dumbbell',
   MermaidDiagram: 'mermaid',
-  BigValue: 'big_value',
-  Delta: 'delta',
-  Alert: 'alert',
-  Note: 'note',
-  TextBlock: 'text',
-  TextArea: 'textarea',
+  RadarChart: 'radar',
+  // UI (1) — mviz bridge
   DataTable: 'table',
-  EmptySpace: 'empty_space',
+  // Business components (6)
   Timeline: 'timeline',
   Kanban: 'kanban',
   GanttChart: 'gantt',
   OrgChart: 'org_chart',
   KpiDashboard: 'kpi_dashboard',
-  BudgetReport: 'budget_report',
-  FeatureTable: 'feature_table',
   AuditLog: 'audit_log',
-  JsonViewer: 'json_viewer',
-  CodeBlock: 'code_block',
-  FormView: 'form_view',
-  RadarChart: 'radar',
-  InputText: 'input_text',
-  InputSelect: 'input_select',
-  InputFile: 'input_file',
+  // Input components (1)
   FormBuilder: 'form_builder',
+  // Meta component (1)
+  InteractivePlayground: 'interactive_playground',
+  // DocView (1)
+  DocView: 'doc_view',
 }
 
 // Layout components (no type literal in props)
-const LAYOUT_TYPES = ['VerticalLayout', 'HorizontalLayout', 'GridLayout', 'TabsLayout']
+const LAYOUT_TYPES = ['GridLayout', 'SplitLayout', 'HeroLayout']
 
 const ALL_TYPES = new Set([...Object.keys(COMPONENT_TYPES), ...LAYOUT_TYPES])
 

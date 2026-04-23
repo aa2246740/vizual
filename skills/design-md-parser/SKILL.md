@@ -1,5 +1,14 @@
 ---
 name: design-md-parser
+version: "1.1.0"
+user-invocable: true
+allowed-tools:
+  - Read
+  - Write
+  - Edit
+  - Bash
+  - Glob
+  - Grep
 description: >
   Parse any design system document (DESIGN.md, style guide, brand guide, design tokens file)
   into structured tokens that drive Vizual's theme engine. Use this skill whenever the user
@@ -152,3 +161,17 @@ The mapper generates these CSS variables from your tokens. The more you feed, th
 ## Reference
 
 For the complete list of theme variables and mapping details: [references/vizual-theme-vars.md](references/vizual-theme-vars.md)
+
+## Combining with Other Skills
+
+### With Vizual (vizual skill)
+
+After applying the theme, use the vizual skill to render components — they will automatically use the new theme colors. No extra integration needed.
+
+### With LiveKit (livekit skill)
+
+When the user says "试试这个主题" or "对比一下不同配色", combine with livekit to create a theme-level preview page where users can toggle between themes, adjust accent colors, and see all 32 components update in real-time.
+
+### With DESIGN.md Creator (design-md-creator skill)
+
+If the user has no design document yet but wants to create one, trigger design-md-creator instead. Use design-md-parser only when the user already has a design document to parse.

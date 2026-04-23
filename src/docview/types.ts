@@ -38,7 +38,7 @@ export interface AnnotationTarget {
   /** Section index in the sections array */
   sectionIndex: number
   /** Type of the target element */
-  targetType: 'chart' | 'kpi' | 'table' | 'callout' | 'component'
+  targetType: 'chart' | 'kpi' | 'table' | 'callout' | 'component' | 'freeform' | 'markdown' | 'text' | 'heading'
   /** Human-readable label for the target (e.g., "Revenue chart", "Q1 KPI", "Row 3, Col 2") */
   label: string
   /** Precise DOM identifier for exact element matching (e.g., "kpi-3-1", "chart-5", "table-7-2-3") */
@@ -93,3 +93,6 @@ export interface DocViewProps {
   /** Additional CSS styles for the container */
   style?: React.CSSProperties
 }
+
+/** Semantic context for a section, included in annotation payloads for AI understanding */
+export type { SectionContext } from './section-context'

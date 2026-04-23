@@ -2,6 +2,11 @@ import React, { useRef, useEffect } from 'react'
 import * as echarts from 'echarts'
 import type { AnnotationTarget, Annotation, ChartDataPoint } from './types'
 import { tcss, tc } from '../core/theme-colors'
+import { renderMarkdown } from './markdown-renderer'
+import { renderFreeform } from './freeform-renderer'
+import { wrapWithLayout } from './layout-wrappers'
+import { AnnotationContext } from './annotation-context'
+import { registry } from '../registry'
 
 /** Props for the SectionRenderer component */
 export interface SectionRendererProps {
@@ -14,6 +19,8 @@ export interface SectionRendererProps {
     variant?: string
     componentType?: string
     title?: string
+    aiContext?: string
+    layout?: string
   }>
   /** Called when user clicks a non-text element to annotate it */
   onTargetClick?: (target: AnnotationTarget, element: HTMLElement) => void
@@ -69,24 +76,39 @@ export function SectionRenderer({ sections, onTargetClick, annotations }: Sectio
   return (
     <div style={{ padding: '16px 24px', maxWidth: 900, background: tcss('--rk-bg-primary'), minHeight: '100%' }}>
       {sections.map((section, index) => {
+        let content: React.ReactNode
         switch (section.type) {
           case 'text':
-            return renderText(section, index)
+            content = renderText(section, index)
+            break
           case 'heading':
-            return renderHeading(section, index)
+            content = renderHeading(section, index)
+            break
           case 'chart':
-            return <ChartSection key={`chart-${index}`} section={section} index={index} handleClick={handleTargetClick} onTargetClick={onTargetClick} annotations={annotations} />
+            content = <ChartSection key={`chart-${index}`} section={section} index={index} handleClick={handleTargetClick} onTargetClick={onTargetClick} annotations={annotations} />
+            break
           case 'kpi':
-            return renderKpi(section, index, handleTargetClick)
+            content = renderKpi(section, index, handleTargetClick)
+            break
           case 'table':
-            return renderTable(section, index, handleTargetClick)
+            content = renderTable(section, index, handleTargetClick)
+            break
           case 'callout':
-            return renderCallout(section, index, handleTargetClick)
+            content = renderCallout(section, index, handleTargetClick)
+            break
           case 'component':
-            return renderComponent(section, index, handleTargetClick)
+            content = renderComponent(section, index, handleTargetClick, onTargetClick, annotations)
+            break
+          case 'markdown':
+            content = renderMarkdown(section, index)
+            break
+          case 'freeform':
+            content = renderFreeform(section, index)
+            break
           default:
             return null
         }
+        return wrapWithLayout(section, index, content, section.layout)
       })}
     </div>
   )
@@ -334,7 +356,7 @@ function renderKpi(
             {metric.change && (
               <div style={{
                 fontSize:parseInt(tc('--rk-text-xs')),
-                color: metric.change.startsWith('-') ? tcss('--rk-error') : tcss('--rk-success'),
+                color: (metric.change.startsWith('-') || metric.change.includes('↓')) ? tcss('--rk-error') : tcss('--rk-success'),
                 marginTop: 4,
               }}>
                 {metric.change}
@@ -510,14 +532,73 @@ function renderCallout(
   )
 }
 
-/** Render a component section as a clickable placeholder */
+/**
+ * 渲染 component section 为真实的 Vizual 组件。
+ *
+ * 流程：
+ * 1. 通过 registry 查找 componentType 对应的组件
+ * 2. 用 AnnotationContext.Provider 包裹，传入 sectionIndex 和 onTargetClick
+ * 3. 组件内部通过 useAnnotationContext() 感知 DocView 环境，自动启用批注
+ * 4. 如果组件未注册，降级为占位符
+ */
 function renderComponent(
   section: SectionRendererProps['sections'][number],
   index: number,
   handleClick: (e: React.MouseEvent, idx: number, type: AnnotationTarget['targetType'], label: string) => void,
+  onTargetClickProp?: (target: AnnotationTarget, element: HTMLElement) => void,
+  annotations?: Annotation[],
 ): React.ReactNode {
-  const label = section.componentType || section.title || 'Component'
+  const componentType = section.componentType
+  const label = componentType || section.title || 'Component'
 
+  // 无 componentType → 占位符
+  if (!componentType) {
+    return renderComponentPlaceholder(label, index, handleClick)
+  }
+
+  // 从 registry 查找真实组件
+  const Component = registry[componentType]
+  if (!Component) {
+    return renderComponentPlaceholder(`Unknown: ${componentType}`, index, handleClick)
+  }
+
+  // 构建 AnnotationContext value — 组件内部通过 useAnnotationContext() 消费
+  const contextValue = {
+    sectionIndex: index,
+    componentType,
+    title: section.title,
+    onTargetClick: (target: AnnotationTarget, element: HTMLElement) => {
+      onTargetClickProp?.(target, element)
+    },
+    annotations,
+  }
+
+  // 组件 props 来自 section.data
+  const componentProps = (section.data as Record<string, unknown>) ?? {}
+
+  return (
+    <AnnotationContext.Provider key={`component-ctx-${index}`} value={contextValue}>
+      <div
+        data-docview-target={`component-${index}`}
+        data-section-index={index}
+        data-target-type="component"
+        style={{
+          marginBottom: 16,
+          position: 'relative',
+        }}
+      >
+        <Component props={componentProps} />
+      </div>
+    </AnnotationContext.Provider>
+  )
+}
+
+/** 占位符降级渲染：组件未注册或未指定 componentType 时 */
+function renderComponentPlaceholder(
+  label: string,
+  index: number,
+  handleClick: (e: React.MouseEvent, idx: number, type: AnnotationTarget['targetType'], label: string) => void,
+): React.ReactNode {
   return (
     <div
       key={`component-${index}`}
@@ -528,7 +609,7 @@ function renderComponent(
       style={{
         background: tcss('--rk-bg-primary'),
         border: `1px solid ${tcss('--rk-border-subtle')}`,
-        borderRadius:tcss('--rk-radius-md'),
+        borderRadius: tcss('--rk-radius-md'),
         padding: tcss('--rk-space-4'),
         marginBottom: 16,
         cursor: 'pointer',
@@ -541,7 +622,7 @@ function renderComponent(
       onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.borderColor = tcss('--rk-border') }}
       onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.borderColor = tcss('--rk-border-subtle') }}
     >
-      <span style={{ color: tcss('--rk-text-secondary'), fontSize:tcss('--rk-text-base') }}>{label}</span>
+      <span style={{ color: tcss('--rk-text-secondary'), fontSize: tcss('--rk-text-base') }}>{label}</span>
     </div>
   )
 }
@@ -601,8 +682,8 @@ function parseKpiMetrics(data: unknown): Array<{ label: string; value: string; c
 /** Convert trend direction ('up'/'down'/'neutral') to a display string */
 function trendToChange(trend: string): string | undefined {
   switch (trend) {
-    case 'up': return '↑'
-    case 'down': return '↓'
+    case 'up': return '+↑'
+    case 'down': return '-↓'
     case 'neutral': return '—'
     default: return trend
   }

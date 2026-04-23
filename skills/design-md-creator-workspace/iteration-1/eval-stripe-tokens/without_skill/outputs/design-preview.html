@@ -1,0 +1,1079 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Brand Design System Preview</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  /* ============================================
+     DESIGN TOKENS
+     ============================================ */
+  :root {
+    /* Colors */
+    --color-primary: #0A2540;
+    --color-accent: #635BFF;
+    --color-bg: #F6F9FC;
+    --color-text: #425466;
+    --color-white: #FFFFFF;
+    --color-border: #E3E8EF;
+    --color-success: #0D9488;
+    --color-warning: #D97706;
+    --color-error: #DC2626;
+    --color-info: #2563EB;
+
+    /* Derived */
+    --color-primary-light: #132E4F;
+    --color-accent-light: #7C75FF;
+    --color-accent-bg: #EEF2FF;
+    --color-text-light: #6B7A8D;
+    --color-bg-hover: #EDF1F7;
+    --color-success-bg: #ECFDF5;
+    --color-warning-bg: #FFFBEB;
+    --color-error-bg: #FEF2F2;
+    --color-info-bg: #EFF6FF;
+
+    /* Typography */
+    --font-heading: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-body: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+
+    /* Spacing (base 4px) */
+    --sp-1: 4px;
+    --sp-2: 8px;
+    --sp-3: 12px;
+    --sp-4: 16px;
+    --sp-5: 20px;
+    --sp-6: 24px;
+    --sp-8: 32px;
+    --sp-10: 40px;
+    --sp-12: 48px;
+    --sp-16: 64px;
+
+    /* Radii */
+    --radius-btn: 6px;
+    --radius-card: 12px;
+    --radius-badge: 9999px;
+
+    /* Shadows */
+    --shadow-sm: 0 1px 2px rgba(10, 37, 64, 0.05);
+    --shadow-md: 0 4px 12px rgba(10, 37, 64, 0.08);
+    --shadow-lg: 0 8px 24px rgba(10, 37, 64, 0.12);
+
+    /* Transitions */
+    --transition: 150ms ease;
+  }
+
+  /* ============================================
+     RESET & BASE
+     ============================================ */
+  *, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  body {
+    font-family: var(--font-body);
+    font-size: 15px;
+    line-height: 1.6;
+    color: var(--color-text);
+    background-color: var(--color-bg);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ============================================
+     LAYOUT
+     ============================================ */
+  .page-header {
+    background: var(--color-primary);
+    padding: var(--sp-12) var(--sp-6);
+    text-align: center;
+    color: var(--color-white);
+  }
+
+  .page-header h1 {
+    font-family: var(--font-heading);
+    font-size: 28px;
+    font-weight: 700;
+    margin-bottom: var(--sp-2);
+  }
+
+  .page-header p {
+    opacity: 0.7;
+    font-size: 14px;
+  }
+
+  .container {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: var(--sp-8) var(--sp-6);
+  }
+
+  .section {
+    margin-bottom: var(--sp-12);
+  }
+
+  .section-title {
+    font-family: var(--font-heading);
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--color-primary);
+    margin-bottom: var(--sp-1);
+  }
+
+  .section-desc {
+    font-size: 13px;
+    color: var(--color-text-light);
+    margin-bottom: var(--sp-6);
+  }
+
+  /* ============================================
+     COLOR SWATCHES
+     ============================================ */
+  .swatch-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: var(--sp-4);
+  }
+
+  .swatch {
+    background: var(--color-white);
+    border-radius: var(--radius-card);
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--color-border);
+  }
+
+  .swatch-color {
+    height: 80px;
+  }
+
+  .swatch-info {
+    padding: var(--sp-3) var(--sp-4);
+  }
+
+  .swatch-name {
+    font-family: var(--font-heading);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--color-primary);
+  }
+
+  .swatch-value {
+    font-size: 12px;
+    color: var(--color-text-light);
+    font-family: 'SF Mono', SFMono-Regular, Menlo, monospace;
+    margin-top: 2px;
+  }
+
+  /* ============================================
+     TYPOGRAPHY
+     ============================================ */
+  .type-sample {
+    background: var(--color-white);
+    border-radius: var(--radius-card);
+    padding: var(--sp-6);
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--color-border);
+  }
+
+  .type-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    padding: var(--sp-4) 0;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .type-row:last-child {
+    border-bottom: none;
+  }
+
+  .type-label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-text-light);
+    min-width: 120px;
+  }
+
+  .type-specimen-heading {
+    font-family: var(--font-heading);
+    color: var(--color-primary);
+  }
+
+  /* ============================================
+     BUTTONS
+     ============================================ */
+  .btn-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-3);
+    align-items: center;
+    margin-bottom: var(--sp-4);
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--sp-2);
+    font-family: var(--font-heading);
+    font-size: 14px;
+    font-weight: 600;
+    padding: 10px 20px;
+    border-radius: var(--radius-btn);
+    border: none;
+    cursor: pointer;
+    transition: all var(--transition);
+    white-space: nowrap;
+    line-height: 1;
+  }
+
+  .btn:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+  }
+
+  /* Primary */
+  .btn-primary {
+    background: var(--color-accent);
+    color: var(--color-white);
+  }
+
+  .btn-primary:hover {
+    background: var(--color-accent-light);
+    box-shadow: 0 4px 12px rgba(99, 91, 255, 0.3);
+  }
+
+  /* Secondary */
+  .btn-secondary {
+    background: var(--color-white);
+    color: var(--color-primary);
+    border: 1px solid var(--color-border);
+  }
+
+  .btn-secondary:hover {
+    background: var(--color-bg-hover);
+    border-color: var(--color-text-light);
+  }
+
+  /* Outline */
+  .btn-outline {
+    background: transparent;
+    color: var(--color-accent);
+    border: 1px solid var(--color-accent);
+  }
+
+  .btn-outline:hover {
+    background: var(--color-accent-bg);
+  }
+
+  /* Dark */
+  .btn-dark {
+    background: var(--color-primary);
+    color: var(--color-white);
+  }
+
+  .btn-dark:hover {
+    background: var(--color-primary-light);
+  }
+
+  /* Danger */
+  .btn-danger {
+    background: var(--color-error);
+    color: var(--color-white);
+  }
+
+  .btn-danger:hover {
+    background: #B91C1C;
+  }
+
+  /* Ghost */
+  .btn-ghost {
+    background: transparent;
+    color: var(--color-accent);
+  }
+
+  .btn-ghost:hover {
+    background: var(--color-accent-bg);
+  }
+
+  /* Sizes */
+  .btn-sm {
+    font-size: 12px;
+    padding: 6px 12px;
+  }
+
+  .btn-lg {
+    font-size: 16px;
+    padding: 14px 28px;
+  }
+
+  .btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+
+  /* ============================================
+     CARDS
+     ============================================ */
+  .card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: var(--sp-6);
+  }
+
+  .card {
+    background: var(--color-white);
+    border-radius: var(--radius-card);
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--color-border);
+    overflow: hidden;
+    transition: box-shadow var(--transition);
+  }
+
+  .card:hover {
+    box-shadow: var(--shadow-md);
+  }
+
+  .card-header {
+    padding: var(--sp-5) var(--sp-6) var(--sp-3);
+  }
+
+  .card-body {
+    padding: 0 var(--sp-6) var(--sp-5);
+  }
+
+  .card-footer {
+    padding: var(--sp-4) var(--sp-6);
+    border-top: 1px solid var(--color-border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .card-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: var(--radius-btn);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    margin-bottom: var(--sp-3);
+  }
+
+  .card-title {
+    font-family: var(--font-heading);
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--color-primary);
+    margin-bottom: var(--sp-2);
+  }
+
+  .card-text {
+    font-size: 13px;
+    color: var(--color-text);
+    line-height: 1.6;
+  }
+
+  /* Metric card */
+  .metric-label {
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--color-text-light);
+    margin-bottom: var(--sp-1);
+  }
+
+  .metric-value {
+    font-family: var(--font-heading);
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--color-primary);
+    line-height: 1.1;
+  }
+
+  .metric-change {
+    font-size: 13px;
+    font-weight: 500;
+    margin-top: var(--sp-1);
+  }
+
+  .metric-change.positive { color: var(--color-success); }
+  .metric-change.negative { color: var(--color-error); }
+
+  /* ============================================
+     ALERTS
+     ============================================ */
+  .alert {
+    padding: var(--sp-4) var(--sp-5);
+    border-radius: var(--radius-btn);
+    font-size: 14px;
+    line-height: 1.5;
+    display: flex;
+    align-items: flex-start;
+    gap: var(--sp-3);
+    margin-bottom: var(--sp-3);
+  }
+
+  .alert-icon {
+    flex-shrink: 0;
+    font-size: 16px;
+    line-height: 1.5;
+  }
+
+  .alert-success {
+    background: var(--color-success-bg);
+    color: #065F46;
+    border: 1px solid #A7F3D0;
+  }
+
+  .alert-warning {
+    background: var(--color-warning-bg);
+    color: #92400E;
+    border: 1px solid #FDE68A;
+  }
+
+  .alert-error {
+    background: var(--color-error-bg);
+    color: #991B1B;
+    border: 1px solid #FECACA;
+  }
+
+  .alert-info {
+    background: var(--color-info-bg);
+    color: #1E40AF;
+    border: 1px solid #BFDBFE;
+  }
+
+  /* ============================================
+     BADGES
+     ============================================ */
+  .badge-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-2);
+    align-items: center;
+  }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-1);
+    font-family: var(--font-heading);
+    font-size: 12px;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: var(--radius-badge);
+    white-space: nowrap;
+  }
+
+  .badge-primary {
+    background: var(--color-accent-bg);
+    color: var(--color-accent);
+  }
+
+  .badge-success {
+    background: var(--color-success-bg);
+    color: var(--color-success);
+  }
+
+  .badge-warning {
+    background: var(--color-warning-bg);
+    color: var(--color-warning);
+  }
+
+  .badge-error {
+    background: var(--color-error-bg);
+    color: var(--color-error);
+  }
+
+  .badge-neutral {
+    background: var(--color-bg);
+    color: var(--color-text);
+    border: 1px solid var(--color-border);
+  }
+
+  .badge-dark {
+    background: var(--color-primary);
+    color: var(--color-white);
+  }
+
+  /* ============================================
+     DATA TABLE
+     ============================================ */
+  .table-wrapper {
+    background: var(--color-white);
+    border-radius: var(--radius-card);
+    border: 1px solid var(--color-border);
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  thead th {
+    font-family: var(--font-heading);
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--color-text-light);
+    text-align: left;
+    padding: var(--sp-3) var(--sp-4);
+    background: var(--color-bg);
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  tbody td {
+    font-size: 14px;
+    padding: var(--sp-3) var(--sp-4);
+    border-bottom: 1px solid var(--color-border);
+    vertical-align: middle;
+  }
+
+  tbody tr:last-child td {
+    border-bottom: none;
+  }
+
+  tbody tr:hover {
+    background: var(--color-bg);
+  }
+
+  .amount {
+    font-family: var(--font-heading);
+    font-weight: 600;
+    color: var(--color-primary);
+  }
+
+  /* ============================================
+     INPUT FIELDS
+     ============================================ */
+  .input-group {
+    margin-bottom: var(--sp-4);
+  }
+
+  .input-label {
+    display: block;
+    font-family: var(--font-heading);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--color-primary);
+    margin-bottom: var(--sp-1);
+  }
+
+  .input-hint {
+    font-size: 12px;
+    color: var(--color-text-light);
+    margin-top: var(--sp-1);
+  }
+
+  input[type="text"],
+  input[type="email"],
+  input[type="number"],
+  select {
+    width: 100%;
+    font-family: var(--font-body);
+    font-size: 14px;
+    color: var(--color-primary);
+    padding: 10px 12px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-btn);
+    background: var(--color-white);
+    transition: border-color var(--transition), box-shadow var(--transition);
+  }
+
+  input:focus,
+  select:focus {
+    outline: none;
+    border-color: var(--color-accent);
+    box-shadow: 0 0 0 3px rgba(99, 91, 255, 0.15);
+  }
+
+  input::placeholder {
+    color: var(--color-text-light);
+  }
+
+  /* ============================================
+     DIVIDER
+     ============================================ */
+  .divider {
+    height: 1px;
+    background: var(--color-border);
+    margin: var(--sp-8) 0;
+  }
+
+  /* ============================================
+     FOOTER
+     ============================================ */
+  .page-footer {
+    text-align: center;
+    padding: var(--sp-8) var(--sp-6);
+    font-size: 12px;
+    color: var(--color-text-light);
+  }
+
+  /* ============================================
+     RESPONSIVE
+     ============================================ */
+  @media (max-width: 640px) {
+    .container { padding: var(--sp-4) var(--sp-4); }
+    .swatch-grid { grid-template-columns: repeat(2, 1fr); }
+    .card-grid { grid-template-columns: 1fr; }
+    .type-row { flex-direction: column; gap: var(--sp-1); }
+    .btn-row { flex-direction: column; align-items: stretch; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ============================================
+     HEADER
+     ============================================ -->
+<header class="page-header">
+  <h1>Design System</h1>
+  <p>Brand tokens &amp; component library preview</p>
+</header>
+
+<div class="container">
+
+  <!-- ============================================
+       COLORS
+       ============================================ -->
+  <section class="section">
+    <h2 class="section-title">Colors</h2>
+    <p class="section-desc">Core brand palette used across all components and surfaces.</p>
+
+    <div class="swatch-grid">
+      <div class="swatch">
+        <div class="swatch-color" style="background:#0A2540"></div>
+        <div class="swatch-info">
+          <div class="swatch-name">Primary</div>
+          <div class="swatch-value">#0A2540</div>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background:#635BFF"></div>
+        <div class="swatch-info">
+          <div class="swatch-name">Accent</div>
+          <div class="swatch-value">#635BFF</div>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background:#F6F9FC; border-bottom:1px solid #E3E8EF"></div>
+        <div class="swatch-info">
+          <div class="swatch-name">Background</div>
+          <div class="swatch-value">#F6F9FC</div>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background:#425466"></div>
+        <div class="swatch-info">
+          <div class="swatch-name">Text</div>
+          <div class="swatch-value">#425466</div>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background:#FFFFFF; border:1px solid #E3E8EF"></div>
+        <div class="swatch-info">
+          <div class="swatch-name">White</div>
+          <div class="swatch-value">#FFFFFF</div>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background:#E3E8EF"></div>
+        <div class="swatch-info">
+          <div class="swatch-name">Border</div>
+          <div class="swatch-value">#E3E8EF</div>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background:#0D9488"></div>
+        <div class="swatch-info">
+          <div class="swatch-name">Success</div>
+          <div class="swatch-value">#0D9488</div>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background:#D97706"></div>
+        <div class="swatch-info">
+          <div class="swatch-name">Warning</div>
+          <div class="swatch-value">#D97706</div>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background:#DC2626"></div>
+        <div class="swatch-info">
+          <div class="swatch-name">Error</div>
+          <div class="swatch-value">#DC2626</div>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background:#2563EB"></div>
+        <div class="swatch-info">
+          <div class="swatch-name">Info</div>
+          <div class="swatch-value">#2563EB</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ============================================
+       TYPOGRAPHY
+       ============================================ -->
+  <section class="section">
+    <h2 class="section-title">Typography</h2>
+    <p class="section-desc">Heading: Plus Jakarta Sans &mdash; Body: System UI stack.</p>
+
+    <div class="type-sample">
+      <div class="type-row">
+        <span class="type-label">H1 &middot; 32px</span>
+        <span class="type-specimen-heading" style="font-size:32px;font-weight:700">Payment Infrastructure</span>
+      </div>
+      <div class="type-row">
+        <span class="type-label">H2 &middot; 24px</span>
+        <span class="type-specimen-heading" style="font-size:24px;font-weight:700">Transaction Dashboard</span>
+      </div>
+      <div class="type-row">
+        <span class="type-label">H3 &middot; 20px</span>
+        <span class="type-specimen-heading" style="font-size:20px;font-weight:600">Revenue Analytics</span>
+      </div>
+      <div class="type-row">
+        <span class="type-label">H4 &middot; 16px</span>
+        <span class="type-specimen-heading" style="font-size:16px;font-weight:600">Monthly Breakdown</span>
+      </div>
+      <div class="type-row">
+        <span class="type-label">Body &middot; 15px</span>
+        <span style="font-size:15px">Process payments securely with industry-leading encryption and fraud detection across 135+ currencies.</span>
+      </div>
+      <div class="type-row">
+        <span class="type-label">Small &middot; 13px</span>
+        <span style="font-size:13px;color:#6B7A8D">Transactions are encrypted end-to-end and compliant with PCI DSS Level 1 standards.</span>
+      </div>
+      <div class="type-row">
+        <span class="type-label">Mono &middot; 13px</span>
+        <span style="font-family:'SF Mono',SFMono-Regular,Menlo,monospace;font-size:13px;color:#635BFF">txn_1NqRSTU4abc123def456</span>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ============================================
+       BUTTONS
+       ============================================ -->
+  <section class="section">
+    <h2 class="section-title">Buttons</h2>
+    <p class="section-desc">Border-radius: 6px. Sizes, variants, and states.</p>
+
+    <h4 style="font-family:var(--font-heading);font-size:14px;color:var(--color-primary);margin-bottom:var(--sp-3)">Variants</h4>
+    <div class="btn-row">
+      <button class="btn btn-primary">Accept Payment</button>
+      <button class="btn btn-secondary">Export Report</button>
+      <button class="btn btn-outline">View Details</button>
+      <button class="btn btn-dark">Create Invoice</button>
+      <button class="btn btn-danger">Cancel Transfer</button>
+      <button class="btn btn-ghost">Learn More</button>
+    </div>
+
+    <h4 style="font-family:var(--font-heading);font-size:14px;color:var(--color-primary);margin-bottom:var(--sp-3)">Sizes</h4>
+    <div class="btn-row">
+      <button class="btn btn-primary btn-sm">Small</button>
+      <button class="btn btn-primary">Default</button>
+      <button class="btn btn-primary btn-lg">Large</button>
+    </div>
+
+    <h4 style="font-family:var(--font-heading);font-size:14px;color:var(--color-primary);margin-bottom:var(--sp-3)">States</h4>
+    <div class="btn-row">
+      <button class="btn btn-primary" disabled>Disabled</button>
+      <button class="btn btn-secondary" disabled>Disabled</button>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ============================================
+       CARDS
+       ============================================ -->
+  <section class="section">
+    <h2 class="section-title">Cards</h2>
+    <p class="section-desc">Border-radius: 12px. Metric, product, and content variants.</p>
+
+    <div class="card-grid">
+      <!-- Metric card -->
+      <div class="card">
+        <div class="card-header">
+          <div class="metric-label">Total Revenue</div>
+          <div class="metric-value">$842,560</div>
+          <div class="metric-change positive">+12.4% from last month</div>
+        </div>
+        <div class="card-footer">
+          <span class="badge badge-success">On Track</span>
+          <button class="btn btn-ghost btn-sm">View Report</button>
+        </div>
+      </div>
+
+      <!-- Metric card -->
+      <div class="card">
+        <div class="card-header">
+          <div class="metric-label">Active Customers</div>
+          <div class="metric-value">24,891</div>
+          <div class="metric-change positive">+8.2% from last month</div>
+        </div>
+        <div class="card-footer">
+          <span class="badge badge-primary">Growing</span>
+          <button class="btn btn-ghost btn-sm">Details</button>
+        </div>
+      </div>
+
+      <!-- Metric card -->
+      <div class="card">
+        <div class="card-header">
+          <div class="metric-label">Failed Transactions</div>
+          <div class="metric-value">1.3%</div>
+          <div class="metric-change negative">+0.2% from last month</div>
+        </div>
+        <div class="card-footer">
+          <span class="badge badge-warning">Monitor</span>
+          <button class="btn btn-ghost btn-sm">Investigate</button>
+        </div>
+      </div>
+    </div>
+
+    <div style="height:var(--sp-6)"></div>
+
+    <div class="card-grid">
+      <!-- Product card -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-icon" style="background:#EEF2FF;color:#635BFF">&#9733;</div>
+          <div class="card-title">Payment Links</div>
+        </div>
+        <div class="card-body">
+          <p class="card-text">Create shareable payment links in seconds. No code required. Accept payments from customers worldwide with built-in receipt generation.</p>
+        </div>
+        <div class="card-footer">
+          <span class="badge badge-primary">New</span>
+          <button class="btn btn-primary btn-sm">Get Started</button>
+        </div>
+      </div>
+
+      <!-- Product card -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-icon" style="background:#ECFDF5;color:#0D9488">&#9879;</div>
+          <div class="card-title">Recurring Billing</div>
+        </div>
+        <div class="card-body">
+          <p class="card-text">Set up subscription billing with automatic retries, proration handling, and smart dunning emails to reduce involuntary churn.</p>
+        </div>
+        <div class="card-footer">
+          <span class="badge badge-success">Live</span>
+          <button class="btn btn-outline btn-sm">Configure</button>
+        </div>
+      </div>
+
+      <!-- Product card -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-icon" style="background:#EFF6FF;color:#2563EB">&#9878;</div>
+          <div class="card-title">Fraud Prevention</div>
+        </div>
+        <div class="card-body">
+          <p class="card-text">Machine learning-powered fraud detection that adapts to your business. Block fraudulent transactions while approving legitimate customers.</p>
+        </div>
+        <div class="card-footer">
+          <span class="badge badge-dark">Enterprise</span>
+          <button class="btn btn-outline btn-sm">Learn More</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ============================================
+       ALERTS
+       ============================================ -->
+  <section class="section">
+    <h2 class="section-title">Alerts</h2>
+    <p class="section-desc">Contextual messages for status, feedback, and guidance.</p>
+
+    <div class="alert alert-success">
+      <span class="alert-icon">&#10003;</span>
+      <div><strong>Payout completed.</strong> $12,480.00 has been deposited to your bank account ending in 4242.</div>
+    </div>
+
+    <div class="alert alert-info">
+      <span class="alert-icon">&#9432;</span>
+      <div><strong>Identity verification required.</strong> Please submit business documents to lift your processing limit of $50,000/month.</div>
+    </div>
+
+    <div class="alert alert-warning">
+      <span class="alert-icon">&#9888;</span>
+      <div><strong>High decline rate detected.</strong> Your card decline rate reached 4.8% this week. Review your fraud rules settings.</div>
+    </div>
+
+    <div class="alert alert-error">
+      <span class="alert-icon">&#10007;</span>
+      <div><strong>Webhook delivery failed.</strong> Endpoint https://api.example.com/stripe returned 503. Retrying in 5 minutes.</div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ============================================
+       BADGES
+       ============================================ -->
+  <section class="section">
+    <h2 class="section-title">Badges</h2>
+    <p class="section-desc">Status indicators and labels. Pill-shaped with semantic colors.</p>
+
+    <div class="badge-row">
+      <span class="badge badge-success">Active</span>
+      <span class="badge badge-primary">Processing</span>
+      <span class="badge badge-warning">Pending Review</span>
+      <span class="badge badge-error">Declined</span>
+      <span class="badge badge-neutral">Draft</span>
+      <span class="badge badge-dark">Enterprise</span>
+    </div>
+
+    <div style="height:var(--sp-6)"></div>
+
+    <!-- Badges in context -->
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>Transaction ID</th>
+            <th>Customer</th>
+            <th>Amount</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style="font-family:'SF Mono',SFMono-Regular,Menlo,monospace;font-size:13px">txn_3NqX8kR2</td>
+            <td>Acme Corp</td>
+            <td class="amount">$2,400.00</td>
+            <td><span class="badge badge-success">Succeeded</span></td>
+          </tr>
+          <tr>
+            <td style="font-family:'SF Mono',SFMono-Regular,Menlo,monospace;font-size:13px">txn_3NqX8kR3</td>
+            <td>Globex Inc</td>
+            <td class="amount">$18,750.00</td>
+            <td><span class="badge badge-primary">Processing</span></td>
+          </tr>
+          <tr>
+            <td style="font-family:'SF Mono',SFMono-Regular,Menlo,monospace;font-size:13px">txn_3NqX8kR4</td>
+            <td>Initech LLC</td>
+            <td class="amount">$450.00</td>
+            <td><span class="badge badge-warning">Pending</span></td>
+          </tr>
+          <tr>
+            <td style="font-family:'SF Mono',SFMono-Regular,Menlo,monospace;font-size:13px">txn_3NqX8kR5</td>
+            <td>Umbrella Co</td>
+            <td class="amount">$6,200.00</td>
+            <td><span class="badge badge-error">Declined</span></td>
+          </tr>
+          <tr>
+            <td style="font-family:'SF Mono',SFMono-Regular,Menlo,monospace;font-size:13px">txn_3NqX8kR6</td>
+            <td>Wayne Enterprises</td>
+            <td class="amount">$34,100.00</td>
+            <td><span class="badge badge-success">Succeeded</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ============================================
+       FORM ELEMENTS
+       ============================================ -->
+  <section class="section">
+    <h2 class="section-title">Form Elements</h2>
+    <p class="section-desc">Inputs and controls with focus ring matching the accent color.</p>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--sp-6)">
+      <div class="input-group">
+        <label class="input-label" for="business-name">Business Name</label>
+        <input type="text" id="business-name" placeholder="Acme Corp">
+      </div>
+      <div class="input-group">
+        <label class="input-label" for="email">Business Email</label>
+        <input type="email" id="email" placeholder="billing@acme.com">
+      </div>
+      <div class="input-group">
+        <label class="input-label" for="amount">Payment Amount</label>
+        <input type="number" id="amount" placeholder="0.00">
+        <div class="input-hint">Enter amount in USD</div>
+      </div>
+      <div class="input-group">
+        <label class="input-label" for="currency">Currency</label>
+        <select id="currency">
+          <option>USD - US Dollar</option>
+          <option>EUR - Euro</option>
+          <option>GBP - British Pound</option>
+          <option>JPY - Japanese Yen</option>
+        </select>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ============================================
+       TOKEN REFERENCE
+       ============================================ -->
+  <section class="section">
+    <h2 class="section-title">Token Quick Reference</h2>
+    <p class="section-desc">CSS custom properties used throughout this design system.</p>
+
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>Token</th>
+            <th>Value</th>
+            <th>Usage</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td style="font-family:monospace;font-size:13px">--color-primary</td><td>#0A2540</td><td>Headings, dark surfaces</td></tr>
+          <tr><td style="font-family:monospace;font-size:13px">--color-accent</td><td>#635BFF</td><td>Primary actions, links</td></tr>
+          <tr><td style="font-family:monospace;font-size:13px">--color-bg</td><td>#F6F9FC</td><td>Page background</td></tr>
+          <tr><td style="font-family:monospace;font-size:13px">--color-text</td><td>#425466</td><td>Body text</td></tr>
+          <tr><td style="font-family:monospace;font-size:13px">--radius-btn</td><td>6px</td><td>Button radius</td></tr>
+          <tr><td style="font-family:monospace;font-size:13px">--radius-card</td><td>12px</td><td>Card radius</td></tr>
+          <tr><td style="font-family:monospace;font-size:13px">--font-heading</td><td>Plus Jakarta Sans</td><td>Headings, UI labels</td></tr>
+          <tr><td style="font-family:monospace;font-size:13px">--font-body</td><td>System UI</td><td>Body text, paragraphs</td></tr>
+          <tr><td style="font-family:monospace;font-size:13px">--sp-1</td><td>4px</td><td>Base spacing unit</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+</div>
+
+<!-- ============================================
+     FOOTER
+     ============================================ -->
+<footer class="page-footer">
+  Brand Design System &middot; Generated from DESIGN.md tokens &middot; Payment/Fintech Theme
+</footer>
+
+</body>
+</html>

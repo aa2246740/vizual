@@ -26,6 +26,11 @@
 | mviz | ^1.6.4 | MIT | ✅ | Chart option builder |
 | @json-render/core | ^0.17.0 | Apache-2.0 | ✅ | Catalog 注册 |
 | @json-render/react | ^0.17.0 | Apache-2.0 | Registry + Renderer |
+| dompurify | ^3.4.0 | Apache-2.0 | ✅ | HTML 消毒，用于 DocView |
+| html2canvas | ^1.4.1 | MIT | ✅ | PNG 导出 |
+| marked | ^15.0.12 | MIT | ✅ | Markdown 渲染，用于 DocView |
+| mermaid | ^11.14.0 | MIT | ✅ | 图表渲染（MermaidDiagram 组件） |
+| react-highlight-words | ^0.20.0 | MIT | ✅ | 文本高亮，用于 DocView 批注 |
 
 ### Peer 依赖
 
@@ -38,7 +43,6 @@
 
 | 包名 | 许可证 | 商用 | 说明 |
 |------|--------|------|------|
-| mermaid | MIT | ✅ | MermaidDiagram 组件的可选依赖 |
 | elkjs | EPL-2.0 | ✅ | mermaid 内部使用，用于自动布局 |
 
 ---
@@ -65,7 +69,7 @@ elkjs is licensed under the Eclipse Public License 2.0 (EPL-2.0).
 Source: https://github.com/kieler/elkjs
 ```
 
-如果你不使用 MermaidDiagram 组件，elkjs 不会被加载，无需关注此项。
+如果你不使用 MermaidDiagram 组件，elkjs 可能不会被加载，无需关注此项（mermaid 作为直接依赖始终安装，但 elkjs 仅在 mermaid 执行布局时按需加载）。
 
 ---
 
@@ -76,12 +80,16 @@ MIT ──────────── 最宽松，可与其他许可证合并
   ├── zod
   ├── mviz
   ├── react
-  └── mermaid
+  ├── mermaid
+  ├── html2canvas
+  ├── marked
+  └── react-highlight-words
 
 Apache-2.0 ───── 宽松，允许商用，需保留 NOTICE
   ├── echarts
   ├── @json-render/core
-  └── @json-render/react
+  ├── @json-render/react
+  └── dompurify
 
 EPL-2.0 ──────── 允许商用，修改源码需开源
   └── elkjs (mermaid 间接依赖)
@@ -97,7 +105,7 @@ EPL-2.0 ──────── 允许商用，修改源码需开源
 
 ### MIT License 适用范围
 
-zod, mviz, react, react-dom, mermaid
+zod, mviz, react, react-dom, mermaid, html2canvas, marked, react-highlight-words
 
 ```
 MIT License
@@ -117,7 +125,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND.
 
 ### Apache-2.0 License 适用范围
 
-echarts, @json-render/core, @json-render/react
+echarts, @json-render/core, @json-render/react, dompurify
 
 ```
 Licensed under the Apache License, Version 2.0 (the "License");

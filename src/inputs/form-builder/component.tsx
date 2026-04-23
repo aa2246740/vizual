@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react'
 import { useBoundProp } from '@json-render/react'
 import { tcss, tc } from '../../core/theme-colors'
+import { AnnotatableWrapper } from '../../docview/annotatable-wrapper'
 import type { FormBuilderProps } from './schema'
 
 type Field = FormBuilderProps['fields'][0]
@@ -388,10 +389,12 @@ export function FormBuilder({ props, bindings }: { props: FormBuilderProps; bind
     </div>
   }
 
-  return <div>
-    {props.title && <h3 style={{ fontSize:tcss('--rk-text-lg'), fontWeight:tcss('--rk-weight-semibold'), marginBottom: 16, color: tcss('--rk-text-primary') }}>{props.title}</h3>}
-    <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: '0 24px' }}>
-      {visibleFields.map(renderField)}
+  return <AnnotatableWrapper targetType="component" componentType="FormBuilder" label={props.title || `Form, ${visibleFields.length} fields`}>
+    <div>
+      {props.title && <h3 style={{ fontSize:tcss('--rk-text-lg'), fontWeight:tcss('--rk-weight-semibold'), marginBottom: 16, color: tcss('--rk-text-primary') }}>{props.title}</h3>}
+      <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: '0 24px' }}>
+        {visibleFields.map(renderField)}
+      </div>
     </div>
-  </div>
+  </AnnotatableWrapper>
 }

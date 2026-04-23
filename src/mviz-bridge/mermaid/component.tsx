@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import type { MermaidProps } from './schema'
 import { tcss, tc } from '../../core/theme-colors'
+import { useAnnotationContext } from '../../docview/annotation-context'
+import type { AnnotationTarget } from '../../docview/types'
 
 /**
  * Mermaid diagram component — renders mermaid syntax via mermaid.js
@@ -13,6 +15,7 @@ import { tcss, tc } from '../../core/theme-colors'
 export function MermaidChart({ props }: { props: MermaidProps }) {
   const [html, setHtml] = useState<string>('')
   const [error, setError] = useState<string>('')
+  const ctx = useAnnotationContext()
 
   useEffect(() => {
     let cancelled = false
@@ -46,9 +49,26 @@ export function MermaidChart({ props }: { props: MermaidProps }) {
     return () => { cancelled = true }
   }, [props.code, props.theme])
 
+  // 批注相关属性（仅在 DocView 内生效）
+  const annotationProps = ctx ? {
+    'data-docview-target': `component-${ctx.sectionIndex}`,
+    'data-section-index': ctx.sectionIndex,
+    'data-target-type': 'component' as const,
+    onClick: (e: React.MouseEvent) => {
+      e.stopPropagation()
+      ctx.onTargetClick?.({
+        sectionIndex: ctx.sectionIndex,
+        targetType: 'component',
+        label: ctx.title || props.title || 'MermaidDiagram',
+        targetId: `component-${ctx.sectionIndex}`,
+      }, e.currentTarget as HTMLElement)
+    },
+    style: { cursor: 'pointer' as const },
+  } : {}
+
   if (error) {
     return (
-      <div style={{ width: '100%', minHeight: props.height ?? 200 }}>
+      <div style={{ width: '100%', minHeight: props.height ?? 200 }} {...annotationProps}>
         {props.title && <h3 style={{ fontSize:tcss('--rk-text-md'), fontWeight:tcss('--rk-weight-semibold'), marginBottom: 8, color: tcss('--rk-text-primary') }}>{props.title}</h3>}
         <pre style={{ color: tcss('--rk-text-secondary'), fontSize:tcss('--rk-text-base'), padding: 12, background: tcss('--rk-bg-secondary'), borderRadius:tcss('--rk-radius-sm'), whiteSpace: 'pre-wrap' }}>{props.code}</pre>
         <div style={{ color: tcss('--rk-error'), fontSize:tcss('--rk-text-xs'), marginTop: 4 }}>{error}</div>
@@ -57,7 +77,7 @@ export function MermaidChart({ props }: { props: MermaidProps }) {
   }
 
   return (
-    <div style={{ width: '100%', minHeight: props.height ?? 200 }}>
+    <div style={{ width: '100%', minHeight: props.height ?? 200 }} {...annotationProps}>
       {props.title && <h3 style={{ fontSize:tcss('--rk-text-md'), fontWeight:tcss('--rk-weight-semibold'), marginBottom: 8, color: tcss('--rk-text-primary') }}>{props.title}</h3>}
       <div dangerouslySetInnerHTML={{ __html: html }} />
     </div>

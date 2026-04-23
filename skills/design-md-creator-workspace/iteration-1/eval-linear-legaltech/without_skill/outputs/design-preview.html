@@ -1,0 +1,2043 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LegalEdge Design System</title>
+<style>
+  /* ============================================
+     LegalEdge Design System
+     Inspired by Linear — adapted for Legal Tech
+     Brand: #2563EB (Deep Blue)
+     ============================================ */
+
+  /* --- CSS Custom Properties --- */
+  :root {
+    /* Brand */
+    --brand-500: #2563EB;
+    --brand-400: #3B82F6;
+    --brand-300: #60A5FA;
+    --brand-200: #93C5FD;
+    --brand-100: #BFDBFE;
+    --brand-600: #1D4ED8;
+    --brand-700: #1E40AF;
+    --brand-800: #1E3A8A;
+    --brand-900: #172554;
+
+    /* Surfaces */
+    --bg-root: #0A0A0F;
+    --bg-primary: #111118;
+    --bg-secondary: #16161E;
+    --bg-tertiary: #1C1C26;
+    --bg-elevated: #22222E;
+    --bg-hover: #2A2A38;
+
+    /* Borders */
+    --border-primary: #2A2A38;
+    --border-secondary: #1E1E2A;
+    --border-brand: rgba(37, 99, 235, 0.4);
+    --border-brand-strong: rgba(37, 99, 235, 0.7);
+
+    /* Text */
+    --text-primary: #E8E8ED;
+    --text-secondary: #8E8E9A;
+    --text-tertiary: #5C5C6A;
+    --text-brand: var(--brand-400);
+    --text-inverse: #0A0A0F;
+
+    /* Semantic */
+    --success-500: #22C55E;
+    --success-bg: rgba(34, 197, 94, 0.08);
+    --success-border: rgba(34, 197, 94, 0.2);
+    --warning-500: #F59E0B;
+    --warning-bg: rgba(245, 158, 11, 0.08);
+    --warning-border: rgba(245, 158, 11, 0.2);
+    --danger-500: #EF4444;
+    --danger-bg: rgba(239, 68, 68, 0.08);
+    --danger-border: rgba(239, 68, 68, 0.2);
+    --info-500: var(--brand-400);
+    --info-bg: rgba(37, 99, 235, 0.08);
+    --info-border: rgba(37, 99, 235, 0.2);
+
+    /* Typography */
+    --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --font-mono: 'JetBrains Mono', 'SF Mono', 'Fira Code', monospace;
+
+    /* Spacing */
+    --space-1: 4px;
+    --space-2: 8px;
+    --space-3: 12px;
+    --space-4: 16px;
+    --space-5: 20px;
+    --space-6: 24px;
+    --space-8: 32px;
+    --space-10: 40px;
+    --space-12: 48px;
+    --space-16: 64px;
+
+    /* Radius */
+    --radius-sm: 4px;
+    --radius-md: 6px;
+    --radius-lg: 8px;
+    --radius-xl: 12px;
+
+    /* Transitions */
+    --transition-fast: 120ms ease;
+    --transition-base: 200ms ease;
+  }
+
+  /* --- Reset & Base --- */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html {
+    font-size: 14px;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    font-family: var(--font-sans);
+    background: var(--bg-root);
+    color: var(--text-primary);
+    line-height: 1.5;
+    min-height: 100vh;
+  }
+
+  /* --- Layout --- */
+  .page {
+    max-width: 1120px;
+    margin: 0 auto;
+    padding: var(--space-16) var(--space-8);
+  }
+
+  .section {
+    margin-bottom: var(--space-16);
+  }
+
+  .section-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-tertiary);
+    margin-bottom: var(--space-6);
+    padding-bottom: var(--space-3);
+    border-bottom: 1px solid var(--border-primary);
+  }
+
+  .section-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: var(--space-2);
+  }
+
+  .section-desc {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-bottom: var(--space-8);
+  }
+
+  .grid {
+    display: grid;
+    gap: var(--space-4);
+  }
+
+  .grid-2 { grid-template-columns: repeat(2, 1fr); }
+  .grid-3 { grid-template-columns: repeat(3, 1fr); }
+  .grid-4 { grid-template-columns: repeat(4, 1fr); }
+  .grid-5 { grid-template-columns: repeat(5, 1fr); }
+  .grid-6 { grid-template-columns: repeat(6, 1fr); }
+
+  .flex-row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+  }
+
+  .flex-wrap {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+  }
+
+  /* --- Header --- */
+  .system-header {
+    margin-bottom: var(--space-16);
+    padding-bottom: var(--space-10);
+    border-bottom: 1px solid var(--border-primary);
+  }
+
+  .system-header .logo-mark {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    background: var(--brand-500);
+    border-radius: var(--radius-lg);
+    margin-bottom: var(--space-4);
+  }
+
+  .system-header .logo-mark svg {
+    width: 20px;
+    height: 20px;
+    color: white;
+  }
+
+  .system-header h1 {
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--text-primary);
+    margin-bottom: var(--space-2);
+  }
+
+  .system-header p {
+    font-size: 15px;
+    color: var(--text-secondary);
+    max-width: 560px;
+    line-height: 1.6;
+  }
+
+  .system-header .meta-row {
+    display: flex;
+    gap: var(--space-6);
+    margin-top: var(--space-5);
+  }
+
+  .system-header .meta-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: 12px;
+    color: var(--text-tertiary);
+  }
+
+  .system-header .meta-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--brand-500);
+  }
+
+  /* --- Color Swatches --- */
+  .swatch-group {
+    margin-bottom: var(--space-8);
+  }
+
+  .swatch-group-label {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    margin-bottom: var(--space-3);
+  }
+
+  .swatch-row {
+    display: flex;
+    gap: 2px;
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+  }
+
+  .swatch {
+    flex: 1;
+    min-height: 56px;
+    display: flex;
+    align-items: flex-end;
+    padding: var(--space-2);
+    cursor: default;
+    transition: opacity var(--transition-fast);
+  }
+
+  .swatch:hover { opacity: 0.85; }
+
+  .swatch-info {
+    font-size: 10px;
+    font-family: var(--font-mono);
+    line-height: 1.4;
+  }
+
+  .swatch-info--light { color: rgba(255,255,255,0.85); }
+  .swatch-info--dark { color: rgba(0,0,0,0.6); }
+
+  .color-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: var(--space-3);
+  }
+
+  .color-card {
+    border: 1px solid var(--border-primary);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    transition: border-color var(--transition-fast);
+  }
+
+  .color-card:hover { border-color: var(--border-brand); }
+
+  .color-card__preview {
+    height: 64px;
+  }
+
+  .color-card__info {
+    padding: var(--space-2) var(--space-3);
+    background: var(--bg-secondary);
+  }
+
+  .color-card__name {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-primary);
+  }
+
+  .color-card__value {
+    font-size: 10px;
+    font-family: var(--font-mono);
+    color: var(--text-tertiary);
+  }
+
+  /* --- Typography --- */
+  .type-specimen {
+    padding: var(--space-5) 0;
+    border-bottom: 1px solid var(--border-secondary);
+    display: flex;
+    align-items: baseline;
+    gap: var(--space-8);
+  }
+
+  .type-specimen:last-child { border-bottom: none; }
+
+  .type-sample {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .type-meta {
+    flex-shrink: 0;
+    width: 180px;
+    text-align: right;
+  }
+
+  .type-meta-label {
+    font-size: 11px;
+    font-family: var(--font-mono);
+    color: var(--text-tertiary);
+    line-height: 1.6;
+  }
+
+  /* --- Buttons --- */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
+    height: 32px;
+    padding: 0 var(--space-4);
+    font-family: var(--font-sans);
+    font-size: 13px;
+    font-weight: 500;
+    border-radius: var(--radius-md);
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    white-space: nowrap;
+    text-decoration: none;
+  }
+
+  .btn--primary {
+    background: var(--brand-500);
+    color: #fff;
+    border-color: var(--brand-500);
+  }
+
+  .btn--primary:hover { background: var(--brand-400); border-color: var(--brand-400); }
+
+  .btn--secondary {
+    background: transparent;
+    color: var(--text-primary);
+    border-color: var(--border-primary);
+  }
+
+  .btn--secondary:hover { background: var(--bg-hover); border-color: var(--text-tertiary); }
+
+  .btn--ghost {
+    background: transparent;
+    color: var(--text-secondary);
+    border-color: transparent;
+  }
+
+  .btn--ghost:hover { color: var(--text-primary); background: var(--bg-hover); }
+
+  .btn--danger {
+    background: transparent;
+    color: var(--danger-500);
+    border-color: var(--danger-border);
+  }
+
+  .btn--danger:hover { background: var(--danger-bg); }
+
+  .btn--success {
+    background: transparent;
+    color: var(--success-500);
+    border-color: var(--success-border);
+  }
+
+  .btn--success:hover { background: var(--success-bg); }
+
+  .btn--sm {
+    height: 26px;
+    padding: 0 var(--space-3);
+    font-size: 12px;
+    border-radius: var(--radius-sm);
+  }
+
+  .btn--lg {
+    height: 40px;
+    padding: 0 var(--space-6);
+    font-size: 14px;
+    border-radius: var(--radius-md);
+  }
+
+  .btn:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+  }
+
+  .btn svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  /* --- Inputs --- */
+  .input-group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+  }
+
+  .input-label {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-secondary);
+  }
+
+  .input {
+    height: 32px;
+    padding: 0 var(--space-3);
+    font-family: var(--font-sans);
+    font-size: 13px;
+    color: var(--text-primary);
+    background: var(--bg-primary);
+    border: 1px solid var(--border-primary);
+    border-radius: var(--radius-md);
+    outline: none;
+    transition: border-color var(--transition-fast);
+  }
+
+  .input::placeholder { color: var(--text-tertiary); }
+  .input:focus { border-color: var(--brand-500); }
+
+  .input--error { border-color: var(--danger-500); }
+
+  .input-hint {
+    font-size: 11px;
+    color: var(--text-tertiary);
+  }
+
+  .input-hint--error { color: var(--danger-500); }
+
+  textarea.input {
+    height: auto;
+    min-height: 80px;
+    padding: var(--space-2) var(--space-3);
+    resize: vertical;
+  }
+
+  select.input {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%238E8E9A' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10l-5 5z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    padding-right: 28px;
+  }
+
+  .checkbox-row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    cursor: pointer;
+  }
+
+  .checkbox {
+    width: 16px;
+    height: 16px;
+    border: 1px solid var(--border-primary);
+    border-radius: var(--radius-sm);
+    background: var(--bg-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .checkbox--checked {
+    background: var(--brand-500);
+    border-color: var(--brand-500);
+  }
+
+  .checkbox--checked::after {
+    content: '';
+    width: 8px;
+    height: 5px;
+    border-left: 2px solid white;
+    border-bottom: 2px solid white;
+    transform: rotate(-45deg) translateY(-1px);
+  }
+
+  /* --- Badge / Tag --- */
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    height: 20px;
+    padding: 0 var(--space-2);
+    font-size: 11px;
+    font-weight: 500;
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+
+  .badge--brand {
+    background: var(--info-bg);
+    color: var(--brand-300);
+    border: 1px solid var(--info-border);
+  }
+
+  .badge--success {
+    background: var(--success-bg);
+    color: var(--success-500);
+    border: 1px solid var(--success-border);
+  }
+
+  .badge--warning {
+    background: var(--warning-bg);
+    color: var(--warning-500);
+    border: 1px solid var(--warning-border);
+  }
+
+  .badge--danger {
+    background: var(--danger-bg);
+    color: var(--danger-500);
+    border: 1px solid var(--danger-border);
+  }
+
+  .badge--neutral {
+    background: var(--bg-elevated);
+    color: var(--text-secondary);
+    border: 1px solid var(--border-primary);
+  }
+
+  .badge-dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+
+  /* --- Cards --- */
+  .card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-primary);
+    border-radius: var(--radius-xl);
+    overflow: hidden;
+    transition: border-color var(--transition-base);
+  }
+
+  .card:hover { border-color: var(--border-brand); }
+
+  .card__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-4) var(--space-5);
+    border-bottom: 1px solid var(--border-secondary);
+  }
+
+  .card__title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  .card__body {
+    padding: var(--space-5);
+  }
+
+  .card__footer {
+    padding: var(--space-3) var(--space-5);
+    border-top: 1px solid var(--border-secondary);
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: var(--space-2);
+  }
+
+  /* --- Alert / Banner --- */
+  .alert {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-3);
+    padding: var(--space-3) var(--space-4);
+    border-radius: var(--radius-lg);
+    border: 1px solid;
+    font-size: 13px;
+    line-height: 1.5;
+  }
+
+  .alert--info {
+    background: var(--info-bg);
+    border-color: var(--info-border);
+    color: var(--brand-300);
+  }
+
+  .alert--success {
+    background: var(--success-bg);
+    border-color: var(--success-border);
+    color: var(--success-500);
+  }
+
+  .alert--warning {
+    background: var(--warning-bg);
+    border-color: var(--warning-border);
+    color: var(--warning-500);
+  }
+
+  .alert--danger {
+    background: var(--danger-bg);
+    border-color: var(--danger-border);
+    color: var(--danger-500);
+  }
+
+  .alert-icon {
+    flex-shrink: 0;
+    width: 16px;
+    height: 16px;
+    margin-top: 1px;
+  }
+
+  /* --- Table --- */
+  .table-wrap {
+    border: 1px solid var(--border-primary);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+
+  thead {
+    background: var(--bg-tertiary);
+  }
+
+  th {
+    padding: var(--space-2) var(--space-4);
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-tertiary);
+    text-align: left;
+    border-bottom: 1px solid var(--border-primary);
+  }
+
+  td {
+    padding: var(--space-3) var(--space-4);
+    color: var(--text-secondary);
+    border-bottom: 1px solid var(--border-secondary);
+  }
+
+  tr:last-child td { border-bottom: none; }
+
+  tr:hover td { background: var(--bg-tertiary); }
+
+  td.text-primary-col {
+    color: var(--text-primary);
+    font-weight: 500;
+  }
+
+  /* --- Stat Card --- */
+  .stat {
+    padding: var(--space-5);
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-primary);
+    border-radius: var(--radius-lg);
+  }
+
+  .stat__label {
+    font-size: 11px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-tertiary);
+    margin-bottom: var(--space-2);
+  }
+
+  .stat__value {
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--text-primary);
+  }
+
+  .stat__change {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+    font-size: 12px;
+    margin-top: var(--space-2);
+  }
+
+  .stat__change--up { color: var(--success-500); }
+  .stat__change--down { color: var(--danger-500); }
+
+  /* --- Tabs --- */
+  .tabs {
+    display: flex;
+    gap: 0;
+    border-bottom: 1px solid var(--border-primary);
+    margin-bottom: var(--space-6);
+  }
+
+  .tab {
+    padding: var(--space-2) var(--space-4);
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-tertiary);
+    border-bottom: 2px solid transparent;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+  }
+
+  .tab:hover { color: var(--text-secondary); }
+
+  .tab--active {
+    color: var(--text-primary);
+    border-bottom-color: var(--brand-500);
+  }
+
+  /* --- Progress --- */
+  .progress-bar {
+    height: 4px;
+    background: var(--bg-elevated);
+    border-radius: 999px;
+    overflow: hidden;
+  }
+
+  .progress-bar__fill {
+    height: 100%;
+    border-radius: 999px;
+    background: var(--brand-500);
+    transition: width var(--transition-base);
+  }
+
+  .progress-bar__fill--success { background: var(--success-500); }
+  .progress-bar__fill--warning { background: var(--warning-500); }
+  .progress-bar__fill--danger { background: var(--danger-500); }
+
+  /* --- Avatar --- */
+  .avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--brand-700);
+    color: var(--brand-200);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 600;
+    flex-shrink: 0;
+  }
+
+  .avatar--sm { width: 22px; height: 22px; font-size: 9px; }
+  .avatar--lg { width: 36px; height: 36px; font-size: 14px; }
+
+  .avatar-stack {
+    display: flex;
+  }
+
+  .avatar-stack .avatar {
+    margin-left: -6px;
+    border: 2px solid var(--bg-secondary);
+  }
+
+  .avatar-stack .avatar:first-child { margin-left: 0; }
+
+  /* --- Tooltip / Dropdown Mock --- */
+  .dropdown {
+    position: relative;
+    display: inline-block;
+  }
+
+  .dropdown__menu {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    min-width: 180px;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-primary);
+    border-radius: var(--radius-lg);
+    padding: var(--space-1);
+    z-index: 10;
+  }
+
+  .dropdown__item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-3);
+    font-size: 13px;
+    color: var(--text-secondary);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+  }
+
+  .dropdown__item:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+  }
+
+  .dropdown__item--active {
+    color: var(--text-primary);
+    background: var(--info-bg);
+  }
+
+  .dropdown__divider {
+    height: 1px;
+    background: var(--border-secondary);
+    margin: var(--space-1) 0;
+  }
+
+  .dropdown__item-icon {
+    width: 14px;
+    height: 14px;
+    color: var(--text-tertiary);
+  }
+
+  /* --- Toggle --- */
+  .toggle {
+    width: 34px;
+    height: 18px;
+    border-radius: 999px;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-primary);
+    position: relative;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+  }
+
+  .toggle::after {
+    content: '';
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--text-tertiary);
+    top: 2px;
+    left: 2px;
+    transition: all var(--transition-fast);
+  }
+
+  .toggle--active {
+    background: var(--brand-500);
+    border-color: var(--brand-500);
+  }
+
+  .toggle--active::after {
+    background: white;
+    left: 18px;
+  }
+
+  /* --- Nav Sidebar Mock --- */
+  .sidebar-mock {
+    width: 220px;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-primary);
+    border-radius: var(--radius-xl);
+    overflow: hidden;
+  }
+
+  .sidebar-mock__header {
+    padding: var(--space-4);
+    border-bottom: 1px solid var(--border-secondary);
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+  }
+
+  .sidebar-mock__brand {
+    width: 20px;
+    height: 20px;
+    background: var(--brand-500);
+    border-radius: var(--radius-sm);
+  }
+
+  .sidebar-mock__name {
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  .sidebar-mock__nav {
+    padding: var(--space-2);
+  }
+
+  .sidebar-mock__item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-3);
+    font-size: 13px;
+    color: var(--text-tertiary);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    margin-bottom: 1px;
+  }
+
+  .sidebar-mock__item:hover {
+    color: var(--text-secondary);
+    background: var(--bg-hover);
+  }
+
+  .sidebar-mock__item--active {
+    color: var(--text-primary);
+    background: var(--bg-elevated);
+  }
+
+  .sidebar-mock__item-icon {
+    width: 16px;
+    height: 16px;
+  }
+
+  .sidebar-mock__section-label {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-tertiary);
+    padding: var(--space-3) var(--space-3) var(--space-1);
+  }
+
+  /* --- Skeleton --- */
+  .skeleton {
+    background: linear-gradient(90deg, var(--bg-elevated) 25%, var(--bg-hover) 50%, var(--bg-elevated) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+    border-radius: var(--radius-sm);
+  }
+
+  @keyframes shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
+
+  /* --- Divider --- */
+  .divider {
+    height: 1px;
+    background: var(--border-secondary);
+    margin: var(--space-4) 0;
+  }
+
+  .divider-label {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    font-size: 11px;
+    color: var(--text-tertiary);
+  }
+
+  .divider-label::before,
+  .divider-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border-secondary);
+  }
+
+  /* --- Keyboard shortcut --- */
+  kbd {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 20px;
+    height: 20px;
+    padding: 0 5px;
+    font-family: var(--font-sans);
+    font-size: 10px;
+    font-weight: 500;
+    color: var(--text-tertiary);
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-primary);
+    border-radius: var(--radius-sm);
+  }
+
+  /* --- Icon helpers (simple SVG inline) --- */
+  .icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    color: currentColor;
+  }
+
+  /* --- Component: Case list item --- */
+  .case-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-3) var(--space-4);
+    border: 1px solid var(--border-primary);
+    border-radius: var(--radius-lg);
+    transition: border-color var(--transition-fast);
+    cursor: pointer;
+  }
+
+  .case-item:hover {
+    border-color: var(--border-brand);
+    background: var(--bg-tertiary);
+  }
+
+  .case-item__icon {
+    width: 32px;
+    height: 32px;
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 14px;
+  }
+
+  .case-item__icon--litigation { background: var(--info-bg); border: 1px solid var(--info-border); }
+  .case-item__icon--contract { background: var(--success-bg); border: 1px solid var(--success-border); }
+  .case-item__icon--compliance { background: var(--warning-bg); border: 1px solid var(--warning-border); }
+
+  .case-item__content { flex: 1; min-width: 0; }
+
+  .case-item__title {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .case-item__subtitle {
+    font-size: 11px;
+    color: var(--text-tertiary);
+    margin-top: 1px;
+  }
+
+  .case-item__meta {
+    flex-shrink: 0;
+    text-align: right;
+  }
+
+  /* --- Empty State --- */
+  .empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-12);
+    text-align: center;
+  }
+
+  .empty-state__icon {
+    width: 48px;
+    height: 48px;
+    color: var(--text-tertiary);
+    margin-bottom: var(--space-4);
+    opacity: 0.5;
+  }
+
+  .empty-state__title {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-primary);
+    margin-bottom: var(--space-1);
+  }
+
+  .empty-state__desc {
+    font-size: 13px;
+    color: var(--text-tertiary);
+    max-width: 320px;
+    margin-bottom: var(--space-5);
+  }
+</style>
+</head>
+<body>
+
+<div class="page">
+
+  <!-- ============ HEADER ============ -->
+  <header class="system-header">
+    <div class="logo-mark">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+        <path d="M2 17l10 5 10-5"/>
+        <path d="M2 12l10 5 10-5"/>
+      </svg>
+    </div>
+    <h1>LegalEdge Design System</h1>
+    <p>Dark, compact, and precise. A design system for legal technology that prioritizes clarity and density without sacrificing sophistication.</p>
+    <div class="meta-row">
+      <div class="meta-item">
+        <span class="meta-dot"></span>
+        Brand: #2563EB
+      </div>
+      <div class="meta-item">
+        <span class="meta-dot"></span>
+        Theme: Dark
+      </div>
+      <div class="meta-item">
+        <span class="meta-dot"></span>
+        Density: Compact
+      </div>
+      <div class="meta-item">
+        <span class="meta-dot"></span>
+        v1.0.0
+      </div>
+    </div>
+  </header>
+
+
+  <!-- ============ COLORS ============ -->
+  <section class="section">
+    <div class="section-label">Color System</div>
+    <div class="section-title">Brand Palette</div>
+    <div class="section-desc">Primary blue anchored at #2563EB. No purple. Full ramp for UI flexibility.</div>
+
+    <div class="swatch-group">
+      <div class="swatch-group-label">Brand Blue</div>
+      <div class="swatch-row">
+        <div class="swatch" style="background:var(--brand-900)">
+          <div class="swatch-info swatch-info--light">900<br>#172554</div>
+        </div>
+        <div class="swatch" style="background:var(--brand-800)">
+          <div class="swatch-info swatch-info--light">800<br>#1E3A8A</div>
+        </div>
+        <div class="swatch" style="background:var(--brand-700)">
+          <div class="swatch-info swatch-info--light">700<br>#1E40AF</div>
+        </div>
+        <div class="swatch" style="background:var(--brand-600)">
+          <div class="swatch-info swatch-info--light">600<br>#1D4ED8</div>
+        </div>
+        <div class="swatch" style="background:var(--brand-500)">
+          <div class="swatch-info swatch-info--light">500<br>#2563EB</div>
+        </div>
+        <div class="swatch" style="background:var(--brand-400)">
+          <div class="swatch-info swatch-info--light">400<br>#3B82F6</div>
+        </div>
+        <div class="swatch" style="background:var(--brand-300)">
+          <div class="swatch-info swatch-info--dark">300<br>#60A5FA</div>
+        </div>
+        <div class="swatch" style="background:var(--brand-200)">
+          <div class="swatch-info swatch-info--dark">200<br>#93C5FD</div>
+        </div>
+        <div class="swatch" style="background:var(--brand-100)">
+          <div class="swatch-info swatch-info--dark">100<br>#BFDBFE</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid grid-4" style="margin-top: var(--space-6);">
+      <!-- Neutral surfaces -->
+      <div class="color-card">
+        <div class="color-card__preview" style="background:var(--bg-root)"></div>
+        <div class="color-card__info">
+          <div class="color-card__name">Root</div>
+          <div class="color-card__value">#0A0A0F</div>
+        </div>
+      </div>
+      <div class="color-card">
+        <div class="color-card__preview" style="background:var(--bg-primary)"></div>
+        <div class="color-card__info">
+          <div class="color-card__name">Primary</div>
+          <div class="color-card__value">#111118</div>
+        </div>
+      </div>
+      <div class="color-card">
+        <div class="color-card__preview" style="background:var(--bg-secondary)"></div>
+        <div class="color-card__info">
+          <div class="color-card__name">Secondary</div>
+          <div class="color-card__value">#16161E</div>
+        </div>
+      </div>
+      <div class="color-card">
+        <div class="color-card__preview" style="background:var(--bg-elevated)"></div>
+        <div class="color-card__info">
+          <div class="color-card__name">Elevated</div>
+          <div class="color-card__value">#22222E</div>
+        </div>
+      </div>
+      <div class="color-card">
+        <div class="color-card__preview" style="background:var(--text-primary)"></div>
+        <div class="color-card__info">
+          <div class="color-card__name">Text Primary</div>
+          <div class="color-card__value">#E8E8ED</div>
+        </div>
+      </div>
+      <div class="color-card">
+        <div class="color-card__preview" style="background:var(--text-secondary)"></div>
+        <div class="color-card__info">
+          <div class="color-card__name">Text Secondary</div>
+          <div class="color-card__value">#8E8E9A</div>
+        </div>
+      </div>
+      <div class="color-card">
+        <div class="color-card__preview" style="background:var(--border-primary)"></div>
+        <div class="color-card__info">
+          <div class="color-card__name">Border</div>
+          <div class="color-card__value">#2A2A38</div>
+        </div>
+      </div>
+      <div class="color-card">
+        <div class="color-card__preview" style="background:var(--brand-500)"></div>
+        <div class="color-card__info">
+          <div class="color-card__name">Brand</div>
+          <div class="color-card__value">#2563EB</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top: var(--space-8);">
+      <div class="swatch-group-label">Semantic</div>
+      <div class="grid grid-4">
+        <div class="color-card">
+          <div class="color-card__preview" style="background:var(--success-500)"></div>
+          <div class="color-card__info">
+            <div class="color-card__name">Success</div>
+            <div class="color-card__value">#22C55E</div>
+          </div>
+        </div>
+        <div class="color-card">
+          <div class="color-card__preview" style="background:var(--warning-500)"></div>
+          <div class="color-card__info">
+            <div class="color-card__name">Warning</div>
+            <div class="color-card__value">#F59E0B</div>
+          </div>
+        </div>
+        <div class="color-card">
+          <div class="color-card__preview" style="background:var(--danger-500)"></div>
+          <div class="color-card__info">
+            <div class="color-card__name">Danger</div>
+            <div class="color-card__value">#EF4444</div>
+          </div>
+        </div>
+        <div class="color-card">
+          <div class="color-card__preview" style="background:var(--info-500)"></div>
+          <div class="color-card__info">
+            <div class="color-card__name">Info</div>
+            <div class="color-card__value">#3B82F6</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ============ TYPOGRAPHY ============ -->
+  <section class="section">
+    <div class="section-label">Typography</div>
+    <div class="section-title">Type Scale</div>
+    <div class="section-desc">Inter for UI. JetBrains Mono for code. Tight tracking, high readability at small sizes.</div>
+
+    <div class="type-specimen">
+      <div class="type-sample" style="font-size:28px; font-weight:700; letter-spacing:-0.02em;">Case Management Platform</div>
+      <div class="type-meta">
+        <div class="type-meta-label">28px / Bold<br>-0.02em tracking<br>Heading 1</div>
+      </div>
+    </div>
+    <div class="type-specimen">
+      <div class="type-sample" style="font-size:20px; font-weight:600; letter-spacing:-0.01em;">Active Litigation Matters</div>
+      <div class="type-meta">
+        <div class="type-meta-label">20px / Semibold<br>-0.01em tracking<br>Heading 2</div>
+      </div>
+    </div>
+    <div class="type-specimen">
+      <div class="type-sample" style="font-size:16px; font-weight:600;">Contract Review Section</div>
+      <div class="type-meta">
+        <div class="type-meta-label">16px / Semibold<br>Normal tracking<br>Heading 3</div>
+      </div>
+    </div>
+    <div class="type-specimen">
+      <div class="type-sample" style="font-size:14px; font-weight:400; color:var(--text-primary);">The compliance deadline for filing quarterly reports is approaching. All pending documents require review by the legal team before submission to regulatory authorities.</div>
+      <div class="type-meta">
+        <div class="type-meta-label">14px / Regular<br>Body text<br>1.5 line-height</div>
+      </div>
+    </div>
+    <div class="type-specimen">
+      <div class="type-sample" style="font-size:13px; font-weight:400; color:var(--text-secondary);">Secondary body text for descriptions, metadata, and supporting content throughout the interface.</div>
+      <div class="type-meta">
+        <div class="type-meta-label">13px / Regular<br>Secondary text<br>1.5 line-height</div>
+      </div>
+    </div>
+    <div class="type-specimen">
+      <div class="type-sample" style="font-size:11px; font-weight:600; letter-spacing:0.06em; text-transform:uppercase; color:var(--text-tertiary);">SECTION LABEL / UPPERCASE</div>
+      <div class="type-meta">
+        <div class="type-meta-label">11px / Semibold<br>0.06em tracking<br>Uppercase label</div>
+      </div>
+    </div>
+    <div class="type-specimen">
+      <div class="type-sample" style="font-size:13px; font-family:var(--font-mono); color:var(--brand-300);">contract.status === 'active' && deadline.isAfter(today)</div>
+      <div class="type-meta">
+        <div class="type-meta-label">13px / Mono<br>Code / data<br>JetBrains Mono</div>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ============ BUTTONS ============ -->
+  <section class="section">
+    <div class="section-label">Buttons</div>
+    <div class="section-title">Button Variants</div>
+    <div class="section-desc">Compact 32px height default. Borders, not shadows. Clear visual hierarchy.</div>
+
+    <div style="display:flex; flex-direction:column; gap:var(--space-5);">
+      <div>
+        <div style="font-size:11px; color:var(--text-tertiary); margin-bottom:var(--space-2); text-transform:uppercase; letter-spacing:0.06em; font-weight:600;">Default Size (32px)</div>
+        <div class="flex-wrap">
+          <button class="btn btn--primary">New Case</button>
+          <button class="btn btn--primary" disabled>Disabled</button>
+          <button class="btn btn--secondary">Export Report</button>
+          <button class="btn btn--secondary" disabled>Disabled</button>
+          <button class="btn btn--ghost">Filter</button>
+          <button class="btn btn--danger">Void Contract</button>
+          <button class="btn btn--success">Approve</button>
+        </div>
+      </div>
+      <div>
+        <div style="font-size:11px; color:var(--text-tertiary); margin-bottom:var(--space-2); text-transform:uppercase; letter-spacing:0.06em; font-weight:600;">Small (26px)</div>
+        <div class="flex-wrap">
+          <button class="btn btn--primary btn--sm">Save</button>
+          <button class="btn btn--secondary btn--sm">Cancel</button>
+          <button class="btn btn--ghost btn--sm">View Details</button>
+          <button class="btn btn--danger btn--sm">Delete</button>
+        </div>
+      </div>
+      <div>
+        <div style="font-size:11px; color:var(--text-tertiary); margin-bottom:var(--space-2); text-transform:uppercase; letter-spacing:0.06em; font-weight:600;">Large (40px)</div>
+        <div class="flex-wrap">
+          <button class="btn btn--primary btn--lg">Start Legal Review</button>
+          <button class="btn btn--secondary btn--lg">Upload Documents</button>
+        </div>
+      </div>
+      <div>
+        <div style="font-size:11px; color:var(--text-tertiary); margin-bottom:var(--space-2); text-transform:uppercase; letter-spacing:0.06em; font-weight:600;">With Icons</div>
+        <div class="flex-wrap">
+          <button class="btn btn--primary">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            New Matter
+          </button>
+          <button class="btn btn--secondary">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            Upload
+          </button>
+          <button class="btn btn--ghost">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            Search Cases
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ============ FORM ELEMENTS ============ -->
+  <section class="section">
+    <div class="section-label">Forms</div>
+    <div class="section-title">Input Controls</div>
+    <div class="section-desc">Minimal borders, no shadows. Focus state uses brand color. Dense vertical spacing.</div>
+
+    <div class="grid grid-2" style="gap: var(--space-6);">
+      <div style="display:flex; flex-direction:column; gap:var(--space-4);">
+        <div class="input-group">
+          <label class="input-label">Case Title</label>
+          <input class="input" type="text" placeholder="e.g., Acme Corp vs. Beta Inc." value="Meridian Holdings Acquisition">
+        </div>
+        <div class="input-group">
+          <label class="input-label">Case Number</label>
+          <input class="input" type="text" placeholder="Auto-generated" value="LIT-2024-0847">
+        </div>
+        <div class="input-group">
+          <label class="input-label">Practice Area</label>
+          <select class="input">
+            <option>Mergers &amp; Acquisitions</option>
+            <option>Commercial Litigation</option>
+            <option>Intellectual Property</option>
+            <option>Regulatory Compliance</option>
+            <option>Employment Law</option>
+          </select>
+        </div>
+        <div class="input-group">
+          <label class="input-label">Filing Deadline</label>
+          <input class="input" type="text" placeholder="YYYY-MM-DD" value="2024-03-15">
+        </div>
+        <div class="input-group">
+          <label class="input-label">Error State</label>
+          <input class="input input--error" type="text" value="Invalid entry">
+          <div class="input-hint input-hint--error">Client reference number is required</div>
+        </div>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:var(--space-4);">
+        <div class="input-group">
+          <label class="input-label">Case Notes</label>
+          <textarea class="input" placeholder="Add internal notes about this matter...">Pending review of Section 4.2 regarding non-compete clauses. Senior partner to advise on jurisdictional considerations before filing.</textarea>
+        </div>
+        <div>
+          <div style="font-size:12px; font-weight:500; color:var(--text-secondary); margin-bottom:var(--space-2);">Notification Preferences</div>
+          <div style="display:flex; flex-direction:column; gap:var(--space-2);">
+            <label class="checkbox-row">
+              <div class="checkbox checkbox--checked"></div>
+              <span style="font-size:13px; color:var(--text-primary);">Deadline reminders</span>
+            </label>
+            <label class="checkbox-row">
+              <div class="checkbox checkbox--checked"></div>
+              <span style="font-size:13px; color:var(--text-primary);">Filing status updates</span>
+            </label>
+            <label class="checkbox-row">
+              <div class="checkbox"></div>
+              <span style="font-size:13px; color:var(--text-primary);">Client communications</span>
+            </label>
+            <label class="checkbox-row">
+              <div class="checkbox"></div>
+              <span style="font-size:13px; color:var(--text-primary);">Court docket changes</span>
+            </label>
+          </div>
+        </div>
+        <div class="flex-row" style="gap:var(--space-4); margin-top:var(--space-2);">
+          <div style="display:flex; align-items:center; gap:var(--space-2);">
+            <div class="toggle toggle--active"></div>
+            <span style="font-size:13px; color:var(--text-primary);">Auto-save</span>
+          </div>
+          <div style="display:flex; align-items:center; gap:var(--space-2);">
+            <div class="toggle"></div>
+            <span style="font-size:13px; color:var(--text-secondary);">AI suggestions</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ============ BADGES ============ -->
+  <section class="section">
+    <div class="section-label">Status &amp; Labels</div>
+    <div class="section-title">Badges</div>
+    <div class="section-desc">Compact status indicators. Dot + text. Semantic coloring.</div>
+
+    <div class="flex-wrap">
+      <span class="badge badge--brand"><span class="badge-dot"></span>In Review</span>
+      <span class="badge badge--success"><span class="badge-dot"></span>Approved</span>
+      <span class="badge badge--warning"><span class="badge-dot"></span>Pending</span>
+      <span class="badge badge--danger"><span class="badge-dot"></span>Overdue</span>
+      <span class="badge badge--neutral"><span class="badge-dot"></span>Draft</span>
+      <span class="badge badge--brand">Active</span>
+      <span class="badge badge--success">Executed</span>
+      <span class="badge badge--warning">Expiring Soon</span>
+      <span class="badge badge--danger">Breached</span>
+      <span class="badge badge--neutral">Archived</span>
+    </div>
+
+    <div style="margin-top: var(--space-6);">
+      <div style="font-size:11px; color:var(--text-tertiary); margin-bottom:var(--space-2); text-transform:uppercase; letter-spacing:0.06em; font-weight:600;">Keyboard Shortcuts</div>
+      <div class="flex-wrap">
+        <span style="font-size:12px; color:var(--text-secondary); display:flex; align-items:center; gap:4px;"><kbd>Ctrl</kbd> <kbd>K</kbd> Command palette</span>
+        <span style="font-size:12px; color:var(--text-secondary); display:flex; align-items:center; gap:4px;"><kbd>Ctrl</kbd> <kbd>N</kbd> New matter</span>
+        <span style="font-size:12px; color:var(--text-secondary); display:flex; align-items:center; gap:4px;"><kbd>Ctrl</kbd> <kbd>/</kbd> Search</span>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ============ ALERTS ============ -->
+  <section class="section">
+    <div class="section-label">Feedback</div>
+    <div class="section-title">Alerts</div>
+    <div class="section-desc">Border + tinted background. No shadows. Each alert has an icon and clear message.</div>
+
+    <div style="display:flex; flex-direction:column; gap:var(--space-3);">
+      <div class="alert alert--info">
+        <svg class="alert-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+        <div>3 contracts are awaiting your review. The next filing deadline is in <strong>5 business days</strong>.</div>
+      </div>
+      <div class="alert alert--success">
+        <svg class="alert-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        <div>All compliance checks for Q4 have passed. Report generated successfully.</div>
+      </div>
+      <div class="alert alert--warning">
+        <svg class="alert-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        <div>Regulatory framework update detected. <strong>12 clauses</strong> may need review under the new amendments.</div>
+      </div>
+      <div class="alert alert--danger">
+        <svg class="alert-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+        <div>Filing deadline for <strong>Meridian Holdings vs. CaseLink</strong> has passed. Immediate action required.</div>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ============ DATA TABLE ============ -->
+  <section class="section">
+    <div class="section-label">Data Display</div>
+    <div class="section-title">Matter Table</div>
+    <div class="section-desc">Dense, scannable data. Hover rows for focus. Status badges inline. Monospaced IDs.</div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Matter</th>
+            <th>Case ID</th>
+            <th>Type</th>
+            <th>Assigned To</th>
+            <th>Status</th>
+            <th>Deadline</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="text-primary-col">Meridian Holdings Acquisition</td>
+            <td style="font-family:var(--font-mono); font-size:12px;">LIT-2024-0847</td>
+            <td>M&amp;A</td>
+            <td>
+              <div class="flex-row">
+                <div class="avatar avatar--sm">SR</div>
+                <span>S. Reeves</span>
+              </div>
+            </td>
+            <td><span class="badge badge--brand" style="font-size:10px; height:18px;"><span class="badge-dot"></span>In Review</span></td>
+            <td>Mar 15, 2024</td>
+          </tr>
+          <tr>
+            <td class="text-primary-col">TechVault IP Dispute</td>
+            <td style="font-family:var(--font-mono); font-size:12px;">LIT-2024-0812</td>
+            <td>IP Litigation</td>
+            <td>
+              <div class="flex-row">
+                <div class="avatar avatar--sm">JK</div>
+                <span>J. Kim</span>
+              </div>
+            </td>
+            <td><span class="badge badge--warning" style="font-size:10px; height:18px;"><span class="badge-dot"></span>Pending</span></td>
+            <td>Mar 22, 2024</td>
+          </tr>
+          <tr>
+            <td class="text-primary-col">Nexus Corp Compliance Audit</td>
+            <td style="font-family:var(--font-mono); font-size:12px;">REG-2024-0301</td>
+            <td>Compliance</td>
+            <td>
+              <div class="flex-row">
+                <div class="avatar avatar--sm">AL</div>
+                <span>A. Lawson</span>
+              </div>
+            </td>
+            <td><span class="badge badge--success" style="font-size:10px; height:18px;"><span class="badge-dot"></span>Approved</span></td>
+            <td>Apr 01, 2024</td>
+          </tr>
+          <tr>
+            <td class="text-primary-col">Pinnacle Employment Claim</td>
+            <td style="font-family:var(--font-mono); font-size:12px;">EMP-2024-0158</td>
+            <td>Employment</td>
+            <td>
+              <div class="flex-row">
+                <div class="avatar avatar--sm">MP</div>
+                <span>M. Park</span>
+              </div>
+            </td>
+            <td><span class="badge badge--danger" style="font-size:10px; height:18px;"><span class="badge-dot"></span>Overdue</span></td>
+            <td>Feb 28, 2024</td>
+          </tr>
+          <tr>
+            <td class="text-primary-col">Apex Software License Agreement</td>
+            <td style="font-family:var(--font-mono); font-size:12px;">CON-2024-0522</td>
+            <td>Contract</td>
+            <td>
+              <div class="flex-row">
+                <div class="avatar avatar--sm">DW</div>
+                <span>D. Wu</span>
+              </div>
+            </td>
+            <td><span class="badge badge--neutral" style="font-size:10px; height:18px;"><span class="badge-dot"></span>Draft</span></td>
+            <td>Apr 10, 2024</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+
+  <!-- ============ STATS ============ -->
+  <section class="section">
+    <div class="section-label">Dashboard</div>
+    <div class="section-title">Stat Cards</div>
+    <div class="section-desc">Key metrics at a glance. Minimal decoration, maximum data density.</div>
+
+    <div class="grid grid-4">
+      <div class="stat">
+        <div class="stat__label">Active Matters</div>
+        <div class="stat__value">127</div>
+        <div class="stat__change stat__change--up">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
+          +12% from last month
+        </div>
+      </div>
+      <div class="stat">
+        <div class="stat__label">Pending Reviews</div>
+        <div class="stat__value">34</div>
+        <div class="stat__change stat__change--down">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+          -8% from last week
+        </div>
+      </div>
+      <div class="stat">
+        <div class="stat__label">Contracts Executed</div>
+        <div class="stat__value">89</div>
+        <div class="stat__change stat__change--up">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
+          +23% this quarter
+        </div>
+      </div>
+      <div class="stat">
+        <div class="stat__label">Compliance Score</div>
+        <div class="stat__value">96%</div>
+        <div class="stat__change stat__change--up">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
+          +2% improvement
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top: var(--space-6);">
+      <div class="grid grid-3">
+        <div style="display:flex; flex-direction:column; gap:var(--space-3);">
+          <div style="font-size:12px; color:var(--text-secondary); font-weight:500;">Review Progress</div>
+          <div>
+            <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+              <span style="font-size:11px; color:var(--text-tertiary);">34 of 45 reviewed</span>
+              <span style="font-size:11px; color:var(--brand-400);">76%</span>
+            </div>
+            <div class="progress-bar">
+              <div class="progress-bar__fill" style="width:76%"></div>
+            </div>
+          </div>
+          <div>
+            <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+              <span style="font-size:11px; color:var(--text-tertiary);">Compliance checks</span>
+              <span style="font-size:11px; color:var(--success-500);">100%</span>
+            </div>
+            <div class="progress-bar">
+              <div class="progress-bar__fill progress-bar__fill--success" style="width:100%"></div>
+            </div>
+          </div>
+          <div>
+            <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+              <span style="font-size:11px; color:var(--text-tertiary);">Contract renewals</span>
+              <span style="font-size:11px; color:var(--warning-500);">42%</span>
+            </div>
+            <div class="progress-bar">
+              <div class="progress-bar__fill progress-bar__fill--warning" style="width:42%"></div>
+            </div>
+          </div>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:var(--space-3);">
+          <div style="font-size:12px; color:var(--text-secondary); font-weight:500;">Team Workload</div>
+          <div class="case-item">
+            <div class="avatar avatar--sm">SR</div>
+            <div class="case-item__content">
+              <div class="case-item__title">Sarah Reeves</div>
+              <div class="case-item__subtitle">Senior Partner</div>
+            </div>
+            <div class="case-item__meta">
+              <span style="font-size:12px; font-weight:600; color:var(--text-primary);">14</span>
+              <span style="font-size:10px; color:var(--text-tertiary);"> cases</span>
+            </div>
+          </div>
+          <div class="case-item">
+            <div class="avatar avatar--sm">JK</div>
+            <div class="case-item__content">
+              <div class="case-item__title">James Kim</div>
+              <div class="case-item__subtitle">Associate</div>
+            </div>
+            <div class="case-item__meta">
+              <span style="font-size:12px; font-weight:600; color:var(--text-primary);">11</span>
+              <span style="font-size:10px; color:var(--text-tertiary);"> cases</span>
+            </div>
+          </div>
+          <div class="case-item">
+            <div class="avatar avatar--sm">AL</div>
+            <div class="case-item__content">
+              <div class="case-item__title">Anna Lawson</div>
+              <div class="case-item__subtitle">Of Counsel</div>
+            </div>
+            <div class="case-item__meta">
+              <span style="font-size:12px; font-weight:600; color:var(--text-primary);">9</span>
+              <span style="font-size:10px; color:var(--text-tertiary);"> cases</span>
+            </div>
+          </div>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:var(--space-3);">
+          <div style="font-size:12px; color:var(--text-secondary); font-weight:500;">Upcoming Deadlines</div>
+          <div class="case-item">
+            <div class="case-item__icon case-item__icon--litigation">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--brand-400)" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            </div>
+            <div class="case-item__content">
+              <div class="case-item__title">TechVault Filing</div>
+              <div class="case-item__subtitle">3 days remaining</div>
+            </div>
+          </div>
+          <div class="case-item">
+            <div class="case-item__icon case-item__icon--contract">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--success-500)" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+            </div>
+            <div class="case-item__content">
+              <div class="case-item__title">Apex License Renewal</div>
+              <div class="case-item__subtitle">7 days remaining</div>
+            </div>
+          </div>
+          <div class="case-item">
+            <div class="case-item__icon case-item__icon--compliance">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--warning-500)" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            </div>
+            <div class="case-item__content">
+              <div class="case-item__title">Nexus Audit Report</div>
+              <div class="case-item__subtitle">12 days remaining</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ============ CARDS ============ -->
+  <section class="section">
+    <div class="section-label">Containers</div>
+    <div class="section-title">Card Patterns</div>
+    <div class="section-desc">Flat cards with borders. Header/body/footer structure. Hover reveals brand border.</div>
+
+    <div class="grid grid-3">
+      <!-- Case Card -->
+      <div class="card">
+        <div class="card__header">
+          <div class="flex-row">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--brand-400)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            <span class="card__title">Meridian Holdings</span>
+          </div>
+          <span class="badge badge--brand" style="font-size:10px; height:18px;"><span class="badge-dot"></span>Active</span>
+        </div>
+        <div class="card__body">
+          <div style="font-size:13px; color:var(--text-secondary); line-height:1.6; margin-bottom:var(--space-3);">
+            Cross-border acquisition requiring multi-jurisdictional review. Key assets under IP and trade secret classification.
+          </div>
+          <div style="display:flex; flex-direction:column; gap:var(--space-2); font-size:12px;">
+            <div style="display:flex; justify-content:space-between;">
+              <span style="color:var(--text-tertiary);">Practice Area</span>
+              <span style="color:var(--text-primary);">M&amp;A</span>
+            </div>
+            <div style="display:flex; justify-content:space-between;">
+              <span style="color:var(--text-tertiary);">Assigned</span>
+              <span style="color:var(--text-primary);">S. Reeves</span>
+            </div>
+            <div style="display:flex; justify-content:space-between;">
+              <span style="color:var(--text-tertiary);">Deadline</span>
+              <span style="color:var(--danger-500);">Mar 15, 2024</span>
+            </div>
+          </div>
+        </div>
+        <div class="card__footer">
+          <button class="btn btn--ghost btn--sm">Archive</button>
+          <button class="btn btn--secondary btn--sm">Open Case</button>
+        </div>
+      </div>
+
+      <!-- Contract Card -->
+      <div class="card">
+        <div class="card__header">
+          <div class="flex-row">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--success-500)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+            <span class="card__title">Apex License Agreement</span>
+          </div>
+          <span class="badge badge--success" style="font-size:10px; height:18px;"><span class="badge-dot"></span>Executed</span>
+        </div>
+        <div class="card__body">
+          <div style="font-size:13px; color:var(--text-secondary); line-height:1.6; margin-bottom:var(--space-3);">
+            Enterprise software license agreement with multi-year term. Includes SLA guarantees and data protection addendum.
+          </div>
+          <div style="display:flex; flex-direction:column; gap:var(--space-2); font-size:12px;">
+            <div style="display:flex; justify-content:space-between;">
+              <span style="color:var(--text-tertiary);">Type</span>
+              <span style="color:var(--text-primary);">SaaS License</span>
+            </div>
+            <div style="display:flex; justify-content:space-between;">
+              <span style="color:var(--text-tertiary);">Value</span>
+              <span style="color:var(--text-primary);">$2.4M / year</span>
+            </div>
+            <div style="display:flex; justify-content:space-between;">
+              <span style="color:var(--text-tertiary);">Renewal</span>
+              <span style="color:var(--warning-500);">Jun 30, 2024</span>
+            </div>
+          </div>
+        </div>
+        <div class="card__footer">
+          <button class="btn btn--ghost btn--sm">History</button>
+          <button class="btn btn--secondary btn--sm">View Contract</button>
+        </div>
+      </div>
+
+      <!-- Compliance Card -->
+      <div class="card">
+        <div class="card__header">
+          <div class="flex-row">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--warning-500)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            <span class="card__title">Nexus Corp Audit</span>
+          </div>
+          <span class="badge badge--warning" style="font-size:10px; height:18px;"><span class="badge-dot"></span>Pending</span>
+        </div>
+        <div class="card__body">
+          <div style="font-size:13px; color:var(--text-secondary); line-height:1.6; margin-bottom:var(--space-3);">
+            Annual compliance review covering data privacy, financial regulations, and cross-border transfer protocols.
+          </div>
+          <div style="margin-bottom:var(--space-3);">
+            <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+              <span style="font-size:11px; color:var(--text-tertiary);">Completion</span>
+              <span style="font-size:11px; color:var(--brand-400);">68%</span>
+            </div>
+            <div class="progress-bar">
+              <div class="progress-bar__fill" style="width:68%"></div>
+            </div>
+          </div>
+          <div style="display:flex; justify-content:space-between; font-size:12px;">
+            <span style="color:var(--text-tertiary);">Checks</span>
+            <span style="color:var(--text-primary);">17 of 25 complete</span>
+          </div>
+        </div>
+        <div class="card__footer">
+          <button class="btn btn--ghost btn--sm">Export</button>
+          <button class="btn btn--primary btn--sm">Continue Review</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ============ SIDEBAR + TABS ============ -->
+  <section class="section">
+    <div class="section-label">Navigation</div>
+    <div class="section-title">Sidebar &amp; Tabs</div>
+    <div class="section-desc">Vertical nav for primary navigation. Tabs for in-content switching. Active states use brand color.</div>
+
+    <div class="grid grid-2" style="gap: var(--space-6);">
+      <!-- Sidebar -->
+      <div class="sidebar-mock">
+        <div class="sidebar-mock__header">
+          <div class="sidebar-mock__brand"></div>
+          <span class="sidebar-mock__name">LegalEdge</span>
+        </div>
+        <div class="sidebar-mock__nav">
+          <div class="sidebar-mock__item sidebar-mock__item--active">
+            <svg class="sidebar-mock__item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+            Dashboard
+          </div>
+          <div class="sidebar-mock__item">
+            <svg class="sidebar-mock__item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            Matters
+          </div>
+          <div class="sidebar-mock__item">
+            <svg class="sidebar-mock__item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+            Contracts
+          </div>
+          <div class="sidebar-mock__item">
+            <svg class="sidebar-mock__item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            Compliance
+          </div>
+          <div class="sidebar-mock__section-label">Management</div>
+          <div class="sidebar-mock__item">
+            <svg class="sidebar-mock__item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+            Team
+          </div>
+          <div class="sidebar-mock__item">
+            <svg class="sidebar-mock__item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+            Settings
+          </div>
+        </div>
+      </div>
+
+      <!-- Tabs -->
+      <div>
+        <div class="tabs">
+          <div class="tab tab--active">Overview</div>
+          <div class="tab">Documents</div>
+          <div class="tab">Timeline</div>
+          <div class="tab">Parties</div>
+          <div class="tab">Notes</div>
+        </div>
+        <div style="padding: var(--space-4) 0;">
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:var(--space-4);">
+            <div>
+              <div style="font-size:15px; font-weight:600; color:var(--text-primary); margin-bottom:2px;">Meridian Holdings Acquisition</div>
+              <div style="font-size:12px; color:var(--text-tertiary);">Created Jan 15, 2024 &middot; Last updated 2 hours ago</div>
+            </div>
+            <div class="flex-row">
+              <div class="avatar-stack">
+                <div class="avatar" style="background:var(--brand-700); color:var(--brand-200);">SR</div>
+                <div class="avatar" style="background:#1a3a2a; color:var(--success-500);">JK</div>
+                <div class="avatar" style="background:#3a2a1a; color:var(--warning-500);">AL</div>
+              </div>
+              <button class="btn btn--secondary btn--sm">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
+                Assign
+              </button>
+            </div>
+          </div>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:var(--space-3); font-size:12px;">
+            <div style="display:flex; justify-content:space-between; padding:var(--space-2) 0; border-bottom:1px solid var(--border-secondary);">
+              <span style="color:var(--text-tertiary);">Case ID</span>
+              <span style="color:var(--text-primary); font-family:var(--font-mono);">LIT-2024-0847</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; padding:var(--space-2) 0; border-bottom:1px solid var(--border-secondary);">
+              <span style="color:var(--text-tertiary);">Status</span>
+              <span class="badge badge--brand" style="font-size:10px; height:16px;"><span class="badge-dot"></span>In Review</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; padding:var(--space-2) 0; border-bottom:1px solid var(--border-secondary);">
+              <span style="color:var(--text-tertiary);">Practice Area</span>
+              <span style="color:var(--text-primary);">Mergers &amp; Acquisitions</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; padding:var(--space-2) 0; border-bottom:1px solid var(--border-secondary);">
+              <span style="color:var(--text-tertiary);">Jurisdiction</span>
+              <span style="color:var(--text-primary);">Delaware Chancery</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; padding:var(--space-2) 0; border-bottom:1px solid var(--border-secondary);">
+              <span style="color:var(--text-tertiary);">Client</span>
+              <span style="color:var(--text-primary);">Meridian Holdings LLC</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; padding:var(--space-2) 0; border-bottom:1px solid var(--border-secondary);">
+              <span style="color:var(--text-tertiary);">Priority</span>
+              <span style="color:var(--danger-500); font-weight:500;">High</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ============ DROPDOWN + EMPTY STATE ============ -->
+  <section class="section">
+    <div class="section-label">Overlays &amp; States</div>
+    <div class="section-title">Dropdown &amp; Empty State</div>
+    <div class="section-desc">Floating menus with border-only elevation. Empty states guide users to action.</div>
+
+    <div class="grid grid-2" style="gap: var(--space-6);">
+      <!-- Dropdown -->
+      <div>
+        <div style="font-size:11px; color:var(--text-tertiary); margin-bottom:var(--space-3); text-transform:uppercase; letter-spacing:0.06em; font-weight:600;">Dropdown Menu</div>
+        <div class="dropdown" style="position:relative;">
+          <div class="dropdown__menu" style="position:relative; top:0; left:0; display:block;">
+            <div class="dropdown__item dropdown__item--active">
+              <svg class="dropdown__item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+              All Matters
+            </div>
+            <div class="dropdown__item">
+              <svg class="dropdown__item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+              Litigation
+            </div>
+            <div class="dropdown__item">
+              <svg class="dropdown__item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+              Contracts
+            </div>
+            <div class="dropdown__item">
+              <svg class="dropdown__item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+              Compliance
+            </div>
+            <div class="dropdown__divider"></div>
+            <div class="dropdown__item">
+              <svg class="dropdown__item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              Search Matters...
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Empty State -->
+      <div>
+        <div style="font-size:11px; color:var(--text-tertiary); margin-bottom:var(--space-3); text-transform:uppercase; letter-spacing:0.06em; font-weight:600;">Empty State</div>
+        <div style="background:var(--bg-secondary); border:1px solid var(--border-primary); border-radius:var(--radius-xl);">
+          <div class="empty-state">
+            <svg class="empty-state__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+              <line x1="12" y1="18" x2="12" y2="12"/>
+              <line x1="9" y1="15" x2="15" y2="15"/>
+            </svg>
+            <div class="empty-state__title">No contracts found</div>
+            <div class="empty-state__desc">Upload your first contract to get started with AI-powered clause analysis and risk assessment.</div>
+            <div class="flex-wrap" style="justify-content:center;">
+              <button class="btn btn--primary">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                Upload Contract
+              </button>
+              <button class="btn btn--secondary">Use Template</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ============ DESIGN PRINCIPLES ============ -->
+  <section class="section" style="padding-top: var(--space-8); border-top: 1px solid var(--border-primary);">
+    <div class="section-label">Principles</div>
+    <div class="section-title">Design Principles</div>
+    <div class="section-desc">The rules that govern every design decision in this system.</div>
+
+    <div class="grid grid-3">
+      <div class="card" style="border-left: 2px solid var(--brand-500);">
+        <div class="card__body">
+          <div style="font-size:13px; font-weight:600; color:var(--text-primary); margin-bottom:var(--space-2);">Borders, not shadows</div>
+          <div style="font-size:12px; color:var(--text-secondary); line-height:1.6;">Elevation is conveyed through border contrast and background layering, not drop shadows. This creates a crisp, engineering-grade interface.</div>
+        </div>
+      </div>
+      <div class="card" style="border-left: 2px solid var(--brand-500);">
+        <div class="card__body">
+          <div style="font-size:13px; font-weight:600; color:var(--text-primary); margin-bottom:var(--space-2);">Density with clarity</div>
+          <div style="font-size:12px; color:var(--text-secondary); line-height:1.6;">Every pixel earns its place. Compact spacing, small font sizes, but never at the cost of readability. Information-dense, not cluttered.</div>
+        </div>
+      </div>
+      <div class="card" style="border-left: 2px solid var(--brand-500);">
+        <div class="card__body">
+          <div style="font-size:13px; font-weight:600; color:var(--text-primary); margin-bottom:var(--space-2);">Professional restraint</div>
+          <div style="font-size:12px; color:var(--text-secondary); line-height:1.6;">No gradients, no glow effects, no playful animations. The design reflects the seriousness of legal work -- composed, confident, and precise.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer style="padding-top:var(--space-10); border-top:1px solid var(--border-secondary); text-align:center;">
+    <p style="font-size:12px; color:var(--text-tertiary);">LegalEdge Design System v1.0.0 &middot; Brand #2563EB &middot; Dark Theme &middot; No Purple</p>
+  </footer>
+
+</div>
+
+</body>
+</html>

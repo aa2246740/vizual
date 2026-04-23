@@ -3,8 +3,8 @@ import { z } from 'zod'
 /** Schema for a single document section */
 const SectionSchema = z.object({
   /** Section type determines rendering behavior */
-  type: z.enum(['text', 'heading', 'chart', 'kpi', 'table', 'callout', 'component']),
-  /** Text content for text/heading/callout sections, or component JSON spec for chart/kpi/table/component */
+  type: z.enum(['text', 'heading', 'chart', 'kpi', 'table', 'callout', 'component', 'markdown', 'freeform']),
+  /** Text content for text/heading/callout sections, markdown source for markdown, raw HTML for freeform */
   content: z.string(),
   /** Structured data for chart/kpi/table/component sections (JSON object or array) */
   data: z.unknown().optional(),
@@ -16,6 +16,14 @@ const SectionSchema = z.object({
   componentType: z.string().optional(),
   /** Optional section title */
   title: z.string().optional(),
+  /**
+   * AI-written semantic description of this section's meaning.
+   * Included in annotation payloads so AI understands what the user is commenting on.
+   * Example: "Q3 revenue KPI showing $2.4M with 12.3% YoY growth"
+   */
+  aiContext: z.string().optional(),
+  /** Visual layout variant for this section. Unsupported combinations silently fall back to 'default'. */
+  layout: z.enum(['default', 'hero', 'split', 'grid', 'banner', 'card', 'compact']).optional(),
 })
 
 export const DocViewSchema = z.object({

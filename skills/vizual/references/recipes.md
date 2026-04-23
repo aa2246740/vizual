@@ -11,8 +11,8 @@ KPI cards on top, chart in middle, table at bottom:
   "root": "root",
   "elements": {
     "root": {
-      "type": "VerticalLayout",
-      "props": {},
+      "type": "GridLayout",
+      "props": { "type": "grid_layout", "columns": 1 },
       "children": ["kpi", "chart", "table"]
     },
     "kpi": {
@@ -63,47 +63,31 @@ KPI cards on top, chart in middle, table at bottom:
 }
 ```
 
-## Analysis Report
+## Analysis Report (DocView)
 
-Title + alert + chart + insight notes:
+Title + alert + chart + insight notes using DocView sections:
 
 ```json
 {
   "root": "root",
   "elements": {
     "root": {
-      "type": "VerticalLayout",
-      "props": {},
-      "children": ["title", "alert", "funnel", "note"]
-    },
-    "title": {
-      "type": "TextBlock",
-      "props": { "type": "text", "content": "Conversion Funnel Analysis", "fontSize": 18, "fontWeight": "bold" },
-      "children": []
-    },
-    "alert": {
-      "type": "Alert",
-      "props": { "type": "alert", "message": "Signup→Purchase conversion dropped 15% this week", "severity": "warning" },
-      "children": []
-    },
-    "funnel": {
-      "type": "FunnelChart",
+      "type": "DocView",
       "props": {
-        "type": "funnel",
-        "label": "stage",
-        "value": "count",
-        "data": [
-          { "stage": "Landing", "count": 10000 },
-          { "stage": "Signup", "count": 3000 },
-          { "stage": "Trial", "count": 1500 },
-          { "stage": "Purchase", "count": 450 }
+        "type": "doc_view",
+        "title": "Conversion Funnel Analysis",
+        "sections": [
+          { "type": "heading", "content": "Conversion Funnel Analysis" },
+          { "type": "callout", "content": "Signup→Purchase conversion dropped 15% this week", "layout": "banner" },
+          { "type": "chart", "content": "", "data": { "chartType": "FunnelChart", "label": "stage", "value": "count", "data": [
+            { "stage": "Landing", "count": 10000 },
+            { "stage": "Signup", "count": 3000 },
+            { "stage": "Trial", "count": 1500 },
+            { "stage": "Purchase", "count": 450 }
+          ] } },
+          { "type": "callout", "content": "The biggest drop is at Signup (70% loss). Consider simplifying the registration form." }
         ]
       },
-      "children": []
-    },
-    "note": {
-      "type": "Note",
-      "props": { "type": "note", "content": "The biggest drop is at Signup (70% loss). Consider simplifying the registration form.", "variant": "tip" },
       "children": []
     }
   }
@@ -117,13 +101,19 @@ Title + alert + chart + insight notes:
   "root": "root",
   "elements": {
     "root": {
-      "type": "VerticalLayout",
-      "props": {},
+      "type": "GridLayout",
+      "props": { "type": "grid_layout", "columns": 1 },
       "children": ["title", "gantt", "kanban"]
     },
     "title": {
-      "type": "BigValue",
-      "props": { "type": "big_value", "title": "Sprint Progress", "value": "67%", "trend": "up", "trendValue": "+8% this week" },
+      "type": "KpiDashboard",
+      "props": {
+        "type": "kpi_dashboard",
+        "columns": 1,
+        "metrics": [
+          { "label": "Sprint Progress", "value": "67%", "trend": "up", "trendValue": "+8% this week" }
+        ]
+      },
       "children": []
     },
     "gantt": {
@@ -194,25 +184,23 @@ Title + alert + chart + insight notes:
 | Range comparison | DumbbellChart | `dumbbell` |
 | Flowchart/sequence/gantt diagram | MermaidDiagram | `mermaid` |
 | Radar/spider chart | RadarChart | `radar` |
-| Big number with trend | BigValue | `big_value` |
-| Change from previous | Delta | `delta` |
-| Warning/notification | Alert | `alert` |
-| Tip/callout | Note | `note` |
-| Text paragraph | TextBlock | `text` |
-| Code/query display | TextArea | `textarea` |
+| Big number with trend | DocView kpi section | — |
+| Warning/notification | DocView callout section | — |
+| Tip/callout | DocView callout section | — |
+| Text paragraph / heading | DocView heading/text/freeform section | — |
+| Code/query display | DocView freeform HTML `<pre>` section | — |
 | Data grid | DataTable | `table` |
-| Spacing | EmptySpace | `empty_space` |
 | Event timeline | Timeline | `timeline` |
 | Task board | Kanban | `kanban` |
 | Project schedule | GanttChart | `gantt` |
 | Org hierarchy | OrgChart | `org_chart` |
 | Metric cards | KpiDashboard | `kpi_dashboard` |
-| Budget comparison | BudgetReport | `budget_report` |
-| Feature comparison | FeatureTable | `feature_table` |
 | Operation log | AuditLog | `audit_log` |
-| JSON display | JsonViewer | `json_viewer` |
-| Source code display | CodeBlock | `code_block` |
-| Key-value form | FormView | `form_view` |
+| Dynamic form | FormBuilder | `form_builder` |
+| Rich document with annotation | DocView | `doc_view` |
+| Multi-column layout | GridLayout | `grid_layout` |
+| Side-by-side split | SplitLayout | `split_layout` |
+| Hero banner section | HeroLayout | `hero_layout` |
 
 ## Multi-Dimensional Comparison
 
@@ -238,6 +226,133 @@ Radar chart for comparing entities across multiple dimensions:
           { "name": "Team A", "values": [90, 70, 60, 80, 75] },
           { "name": "Team B", "values": [65, 85, 80, 55, 90] }
         ]
+      },
+      "children": []
+    }
+  }
+}
+```
+
+## Grid Dashboard
+
+KPI cards in a responsive grid with a chart below:
+
+```json
+{
+  "root": "root",
+  "elements": {
+    "root": {
+      "type": "GridLayout",
+      "props": { "type": "grid_layout", "columns": 1 },
+      "children": ["kpi_grid", "chart"]
+    },
+    "kpi_grid": {
+      "type": "KpiDashboard",
+      "props": {
+        "type": "kpi_dashboard",
+        "columns": 4,
+        "metrics": [
+          { "label": "DAU", "value": "12.3K", "trend": "up", "trendValue": "+5%" },
+          { "label": "Revenue", "value": "$89K", "trend": "up", "trendValue": "+12%" },
+          { "label": "Conversion", "value": "3.2%", "trend": "down", "trendValue": "-0.3%" },
+          { "label": "Churn", "value": "1.8%", "trend": "flat", "trendValue": "0%" }
+        ]
+      },
+      "children": []
+    },
+    "chart": {
+      "type": "AreaChart",
+      "props": {
+        "type": "area",
+        "title": "Monthly Active Users",
+        "x": "month", "y": "users",
+        "data": [
+          { "month": "Jan", "users": 8200 },
+          { "month": "Feb", "users": 9100 },
+          { "month": "Mar", "users": 10500 },
+          { "month": "Apr", "users": 12300 }
+        ],
+        "smooth": true
+      },
+      "children": []
+    }
+  }
+}
+```
+
+## Split Report
+
+Chart and table side by side:
+
+```json
+{
+  "root": "root",
+  "elements": {
+    "root": {
+      "type": "SplitLayout",
+      "props": { "type": "split_layout", "direction": "horizontal", "ratio": 55 },
+      "children": ["chart", "table"]
+    },
+    "chart": {
+      "type": "BarChart",
+      "props": {
+        "type": "bar",
+        "title": "Revenue by Region",
+        "x": "region", "y": "revenue",
+        "data": [
+          { "region": "North America", "revenue": 450 },
+          { "region": "Europe", "revenue": 320 },
+          { "region": "Asia Pacific", "revenue": 280 },
+          { "region": "Latin America", "revenue": 150 }
+        ]
+      },
+      "children": []
+    },
+    "table": {
+      "type": "DataTable",
+      "props": {
+        "type": "table",
+        "columns": [
+          { "key": "region", "label": "Region" },
+          { "key": "revenue", "label": "Revenue ($K)", "align": "right" },
+          { "key": "growth", "label": "Growth", "align": "right" }
+        ],
+        "data": [
+          { "region": "North America", "revenue": 450, "growth": "+12%" },
+          { "region": "Europe", "revenue": 320, "growth": "+8%" },
+          { "region": "Asia Pacific", "revenue": 280, "growth": "+22%" },
+          { "region": "Latin America", "revenue": 150, "growth": "+15%" }
+        ],
+        "striped": true
+      },
+      "children": []
+    }
+  }
+}
+```
+
+## Hero Document
+
+Hero heading with markdown body and data sections:
+
+```json
+{
+  "root": "root",
+  "elements": {
+    "root": {
+      "type": "DocView",
+      "props": {
+        "type": "doc_view",
+        "title": "Annual Performance Review",
+        "sections": [
+          { "type": "heading", "content": "FY2024 Annual Report", "layout": "hero", "aiContext": "Main title for annual performance report" },
+          { "type": "markdown", "content": "## Executive Summary\n\nRevenue grew **23%** year-over-year, reaching **$48.2M**. Key drivers:\n\n- Enterprise sales up 35%\n- New markets: Southeast Asia, Latin America\n- NRR improved to 118%\n\n> Strategic partnerships accounted for 40% of new ARR.", "aiContext": "Executive summary with 4 key findings" },
+          { "type": "kpi", "content": "", "layout": "grid", "data": { "metrics": [{"label":"Revenue","value":"$48.2M","trend":"up","trendValue":"+23%"},{"label":"NRR","value":"118%","trend":"up","trendValue":"+6%"},{"label":"Customers","value":"1,240","trend":"up","trendValue":"+180"}] } },
+          { "type": "chart", "content": "", "data": { "chartType": "LineChart", "x": "quarter", "y": "revenue", "data": [{"quarter":"Q1","revenue":10.2},{"quarter":"Q2","revenue":11.8},{"quarter":"Q3","revenue":12.5},{"quarter":"Q4","revenue":13.7}] } },
+          { "type": "callout", "content": "All figures audited by Deloitte. Full report available in the investor portal.", "layout": "banner" }
+        ],
+        "showPanel": true,
+        "panelPosition": "right"
       },
       "children": []
     }

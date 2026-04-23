@@ -42,23 +42,9 @@ export type { RadarChartProps } from './mviz-bridge/radar'
 export { MermaidChart, MermaidSchema } from './mviz-bridge/mermaid'
 export type { MermaidProps } from './mviz-bridge/mermaid'
 
-// UI components (mviz bridge)
-export { BigValue, BigValueSchema } from './mviz-bridge/big-value'
-export type { BigValueProps } from './mviz-bridge/big-value'
-export { Delta, DeltaSchema } from './mviz-bridge/delta'
-export type { DeltaProps } from './mviz-bridge/delta'
-export { Alert, AlertSchema } from './mviz-bridge/alert'
-export type { AlertProps } from './mviz-bridge/alert'
-export { Note, NoteSchema } from './mviz-bridge/note'
-export type { NoteProps } from './mviz-bridge/note'
-export { TextBlock, TextBlockSchema } from './mviz-bridge/text'
-export type { TextBlockProps } from './mviz-bridge/text'
-export { TextArea, TextAreaSchema } from './mviz-bridge/textarea'
-export type { TextAreaProps } from './mviz-bridge/textarea'
+// UI components (mviz bridge) — only DataTable retained
 export { DataTable, DataTableSchema } from './mviz-bridge/table'
 export type { DataTableProps } from './mviz-bridge/table'
-export { EmptySpace, EmptySpaceSchema } from './mviz-bridge/empty-space'
-export type { EmptySpaceProps } from './mviz-bridge/empty-space'
 
 // Custom business components
 export { Timeline, TimelineSchema } from './components/timeline'
@@ -71,34 +57,12 @@ export { OrgChart, OrgChartSchema } from './components/org-chart'
 export type { OrgChartProps } from './components/org-chart'
 export { KpiDashboard, KpiDashboardSchema } from './components/kpi-dashboard'
 export type { KpiDashboardProps } from './components/kpi-dashboard'
-export { BudgetReport, BudgetReportSchema } from './components/budget-report'
-export type { BudgetReportProps } from './components/budget-report'
-export { FeatureTable, FeatureTableSchema } from './components/feature-table'
-export type { FeatureTableProps } from './components/feature-table'
 export { AuditLog, AuditLogSchema } from './components/audit-log'
 export type { AuditLogProps } from './components/audit-log'
-export { JsonViewer, JsonViewerSchema } from './components/json-viewer'
-export type { JsonViewerProps } from './components/json-viewer'
-export { CodeBlock, CodeBlockSchema } from './components/code-block'
-export type { CodeBlockProps } from './components/code-block'
-export { FormView, FormViewSchema } from './components/form-view'
-export type { FormViewProps } from './components/form-view'
 
-// Interactive input components
-export { InputText, InputTextSchema } from './inputs/input-text'
-export type { InputTextProps } from './inputs/input-text'
-export { InputSelect, InputSelectSchema } from './inputs/input-select'
-export type { InputSelectProps } from './inputs/input-select'
-export { InputFile, InputFileSchema } from './inputs/input-file'
-export type { InputFileProps } from './inputs/input-file'
+// Interactive input components — only FormBuilder retained
 export { FormBuilder, FormBuilderSchema } from './inputs/form-builder'
 export type { FormBuilderProps } from './inputs/form-builder'
-
-// New components
-export { ProgressBar, ProgressBarSchema } from './components/progress-bar'
-export type { ProgressBarProps } from './components/progress-bar'
-export { TreeView, TreeViewSchema } from './components/tree-view'
-export type { TreeViewProps, TreeNode } from './components/tree-view'
 
 // InteractivePlayground — Interactive parameter exploration wrapper
 export { InteractivePlayground, InteractivePlaygroundSchema } from './components/interactive-playground'
@@ -110,6 +74,12 @@ export { DocViewSchema } from './docview/schema'
 export type { DocViewSchemaProps } from './docview/schema'
 export { SectionRenderer } from './docview/section-renderer'
 export type { SectionRendererProps } from './docview/section-renderer'
+
+// Annotation context bridge (for components inside DocView)
+export { AnnotationContext, useAnnotationContext } from './docview/annotation-context'
+export type { AnnotationContextValue } from './docview/annotation-context'
+export { AnnotatableWrapper } from './docview/annotatable-wrapper'
+export type { AnnotatableWrapperProps } from './docview/annotatable-wrapper'
 
 // DocView hooks (for custom integrations)
 export { useAnnotations } from './docview/use-annotations'
@@ -133,6 +103,18 @@ export type { AnnotationInputProps } from './docview/annotation-input'
 export type { Annotation, AnnotationStatus, AnnotationColor, AnnotationTarget, OnAnnotationsChange, OnAction } from './docview/types'
 export type { DocViewProps } from './docview/types'
 export { ANNOTATION_COLORS } from './docview/types'
+
+// DocView section context (for annotation enrichment)
+export type { SectionContext } from './docview/section-context'
+export { buildSectionContext, buildSectionContextMap } from './docview/section-context'
+
+// Layout components
+export { GridLayout, GridLayoutSchema } from './components/grid-layout'
+export type { GridLayoutProps } from './components/grid-layout'
+export { SplitLayout, SplitLayoutSchema } from './components/split-layout'
+export type { SplitLayoutProps } from './components/split-layout'
+export { HeroLayout, HeroLayoutSchema } from './components/hero-layout'
+export type { HeroLayoutProps } from './components/hero-layout'
 
 // Core utilities
 export { EChartsWrapper } from './core/echarts-wrapper'

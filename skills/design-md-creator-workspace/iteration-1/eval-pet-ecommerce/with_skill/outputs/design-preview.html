@@ -1,0 +1,804 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>PawPal — 设计系统预览</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Nunito:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Outfit:wght@400;500;600;700&family=Sora:wght@400;500;600;700&family=Manrope:wght@400;500;600;700&family=Figtree:wght@400;500;600;700&family=Onest:wght@400;500;600;700&family=Bricolage+Grotesque:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&family=Lora:wght@400;500;600;700&family=Merriweather:wght@400;700&family=Source+Serif+4:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: var(--rk-font-sans, system-ui), sans-serif;
+    background: var(--rk-bg-primary); color: var(--rk-text-primary);
+    display: flex; min-height: 100vh;
+    transition: background 0.3s, color 0.3s;
+  }
+
+  /* ── 左侧控件 ── */
+  #controls {
+    width: 280px; flex-shrink: 0; padding: var(--pady2, 16px) var(--padx2, 24px);
+    border-right: 1px solid var(--rk-border-subtle);
+    background: var(--rk-bg-secondary); overflow-y: auto; height: 100vh; position: sticky; top: 0;
+  }
+  #controls h3 { font-size: 16px; font-weight: 700; margin-bottom: var(--gapy, 20px); }
+  .ctrl-group { margin-bottom: var(--pady, 8px); }
+  .ctrl-group > label {
+    display: block; font-size: 11px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.5px;
+    opacity: 0.5; margin-bottom: 4px;
+  }
+  .ctrl-group input[type="color"] {
+    width: 100%; height: 32px; border: 1px solid var(--rk-border-subtle);
+    border-radius: var(--rk-radius-sm, 4px); cursor: pointer; background: none; padding: 2px;
+  }
+  .ctrl-group select, .ctrl-group input[type="range"] {
+    width: 100%; padding: 4px 6px; border: 1px solid var(--rk-border-subtle);
+    border-radius: var(--rk-radius-sm, 4px); background: var(--rk-bg-primary);
+    color: var(--rk-text-primary); font-size: 12px;
+  }
+  .ctrl-group input[type="range"] { padding: 0; height: 4px; -webkit-appearance: none; appearance: none; border: none; }
+  .ctrl-group input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 14px; height: 14px; border-radius: 50%;
+    background: var(--rk-accent); cursor: pointer;
+  }
+  .ctrl-group .range-val { font-size: 10px; opacity: 0.4; margin-top: 2px; }
+  .toggle-row { display: flex; align-items: center; justify-content: space-between; }
+  .toggle-row span { font-size: 12px; }
+  .toggle-switch {
+    width: 40px; height: 22px; border-radius: 11px;
+    background: var(--rk-border-subtle); cursor: pointer; position: relative; transition: background 0.2s;
+  }
+  .toggle-switch.active { background: var(--rk-accent); }
+  .toggle-switch::after {
+    content: ''; position: absolute; width: 16px; height: 16px;
+    border-radius: 50%; background: #fff; top: 3px; left: 3px; transition: left 0.2s;
+  }
+  .toggle-switch.active::after { left: 21px; }
+  .btn-random {
+    width: 100%; padding: 6px; border: 1px dashed var(--rk-border-subtle);
+    border-radius: var(--rk-radius-sm, 4px); background: none; color: var(--rk-text-secondary);
+    cursor: pointer; font-size: 12px; opacity: 0.6;
+  }
+  .btn-random:hover { opacity: 1; }
+  .divider { height: 1px; background: var(--rk-border-subtle); margin: var(--pady2, 16px) 0; }
+
+  /* 深度方式按钮组 */
+  .depth-options { display: flex; gap: 4px; }
+  .depth-btn {
+    flex: 1; padding: 5px 0; border: 1px solid var(--rk-border-subtle);
+    border-radius: var(--rk-radius-sm, 4px); background: none;
+    color: var(--rk-text-secondary); cursor: pointer; font-size: 11px;
+    transition: all 0.15s;
+  }
+  .depth-btn.active { background: var(--rk-accent-muted); color: var(--rk-accent); border-color: var(--rk-accent); }
+
+  /* ── 右侧预览 ── */
+  #right { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+  #preview {
+    flex: 1; padding: var(--gapy2, 40px) var(--gapx2, 32px); overflow-y: auto; max-height: calc(100vh - 200px);
+  }
+  #preview h2 { font-family: var(--heading-font), Georgia, serif; margin-bottom: 4px; }
+  .section { margin-bottom: var(--gapy2, 40px); }
+  .section-title {
+    font-size: 11px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 1px; opacity: 0.4; margin-bottom: var(--pady2, 16px);
+    border-bottom: 1px solid var(--rk-border-subtle); padding-bottom: 6px;
+  }
+
+  /* 色卡 */
+  .swatch-row { display: flex; gap: var(--gapx, 16px); flex-wrap: wrap; }
+  .swatch { text-align: center; flex: 1; min-width: 60px; }
+  .swatch-color {
+    height: 48px; border-radius: var(--rk-radius-md, 8px);
+    border: 1px solid var(--rk-border-subtle); margin-bottom: 4px;
+  }
+  .swatch-name { font-size: 10px; font-weight: 600; }
+  .swatch-hex { font-size: 9px; font-family: var(--rk-font-mono, monospace); opacity: 0.5; }
+
+  /* 排版 */
+  .type-sample { margin-bottom: var(--pady, 8px); }
+  .type-label { font-size: 10px; font-family: var(--rk-font-mono, monospace); opacity: 0.4; margin-bottom: 2px; }
+
+  /* 按钮 */
+  .sample-row { display: flex; gap: var(--gapx, 16px); flex-wrap: wrap; margin-bottom: var(--gapy, 20px); align-items: flex-start; }
+  .sample-btn {
+    padding: var(--pady, 8px) var(--padx2, 24px);
+    border-radius: var(--rk-radius-md, 8px);
+    font-size: 14px; font-weight: 500; cursor: pointer;
+    border: none; transition: transform 0.1s, filter 0.15s;
+  }
+  .sample-btn:hover { filter: brightness(1.1); transform: translateY(-1px); }
+  .sample-btn.primary { background: var(--rk-accent); color: #fff; }
+  .sample-btn.secondary { background: var(--rk-bg-secondary); color: var(--rk-text-primary); border: 1px solid var(--rk-border-subtle); }
+  .sample-btn.outline { background: none; color: var(--rk-accent); border: 2px solid var(--rk-accent); }
+
+  /* 卡片 — 深度方式由 JS 控制 */
+  .sample-card {
+    flex: 1; min-width: 180px; max-width: 300px;
+    background: var(--rk-bg-secondary);
+    border-radius: var(--rk-radius-lg, 12px);
+    padding: var(--pady2, 16px) var(--padx2, 24px);
+  }
+  .sample-card.depth-border { border: 1px solid var(--rk-border-subtle); box-shadow: none; }
+  .sample-card.depth-shadow { border: none; box-shadow: var(--rk-shadow, 0 4px 12px rgba(0,0,0,0.3)); }
+  .sample-card.depth-flat { border: none; box-shadow: none; }
+  .sample-card h4 {
+    font-family: var(--heading-font), Georgia, serif;
+    font-size: 16px; font-weight: 600; margin-bottom: var(--pady, 8px);
+  }
+  .sample-card p { font-size: 13px; color: var(--rk-text-secondary); line-height: 1.5; margin-bottom: var(--pady, 8px); }
+
+  /* Alerts */
+  .alert {
+    padding: var(--pady, 8px) var(--padx2, 24px);
+    border-radius: var(--rk-radius-md, 8px); font-size: 14px;
+    line-height: 1.5; border-left: 4px solid; margin-bottom: var(--pady, 8px);
+  }
+  .alert-success { background: var(--rk-success-muted); border-color: var(--rk-success); }
+  .alert-warning { background: var(--rk-warning-muted); border-color: var(--rk-warning); }
+  .alert-error   { background: var(--rk-error-muted);   border-color: var(--rk-error); }
+  .alert-icon { margin-right: var(--padx, 12px); font-weight: 700; }
+
+  /* Badges */
+  .badge {
+    display: inline-block; padding: 3px 10px; border-radius: 99px;
+    font-size: 12px; font-weight: 600; line-height: 1.4; margin-right: 4px; margin-bottom: 4px;
+  }
+  .badge-accent  { background: var(--rk-accent-muted); color: var(--rk-accent); }
+  .badge-success { background: var(--rk-success-muted); color: var(--rk-success); }
+  .badge-warning { background: var(--rk-warning-muted); color: var(--rk-warning); }
+  .badge-error   { background: var(--rk-error-muted);   color: var(--rk-error); }
+  .badge-neutral { background: var(--rk-bg-tertiary);    color: var(--rk-text-secondary); }
+
+  /* 通知 */
+  .notification-card {
+    display: flex; gap: var(--padx, 12px); align-items: flex-start;
+    padding: var(--pady, 8px) var(--padx2, 24px);
+    border-radius: var(--rk-radius-md, 8px);
+    background: var(--rk-bg-secondary); border: 1px solid var(--rk-border-subtle);
+    margin-bottom: var(--pady, 8px);
+  }
+  .notif-dot { width: 10px; height: 10px; border-radius: 50%; margin-top: 5px; flex-shrink: 0; }
+  .notif-body { flex: 1; }
+  .notif-title { font-size: 14px; font-weight: 600; margin-bottom: 2px; }
+  .notif-desc { font-size: 12px; color: var(--rk-text-secondary); }
+  .notif-time { font-size: 10px; color: var(--rk-text-tertiary); }
+
+  /* 进度条 */
+  .progress-bar { height: 8px; border-radius: 99px; background: var(--rk-border-subtle); overflow: hidden; margin-top: 4px; }
+  .progress-fill { height: 100%; border-radius: 99px; transition: width 0.3s; }
+
+  /* 输入框 */
+  .sample-input {
+    width: 100%; padding: var(--pady, 8px) var(--padx, 12px);
+    border: 1px solid var(--rk-border-subtle);
+    border-radius: var(--rk-radius-md, 8px); background: var(--rk-bg-primary);
+    color: var(--rk-text-primary); font-size: 14px;
+  }
+  .sample-input:focus { outline: none; border-color: var(--rk-accent); }
+
+  /* Vizual 组件容器 */
+  .viz-slot {
+    border: 1px solid var(--rk-border-subtle);
+    border-radius: var(--rk-radius-md, 8px); overflow: hidden; margin-bottom: var(--gapy, 20px);
+  }
+  .viz-slot-label {
+    font-size: 10px; color: var(--rk-text-tertiary);
+    padding: 4px 10px; background: var(--rk-bg-tertiary);
+    border-bottom: 1px solid var(--rk-border-subtle);
+  }
+  .viz-slot-content { padding: var(--pady, 8px); }
+
+  /* ── 导出区 ── */
+  #export {
+    border-top: 1px solid var(--rk-border-subtle); background: var(--rk-bg-secondary);
+    padding: var(--pady, 8px) var(--gapx2, 32px);
+  }
+  #export-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+  #export-header h4 { font-size: 13px; font-weight: 600; }
+  #export-btns { display: flex; gap: var(--padx, 12px); }
+  #export-btns button {
+    padding: 5px 14px; border-radius: var(--rk-radius-sm, 4px); font-size: 12px;
+    font-weight: 600; cursor: pointer; border: none;
+  }
+  #download-btn { background: var(--rk-accent); color: #fff; }
+  #copy-btn { background: none; color: var(--rk-text-primary); border: 1px solid var(--rk-border-subtle) !important; }
+  #copy-btn.copied { background: var(--rk-success); color: #fff; border-color: var(--rk-success) !important; }
+  #design-md-output {
+    width: 100%; height: 120px; font-family: var(--rk-font-mono, monospace);
+    font-size: 11px; line-height: 1.5; padding: 8px 12px;
+    border: 1px solid var(--rk-border-subtle); border-radius: var(--rk-radius-sm, 4px);
+    background: var(--rk-bg-primary); color: var(--rk-text-primary); resize: vertical;
+  }
+</style>
+</head>
+<body>
+
+<!-- 左侧控件 — 基于 DESIGN.md 7 个关键决策 -->
+<aside id="controls">
+  <h3>设计调控台</h3>
+
+  <!-- ① 明暗 — Visual Theme -->
+  <div class="ctrl-group toggle-row">
+    <label style="margin-bottom:0;opacity:1;font-size:12px">暗色模式</label>
+    <div class="toggle-switch" id="ctrl-dark"></div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- ② 品牌色 — Color Palette -->
+  <div class="ctrl-group">
+    <label>品牌色</label>
+    <input type="color" id="ctrl-accent" value="#FF6B35">
+  </div>
+
+  <!-- ③ 色温 — Color Temperature -->
+  <div class="ctrl-group">
+    <label>色温暖度</label>
+    <input type="range" id="ctrl-warmth" min="-20" max="20" step="1" value="10">
+    <div class="range-val" id="warmth-val">10</div>
+  </div>
+
+  <!-- ④ 亮度 — Background Lightness -->
+  <div class="ctrl-group">
+    <label>背景亮度</label>
+    <input type="range" id="ctrl-lightness" min="0" max="100" step="1" value="97">
+    <div class="range-val" id="lightness-val">97</div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- ⑤ 字体 — Typography -->
+  <div class="ctrl-group">
+    <label>标题字体</label>
+    <select id="ctrl-heading-font">
+      <option value="Inter">Inter</option>
+      <option value="Plus Jakarta Sans">Plus Jakarta Sans</option>
+      <option value="Space Grotesk">Space Grotesk</option>
+      <option value="Nunito" selected>Nunito</option>
+      <option value="DM Sans">DM Sans</option>
+      <option value="Outfit">Outfit</option>
+      <option value="Sora">Sora</option>
+      <option value="Manrope">Manrope</option>
+      <option value="Figtree">Figtree</option>
+      <option value="Onest">Onest</option>
+      <option value="Bricolage Grotesque">Bricolage Grotesque</option>
+      <option value="Noto Sans SC">Noto Sans SC (中文)</option>
+      <option value="Georgia">Georgia (serif)</option>
+      <option value="Lora">Lora (serif)</option>
+      <option value="Merriweather">Merriweather (serif)</option>
+      <option value="Source Serif 4">Source Serif 4</option>
+    </select>
+  </div>
+  <div class="ctrl-group">
+    <label>正文字体</label>
+    <select id="ctrl-body-font">
+      <option value="Inter">Inter</option>
+      <option value="Plus Jakarta Sans">Plus Jakarta Sans</option>
+      <option value="Nunito" selected>Nunito</option>
+      <option value="DM Sans">DM Sans</option>
+      <option value="Outfit">Outfit</option>
+      <option value="Manrope">Manrope</option>
+      <option value="Figtree">Figtree</option>
+      <option value="Noto Sans SC">Noto Sans SC (中文)</option>
+      <option value="system-ui">System UI</option>
+    </select>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- ⑥ 内间距（padding）— Layout -->
+  <div class="ctrl-group">
+    <label>内间距</label>
+    <div style="display:flex;gap:6px">
+      <div style="flex:1"><div style="font-size:9px;opacity:0.5;margin-bottom:2px">↑↓ 纵向</div><input type="range" id="ctrl-pad-y" min="4" max="16" step="2" value="10"><div class="range-val" id="pad-y-val">10px</div></div>
+      <div style="flex:1"><div style="font-size:9px;opacity:0.5;margin-bottom:2px">←→ 横向</div><input type="range" id="ctrl-pad-x" min="4" max="20" step="2" value="16"><div class="range-val" id="pad-x-val">16px</div></div>
+    </div>
+  </div>
+
+  <!-- ⑦ 外间距（gap）— Layout -->
+  <div class="ctrl-group">
+    <label>外间距</label>
+    <div style="display:flex;gap:6px">
+      <div style="flex:1"><div style="font-size:9px;opacity:0.5;margin-bottom:2px">↑↓ 纵向</div><input type="range" id="ctrl-gap-y" min="8" max="32" step="4" value="20"><div class="range-val" id="gap-y-val">20px</div></div>
+      <div style="flex:1"><div style="font-size:9px;opacity:0.5;margin-bottom:2px">←→ 横向</div><input type="range" id="ctrl-gap-x" min="8" max="32" step="4" value="16"><div class="range-val" id="gap-x-val">16px</div></div>
+    </div>
+  </div>
+
+  <!-- ⑧ 圆角 — Layout -->
+  <div class="ctrl-group">
+    <label>圆角</label>
+    <input type="range" id="ctrl-radius" min="0" max="24" step="2" value="10">
+    <div class="range-val" id="radius-val">10px</div>
+  </div>
+
+  <!-- ⑨ 深度方式 — Depth & Elevation -->
+  <div class="ctrl-group">
+    <label>深度方式</label>
+    <div class="depth-options">
+      <button class="depth-btn active" id="depth-border" onclick="setDepth('border')">边框</button>
+      <button class="depth-btn" id="depth-shadow" onclick="setDepth('shadow')">阴影</button>
+      <button class="depth-btn" id="depth-flat" onclick="setDepth('flat')">扁平</button>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+  <div class="ctrl-group">
+    <button class="btn-random" onclick="randomize()">🎲 随机配色</button>
+  </div>
+</aside>
+
+<!-- 右侧预览 -->
+<div id="right">
+  <div id="preview">
+    <h2>PawPal 设计系统</h2>
+    <p style="color:var(--rk-text-secondary);margin-bottom:var(--gapy2,40px)">温暖友好的宠物用品电商设计系统 — 以活力橙为主色调，传递对毛孩子的关爱与活力</p>
+
+    <!-- 色卡 -->
+    <div class="section">
+      <div class="section-title">调色板</div>
+      <div class="swatch-row" id="swatch-row"></div>
+    </div>
+
+    <!-- 排版 -->
+    <div class="section">
+      <div class="section-title">排版层级</div>
+      <div id="type-preview"></div>
+    </div>
+
+    <!-- 按钮 -->
+    <div class="section">
+      <div class="section-title">按钮</div>
+      <div class="sample-row">
+        <button class="sample-btn primary">立即购买</button>
+        <button class="sample-btn secondary">加入购物车</button>
+        <button class="sample-btn outline">了解更多</button>
+      </div>
+    </div>
+
+    <!-- Alerts -->
+    <div class="section">
+      <div class="section-title">提示</div>
+      <div class="alert alert-success"><span class="alert-icon">✓</span> 订单已成功提交，预计3天内送达</div>
+      <div class="alert alert-warning"><span class="alert-icon">⚠</span> 库存不足，该商品仅剩最后5件</div>
+      <div class="alert alert-error"><span class="alert-icon">✕</span> 支付失败，请检查银行卡信息</div>
+    </div>
+
+    <!-- Badges -->
+    <div class="section">
+      <div class="section-title">标签</div>
+      <span class="badge badge-accent">精选推荐</span>
+      <span class="badge badge-success">已上架</span>
+      <span class="badge badge-warning">预售中</span>
+      <span class="badge badge-error">已下架</span>
+      <span class="badge badge-neutral">草稿</span>
+    </div>
+
+    <!-- 通知 -->
+    <div class="section">
+      <div class="section-title">状态通知</div>
+      <div class="notification-card">
+        <div class="notif-dot" style="background:var(--rk-success)"></div>
+        <div class="notif-body"><div class="notif-title">新订单确认</div><div class="notif-desc">用户「张小明」购买了皇家猫粮10kg装，订单号#20260421001</div></div>
+        <div class="notif-time">3分钟前</div>
+      </div>
+      <div class="notification-card">
+        <div class="notif-dot" style="background:var(--rk-warning)"></div>
+        <div class="notif-body"><div class="notif-title">库存预警</div><div class="notif-desc">「宠物自动喂食器」库存低于安全线，当前仅剩12件</div></div>
+        <div class="notif-time">15分钟前</div>
+      </div>
+      <div class="notification-card">
+        <div class="notif-dot" style="background:var(--rk-error)"></div>
+        <div class="notif-body"><div class="notif-title">退货申请</div><div class="notif-desc">用户「李小花」申请退货「猫咪牵引绳」，原因：尺寸不合适</div></div>
+        <div class="notif-time">1小时前</div>
+      </div>
+    </div>
+
+    <!-- 进度条 -->
+    <div class="section">
+      <div class="section-title">销售目标</div>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div>
+          <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px"><span>狗粮品类月度目标</span><span style="color:var(--rk-success)">¥128,500 / ¥150,000</span></div>
+          <div class="progress-bar"><div class="progress-fill" style="width:85.7%;background:var(--rk-success)"></div></div>
+        </div>
+        <div>
+          <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px"><span>猫砂品类月度目标</span><span style="color:var(--rk-warning)">¥67,200 / ¥120,000</span></div>
+          <div class="progress-bar"><div class="progress-fill" style="width:56%;background:var(--rk-warning)"></div></div>
+        </div>
+        <div>
+          <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px"><span>宠物玩具月度目标</span><span style="color:var(--rk-accent)">¥45,800 / ¥80,000</span></div>
+          <div class="progress-bar"><div class="progress-fill" style="width:57.3%;background:var(--rk-accent)"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 卡片 -->
+    <div class="section">
+      <div class="section-title">卡片</div>
+      <div class="sample-row">
+        <div class="sample-card depth-border">
+          <h4>新品上市</h4>
+          <p>智能宠物饮水机，循环过滤系统，让毛孩子随时喝到新鲜活水</p>
+          <button class="sample-btn primary" style="font-size:12px;padding:5px 14px">查看详情</button>
+        </div>
+        <div class="sample-card depth-border">
+          <h4>会员日特惠</h4>
+          <p>本周会员专属：全场猫粮8折，满299包邮，限时48小时</p>
+          <button class="sample-btn secondary" style="font-size:12px;padding:5px 14px">领取优惠</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Vizual 组件：数据表格 -->
+    <div class="section">
+      <div class="section-title">热销商品排行</div>
+      <div class="viz-slot"><div class="viz-slot-label">DataTable</div><div class="viz-slot-content" id="viz-table"></div></div>
+    </div>
+
+    <!-- Vizual 组件：KPI -->
+    <div class="section">
+      <div class="section-title">经营看板</div>
+      <div class="viz-slot"><div class="viz-slot-label">KpiDashboard</div><div class="viz-slot-content" id="viz-kpi"></div></div>
+    </div>
+
+    <!-- Vizual 组件：图表 -->
+    <div class="section">
+      <div class="section-title">数据趋势</div>
+      <div class="sample-row">
+        <div class="viz-slot" style="flex:1;min-width:300px"><div class="viz-slot-label">BarChart</div><div class="viz-slot-content" id="viz-bar"></div></div>
+        <div class="viz-slot" style="flex:1;min-width:300px"><div class="viz-slot-label">PieChart</div><div class="viz-slot-content" id="viz-pie"></div></div>
+      </div>
+    </div>
+
+    <!-- 输入框 -->
+    <div class="section">
+      <div class="section-title">搜索</div>
+      <input class="sample-input" type="text" placeholder="搜索宠物用品、品牌、品类...">
+    </div>
+  </div>
+
+  <!-- 导出 -->
+  <div id="export">
+    <div id="export-header">
+      <h4>导出 DESIGN.md</h4>
+      <div id="export-btns">
+        <button id="copy-btn" onclick="copyMD()">复制到剪贴板</button>
+        <button id="download-btn" onclick="downloadMD()">下载 DESIGN.md</button>
+      </div>
+    </div>
+    <textarea id="design-md-output" readonly></textarea>
+  </div>
+</div>
+
+<script src="../../../dist/vizual.standalone.js"></script>
+<script>
+var design = {
+  brandName: 'PawPal',
+  accent: '#FF6B35',
+  warmth: 10,
+  bgLightness: 97,
+  isDark: false,
+  headingFont: 'Nunito',
+  bodyFont: 'Nunito',
+  padY: 10,
+  padX: 16,
+  gapY: 20,
+  gapX: 16,
+  radiusMd: 10,
+  headingWeight: 600,
+  bodyWeight: 400,
+  depthMode: 'border'
+};
+
+// ── HSL 工具 ──
+function hexToHSL(hex) {
+  var r=parseInt(hex.slice(1,3),16)/255, g=parseInt(hex.slice(3,5),16)/255, b=parseInt(hex.slice(5,7),16)/255;
+  var max=Math.max(r,g,b), min=Math.min(r,g,b), h,s,l=(max+min)/2;
+  if(max===min){h=s=0;}else{var d=max-min;s=l>0.5?d/(2-max-min):d/(max+min);
+  if(max===r)h=((g-b)/d+(g<b?6:0))/6;else if(max===g)h=((b-r)/d+2)/6;else h=((r-g)/d+4)/6;}
+  return{h:Math.round(h*360),s:Math.round(s*100),l:Math.round(l*100)};
+}
+function hslToHex(h,s,l){
+  h=((h%360)+360)%360;s/=100;l/=100;
+  var c=(1-Math.abs(2*l-1))*s,x=c*(1-Math.abs((h/60)%2-1)),m=l-c/2,r,g,b;
+  if(h<60){r=c;g=x;b=0;}else if(h<120){r=x;g=c;b=0;}else if(h<180){r=0;g=c;b=x;}
+  else if(h<240){r=0;g=x;b=c;}else if(h<300){r=x;g=0;b=c;}else{r=c;g=0;b=x;}
+  return '#'+[r+m,g+m,b+m].map(function(v){return Math.round(v*255).toString(16).padStart(2,'0');}).join('');
+}
+
+// ── 推导 DesignTokens → Vizual 主题 ──
+function deriveTokens(d) {
+  var a = hexToHSL(d.accent);
+  var w = d.warmth, absW = Math.abs(w), lightness = d.bgLightness, dark = d.isDark;
+  var warmHue = 40, coolHue = 220;
+  var neutralHue = w > 0 ? warmHue : (w < 0 ? coolHue : 0);
+  var baseSat = absW === 0 ? 0 : (4 + absW * 1.3);
+  var bgSat = dark ? baseSat * 0.7 : baseSat;
+  var bgL = dark ? Math.max(lightness * 0.12, 3) : Math.min(lightness * 0.97 + 3, 99);
+  var bgHue = absW === 0 ? 0 : neutralHue + (a.h - neutralHue) * 0.1;
+  var bg = hslToHex(bgHue, bgSat, bgL);
+  var cardBg = dark ? hslToHex(bgHue, bgSat * 0.6, Math.min(bgL + 5, 22)) : hslToHex(bgHue, bgSat * 0.7, Math.min(bgL + 3, 100));
+  var text = dark ? hslToHex(bgHue, bgSat * 0.3, Math.min(bgL + 72, 95)) : hslToHex(bgHue, bgSat * 0.5, Math.max(bgL - 78, 8));
+  var textSec = dark ? hslToHex(bgHue, bgSat * 0.3, Math.min(bgL + 48, 68)) : hslToHex(bgHue, bgSat * 0.4, Math.max(bgL - 52, 28));
+  var border = dark ? hslToHex(bgHue, bgSat * 0.5, Math.min(bgL + 10, 28)) : hslToHex(bgHue, bgSat * 0.6, Math.max(bgL - 8, 82));
+  return {
+    colors: [
+      { name: 'accent', value: d.accent },
+      { name: 'background', value: bg },
+      { name: 'card', value: cardBg },
+      { name: 'text', value: text },
+      { name: 'text-secondary', value: textSec },
+      { name: 'border', value: border },
+      { name: 'success', value: '#10b981' },
+      { name: 'warning', value: '#f59e0b' },
+      { name: 'error', value: '#ef4444' }
+    ],
+    typography: {
+      fontFamily: d.headingFont + ', ' + d.bodyFont + ', system-ui, sans-serif',
+      sizes: { body: '14px' },
+      weights: { regular: String(d.bodyWeight), bold: String(d.headingWeight) }
+    },
+    spacing: {
+      baseUnit: d.padY + 'px',
+      scale: {
+        'space-1': d.padY + 'px', 'space-2': (d.padY * 2) + 'px', 'space-3': (d.padY * 3) + 'px', 'space-4': (d.padY * 4) + 'px', 'space-6': (d.gapY) + 'px'
+      }
+    },
+    radius: { scale: { sm: Math.max(d.radiusMd - 4, 0) + 'px', md: d.radiusMd + 'px', lg: (d.radiusMd + 4) + 'px' } }
+  };
+}
+
+// ── 应用主题 ──
+function applyDesign() {
+  var tokens = deriveTokens(design);
+  var themeName = design.isDark ? 'preview-dark' : 'preview-light';
+  var theme = Vizual.mapDesignTokensToTheme(tokens, themeName);
+  Vizual.registerTheme(theme.name, theme);
+  var inv = Vizual.invertTheme(theme);
+  Vizual.registerTheme(inv.name, inv);
+  Vizual.setGlobalTheme(themeName);
+
+  // 设置 heading font 为 CSS 变量（排版预览用）
+  document.documentElement.style.setProperty('--heading-font', design.headingFont);
+
+  // 设置间距 CSS 变量
+  var py = design.padY, px = design.padX, gy = design.gapY, gx = design.gapX;
+  var root = document.documentElement.style;
+  root.setProperty('--pady', py + 'px'); root.setProperty('--pady2', (py * 2) + 'px'); root.setProperty('--pady3', (py * 3) + 'px');
+  root.setProperty('--padx', px + 'px'); root.setProperty('--padx2', (px * 2) + 'px'); root.setProperty('--padx3', (px * 3) + 'px');
+  root.setProperty('--gapy', gy + 'px'); root.setProperty('--gapy2', (gy * 2) + 'px');
+  root.setProperty('--gapx', gx + 'px'); root.setProperty('--gapx2', (gx * 2) + 'px');
+
+  renderSwatches();
+  renderTypography();
+  renderVizualComponents();
+  applyDepth();
+  generateDesignMd();
+}
+
+function toggleDarkMode() {
+  var newMode = Vizual.toggleMode();
+  design.isDark = newMode === 'dark';
+  document.getElementById('ctrl-dark').classList.toggle('active', design.isDark);
+  renderSwatches();
+  renderTypography();
+  renderVizualComponents();
+  generateDesignMd();
+}
+
+function setDepth(mode) {
+  design.depthMode = mode;
+  document.querySelectorAll('.depth-btn').forEach(function(b) { b.classList.remove('active'); });
+  document.getElementById('depth-' + mode).classList.add('active');
+  applyDepth();
+  generateDesignMd();
+}
+
+function applyDepth() {
+  var cards = document.querySelectorAll('.sample-card, .notification-card, .viz-slot');
+  cards.forEach(function(c) {
+    c.classList.remove('depth-border', 'depth-shadow', 'depth-flat');
+    c.classList.add('depth-' + design.depthMode);
+  });
+}
+
+// ── 色卡 ──
+function renderSwatches() {
+  var roles = [
+    { n: '品牌色', v: 'var(--rk-accent)' },
+    { n: '页面背景', v: 'var(--rk-bg-primary)' },
+    { n: '卡片背景', v: 'var(--rk-bg-secondary)' },
+    { n: '主文字', v: 'var(--rk-text-primary)' },
+    { n: '次要文字', v: 'var(--rk-text-secondary)' },
+    { n: '边框', v: 'var(--rk-border-subtle)' },
+    { n: '成功', v: 'var(--rk-success)' },
+    { n: '警告', v: 'var(--rk-warning)' },
+    { n: '错误', v: 'var(--rk-error)' }
+  ];
+  var html = '';
+  roles.forEach(function(r) {
+    var hex = Vizual.tc(r.v.replace('var(', '').replace(')', ''));
+    html += '<div class="swatch"><div class="swatch-color" style="background:' + r.v + '"></div>'
+      + '<div class="swatch-name">' + r.n + '</div><div class="swatch-hex">' + hex + '</div></div>';
+  });
+  document.getElementById('swatch-row').innerHTML = html;
+}
+
+// ── 排版预览 ──
+function renderTypography() {
+  var levels = [
+    { l: 'Display', sz: 48, w: design.headingWeight, lh: 1.1, useHeading: true },
+    { l: 'H1', sz: 32, w: design.headingWeight, lh: 1.2, useHeading: true },
+    { l: 'H2', sz: 24, w: design.headingWeight, lh: 1.3, useHeading: true },
+    { l: '正文大', sz: 18, w: design.bodyWeight, lh: 1.6 },
+    { l: '正文', sz: 16, w: design.bodyWeight, lh: 1.5 },
+    { l: '辅助文字', sz: 13, w: design.bodyWeight, lh: 1.4 },
+    { l: '标签', sz: 11, w: 500, lh: 1.3 }
+  ];
+  var html = '';
+  levels.forEach(function(lv) {
+    var f = lv.useHeading ? design.headingFont : design.bodyFont;
+    html += '<div class="type-sample"><div class="type-label">' + lv.l + ' — ' + lv.sz + 'px / ' + lv.w + ' / lh ' + lv.lh + '</div>'
+      + '<div style="font-family:' + f + ',system-ui,sans-serif;font-size:' + lv.sz + 'px;font-weight:' + lv.w + ';line-height:' + lv.lh + '">给毛孩子最好的关爱</div></div>';
+  });
+  document.getElementById('type-preview').innerHTML = html;
+}
+
+// ── Vizual 组件渲染 ──
+function renderVizSpec(id, type, props) {
+  var el = document.getElementById(id);
+  if (!el) return;
+  el.innerHTML = '';
+  try { Vizual.renderSpec({ root: 'm', elements: { m: { type: type, props: props, children: [] } } }, el); }
+  catch(e) { el.innerHTML = '<div style="color:var(--rk-error);font-size:11px">Error: ' + e.message + '</div>'; }
+}
+
+function renderVizualComponents() {
+  renderVizSpec('viz-table', 'DataTable', {
+    type: 'table',
+    columns: [
+      { key: 'product', label: '商品名称' },
+      { key: 'revenue', label: '月销售额' },
+      { key: 'growth', label: '环比增长' },
+      { key: 'status', label: '库存状态' }
+    ],
+    data: [
+      { product: '皇家猫粮 K36 10kg', revenue: '¥28,650', growth: '+18.5%', status: '充足' },
+      { product: '宠物自动喂食器 Pro', revenue: '¥22,400', growth: '+32.1%', status: '紧张' },
+      { product: '猫咪逗猫棒套装', revenue: '¥15,800', growth: '+5.3%', status: '充足' },
+      { product: '狗用牵引绳（可伸缩）', revenue: '¥12,350', growth: '-2.1%', status: '充足' },
+      { product: '猫砂豆腐砂 6L', revenue: '¥9,780', growth: '+24.6%', status: '紧张' }
+    ]
+  });
+
+  renderVizSpec('viz-kpi', 'KpiDashboard', {
+    type: 'kpi_dashboard', columns: 3,
+    metrics: [
+      { label: '本月GMV', value: '¥358,200', trend: '+23.4%', trendDirection: 'up' },
+      { label: '活跃会员数', value: '12,847', trend: '+1,234', trendDirection: 'up' },
+      { label: '退货率', value: '2.3%', trend: '+0.5%', trendDirection: 'down' }
+    ]
+  });
+
+  renderVizSpec('viz-bar', 'BarChart', {
+    type: 'bar', title: '近半年月度销售额', x: 'month', y: 'revenue',
+    data: [
+      { month: '10月', revenue: 186000 },
+      { month: '11月', revenue: 245000 },
+      { month: '12月', revenue: 312000 },
+      { month: '1月', revenue: 278000 },
+      { month: '2月', revenue: 298000 },
+      { month: '3月', revenue: 358200 }
+    ]
+  });
+
+  renderVizSpec('viz-pie', 'PieChart', {
+    type: 'pie', title: '品类销售占比', category: 'name', value: 'share',
+    data: [
+      { name: '猫粮', share: 35 },
+      { name: '狗粮', share: 28 },
+      { name: '宠物玩具', share: 15 },
+      { name: '清洁用品', share: 12 },
+      { name: '智能设备', share: 10 }
+    ]
+  });
+}
+
+// ── DESIGN.md 生成 ──
+function generateDesignMd() {
+  var tokens = deriveTokens(design);
+  var d = design;
+  var colors = {};
+  tokens.colors.forEach(function(c) { colors[c.name] = c.value; });
+  var mood = d.isDark ? '暗色、沉稳' : '明亮、温暖、友好';
+  var md = '# Design System — ' + d.brandName + '\n\n';
+  md += '## 1. Visual Theme & Atmosphere\n\n';
+  md += d.brandName + ' 的设计风格是' + mood + '的。';
+  md += '作为宠物用品电商品牌，整体视觉传递温暖与活力——背景采用暖色调 (' + colors.background + ')，品牌色活力橙 (' + d.accent + ') 让每一次交互都充满能量。';
+  md += d.headingFont + ' 用于标题传递亲和感，' + d.bodyFont + ' 用于正文确保阅读舒适。';
+  md += '内间距 ' + d.padY + '/' + d.padX + 'px（纵向/横向），外间距 ' + d.gapY + '/' + d.gapX + 'px，圆角 ' + d.radiusMd + 'px——圆润但不轻浮，友好但不随意。\n\n';
+  md += '**核心特征：**\n';
+  md += '- ' + (d.isDark ? '暗色优先' : '明亮温暖的浅色基调') + '，让宠物产品图片更突出\n';
+  md += '- 活力橙 (' + d.accent + ') 作为品牌核心色，用于关键交互和促销\n';
+  md += '- 暖色温（+' + d.warmth + '）确保所有中性色都带有暖意\n';
+  md += '- 内间距 ' + d.padY + '/' + d.padX + 'px，外间距 ' + d.gapY + '/' + d.gapX + 'px，圆角 ' + d.radiusMd + 'px\n\n';
+  md += '## 2. Color Palette & Roles\n\n';
+  md += '### Primary\n- **活力橙 (Accent)** (`' + colors.accent + '`): 品牌核心色，用于CTA按钮、促销标签、价格高亮——传递活力与温暖。\n\n';
+  md += '### Surface\n- **页面背景** (`' + colors.background + '`): 温暖的浅色底色，带有暖色调中性色。\n- **卡片背景** (`' + colors.card + '`): 略深的温暖表面，用于商品卡片和容器。\n\n';
+  md += '### Text\n- **主文字** (`' + colors.text + '`): 正文和标题。\n- **次要文字** (`' + colors['text-secondary'] + '`): 商品描述、辅助信息。\n\n';
+  md += '### Borders\n- **边框** (`' + colors.border + '`): 分隔线和卡片边框。\n\n';
+  md += '### Semantic\n- **成功** (`' + colors.success + '`)：下单成功、库存充足\n- **警告** (`' + colors.warning + '`)：库存紧张、限时提醒\n- **错误** (`' + colors.error + '`)：支付失败、库存不足\n\n';
+  md += '## 3. Typography Rules\n\n';
+  md += '- **标题**: `' + d.headingFont + '`\n- **正文**: `' + d.bodyFont + '`\n- **代码**: `JetBrains Mono`\n\n';
+  md += '| 层级 | 字号 | 字重 | 行高 |\n|------|------|--------|-------------|\n';
+  md += '| Display | 48px | ' + d.headingWeight + ' | 1.10 |\n| H1 | 32px | ' + d.headingWeight + ' | 1.20 |\n| H2 | 24px | ' + d.headingWeight + ' | 1.30 |\n| 正文 | 16px | ' + d.bodyWeight + ' | 1.50 |\n| 辅助文字 | 13px | ' + d.bodyWeight + ' | 1.40 |\n\n';
+  md += '## 4. Component Styles\n\n';
+  md += '- **主按钮**: 背景 `' + colors.accent + '`，白色文字，圆角 ' + d.radiusMd + 'px\n';
+  md += '- **卡片**: 背景 `' + colors.card + '`，边框 `' + colors.border + '`，圆角 ' + (d.radiusMd + 4) + 'px\n';
+  md += '- **输入框**: 背景 `' + colors.background + '`，边框 `' + colors.border + '`，圆角 ' + d.radiusMd + 'px\n\n';
+  md += '## 5. Layout Principles\n\n- 内间距：纵向 ' + d.padY + 'px，横向 ' + d.padX + 'px\n- 外间距：纵向 ' + d.gapY + 'px，横向 ' + d.gapX + 'px\n- 圆角: ' + Math.max(d.radiusMd - 4, 0) + '/' + d.radiusMd + '/' + (d.radiusMd + 4) + 'px\n- 最大宽度: 1200px\n\n';
+  md += '## 6. Depth & Elevation\n\n| 层级 | 方式 | 用途 |\n|-------|-----------|-----|\n| 扁平 | 无 | 背景 |\n| 边框 | 1px 边框 | 商品卡片 |\n| 阴影 | 投影 | 弹窗、浮层 |\n\n';
+  md += '## 7. Do\'s and Don\'ts\n\n### 推荐\n- 活力橙仅用于CTA和关键交互\n- 遵循内间距 ' + d.padY + '/' + d.padX + 'px、外间距 ' + d.gapY + '/' + d.gapX + 'px 的网格\n- 确保 WCAG AA 对比度\n- 保持中性色的暖色调一致性\n\n### 禁止\n- 品牌色大面积使用（避免橙色超过页面面积的15%）\n- 使用超过2种字体\n- 行高低于 1.3\n- 使用冷色调中性色（蓝灰色系）\n\n';
+  md += '## 8. Responsive Behavior\n\n| 断点 | 宽度 | 行为 |\n|-----------|-------|----------|\n| 手机 | <640px | 单列，商品卡片堆叠 |\n| 平板 | 640-1024px | 两列网格 |\n| 桌面 | >1024px | 完整布局，三列以上网格 |\n\n';
+  md += '## 9. Agent Prompt Guide\n\n### Quick Colors\n- CTA: `' + colors.accent + '`\n- 背景: `' + colors.background + '`\n- 卡片: `' + colors.card + '`\n- 文字: `' + colors.text + '`\n- 边框: `' + colors.border + '`\n';
+  document.getElementById('design-md-output').value = md;
+}
+
+function randomize() {
+  design.accent = hslToHex(Math.floor(Math.random() * 360), 70, 50);
+  document.getElementById('ctrl-accent').value = design.accent;
+  applyDesign();
+}
+
+function downloadMD() {
+  var md = document.getElementById('design-md-output').value;
+  var blob = new Blob([md], { type: 'text/markdown' });
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = 'DESIGN.md';
+  a.style.display = 'none'; document.body.appendChild(a); a.click();
+  setTimeout(function() { document.body.removeChild(a); URL.revokeObjectURL(a.href); }, 100);
+}
+
+function copyMD() {
+  navigator.clipboard.writeText(document.getElementById('design-md-output').value).then(function() {
+    var btn = document.getElementById('copy-btn');
+    btn.textContent = '✓ 已复制'; btn.classList.add('copied');
+    setTimeout(function() { btn.textContent = '复制到剪贴板'; btn.classList.remove('copied'); }, 2000);
+  });
+}
+
+// ── 绑定控件 ──
+document.getElementById('ctrl-accent').addEventListener('input', function(e) { design.accent = e.target.value; applyDesign(); });
+document.getElementById('ctrl-warmth').addEventListener('input', function(e) { design.warmth = parseInt(e.target.value); document.getElementById('warmth-val').textContent = design.warmth; applyDesign(); });
+document.getElementById('ctrl-lightness').addEventListener('input', function(e) { design.bgLightness = parseInt(e.target.value); document.getElementById('lightness-val').textContent = design.bgLightness; applyDesign(); });
+document.getElementById('ctrl-dark').addEventListener('click', toggleDarkMode);
+document.getElementById('ctrl-heading-font').addEventListener('change', function(e) { design.headingFont = e.target.value; applyDesign(); });
+document.getElementById('ctrl-body-font').addEventListener('change', function(e) { design.bodyFont = e.target.value; applyDesign(); });
+document.getElementById('ctrl-pad-y').addEventListener('input', function(e) {
+  design.padY = parseInt(e.target.value);
+  document.getElementById('pad-y-val').textContent = design.padY + 'px';
+  applyDesign();
+});
+document.getElementById('ctrl-pad-x').addEventListener('input', function(e) {
+  design.padX = parseInt(e.target.value);
+  document.getElementById('pad-x-val').textContent = design.padX + 'px';
+  applyDesign();
+});
+document.getElementById('ctrl-gap-y').addEventListener('input', function(e) {
+  design.gapY = parseInt(e.target.value);
+  document.getElementById('gap-y-val').textContent = design.gapY + 'px';
+  applyDesign();
+});
+document.getElementById('ctrl-gap-x').addEventListener('input', function(e) {
+  design.gapX = parseInt(e.target.value);
+  document.getElementById('gap-x-val').textContent = design.gapX + 'px';
+  applyDesign();
+});
+document.getElementById('ctrl-radius').addEventListener('input', function(e) { design.radiusMd = parseInt(e.target.value); document.getElementById('radius-val').textContent = design.radiusMd + 'px'; applyDesign(); });
+
+applyDesign();
+</script>
+</body>
+</html>

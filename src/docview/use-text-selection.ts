@@ -16,6 +16,8 @@ export interface UseTextSelectionOptions {
   minLength?: number
   /** CSS selectors for elements that should NOT trigger selection (buttons, charts, inputs) */
   ignoreSelectors?: string[]
+  /** Called when selection changes (new selection or cleared) */
+  onSelectionChange?: (selection: TextSelection | null) => void
 }
 
 export interface UseTextSelectionReturn {
@@ -34,7 +36,7 @@ export interface UseTextSelectionReturn {
  * - Filters out selections on interactive elements
  */
 export function useTextSelection(options: UseTextSelectionOptions): UseTextSelectionReturn {
-  const { containerRef, minLength = 2, ignoreSelectors = [] } = options
+  const { containerRef, minLength = 2, ignoreSelectors = [], onSelectionChange } = options
   const [selection, setSelection] = useState<TextSelection | null>(null)
   const selectionRef = useRef<TextSelection | null>(null)
   const isPopupOpenRef = useRef(false)
@@ -44,7 +46,8 @@ export function useTextSelection(options: UseTextSelectionOptions): UseTextSelec
     selectionRef.current = null
     isPopupOpenRef.current = false
     window.getSelection()?.removeAllRanges()
-  }, [])
+    onSelectionChange?.(null)
+  }, [onSelectionChange])
 
   useEffect(() => {
     const container = containerRef.current
@@ -94,6 +97,7 @@ export function useTextSelection(options: UseTextSelectionOptions): UseTextSelec
           setSelection(result)
           selectionRef.current = result
           isPopupOpenRef.current = true
+          onSelectionChange?.(result)
         }
       }, 10)
     }

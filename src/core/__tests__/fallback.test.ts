@@ -2,15 +2,14 @@ import { describe, it, expect } from 'vitest'
 import { render } from '../index'
 import '../../index' // Ensure schemas are registered
 
-/** All 16 built-in schemas must handle invalid input gracefully */
+/** All 11 registered schemas must handle invalid input gracefully */
 const ALL_SCHEMAS = [
-  'json-viewer', 'code-block', 'kanban', 'timeline',
-  'feature-table', 'data-table', 'form-view', 'budget-report',
+  'kanban', 'timeline', 'data-table',
   'org-chart', 'kpi-dashboard', 'audit-log', 'gantt-chart',
   'line-chart', 'bar-chart', 'pie-chart', 'funnel-chart',
 ] as const
 
-describe('Graceful Fallback — All 16 Schemas', () => {
+describe('Graceful Fallback — All 11 Schemas', () => {
   // ── Per-schema fallback with garbage input ────────────────────────────
   for (const schemaId of ALL_SCHEMAS) {
     describe(`schema: ${schemaId}`, () => {

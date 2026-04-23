@@ -22,15 +22,8 @@ import { DumbbellChart } from './mviz-bridge/dumbbell/component'
 import { RadarChart } from './mviz-bridge/radar/component'
 import { MermaidChart } from './mviz-bridge/mermaid/component'
 
-// UI components (mviz bridge)
-import { BigValue } from './mviz-bridge/big-value/component'
-import { Delta } from './mviz-bridge/delta/component'
-import { Alert } from './mviz-bridge/alert/component'
-import { Note } from './mviz-bridge/note/component'
-import { TextBlock } from './mviz-bridge/text/component'
-import { TextArea } from './mviz-bridge/textarea/component'
+// UI components (mviz bridge) — only DataTable retained
 import { DataTable } from './mviz-bridge/table/component'
-import { EmptySpace } from './mviz-bridge/empty-space/component'
 
 // Custom business components
 import { Timeline } from './components/timeline/component'
@@ -38,22 +31,10 @@ import { Kanban } from './components/kanban/component'
 import { GanttChart } from './components/gantt/component'
 import { OrgChart } from './components/org-chart/component'
 import { KpiDashboard } from './components/kpi-dashboard/component'
-import { BudgetReport } from './components/budget-report/component'
-import { FeatureTable } from './components/feature-table/component'
 import { AuditLog } from './components/audit-log/component'
-import { JsonViewer } from './components/json-viewer/component'
-import { CodeBlock } from './components/code-block/component'
-import { FormView } from './components/form-view/component'
 
-// Interactive input components
-import { InputText } from './inputs/input-text/component'
-import { InputSelect } from './inputs/input-select/component'
-import { InputFile } from './inputs/input-file/component'
+// Interactive input components — only FormBuilder retained
 import { FormBuilder } from './inputs/form-builder/component'
-
-// New components
-import { ProgressBar } from './components/progress-bar/component'
-import { TreeView } from './components/tree-view/component'
 
 // DocView
 import { DocView } from './docview/container'
@@ -61,8 +42,14 @@ import { DocView } from './docview/container'
 // InteractivePlayground
 import { InteractivePlayground } from './components/interactive-playground/component'
 
+// Layout components
+import { GridLayout } from './components/grid-layout/component'
+import { SplitLayout } from './components/split-layout/component'
+import { HeroLayout } from './components/hero-layout/component'
+
 /**
- * AI RenderKit registry — 43 React components + 3 action handlers
+ * AI RenderKit registry — 32 React components + 3 action handlers
+ * (15 components removed — AI uses freeform HTML via DocView instead)
  *
  * Exported result includes:
  * - registry: ComponentRegistry for <Renderer>
@@ -77,13 +64,13 @@ export const { registry, handlers, executeAction } = defineRegistry(renderKitCat
     BoxplotChart, HistogramChart, WaterfallChart, XmrChart, SankeyChart,
     FunnelChart, HeatmapChart, CalendarChart, SparklineChart, ComboChart,
     DumbbellChart, RadarChart, MermaidDiagram: MermaidChart,
-    BigValue, Delta, Alert, Note, TextBlock, TextArea, DataTable, EmptySpace,
-    Timeline, Kanban, GanttChart, OrgChart, KpiDashboard, BudgetReport,
-    FeatureTable, AuditLog, JsonViewer, CodeBlock, FormView,
-    ProgressBar, TreeView,
-    InputText, InputSelect, InputFile, FormBuilder,
+    DataTable,
+    Timeline, Kanban, GanttChart, OrgChart, KpiDashboard,
+    AuditLog,
+    FormBuilder,
     InteractivePlayground,
     DocView,
+    GridLayout, SplitLayout, HeroLayout,
   } as any,
   actions: {
     /** Store form submission in state. Host app can override via handlers(). */

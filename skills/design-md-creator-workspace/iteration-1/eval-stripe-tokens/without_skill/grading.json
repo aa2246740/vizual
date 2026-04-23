@@ -1,0 +1,39 @@
+{
+  "results": [
+    {
+      "text": "uses_template",
+      "passed": false,
+      "evidence": "File size: 31695 chars, assertion: uses_template"
+    },
+    {
+      "text": "correct_accent",
+      "passed": true,
+      "evidence": "File size: 31695 chars, assertion: correct_accent"
+    },
+    {
+      "text": "correct_fonts",
+      "passed": true,
+      "evidence": "File size: 31695 chars, assertion: correct_fonts"
+    },
+    {
+      "text": "light_cool",
+      "passed": false,
+      "evidence": "File size: 31695 chars, assertion: light_cool"
+    },
+    {
+      "text": "includes_vizual",
+      "passed": false,
+      "evidence": "File size: 31695 chars, assertion: includes_vizual"
+    },
+    {
+      "text": "preserves_tokens",
+      "passed": true,
+      "evidence": "File size: 31695 chars, assertion: preserves_tokens"
+    },
+    {
+      "text": "working_html",
+      "passed": true,
+      "evidence": "File size: 31695 chars, assertion: working_html"
+    }
+  ]
+}

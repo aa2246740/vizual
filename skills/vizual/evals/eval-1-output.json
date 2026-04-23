@@ -2,133 +2,105 @@
   "root": "root",
   "elements": {
     "root": {
-      "type": "VerticalLayout",
-      "props": {},
-      "children": ["title", "kpi", "charts_row", "table"]
-    },
-    "title": {
-      "type": "TextBlock",
+      "type": "DocView",
       "props": {
-        "type": "text",
-        "content": "销售仪表盘 — 2024 年度概览",
-        "fontSize": 22,
-        "fontWeight": "bold",
-        "align": "left"
-      },
-      "children": []
-    },
-    "kpi": {
-      "type": "KpiDashboard",
-      "props": {
-        "type": "kpi_dashboard",
-        "columns": 4,
-        "metrics": [
+        "type": "doc_view",
+        "title": "销售仪表盘 — 2024 年度概览",
+        "sections": [
           {
-            "label": "总营收",
-            "value": "¥1,285.6万",
-            "trend": "up",
-            "trendValue": "+18.3%",
-            "color": "#667eea"
+            "type": "heading",
+            "content": "销售仪表盘 — 2024 年度概览",
+            "layout": "hero",
+            "aiContext": "Main title for annual sales dashboard overview"
           },
           {
-            "label": "增长率",
-            "value": "18.3%",
-            "trend": "up",
-            "trendValue": "+3.2pp",
-            "color": "#10b981"
+            "type": "kpi",
+            "content": "",
+            "layout": "grid",
+            "data": {
+              "metrics": [
+                { "label": "总营收", "value": "¥1,285.6万", "trend": "up", "trendValue": "+18.3%", "color": "#667eea" },
+                { "label": "增长率", "value": "18.3%", "trend": "up", "trendValue": "+3.2pp", "color": "#10b981" },
+                { "label": "客单价", "value": "¥8,450", "trend": "up", "trendValue": "+6.7%", "color": "#f59e0b" },
+                { "label": "活跃客户数", "value": "1,521", "trend": "up", "trendValue": "+12.5%", "color": "#667eea" }
+              ]
+            }
           },
           {
-            "label": "客单价",
-            "value": "¥8,450",
-            "trend": "up",
-            "trendValue": "+6.7%",
-            "color": "#f59e0b"
+            "type": "freeform",
+            "content": "<div style=\"display: grid; grid-template-columns: 1fr 1fr; gap: 16px;\"><section><h3 style=\"margin: 0 0 8px 0;\">月度收入趋势（万元）</h3><p style=\"color: #94a3b8; font-size: 14px;\">全年月度收入呈稳步增长趋势，11月达到峰值 132.6 万元</p></section><section><h3 style=\"margin: 0 0 8px 0;\">各产品线营收占比</h3><p style=\"color: #94a3b8; font-size: 14px;\">企业SaaS平台贡献 42% 营收，为最大产品线</p></section></div>",
+            "aiContext": "Summary of monthly revenue trend and product line revenue distribution"
           },
           {
-            "label": "活跃客户数",
-            "value": "1,521",
-            "trend": "up",
-            "trendValue": "+12.5%",
-            "color": "#667eea"
+            "type": "chart",
+            "content": "",
+            "data": {
+              "chartType": "BarChart",
+              "x": "month",
+              "y": "revenue",
+              "data": [
+                { "month": "1月", "revenue": 86.2 },
+                { "month": "2月", "revenue": 72.5 },
+                { "month": "3月", "revenue": 98.3 },
+                { "month": "4月", "revenue": 105.7 },
+                { "month": "5月", "revenue": 112.4 },
+                { "month": "6月", "revenue": 121.8 },
+                { "month": "7月", "revenue": 118.6 },
+                { "month": "8月", "revenue": 109.3 },
+                { "month": "9月", "revenue": 125.1 },
+                { "month": "10月", "revenue": 115.8 },
+                { "month": "11月", "revenue": 132.6 },
+                { "month": "12月", "revenue": 87.3 }
+              ]
+            }
+          },
+          {
+            "type": "chart",
+            "content": "",
+            "data": {
+              "chartType": "PieChart",
+              "label": "product",
+              "value": "revenue",
+              "data": [
+                { "product": "企业SaaS平台", "revenue": 542.3 },
+                { "product": "数据分析套件", "revenue": 318.7 },
+                { "product": "移动端SDK", "revenue": 205.4 },
+                { "product": "咨询服务", "revenue": 128.6 },
+                { "product": "培训与认证", "revenue": 90.6 }
+              ],
+              "donut": true
+            }
+          },
+          {
+            "type": "table",
+            "content": "",
+            "data": {
+              "columns": [
+                { "key": "rank", "label": "排名", "align": "center" },
+                { "key": "company", "label": "客户名称", "align": "left" },
+                { "key": "industry", "label": "行业", "align": "left" },
+                { "key": "contractValue", "label": "合同金额（万元）", "align": "right" },
+                { "key": "yoyGrowth", "label": "同比增长", "align": "right" },
+                { "key": "status", "label": "状态", "align": "center" }
+              ],
+              "data": [
+                { "rank": 1, "company": "华为技术有限公司", "industry": "通信科技", "contractValue": 286.5, "yoyGrowth": "+22.1%", "status": "续约中" },
+                { "rank": 2, "company": "阿里巴巴集团", "industry": "互联网电商", "contractValue": 215.8, "yoyGrowth": "+15.3%", "status": "已续约" },
+                { "rank": 3, "company": "中国平安保险", "industry": "金融保险", "contractValue": 178.2, "yoyGrowth": "+28.6%", "status": "已续约" },
+                { "rank": 4, "company": "腾讯科技", "industry": "互联网社交", "contractValue": 156.3, "yoyGrowth": "+11.4%", "status": "续约中" },
+                { "rank": 5, "company": "京东集团", "industry": "电商物流", "contractValue": 132.7, "yoyGrowth": "+19.8%", "status": "已续约" },
+                { "rank": 6, "company": "比亚迪汽车", "industry": "新能源汽车", "contractValue": 118.4, "yoyGrowth": "+45.2%", "status": "新签约" },
+                { "rank": 7, "company": "招商银行", "industry": "金融银行", "contractValue": 105.6, "yoyGrowth": "+8.7%", "status": "已续约" },
+                { "rank": 8, "company": "字节跳动", "industry": "短视频/内容", "contractValue": 98.3, "yoyGrowth": "+32.5%", "status": "续约中" },
+                { "rank": 9, "company": "美的集团", "industry": "家电制造", "contractValue": 87.1, "yoyGrowth": "+14.2%", "status": "已续约" },
+                { "rank": 10, "company": "宁德时代", "industry": "动力电池", "contractValue": 76.9, "yoyGrowth": "+38.7%", "status": "新签约" }
+              ],
+              "striped": true
+            }
           }
-        ]
-      },
-      "children": []
-    },
-    "charts_row": {
-      "type": "VerticalLayout",
-      "props": {},
-      "children": ["bar_chart", "pie_chart"]
-    },
-    "bar_chart": {
-      "type": "BarChart",
-      "props": {
-        "type": "bar",
-        "title": "月度收入趋势（万元）",
-        "x": "month",
-        "y": "revenue",
-        "data": [
-          { "month": "1月", "revenue": 86.2 },
-          { "month": "2月", "revenue": 72.5 },
-          { "month": "3月", "revenue": 98.3 },
-          { "month": "4月", "revenue": 105.7 },
-          { "month": "5月", "revenue": 112.4 },
-          { "month": "6月", "revenue": 121.8 },
-          { "month": "7月", "revenue": 118.6 },
-          { "month": "8月", "revenue": 109.3 },
-          { "month": "9月", "revenue": 125.1 },
-          { "month": "10月", "revenue": 115.8 },
-          { "month": "11月", "revenue": 132.6 },
-          { "month": "12月", "revenue": 87.3 }
         ],
-        "height": 350
-      },
-      "children": []
-    },
-    "pie_chart": {
-      "type": "PieChart",
-      "props": {
-        "type": "pie",
-        "title": "各产品线营收占比",
-        "label": "product",
-        "value": "revenue",
-        "data": [
-          { "product": "企业SaaS平台", "revenue": 542.3 },
-          { "product": "数据分析套件", "revenue": 318.7 },
-          { "product": "移动端SDK", "revenue": 205.4 },
-          { "product": "咨询服务", "revenue": 128.6 },
-          { "product": "培训与认证", "revenue": 90.6 }
-        ],
-        "donut": true,
-        "height": 350
-      },
-      "children": []
-    },
-    "table": {
-      "type": "DataTable",
-      "props": {
-        "type": "table",
-        "columns": [
-          { "key": "rank", "label": "排名", "align": "center" },
-          { "key": "company", "label": "客户名称", "align": "left" },
-          { "key": "industry", "label": "行业", "align": "left" },
-          { "key": "contractValue", "label": "合同金额（万元）", "align": "right" },
-          { "key": "yoyGrowth", "label": "同比增长", "align": "right" },
-          { "key": "status", "label": "状态", "align": "center" }
-        ],
-        "data": [
-          { "rank": 1, "company": "华为技术有限公司", "industry": "通信科技", "contractValue": 286.5, "yoyGrowth": "+22.1%", "status": "续约中" },
-          { "rank": 2, "company": "阿里巴巴集团", "industry": "互联网电商", "contractValue": 215.8, "yoyGrowth": "+15.3%", "status": "已续约" },
-          { "rank": 3, "company": "中国平安保险", "industry": "金融保险", "contractValue": 178.2, "yoyGrowth": "+28.6%", "status": "已续约" },
-          { "rank": 4, "company": "腾讯科技", "industry": "互联网社交", "contractValue": 156.3, "yoyGrowth": "+11.4%", "status": "续约中" },
-          { "rank": 5, "company": "京东集团", "industry": "电商物流", "contractValue": 132.7, "yoyGrowth": "+19.8%", "status": "已续约" },
-          { "rank": 6, "company": "比亚迪汽车", "industry": "新能源汽车", "contractValue": 118.4, "yoyGrowth": "+45.2%", "status": "新签约" },
-          { "rank": 7, "company": "招商银行", "industry": "金融银行", "contractValue": 105.6, "yoyGrowth": "+8.7%", "status": "已续约" },
-          { "rank": 8, "company": "字节跳动", "industry": "短视频/内容", "contractValue": 98.3, "yoyGrowth": "+32.5%", "status": "续约中" },
-          { "rank": 9, "company": "美的集团", "industry": "家电制造", "contractValue": 87.1, "yoyGrowth": "+14.2%", "status": "已续约" },
-          { "rank": 10, "company": "宁德时代", "industry": "动力电池", "contractValue": 76.9, "yoyGrowth": "+38.7%", "status": "新签约" }
-        ],
-        "striped": true
+        "showPanel": true,
+        "panelPosition": "right"
       },
       "children": []
     }

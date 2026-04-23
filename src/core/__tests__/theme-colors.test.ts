@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { tc, tcss, chartColors, resetColors, updateActiveColors } from '../theme-colors'
-import { registerTheme, setGlobalTheme } from '../../themes'
+import { registerTheme, setGlobalTheme, getTheme } from '../../themes'
 
 describe('theme-colors — tc() / tcss() 单元测试', () => {
 
@@ -126,7 +126,8 @@ describe('theme-colors — tc() / tcss() 单元测试', () => {
       if (typeof document !== 'undefined') {
         setGlobalTheme('test-theme')
       } else {
-        updateActiveColors('test-theme')
+        const theme = getTheme('test-theme')!
+        updateActiveColors(theme)
       }
 
       const after = tc('--rk-accent')

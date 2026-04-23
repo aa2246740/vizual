@@ -180,7 +180,7 @@ ${cssRules}
 
   // Sync theme colors to the runtime color cache synchronously
   // Must be sync so that renderAll() after setGlobalTheme() uses correct colors
-  updateActiveColors(themeName)
+  updateActiveColors(theme)
 
   currentThemeName = themeName
   return true

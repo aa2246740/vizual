@@ -23,15 +23,8 @@ import { DumbbellChartSchema } from './mviz-bridge/dumbbell/schema'
 import { RadarChartSchema } from './mviz-bridge/radar/schema'
 import { MermaidSchema } from './mviz-bridge/mermaid/schema'
 
-// UI component schemas (mviz bridge)
-import { BigValueSchema } from './mviz-bridge/big-value/schema'
-import { DeltaSchema } from './mviz-bridge/delta/schema'
-import { AlertSchema } from './mviz-bridge/alert/schema'
-import { NoteSchema } from './mviz-bridge/note/schema'
-import { TextBlockSchema } from './mviz-bridge/text/schema'
-import { TextAreaSchema } from './mviz-bridge/textarea/schema'
+// UI component schemas (mviz bridge) — only DataTable retained
 import { DataTableSchema } from './mviz-bridge/table/schema'
-import { EmptySpaceSchema } from './mviz-bridge/empty-space/schema'
 
 // Custom business component schemas
 import { TimelineSchema } from './components/timeline/schema'
@@ -39,31 +32,25 @@ import { KanbanSchema } from './components/kanban/schema'
 import { GanttChartSchema } from './components/gantt/schema'
 import { OrgChartSchema } from './components/org-chart/schema'
 import { KpiDashboardSchema } from './components/kpi-dashboard/schema'
-import { BudgetReportSchema } from './components/budget-report/schema'
-import { FeatureTableSchema } from './components/feature-table/schema'
 import { AuditLogSchema } from './components/audit-log/schema'
-import { JsonViewerSchema } from './components/json-viewer/schema'
-import { CodeBlockSchema } from './components/code-block/schema'
-import { FormViewSchema } from './components/form-view/schema'
 
 // Interactive input component schemas
-import { InputTextSchema } from './inputs/input-text/schema'
-import { InputSelectSchema } from './inputs/input-select/schema'
-import { InputFileSchema } from './inputs/input-file/schema'
 import { FormBuilderSchema } from './inputs/form-builder/schema'
 
 // DocView schema
 import { DocViewSchema } from './docview/schema'
 
-// New component schemas
-import { ProgressBarSchema } from './components/progress-bar/schema'
-import { TreeViewSchema } from './components/tree-view/schema'
-
 // InteractivePlayground schema
 import { InteractivePlaygroundSchema } from './components/interactive-playground/schema'
 
+// Layout component schemas
+import { GridLayoutSchema } from './components/grid-layout/schema'
+import { SplitLayoutSchema } from './components/split-layout/schema'
+import { HeroLayoutSchema } from './components/hero-layout/schema'
+
 /**
- * AI RenderKit catalog — 43 components registered as json-render visualization catalog
+ * AI RenderKit catalog — 32 components registered as json-render visualization catalog
+ * (15 components removed — AI uses freeform HTML via DocView instead)
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const renderKitCatalog = defineCatalog(schema, {
@@ -146,41 +133,13 @@ export const renderKitCatalog = defineCatalog(schema, {
       description: 'Mermaid diagram for flowcharts, sequences, and more.',
     },
 
-    // UI components (mviz bridge) — 8
-    BigValue: {
-      props: BigValueSchema as any,
-      description: 'Large metric display with trend indicator.',
-    },
-    Delta: {
-      props: DeltaSchema as any,
-      description: 'Value change indicator with direction.',
-    },
-    Alert: {
-      props: AlertSchema as any,
-      description: 'Alert banner with severity levels.',
-    },
-    Note: {
-      props: NoteSchema as any,
-      description: 'Callout note with variant styles.',
-    },
-    TextBlock: {
-      props: TextBlockSchema as any,
-      description: 'Styled text display.',
-    },
-    TextArea: {
-      props: TextAreaSchema as any,
-      description: 'Multi-line text block with monospace formatting.',
-    },
+    // UI components (mviz bridge) — 1
     DataTable: {
       props: DataTableSchema as any,
       description: 'Data table with column definitions and formatting.',
     },
-    EmptySpace: {
-      props: EmptySpaceSchema as any,
-      description: 'Vertical spacer.',
-    },
 
-    // Custom business components — 11
+    // Custom business components — 6
     Timeline: {
       props: TimelineSchema as any,
       description: 'Vertical timeline of events with dates.',
@@ -201,57 +160,15 @@ export const renderKitCatalog = defineCatalog(schema, {
       props: KpiDashboardSchema as any,
       description: 'Multi-metric KPI dashboard cards.',
     },
-    BudgetReport: {
-      props: BudgetReportSchema as any,
-      description: 'Budget vs actual with variance bars.',
-    },
-    FeatureTable: {
-      props: FeatureTableSchema as any,
-      description: 'Product comparison matrix with checkmarks.',
-    },
     AuditLog: {
       props: AuditLogSchema as any,
       description: 'Operation log with timestamps and severity.',
     },
-    JsonViewer: {
-      props: JsonViewerSchema as any,
-      description: 'Syntax-highlighted JSON viewer.',
-    },
-    CodeBlock: {
-      props: CodeBlockSchema as any,
-      description: 'Code block with line numbers and language tag.',
-    },
-    FormView: {
-      props: FormViewSchema as any,
-      description: 'Structured key-value data display.',
-    },
 
-    // Interactive input components — 4
-    InputText: {
-      props: InputTextSchema as any,
-      description: 'Text input with two-way binding. Use $bindState for value prop to enable state sync.',
-    },
-    InputSelect: {
-      props: InputSelectSchema as any,
-      description: 'Dropdown select with options. Use $bindState for value prop.',
-    },
-    InputFile: {
-      props: InputFileSchema as any,
-      description: 'File upload with drag-and-drop support.',
-    },
+    // Interactive input components — 1
     FormBuilder: {
       props: FormBuilderSchema as any,
       description: 'Dynamic form builder with validation, cascading fields, and grid layout. Use $bindState to capture form data.',
-    },
-
-    // New components — 2
-    ProgressBar: {
-      props: ProgressBarSchema as any,
-      description: 'Progress bar with single/multi-segment, variants, and striped animation.',
-    },
-    TreeView: {
-      props: TreeViewSchema as any,
-      description: 'Recursive tree view with expand/collapse, badges, and selection.',
     },
 
     // InteractivePlayground — Meta component — 1
@@ -263,7 +180,21 @@ export const renderKitCatalog = defineCatalog(schema, {
     // DocView — Document annotation component — 1
     DocView: {
       props: DocViewSchema as any,
-      description: 'Interactive document with sections (text, headings, charts, KPIs, tables, callouts, embedded components) and annotation support. AI outputs structured sections, users annotate for revision feedback.',
+      description: 'Interactive document with sections (text, headings, charts, KPIs, tables, callouts, markdown, freeform, embedded components) and annotation support. Supports aiContext for semantic annotation enrichment and layout variants per section.',
+    },
+
+    // Layout components — 3
+    GridLayout: {
+      props: GridLayoutSchema as any,
+      description: 'CSS Grid container for composing child components into multi-column layouts.',
+    },
+    SplitLayout: {
+      props: SplitLayoutSchema as any,
+      description: 'Two-pane split layout with configurable direction and ratio.',
+    },
+    HeroLayout: {
+      props: HeroLayoutSchema as any,
+      description: 'Large prominent hero section with gradient, solid, or transparent background.',
     },
   },
   actions: {

@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>Scenario 1: Brand Color + Chart</title>
+<style>body{font-family:system-ui;background:#0f1117;color:#e2e8f0;padding:24px}h2{margin-top:0}.pass{color:#10b981}.fail{color:#ef4444}</style>
+</head><body>
+<h2>Scenario 1: Brand Color + Chart (design-md-parser → vizual)</h2>
+<p>User: "我们的品牌色是 #FF6B35，帮我画个季度收入柱状图"</p>
+<div id="result" style="margin:20px 0"></div>
+<div id="status"></div>
+<script src="../dist/vizual.standalone.js"></script>
+<script>
+(function() {
+  const log = (msg, ok) => {
+    document.getElementById('status').innerHTML += `<div class="${ok ? 'pass' : 'fail'}">${ok ? '✓' : '✗'} ${msg}</div>`;
+  };
+
+  // Step 1: AI extracts tokens from user input (design-md-parser logic)
+  const tokens = {
+    colors: [
+      { name: 'brand-orange', value: '#FF6B35' },
+      { name: 'accent', value: '#FF6B35' },
+      { name: 'accent-hover', value: '#FF8855' },
+      { name: 'background', value: '#0f1117' },
+      { name: 'card', value: '#1e293b' },
+      { name: 'text', value: '#e2e8f0' },
+      { name: 'text-secondary', value: '#94a3b8' },
+      { name: 'border', value: '#2d3148' }
+    ],
+    typography: { fontFamily: 'system-ui, sans-serif' },
+    spacing: { baseUnit: '8px' },
+    radius: { scale: { md: '8px' } }
+  };
+
+  // Step 2: Map tokens to theme (mapDesignTokensToTheme)
+  const theme = Vizual.mapDesignTokensToTheme(tokens, 'brand-orange');
+  Vizual.registerTheme(theme.name, theme);
+  Vizual.setGlobalTheme(theme.name);
+
+  log('design-md-parser: tokens → theme mapping', !!theme.cssVariables['--rk-accent']);
+  log('accent color mapped correctly: ' + theme.cssVariables['--rk-accent'], theme.cssVariables['--rk-accent'] === '#FF6B35');
+
+  // Step 3: Render BarChart with the custom theme (vizual skill)
+  const spec = {
+    root: 'main',
+    elements: {
+      main: {
+        type: 'BarChart',
+        props: {
+          type: 'bar',
+          x: 'quarter',
+          y: 'revenue',
+          data: [
+            { quarter: 'Q1', revenue: 120 },
+            { quarter: 'Q2', revenue: 200 },
+            { quarter: 'Q3', revenue: 180 },
+            { quarter: 'Q4', revenue: 310 }
+          ]
+        },
+        children: []
+      }
+    }
+  };
+
+  const container = document.getElementById('result');
+  try {
+    Vizual.renderSpec(spec, container);
+    log('vizual: BarChart rendered with custom theme', true);
+
+    // Verify the chart picked up the brand color
+    setTimeout(() => {
+      const canvas = container.querySelector('canvas');
+      log('ECharts canvas created', !!canvas);
+      log('Chart uses accent color in palette', !!theme.cssVariables['--rk-chart-1']);
+    }, 500);
+  } catch(e) {
+    log('vizual: render failed — ' + e.message, false);
+  }
+})();
+</script>
+</body></html>

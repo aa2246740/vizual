@@ -12,7 +12,7 @@ npm test
 npm run build
 ```
 
-构建产物在 `dist/` 目录：`index.mjs` (ESM) + `index.js` (CJS)。
+构建产物在 `dist/` 目录：`index.mjs` (ESM) + `index.js` (CJS) + `vizual.standalone.js`（独立构建，包含 React 运行时）。
 
 ## 项目结构
 
@@ -28,24 +28,28 @@ src/
 │       ├── component.tsx # React 组件
 │       └── index.ts      # 重导出
 │
-├── components/           # 自定义业务组件（纯 React）
+├── components/           # 自定义业务组件（纯 React，32 个组件）
 │   └── timeline/         # 同上结构
 │
 ├── inputs/               # 交互输入组件
-│   └── input-text/       # 同上结构
+│   └── form-builder/     # 同上结构
 │
 ├── docview/              # DocView 可批注文档组件
 │
-├── themes/               # 主题系统
+├── themes/               # 主题系统（6 个预设主题）
 │   ├── index.ts          # 主题注册表 + loadDesignMd() API
 │   ├── design-md-parser.ts   # DESIGN.md 解析器
 │   ├── design-md-mapper.ts   # token → CSS 变量映射
 │   ├── default-dark.ts   # 默认暗色主题
+│   ├── default-light.ts  # 默认亮色主题
+│   ├── claude-dark.ts    # Claude 暗色主题
+│   ├── claude-light.ts   # Claude 亮色主题
 │   ├── linear.ts         # Linear 风格主题
 │   └── vercel.ts         # Vercel 风格主题
 │
 └── core/                 # 共享工具
-    ├── theme-colors.ts   # tc() 颜色访问器（核心！）
+    ├── theme-colors.ts   # tc() / tcss() 颜色访问器（核心！）
+    ├── export.ts         # exportToPNG / downloadPNG 导出工具
     ├── echarts-wrapper.tsx
     └── echarts-bridge-factory.tsx
 ```
@@ -81,20 +85,20 @@ export type MyWidgetProps = z.infer<typeof MyWidgetSchema>
 ### 3. 编写组件 (`component.tsx`)
 
 ```tsx
-import { tc } from '../../core/theme-colors'   // 必须！
+import { tc, tcss } from '../../core/theme-colors'   // 必须！
 import type { MyWidgetProps } from './schema'
 
 export function MyWidget({ props }: { props: MyWidgetProps }) {
   return (
     <div style={{
-      background: tc('--rk-bg-secondary'),      // 从主题取色
-      color: tc('--rk-text-primary'),
-      border: `1px solid ${tc('--rk-border-subtle')}`,
-      borderRadius: tc('--rk-radius-md'),
+      background: tcss('--rk-bg-secondary'),      // React inline style 用 tcss()
+      color: tcss('--rk-text-primary'),
+      border: `1px solid ${tcss('--rk-border-subtle')}`,
+      borderRadius: tcss('--rk-radius-md'),
       padding: 16,
     }}>
-      {props.title && <h3 style={{ color: tc('--rk-text-primary') }}>{props.title}</h3>}
-      {/* ... */}
+      {props.title && <h3 style={{ color: tcss('--rk-text-primary') }}>{props.title}</h3>}
+      {/* ECharts option 中用 tc()，因为 ECharts 不支持 CSS 变量 */}
     </div>
   )
 }
@@ -127,33 +131,38 @@ export type { MyWidgetProps } from './components/my-widget'
 
 ### 必须遵守
 
-**所有组件颜色必须通过 `tc()` 从主题系统获取。禁止硬编码 hex/rgb 值。**
+**所有组件颜色必须通过 `tc()` 或 `tcss()` 从主题系统获取。禁止硬编码 hex/rgb 值。**
+
+- **React inline style** → 用 `tcss()`（返回 `var(--rk-xxx)`，CSS 引擎在 paint 时解析，主题切换自动生效）
+- **ECharts option** → 用 `tc()`（返回具体色值如 `#e2e8f0`，ECharts 不支持 CSS 变量）
+- **模块级常量** → 用 `tcss()` 安全（返回 var() 引用，不冻结具体值）
+- **JS 逻辑中需要比较颜色值** → 用 `tc()`
 
 ```tsx
 // ❌ 错误
 <div style={{ background: '#111', color: '#e5e5e5', border: '1px solid #2a2a2a' }}>
 
-// ✅ 正确
-import { tc } from '../../core/theme-colors'
+// ✅ 正确 — React inline style 用 tcss()
+import { tcss, tc } from '../../core/theme-colors'
 <div style={{
-  background: tc('--rk-bg-primary'),
-  color: tc('--rk-text-primary'),
-  border: `1px solid ${tc('--rk-border-subtle')}`,
+  background: tcss('--rk-bg-primary'),
+  color: tcss('--rk-text-primary'),
+  border: `1px solid ${tcss('--rk-border-subtle')}`,
 }}>
 ```
 
 ### 为什么
 
-Vizual 支持 DESIGN.md 主题系统。用户提供一份 DESIGN.md，`loadDesignMd()` 解析后注入 CSS 变量，所有组件通过 `tc()` 自动换肤。硬编码颜色会导致主题切换失效。
+Vizual 支持 DESIGN.md 主题系统。用户提供一份 DESIGN.md，`loadDesignMd()` 解析后注入 CSS 变量，所有组件通过 `tc()`/`tcss()` 自动换肤。硬编码颜色会导致主题切换失效。
 
-### tc() 导入路径
+### tc() / tcss() 导入路径
 
 | 组件位置 | 导入路径 |
 |----------|----------|
-| `src/components/xxx/` | `import { tc } from '../../core/theme-colors'` |
-| `src/mviz-bridge/xxx/` | `import { tc } from '../../core/theme-colors'` |
-| `src/inputs/xxx/` | `import { tc } from '../../core/theme-colors'` |
-| `src/docview/` | `import { tc } from '../core/theme-colors'` |
+| `src/components/xxx/` | `import { tc, tcss } from '../../core/theme-colors'` |
+| `src/mviz-bridge/xxx/` | `import { tc, tcss } from '../../core/theme-colors'` |
+| `src/inputs/xxx/` | `import { tc, tcss } from '../../core/theme-colors'` |
+| `src/docview/` | `import { tc, tcss } from '../core/theme-colors'` |
 
 ### 完整主题变量表
 
@@ -245,19 +254,19 @@ python3 -m http.server 8790
 # 访问 http://localhost:8790/validation/test-all-42.html
 ```
 
-新增组件时，请在 `validation/test-all-42.html` 中添加对应的测试 case。
+新增组件时，请在 `validation/test-all-42.html` 中添加对应的测试 case。（注意：文件名仍为 test-all-42.html，实际组件数为 32。）
 
 ## 提交 PR
 
 1. Fork → Branch → 开发 → 测试通过
-2. 确保所有颜色使用 `tc()`（`grep -r '#[0-9a-fA-F]\{3,8\}' src/` 应该只在数据颜色处有结果）
+2. 确保所有颜色使用 `tc()`/`tcss()`（`grep -r '#[0-9a-fA-F]\{3,8\}' src/` 应该只在数据颜色处有结果）
 3. 确保构建通过（`npm run build`）
 4. 确保测试通过（`npm test`）
 5. 提交 PR，描述改动内容
 
 ## DESIGN.md 主题系统
 
-用户通过 `loadDesignMd()` 加载主题，所有用 `tc()` 的组件自动换肤：
+用户通过 `loadDesignMd()` 加载主题，所有用 `tc()`/`tcss()` 的组件自动换肤：
 
 ```ts
 import { loadDesignMd, setGlobalTheme } from 'vizual'
@@ -265,8 +274,13 @@ import { loadDesignMd, setGlobalTheme } from 'vizual'
 // 方式一：从 DESIGN.md 加载
 const theme = loadDesignMd(markdown, { apply: true })
 
-// 方式二：使用预设主题
-setGlobalTheme('linear')  // 'default-dark' | 'linear' | 'vercel'
+// 方式二：使用预设主题（6 个预设）
+setGlobalTheme('default-dark')     // 默认暗色
+setGlobalTheme('default-light')    // 默认亮色
+setGlobalTheme('claude-dark')      // Claude 暗色
+setGlobalTheme('claude-light')     // Claude 亮色
+setGlobalTheme('linear')           // Linear 风格
+setGlobalTheme('vercel')           // Vercel 风格
 ```
 
 ### DESIGN.md 格式
@@ -308,6 +322,29 @@ export const myTheme = {
 ```
 
 然后在 `src/themes/index.ts` 底部添加 `registerTheme('my-theme', myTheme)`。
+
+## Action Handler 开发
+
+交互输入组件（如 FormBuilder）通过 `handlers` 注册行为，用户可通过 `executeAction` 触发：
+
+```tsx
+// registry.tsx 中注册 handler
+const handlers = {
+  'form-submit': async (payload) => {
+    console.log('Form submitted:', payload)
+  },
+}
+
+// 用户调用
+import { executeAction } from 'vizual'
+executeAction('form-submit', { formId: 'myForm' })
+```
+
+新增交互组件时，如需支持外部触发行为，请在 `registry.tsx` 的 `handlers` 对象中注册对应的 action handler。
+
+## Standalone 构建
+
+`npm run build` 除了生成 `index.mjs` 和 `index.js`，还会生成 `vizual.standalone.js`。这个文件内联了 React 运行时，可直接在浏览器中通过 `<script>` 标签使用，无需 npm 环境。
 
 ## 代码风格
 

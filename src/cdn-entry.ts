@@ -4,7 +4,7 @@
  * Standalone build entry. When loaded via <script> tag, exposes window.Vizual with:
  *   - React, ReactDOM, ReactDOMClient: React runtime
  *   - echarts: ECharts runtime
- *   - registry: json-render registry (43 components)
+ *   - registry: json-render registry (32 components)
  *   - all component classes + schemas + DocView + hooks
  *   - renderSpec(spec, container): convenience function
  *
@@ -33,13 +33,12 @@ export {
   downloadPNG,
 } from './core/export'
 
-// Re-export everything from index
-// @deprecated Use vizual skill for AI integration instead
+// Catalog + Registry
 export { renderKitCatalog } from './catalog'
 export { registry } from './registry'
 export { EChartsWrapper } from './core/echarts-wrapper'
 
-// Charts
+// Charts (19) — mviz bridge
 export { BarChart, BarChartSchema } from './mviz-bridge/bar-chart'
 export { AreaChart, AreaChartSchema } from './mviz-bridge/area'
 export { LineChart, LineChartSchema } from './mviz-bridge/line'
@@ -50,7 +49,7 @@ export { BoxplotChart, BoxplotChartSchema } from './mviz-bridge/boxplot'
 export { HistogramChart, HistogramChartSchema } from './mviz-bridge/histogram'
 export { WaterfallChart, WaterfallChartSchema } from './mviz-bridge/waterfall'
 export { XmrChart, XmrChartSchema } from './mviz-bridge/xmr'
-export { SankeyChart, SankeyChartSchema } from './mviz-bridge/sankey'
+export { SankeyChart, SankeySchema } from './mviz-bridge/sankey'
 export { FunnelChart, FunnelChartSchema } from './mviz-bridge/funnel'
 export { HeatmapChart, HeatmapChartSchema } from './mviz-bridge/heatmap'
 export { CalendarChart, CalendarChartSchema } from './mviz-bridge/calendar'
@@ -60,43 +59,29 @@ export { DumbbellChart, DumbbellChartSchema } from './mviz-bridge/dumbbell'
 export { RadarChart, RadarChartSchema } from './mviz-bridge/radar'
 export { MermaidChart, MermaidSchema } from './mviz-bridge/mermaid'
 
-// UI
-export { BigValue, BigValueSchema } from './mviz-bridge/big-value'
-export { Delta, DeltaSchema } from './mviz-bridge/delta'
-export { Alert, AlertSchema } from './mviz-bridge/alert'
-export { Note, NoteSchema } from './mviz-bridge/note'
-export { TextBlock, TextBlockSchema } from './mviz-bridge/text'
-export { TextArea, TextAreaSchema } from './mviz-bridge/textarea'
+// UI (1) — mviz bridge
 export { DataTable, DataTableSchema } from './mviz-bridge/table'
-export { EmptySpace, EmptySpaceSchema } from './mviz-bridge/empty-space'
 
-// Business
+// Business components (6)
 export { Timeline, TimelineSchema } from './components/timeline'
 export { Kanban, KanbanSchema } from './components/kanban'
 export { GanttChart, GanttChartSchema } from './components/gantt'
 export { OrgChart, OrgChartSchema } from './components/org-chart'
 export { KpiDashboard, KpiDashboardSchema } from './components/kpi-dashboard'
-export { BudgetReport, BudgetReportSchema } from './components/budget-report'
-export { FeatureTable, FeatureTableSchema } from './components/feature-table'
 export { AuditLog, AuditLogSchema } from './components/audit-log'
-export { JsonViewer, JsonViewerSchema } from './components/json-viewer'
-export { CodeBlock, CodeBlockSchema } from './components/code-block'
-export { FormView, FormViewSchema } from './components/form-view'
 
-// Inputs (fix drift: these were missing from CDN entry)
-export { InputText, InputTextSchema } from './inputs/input-text'
-export { InputSelect, InputSelectSchema } from './inputs/input-select'
-export { InputFile, InputFileSchema } from './inputs/input-file'
+// Interactive input components (1)
 export { FormBuilder, FormBuilderSchema } from './inputs/form-builder'
 
-// New components (v1.1)
-export { ProgressBar, ProgressBarSchema } from './components/progress-bar'
-export { TreeView, TreeViewSchema } from './components/tree-view'
+// Layout components (3)
+export { GridLayout, GridLayoutSchema } from './components/grid-layout'
+export { SplitLayout, SplitLayoutSchema } from './components/split-layout'
+export { HeroLayout, HeroLayoutSchema } from './components/hero-layout'
 
-// InteractivePlayground
+// InteractivePlayground (1)
 export { InteractivePlayground, InteractivePlaygroundSchema } from './components/interactive-playground'
 
-// DocView
+// DocView (1)
 export { DocView } from './docview/container'
 export { DocViewSchema } from './docview/schema'
 export { SectionRenderer } from './docview/section-renderer'
