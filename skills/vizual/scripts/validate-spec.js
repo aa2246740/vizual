@@ -3,7 +3,7 @@
 /**
  * AI RenderKit Spec Validator
  *
- * Validates a JSON spec against the 32-component catalog + 3 layout components.
+ * Validates a JSON spec against the 31-component catalog + 3 layout components.
  * Usage:
  *   node scripts/validate-spec.js < spec.json
  *   node scripts/validate-spec.js path/to/spec.json
@@ -14,7 +14,7 @@ const fs = require('fs')
 const path = require('path')
 
 // Component type → props type literal mapping
-// Matches the 32 registered components in src/catalog.ts
+// Matches the 31 registered components in src/catalog.ts
 const COMPONENT_TYPES = {
   // Charts (19) — mviz bridge
   BarChart: 'bar',
@@ -47,8 +47,6 @@ const COMPONENT_TYPES = {
   AuditLog: 'audit_log',
   // Input components (1)
   FormBuilder: 'form_builder',
-  // Meta component (1)
-  InteractivePlayground: 'interactive_playground',
   // DocView (1)
   DocView: 'doc_view',
 }

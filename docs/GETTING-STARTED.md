@@ -103,10 +103,6 @@ Vizual 提供了三种布局组件用于组合内容：
 - `SplitLayout` — 分栏布局，支持左右或上下分割
 - `HeroLayout` — 英雄区域布局，适合标题 + 内容的组合
 
-### InteractivePlayground
-
-`InteractivePlayground` 组件提供可交互的代码/配置演练面板，适用于文档和教程场景。
-
 ### PNG 导出 API
 
 Vizual 导出了 PNG 导出工具函数：
@@ -234,4 +230,4 @@ const Dashboard = dynamic(
 ```
 
 ### Q: package.json 描述说 "32 interactive visualization components"？
-当前实际组件数为 32（19 个图表 + 1 个 DataTable + 6 个业务组件 + 1 个 FormBuilder + 1 个 InteractivePlayground + 1 个 DocView + 3 个布局组件）。
+当前实际组件数为 31（19 个图表 + 1 个 DataTable + 6 个业务组件 + 1 个 FormBuilder + 1 个 DocView + 3 个布局组件）。

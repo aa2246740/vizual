@@ -1,38 +1,63 @@
-# Session State — 2026/04/23 (Updated after execution)
+# Session State — 2026/04/23 (Part 3)
 
-## 状态：已完成
+## vizual skill 深度整理
 
-所有步骤已完成并推送到 GitHub (commit bc4abc2)。
+### GitHub 状态
+- Commit `40ae158` 在本地（`git push` 失败，网络问题）
+- GitHub 上还没更新到这个 commit
 
-## 执行摘要
+### 今日完成（Part 3）
 
-### 已完成的任务
-1. ✅ 重写 vizual SKILL.md — 增加两种输出模式，移除 InteractivePlayground
-2. ✅ 创建 references/theme-preview.html — 完整模板
-3. ✅ 删除 InteractivePlayground 组件 — 从 5 个文件中移除
-4. ✅ 删除 livekit skill — 两处目录均删除
-5. ✅ 更新 design-md-parser 和 design-md-creator — 移除 livekit 引用
-6. ✅ 构建 + 推送
+#### Skill 文件整理
+1. ✅ 删除 `references/ui-playground.md`（InteractivePlayground 已废弃）
+2. ✅ 精简 `prompt.md` — 移除冗余示例、增加设计原则和 anti-patterns
+3. ✅ 精简 `SKILL.md` — 移除重复内容、增加设计原则
+4. ✅ 清理 `references/ui-technical.md` 中的 InteractivePlayground 引用
+5. ✅ 清理 `references/theme.md` 中的 InteractivePlayground 引用
 
-### 关键变更
-- vizual SKILL.md v3.1.0：明确区分 JSON spec（默认）和 HTML page（交互调参）两种输出模式
-- InteractivePlayground 组件已删除（31 组件，之前是 32）
-- livekit skill 完全移除，相关内容合并进 vizual
-- theme-preview.html 作为 HTML 输出模式的参考模板
+#### 文档更新
+1. ✅ 更新 `README.md` — 移除 InteractivePlayground，32→31
+2. ✅ 重写 `docs/AI-INTEGRATION.md` — 添加双向通信机制（FormBuilder + DocView 回调）
+3. ✅ 更新 `docs/COMPONENTS.md` — 移除 InteractivePlayground schema
+4. ✅ 更新 `docs/GETTING-STARTED.md` — 移除 InteractivePlayground 引用
+5. ✅ 删除 `docs/ARCHITECTURE.md`
+6. ✅ 删除 `docs/CONTRIBUTING.md`
+7. ✅ 更新 `skills/vizual/scripts/validate-spec.js` — 移除 InteractivePlayground
 
-### 未完成（计划外）
-- ui-playground.md 仍存在于 vizual/references/（InteractivePlayground 的旧文档），可删除但不影响功能
+### 核心决策确认
+- **vizual 定位**：JSON Schema 驱动，确保 Agent 输出 → render engine 能渲染
+- **固定组件的价值**：31个组件是 vizual 的"渲染能力边界"，保证核心价值
+- **双向通信机制**：FormBuilder onSubmit + DocView annotation callbacks 是 Agent ↔ 用户交互的关键
+- **文档精简**：从 6 个 docs 精简到 5 个
 
-### 验证
-- 构建通过 ✅
-- GitHub 已推送 ✅
-- 冷启动测试待下次 session 进行
+### 待完成
+1. `git push` — 需要梯子 (127.0.0.1:6518)
+2. `vizual/references/ui-playground.html` — 待删除（已在 skill 目录删了，这个也要删）
+3. sync `~/.claude/skills/`
 
-## 下次 session 需要做的
+### 当前文档结构（5个）
+- README.md
+- docs/AI-INTEGRATION.md
+- docs/COMPONENTS.md
+- docs/GETTING-STARTED.md
+- docs/LICENSES.md
 
-1. 删除 `skills/vizual/references/ui-playground.md`（InteractivePlayground 旧文档）
-2. 冷启动测试验证：
-   - "画一个柱状图" → JSON spec ✅
-   - "对比暗色亮色下5个图表的效果" → HTML 页面 ✅
-   - "做一个可调的柱状图" → HTML 页面 ✅
-3. 确认 livekit skill 无法被触发
+### 组件数量
+- 19 图表 + 1 DataTable + 6 业务 + 1 FormBuilder + 3 布局 + 1 DocView = **31 个组件**
+
+---
+
+## 下次恢复时跟我说
+
+```
+继续 vizual 整理。
+上次完成了 skill 和文档的深度清理（移除了 InteractivePlayground，增加了双向通信机制）。
+状态文件在 ai-renderkit-pkg/skills/vizual/session-state-2026-04-23.md。
+
+现在需要：
+1. 检查 git status 确认所有更改
+2. 创建 commit
+3. Push（需要梯子 127.0.0.1:6518）
+4. 删除 vizual/references/ui-playground.html
+5. Sync ~/.claude/skills/
+```
