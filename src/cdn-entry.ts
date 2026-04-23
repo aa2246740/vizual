@@ -78,9 +78,6 @@ export { GridLayout, GridLayoutSchema } from './components/grid-layout'
 export { SplitLayout, SplitLayoutSchema } from './components/split-layout'
 export { HeroLayout, HeroLayoutSchema } from './components/hero-layout'
 
-// InteractivePlayground (1)
-export { InteractivePlayground, InteractivePlaygroundSchema } from './components/interactive-playground'
-
 // DocView (1)
 export { DocView } from './docview/container'
 export { DocViewSchema } from './docview/schema'

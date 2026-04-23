@@ -10,7 +10,7 @@ description: >
   to our brand colors", or when they paste content containing hex colors, font specs, or spacing
   values. This skill gives any AI agent its own theme engine — parse tokens → apply theme →
   all Vizual components auto-restyle. Always apply the theme after parsing so the user sees
-  immediate results. Combine with livekit for real-time theme preview and comparison.
+  immediate results. For theme-level comparison with multiple presets, use the vizual skill's HTML output mode.
 user-invocable: true
 allowed-tools:
   - Read
@@ -170,5 +170,6 @@ For the complete list of theme variables and semantic keyword mapping: [referenc
 ## Combining with Other Skills
 
 - **vizual** — After applying the theme, use the vizual skill to render components. They automatically use the new theme colors.
-- **livekit** — When the user says "试试这个主题" or "对比一下不同配色", create a theme-level LiveKit page where users can toggle between themes and see all components update in real-time.
 - **design-md-creator** — If the user has no design document yet but wants to create one, trigger design-md-creator instead. Use design-md-parser only when the user already has a document to parse.
+
+For theme-level comparison (multi-preset, dark/light toggle), use the vizual skill's HTML output mode instead.

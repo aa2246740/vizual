@@ -10,7 +10,7 @@ description: >
   "reverse-engineer this screenshot into a design spec", or any request involving design tokens,
   style guides, brand guidelines, or design system creation. Also trigger when the user pastes
   a screenshot, brand guide PDF content, or says "make it look like [company/product]."
-  This skill outputs an interactive preview HTML page (powered by Vizual + LiveKit) where users
+  This skill outputs an interactive preview HTML page (powered by Vizual) where users
   adjust colors, typography, and spacing in real-time, then export the final DESIGN.md with
   one click.
 user-invocable: true
@@ -33,7 +33,7 @@ This skill does one thing: **help users create a DESIGN.md with a live preview p
 User describes needs → You generate preview HTML → User adjusts in browser → One-click export DESIGN.md
 ```
 
-The preview HTML is powered by Vizual + LiveKit. Left panel: adjustable controls. Right panel: live-rendered components. Bottom: live DESIGN.md text + export button.
+The preview HTML is powered by Vizual. Left panel: adjustable controls. Right panel: live-rendered components. Bottom: live DESIGN.md text + export button.
 
 ## Step 1: Identify the Input Mode
 
@@ -159,5 +159,4 @@ After generating the HTML:
 ## Combining with Other Skills
 
 - **design-md-parser** — After the user exports DESIGN.md, use the parser to apply it to Vizual components. The creator generates the document; the parser applies it.
-- **livekit** — If the user wants deeper theme comparison beyond what the creator's preview offers, create a theme-level LiveKit page with multiple theme presets.
-- **vizual** — The preview page renders Vizual components via `renderSpec()`. The vizual skill's component knowledge applies directly.
+- **vizual** — The preview page renders Vizual components via `renderSpec()`. The vizual skill's component knowledge applies directly. For theme-level comparison with multiple presets, use vizual's HTML output mode (see vizual SKILL.md).

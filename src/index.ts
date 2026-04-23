@@ -64,10 +64,6 @@ export type { AuditLogProps } from './components/audit-log'
 export { FormBuilder, FormBuilderSchema } from './inputs/form-builder'
 export type { FormBuilderProps } from './inputs/form-builder'
 
-// InteractivePlayground — Interactive parameter exploration wrapper
-export { InteractivePlayground, InteractivePlaygroundSchema } from './components/interactive-playground'
-export type { InteractivePlaygroundProps, Control } from './components/interactive-playground'
-
 // DocView — Document annotation with AI revision loop
 export { DocView } from './docview/container'
 export { DocViewSchema } from './docview/schema'

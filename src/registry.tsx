@@ -39,16 +39,14 @@ import { FormBuilder } from './inputs/form-builder/component'
 // DocView
 import { DocView } from './docview/container'
 
-// InteractivePlayground
-import { InteractivePlayground } from './components/interactive-playground/component'
-
 // Layout components
 import { GridLayout } from './components/grid-layout/component'
 import { SplitLayout } from './components/split-layout/component'
 import { HeroLayout } from './components/hero-layout/component'
 
 /**
- * AI RenderKit registry — 32 React components + 3 action handlers
+ * AI RenderKit registry — 31 React components + 3 action handlers
+ * (InteractivePlayground removed — use HTML pages with native controls for interactive parameter exploration)
  * (15 components removed — AI uses freeform HTML via DocView instead)
  *
  * Exported result includes:
@@ -68,7 +66,6 @@ export const { registry, handlers, executeAction } = defineRegistry(renderKitCat
     Timeline, Kanban, GanttChart, OrgChart, KpiDashboard,
     AuditLog,
     FormBuilder,
-    InteractivePlayground,
     DocView,
     GridLayout, SplitLayout, HeroLayout,
   } as any,
