@@ -1,6 +1,17 @@
 ---
 name: livekit
-version: "1.1.0"
+version: "2.0.0"
+description: >-
+  Generate interactive HTML pages where users adjust controls and see results in real-time.
+  Use when "调一下看看" beats static output: comparing themes, tuning parameters across
+  multiple components, building playgrounds, visualizing algorithms, or any scenario where
+  hands-on exploration adds value. Outputs HTML files (not JSON specs). For single-component
+  playgrounds, use the vizual skill's InteractivePlayground instead — LiveKit is for
+  multi-component, theme-level, and custom-level interactivity. Trigger proactively when
+  the user discusses design decisions, color systems, data analysis, algorithm behavior,
+  or any topic where interactive > static. Keywords: playground, live preview, interactive
+  demo, theme comparison, 实时调整, 调色板, 参数探索, livekit, sandbox, workbench,
+  试试看, 对比一下, 调一下, tweaks, adjust, slider.
 user-invocable: true
 allowed-tools:
   - Read
@@ -9,223 +20,133 @@ allowed-tools:
   - Bash
   - Glob
   - Grep
-description: >-
-  Create live interactive pages where users adjust controls and see results in real-time.
-  This is your real-time adjustment engine — equivalent to the "Tweaks" panel in closed
-  design tools, but without the sandbox limitation. Use this skill whenever hands-on
-  exploration beats static output: trying themes/colors, tuning chart parameters, comparing
-  design options, exploring data distributions, building playgrounds, visualizing algorithms,
-  or ANY scenario where "调一下看看" adds value. LiveKit works at three levels:
-  component-level (InteractivePlayground), theme-level (full theme adaptation page), and
-  custom-level (any adjustable target — you build the HTML, Vizual handles the rendering).
-  Because you can write arbitrary code AND use Vizual components, you can create interactive
-  experiences that closed design tools cannot match. Trigger proactively when the user
-  discusses algorithms, design decisions, data analysis, color systems, layout options, or
-  any topic where hands-on > static. Keywords: playground, live preview, interactive demo,
-  实时调整, 试衣, 调色板, 参数探索, livekit, sandbox, workbench, 试试看, 对比一下, 调一下,
-  tweaks, adjust, slider.
 ---
 
-# LiveKit — 你的实时交互引擎
+# LiveKit — Your Real-Time Interaction Engine
 
-LiveKit 解决一个问题：**用户想亲手调一下，而不是看你说完就算了。**
+LiveKit generates standalone HTML pages where users drag controls and see results update instantly. You write HTML/CSS/JS, embed Vizual components via `Vizual.renderSpec()`, and wire controls to re-render on every change.
 
-封闭设计工具有"Tweaks"面板让用户拖控件改参数。你有 LiveKit — 同样的能力，但不限在沙盒里。你可以造任何 adjust-preview 体验，嵌入 Vizual 组件，连 API，装 npm 包，做任何事。
+## Mental Model: Two Modes
 
-## 核心模式
+LiveKit has exactly two modes. Pick the right one by asking: **what is the user adjusting?**
+
+**Theme-Level** — The user wants to see how an entire design system looks across multiple components. Generate an HTML page with theme presets, accent color picker, dark/light toggle, and a grid of Vizual components that all re-render when the theme changes.
+
+Read the full HTML template: [references/theme-level.md](references/theme-level.md)
+
+**Custom-Level** — The user wants to adjust something that isn't a theme: algorithm parameters, data distributions, JSON specs, layout experiments, anything custom. Generate an HTML page with whatever controls make sense and wire them to your rendering logic.
+
+Read the skeleton template + control cookbook: [references/custom-level.md](references/custom-level.md)
+
+## The Boundary: LiveKit vs Vizual's InteractivePlayground
+
+This is the #1 source of confusion. The rule is simple:
+
+**Single component with adjustable parameters** → Vizual skill. It has an `InteractivePlayground` component that wraps one component with sliders/toggles. Output is a JSON spec. No HTML needed.
+
+**Multiple components, theme switching, or custom targets** → LiveKit. Output is an HTML file.
+
+| What the user wants | Which skill | Output |
+|---|---|---|
+| A chart with adjustable parameters | vizual (InteractivePlayground) | JSON spec |
+| Compare dark/light mode across 6 charts | LiveKit (theme-level) | HTML file |
+| Tune algorithm parameters + see visualization | LiveKit (custom-level) | HTML file |
+| Try 3 different accent colors on a dashboard | LiveKit (theme-level) | HTML file |
+| Edit JSON spec and see it render live | LiveKit (custom-level) | HTML file |
+
+## When to Proactively Use LiveKit
+
+Don't wait for the user to say "playground". Trigger LiveKit when hands-on beats static:
+
+**Design verification** — "试试这个配色", "暗色模式效果怎么样", "不同品牌色下图表还好看吗"
+**Algorithm exploration** — discussing sorting, clustering, interpolation, any parameterized process
+**Data investigation** — "看看不同维度的数据", "数据量增大趋势还明显吗"
+**Component debugging** — "这个 JSON 渲染出来长啥样", tuning chart parameters across multiple variations
+
+## Anti-Patterns — What NOT to Do
+
+1. **Don't use LiveKit for single-component playgrounds.** If the user just wants one chart with a few sliders, that's vizual's `InteractivePlayground`. LiveKit is for multi-component pages. Using LiveKit for single components creates unnecessary HTML when a JSON spec suffices.
+
+2. **Don't hardcode colors in your HTML.** Use `Vizual.tc('--rk-accent')` for JavaScript and `var(--rk-accent)` for CSS. This way the page responds to theme changes. Hardcoded hex values break when the user switches themes.
+
+3. **Don't forget the vizual.standalone.js dependency.** Every LiveKit page loads it via `<script src>`. Adjust the path to match the project structure (usually `../dist/vizual.standalone.js`). A page that can't find this script renders nothing.
+
+4. **Don't put `renderSpec()` calls in a loop without clearing the container.** Always `container.innerHTML = ''` before re-rendering. Otherwise old components pile up and memory grows.
+
+5. **Don't create controls that don't connect to anything.** Every slider, toggle, and select must trigger a re-render. A disconnected control is worse than no control — it teaches the user that interaction doesn't work.
+
+6. **Don't use `onchange` for sliders.** Use `oninput`. `onchange` only fires when the user releases the slider — the preview jumps. `oninput` fires continuously while dragging, giving smooth real-time feedback.
+
+7. **Don't try to control global theme from InteractivePlayground.** If you're using `InteractivePlayground` in a LiveKit page, its `targetProp` only sets component-level props (like `theme: "light"`). It cannot call `Vizual.setGlobalTheme()`. For global theme switching, write your own control that calls `Vizual.setGlobalTheme()` directly.
+
+8. **Don't duplicate the theme-level template.** Read `references/theme-level.md` — it has a complete working HTML template. Adapt it, don't rewrite it from scratch.
+
+## Key APIs (via global `Vizual` object)
+
+```javascript
+Vizual.renderSpec(spec, container)              // Render a JSON spec into a DOM element
+Vizual.setGlobalTheme(name)                     // Switch all components to a named theme
+Vizual.registerTheme(name, themeObj)            // Register a custom theme
+Vizual.mapDesignTokensToTheme(tokens, name)     // Convert DesignTokens → theme object
+Vizual.invertTheme(themeObj)                     // Generate dark↔light inverse
+Vizual.chartColors(count)                        // Get current palette colors
+Vizual.tc(cssVarName)                            // Get resolved color value
+Vizual.toggleMode()                              // Toggle dark/light mode
+```
+
+## Theme-Level Quick Start
+
+The theme-level page has this structure:
 
 ```
-控件 (Controls)  →  目标 (Target)  →  实时同步 (Live Sync)
+[Theme A] [Theme B] [Custom Color] | Data: [3/6/12] | [Dark/Light Toggle]
+[Palette Bar: ■ ■ ■ ■ ■ ■]
+[PieChart] [BarChart] [RadarChart] [KpiDashboard] [DataTable] ...
+[Mapping Report: accent✓ bg✓ text✓ ...]
 ```
 
-- **控件**：slider、select、color picker、toggle、text、button group
-- **目标**：Vizual 组件、一组组件、主题、DocView、整个页面、你自己写的任何东西
-- **实时同步**：控件变化 → 立刻重渲染，不需要确认按钮
+Core rendering loop:
 
-## 什么时候该主动用 LiveKit
-
-不用等用户说"给我一个 playground"。当你判断**亲手调一下会比看静态输出更有收获**时，主动创建。四类触发场景：
-
-### 理解加深型
-
-| 用户可能在说 | LiveKit 怎么帮 |
-|-------------|---------------|
-| 讨论某个算法（排序、聚类、插值） | 拖参数看算法行为变化 |
-| 学色彩空间（OKLCH、HSL） | 拖 L/C/H 看颜色实时变化 |
-| 看数据分布 | 调筛选条件/分箱数看分布变化 |
-| 理解某个组件怎么工作 | 包裹该组件，暴露关键参数 |
-
-### 设计验证型
-
-| 用户可能在说 | LiveKit 怎么帮 |
-|-------------|---------------|
-| "试试这个配色方案" | 主题试衣页面，一键切换 |
-| "看看暗色模式效果" | 暗亮模式切换 + 全组件预览 |
-| "不同品牌色下图表还好看吗" | 多主题对比 + 调色板色条 |
-| "柱状图还是饼图好" | 组件类型 buttonGroup 切换对比 |
-
-### 开发调试型
-
-| 用户可能在说 | LiveKit 怎么帮 |
-|-------------|---------------|
-| "这个图表参数调不对" | InteractivePlayground + 暴露参数 |
-| "JSON 输出渲染出来长啥样" | textarea + renderSpec 实时渲染 |
-| "数据量大的时候图表还能看吗" | 数据量 slider（3→100）+ 图表 |
-
-### 数据探索型
-
-| 用户可能在说 | LiveKit 怎么帮 |
-|-------------|---------------|
-| "看看不同维度的数据" | select 切换 x/y 轴字段 |
-| "数据量大的时候趋势还明显吗" | 数据量 slider + 趋势图 |
-| "不同分组下的分布差异" | 分组 select + 直方图/箱线图 |
-
-## 三种用法
-
-### 1. 组件级 — InteractivePlayground
-
-用 `InteractivePlayground` 组件包裹单个 Vizual 组件。输出 JSON spec，无需 HTML。
-
-读 `references/component-level.md` 获取完整 API。
-
-```json
-{
-  "type": "InteractivePlayground",
-  "props": {
-    "type": "interactive_playground",
-    "title": "柱状图参数探索",
-    "component": { "type": "BarChart", "props": { "x": "month", "y": "revenue", "data": [...] } },
-    "controls": [
-      { "name": "stacked", "label": "堆叠", "type": "toggle", "targetProp": "stacked" },
-      { "name": "title", "label": "标题", "type": "text", "targetProp": "title" }
-    ]
-  }
+```javascript
+function switchTheme(name) {
+  Vizual.setGlobalTheme(name);
+  renderGrid(); updatePalette(); updateVars();
 }
 ```
 
-可以包裹**任何 Vizual 组件**：BarChart、PieChart、RadarChart、DataTable、Kanban、Timeline、KpiDashboard、GanttChart、OrgChart、AuditLog、FormBuilder、DocView、InteractivePlayground。
+Full template with all controls: [references/theme-level.md](references/theme-level.md)
 
-### 2. 主题级 — 主题试衣页面
+## Custom-Level Quick Start
 
-生成独立 HTML 页面，用户可切换主题、调数据量、切暗亮模式，所有组件实时响应。
-
-读 `references/theme-level.md` 获取完整 HTML 模板。
-
-页面包含：
-- 预设主题按钮 + 自定义 accent 色输入
-- 数据量选择（3/6/12）
-- 暗亮模式切换
-- 调色板色条 + hex 值
-- 9 个代表性组件同时预览
-
-**和 DESIGN.md Parser 的闭环**：用户粘贴设计文档 → design-md-parser 提取 token → LiveKit 展示实时预览。两个 Skill 配合完成"设计文档 → 即时视觉验证"的闭环。
-
-### 3. 自定义级 — 万能骨架
-
-当目标不是 Vizual 组件也不是主题时，用通用 HTML 骨架自己造。这是你的"超越封闭工具"模式 — 你写任意 HTML/CSS/JS，调用任何 API，装任何包。
-
-读 `references/custom-level.md` 获取通用骨架、控件速查表和场景灵感。
-
-最小可用的自定义骨架：
+The custom skeleton is a control panel + preview area:
 
 ```html
 <script src="../dist/vizual.standalone.js"></script>
-<style>
-  .lk-root { display: flex; gap: 24px; padding: 24px; font-family: system-ui; }
-  .lk-controls { width: 280px; flex-shrink: 0; }
-  .lk-controls label { display: block; margin-bottom: 12px; font-size: 14px; }
-  .lk-controls input[type="range"] { width: 100%; }
-  .lk-target { flex: 1; }
-</style>
 <div class="lk-root">
   <div class="lk-controls">
-    <label>参数1 <input type="range" id="param1" min="0" max="100" value="50"></label>
-    <label>参数2 <input type="range" id="param2" min="1" max="20" value="10"></label>
+    <label>Param <input type="range" id="p1" min="0" max="100"></label>
   </div>
   <div class="lk-target" id="target"></div>
 </div>
 <script>
   function render() {
-    const p1 = +document.getElementById('param1').value
-    const p2 = +document.getElementById('param2').value
-    // 用 Vizual 渲染，或者自己写渲染逻辑
-    Vizual.renderSpec(buildSpec(p1, p2), document.getElementById('target'))
+    const v = +document.getElementById('p1').value;
+    document.getElementById('target').innerHTML = '';
+    Vizual.renderSpec(buildSpec(v), document.getElementById('target'));
   }
-  document.querySelectorAll('input').forEach(el => el.addEventListener('input', render))
-  function buildSpec(p1, p2) { /* 根据参数构建 JSON spec */ }
-  render()
+  document.getElementById('p1').addEventListener('input', render);
+  render();
 </script>
 ```
 
-适用场景：JSON 编辑器 + 实时渲染、算法参数 + 可视化、任意控件 + 任意目标。
+Full skeleton + control type cookbook: [references/custom-level.md](references/custom-level.md)
 
-## 判断用哪种
+## Theme System Reference
 
-| 场景 | 用哪种 | 输出 |
-|------|--------|------|
-| 在对话流中给一个可调组件 | 组件级 | JSON spec |
-| 需要对比多个主题/配色 | 主题级 | HTML 文件 |
-| 需要对比暗亮模式 | 主题级 | HTML 文件 |
-| 需要调的东西不在 Vizual 体系内 | 自定义 | HTML 文件 |
-| 用户说"试试""调一下""看看效果" | 判断场景选一种 | - |
-
-## 和 Vizual 的深度集成
-
-LiveKit 不是独立功能 — 它和 Vizual 全部 32 个组件 + 主题系统 + DocView 深度集成。
-
-**重要：组件级控件的 targetProp 必须是被包裹组件的真实 prop 名。** 读 `references/component-level.md` 获取完整的 targetProp 对照表和常见错误示例。
-
-**组件级控件映射**（常用的控件-组件搭配）：
-
-| 组件 | 可暴露的 targetProp | 控件类型 |
-|------|-------------------|---------|
-| BarChart | stacked, horizontal, title, theme | toggle, toggle, text, select |
-| PieChart | donut, title | toggle, text |
-| AreaChart | stacked, smooth, title, theme | toggle, toggle, text, select |
-| DataTable | striped, compact | toggle, toggle |
-| KpiDashboard | columns | slider (1-6) |
-| MermaidDiagram | theme | select ("default"/"dark"/"forest"/"neutral") |
-| SparklineChart | sparkType | select ("line"/"bar"/"pct_bar") |
-
-**主题级控件**（自动作用于所有组件）：
-- accent 色 → 图表调色板、按钮、链接、高亮
-- 暗/亮模式 → 背景、文字、边框自动反色
-- radius → 所有卡片的圆角
-- font → 所有字号/字重
-
-## 通用原则
-
-1. **控件即文档**：控件本身告诉用户能调什么
-2. **默认值即最佳实践**：defaultValue 用最合理的初始值
-3. **响应要即时**：控件变化后立即重渲染
-4. **3-8 个控件**：多了分组，少了没意义
-5. **保存上下文**：切换主题/数据时，已选的控件状态尽量保留
-
-## 依赖
-
-LiveKit 生成的页面依赖 `vizual.standalone.js`。路径按实际项目调整：
-- 通常：`../dist/vizual.standalone.js`
-
-关键 API（通过全局 `Vizual` 对象）：
-- `Vizual.renderSpec(spec, container)` — 渲染组件
-- `Vizual.setGlobalTheme(name)` — 切换主题
-- `Vizual.registerTheme(name, theme)` — 注册主题
-- `Vizual.mapDesignTokensToTheme(tokens, name)` — token → 主题
-- `Vizual.invertTheme(theme)` — 生成反色版本
-- `Vizual.chartColors(count)` — 获取当前调色板
-- `Vizual.tc(varName)` — 获取具体色值
-- `Vizual.toggleMode()` — 暗亮切换
+For the complete list of CSS variables, semantic keyword mapping, and how components consume them: [references/theme.md](references/theme.md)
 
 ## Combining with Other Skills
 
-### With Vizual (vizual skill)
-
-Most common combination. Wrap any Vizual component in InteractivePlayground for component-level, or generate a full HTML page with controls + `Vizual.renderSpec()` for theme/custom level.
-
-### With DESIGN.md Parser (design-md-parser skill)
-
-When the user says "调一下配色" or "试试不同的主题", combine with design-md-parser to extract tokens from a design doc, then create a theme-level LiveKit page where users can adjust colors in real-time.
-
-### With DESIGN.md Creator (design-md-creator skill)
-
-The design-md-creator already generates a LiveKit-powered preview page internally. You don't need to combine manually — just trigger design-md-creator when the user wants to create/define a design system with live preview.
+- **vizual** — For single-component InteractivePlayground (JSON spec), not HTML. Also, LiveKit pages render Vizual components via `renderSpec()`, so the vizual skill's component knowledge applies directly.
+- **design-md-parser** — When the user provides a design document and wants a live theme preview: parse tokens → feed into `mapDesignTokensToTheme()` → render theme-level LiveKit page.
+- **design-md-creator** — Already generates a LiveKit-powered preview page internally. Don't manually combine — just trigger design-md-creator when the user wants to create a design system from scratch.

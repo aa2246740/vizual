@@ -1,6 +1,16 @@
 ---
 name: design-md-parser
-version: "1.1.0"
+version: "2.0.0"
+description: >
+  Parse any design system document (DESIGN.md, style guide, brand guide, design tokens file)
+  into structured tokens that drive Vizual's theme engine. Use this skill whenever the user
+  provides any design document — even a partial one, a pasted snippet of brand colors, or a
+  vague description like "our brand uses dark backgrounds with green accents." Also trigger
+  when the user says "apply this theme", "parse this design system", "extract tokens", "switch
+  to our brand colors", or when they paste content containing hex colors, font specs, or spacing
+  values. This skill gives any AI agent its own theme engine — parse tokens → apply theme →
+  all Vizual components auto-restyle. Always apply the theme after parsing so the user sees
+  immediate results. Combine with livekit for real-time theme preview and comparison.
 user-invocable: true
 allowed-tools:
   - Read
@@ -9,61 +19,55 @@ allowed-tools:
   - Bash
   - Glob
   - Grep
-description: >
-  Parse any design system document (DESIGN.md, style guide, brand guide, design tokens file)
-  into structured tokens that drive Vizual's theme engine. Use this skill whenever the user
-  provides any design document — even a partial one, a pasted snippet of brand colors, or a
-  vague description like "our brand uses dark backgrounds with green accents." Also trigger
-  when the user says "apply this theme", "parse this design system", "extract tokens", "switch
-  to our brand colors", or when they paste content containing hex colors, font specs, or spacing
-  values. This skill gives any AI agent its own theme engine — something closed design tools
-  build in, but now you have it as a portable, composable tool. After parsing, always apply
-  the theme so the user sees immediate results. Combine with the livekit skill for real-time
-  theme preview and comparison.
 ---
 
-# DESIGN.md Parser — 你的主题引擎
+# DESIGN.md Parser — Your Theme Engine
 
-封闭设计工具有内置主题系统。你也有一个 — 而且它是可移植的：`DesignTokens` → `mapDesignTokensToTheme()` → 所有 Vizual 组件自动换肤。
+You read design documents, extract structured color/typography/spacing tokens, and apply them as Vizual themes. Every Vizual component auto-restyles — no per-component work needed.
 
-你的任务：读取任何设计文档，提取结构化 token，输出 JSON，然后应用它。
+## Mental Model
+
+Think of it as a pipeline:
+
+```
+Design Document → Extract Tokens → Dual Naming → Map to CSS Variables → Apply → All Components Restyle
+```
+
+Your job is steps 1-3. The downstream mapper (`mapDesignTokensToTheme`) handles step 4, and the theme system handles 5-6 automatically.
 
 ## Output Format
 
 ```typescript
 interface DesignTokens {
-  colors: ColorToken[]
-  typography: TypographyToken
-  spacing: SpacingToken
-  radius: RadiusToken
+  colors: { name: string; value: string }[]  // semantic name + hex/rgba
+  typography: {
+    fontFamily: string
+    sizes: Record<string, string>   // "caption": "11px", "h1": "48px"
+    weights: Record<string, string> // "regular": "400", "bold": "700"
+  }
+  spacing: { baseUnit?: string; scale: Record<string, string> }
+  radius: { scale: Record<string, string> }
 }
-
-interface ColorToken {
-  name: string    // semantic: "primary", "surface-slate", "accent"
-  value: string   // #hex or rgba()
-}
 ```
 
-Full interface in the reference file if you need it.
+## The One Critical Rule: Dual Naming
 
-## The Key Rule: Dual Naming
+Every important color needs TWO entries — the document's creative name AND a standard role name:
 
-Every important design decision needs TWO token entries — the document's creative name AND a standard role name:
-
-```
-{ "name": "jelly-mint", "value": "#3cffd0" },      // document's name
-{ "name": "accent", "value": "#3cffd0" },            // role name → maps to --rk-accent
-{ "name": "canvas-black", "value": "#131313" },      // document's name
-{ "name": "background", "value": "#131313" },        // role name → maps to --rk-bg-primary
+```json
+{ "name": "jelly-mint", "value": "#3cffd0" },    // document's creative name
+{ "name": "accent", "value": "#3cffd0" },           // role name → maps to --rk-accent
+{ "name": "canvas-black", "value": "#131313" },     // document's creative name
+{ "name": "background", "value": "#131313" }        // role name → maps to --rk-bg-primary
 ```
 
-Why: the downstream mapper matches token names against keywords. A token named "jelly-mint" won't match "accent", so it won't map to `--rk-accent`. The dual naming ensures both the creative identity and the functional role are captured.
+**Why:** The downstream mapper matches token names against keywords. A token named "jelly-mint" won't match "accent", so it won't map to `--rk-accent`. The dual naming ensures both the creative identity and the functional role are captured.
 
-**Required role names** (include when the document defines them):
+### Required role names (include when the document defines them)
 
 | Role name | Maps to | Look for |
-|-----------|---------|----------|
-| `background` / `surface` | `--rk-bg-primary` | Main canvas/page background |
+|---|---|---|
+| `background` / `surface` | `--rk-bg-primary` | Main page background |
 | `card` / `surface-elevated` | `--rk-bg-secondary` | Card background |
 | `input-bg` / `surface-hover` | `--rk-bg-tertiary` | Input/hover background |
 | `text` / `foreground` | `--rk-text-primary` | Primary text |
@@ -79,18 +83,59 @@ Why: the downstream mapper matches token names against keywords. A token named "
 1. **Read the entire document** — colors, fonts, spacing are scattered throughout component specs, not just in "Colors" sections
 2. **Inventory** — catalog every color value, font mention, size, spacing value
 3. **Name** — give each value a semantic name + role duplicate
-4. **Target: 15-40 color tokens** — if you have fewer than 10, you're being too conservative
+4. **Target: 15-40 color tokens** — fewer than 10 means you're being too conservative
 5. **Fill gaps** — if spacing/radius only appear in component specs, extract common values into a scale
 
 ## What to Extract
 
-**Colors**: hex values, rgba(), colors with explicit values in prose. NOT: colors without values ("use a bright green"), CSS keywords (`transparent`).
+**Colors:** hex values, rgba(), colors with explicit values in prose. NOT: colors without values ("use a bright green"), CSS keywords (`transparent`).
 
-**Typography**: primary font family (with fallback stack), size scale (use semantic keys: `caption`/`body`/`subtitle`/`h1`-`h6`/`display`), weight scale (`light`/`regular`/`medium`/`semibold`/`bold`).
+**Typography:** primary font family (with fallback stack), size scale (semantic keys: `caption`/`body`/`h1`-`h6`/`display`), weight scale (`light`/`regular`/`medium`/`semibold`/`bold`).
 
-**Spacing**: base unit ("8px grid"), named scale, or reverse-engineer from component padding specs.
+**Spacing:** base unit ("8px grid"), named scale, or reverse-engineer from component padding specs.
 
-**Radius**: named scale, values from component specs, or infer from descriptions ("pill-shaped" → 9999px, "slightly rounded" → 4px).
+**Radius:** named scale, values from component specs, or infer from descriptions ("pill-shaped" → 9999px, "slightly rounded" → 4px).
+
+## Anti-Patterns — What NOT to Do
+
+1. **Don't skip the dual naming.** This is the #1 failure mode. A token named only "ocean-blue" with value "#0066cc" will NOT map to `--rk-accent`. You must also add `{ "name": "accent", "value": "#0066cc" }`. Without the role name, the theme engine can't find the token and falls back to defaults.
+
+2. **Don't extract too few tokens.** If you return 5 colors, the theme will be mostly defaults. Aim for 15-40 color tokens. Extract from every section of the document — components, cards, buttons, borders, backgrounds all define colors.
+
+3. **Don't invent colors the document doesn't define.** If the document says nothing about error colors, don't add `#ef4444` as an "error" token. Let the theme engine fall back to defaults for missing roles. Invented colors create a theme that doesn't match the source document.
+
+4. **Don't forget to apply the theme after parsing.** The user wants to see results, not a JSON dump. Always call `mapDesignTokensToTheme()` → `registerTheme()` → `setGlobalTheme()` after extraction.
+
+5. **Don't confuse creative names with role names.** "Trust Blue" is a creative name (keep it). "accent" is a role name (also add it). They're two entries with the same value, serving different purposes. Don't merge them into one.
+
+6. **Don't extract colors without values.** "Use a vibrant green" has no extractable value. Skip it. Only extract colors with explicit hex/rgba values.
+
+7. **Don't put CSS keywords as token values.** `transparent`, `inherit`, `currentColor`, `none` — these aren't valid theme token values. Only `#hex` and `rgba()`.
+
+## Applying the Theme
+
+Always apply after parsing. The user wants to see results, not a JSON dump.
+
+### In a browser page
+
+```javascript
+const tokens = { /* your DesignTokens JSON */ };
+const theme = Vizual.mapDesignTokensToTheme(tokens, 'custom-theme');
+Vizual.registerTheme(theme.name, theme);
+Vizual.setGlobalTheme(theme.name);
+const inverted = Vizual.invertTheme(theme);
+Vizual.registerTheme(inverted.name, inverted);
+```
+
+### In code
+
+```typescript
+import { mapDesignTokensToTheme, registerTheme, setGlobalTheme } from 'vizual'
+const tokens = { /* your DesignTokens JSON */ }
+const theme = mapDesignTokensToTheme(tokens, 'custom-theme')
+registerTheme(theme.name, theme)
+setGlobalTheme(theme.name)
+```
 
 ## Example Output
 
@@ -118,60 +163,12 @@ Why: the downstream mapper matches token names against keywords. A token named "
 }
 ```
 
-## Applying the Theme
-
-Always apply after parsing — the user wants to see results, not just a JSON dump.
-
-### In a browser page
-
-```javascript
-const tokens = { /* your DesignTokens JSON */ };
-const { mapDesignTokensToTheme, registerTheme, setGlobalTheme, invertTheme } = window.Vizual;
-const theme = mapDesignTokensToTheme(tokens, 'custom-theme');
-registerTheme(theme.name, theme);
-setGlobalTheme(theme.name);
-const inverted = invertTheme(theme);
-registerTheme(inverted.name, inverted);
-```
-
-### In code
-
-```typescript
-import { mapDesignTokensToTheme, registerTheme, setGlobalTheme } from 'vizual'
-const tokens = { /* your DesignTokens JSON */ }
-const theme = mapDesignTokensToTheme(tokens, 'custom-theme')
-registerTheme(theme.name, theme)
-setGlobalTheme(theme.name)
-```
-
-## Downstream Variable Landscape
-
-The mapper generates these CSS variables from your tokens. The more you feed, the more complete the theme:
-
-| Family | Variables | Used by |
-|--------|-----------|---------|
-| Background | `--rk-bg-primary/secondary/tertiary` | Card bodies, inputs, panels |
-| Text | `--rk-text-primary/secondary/tertiary` | Headings, body, hints |
-| Border | `--rk-border`, `--rk-border-subtle` | Card borders, dividers |
-| Accent | `--rk-accent`, `-hover`, `-muted` | CTAs, links, highlights |
-| Status | `--rk-success/warning/error` + `-muted` | Status badges, alerts |
-| Font | `--rk-font-sans`, `--rk-font-mono` | All text |
-| Charts | `--rk-chart-1` through `--rk-chart-6` | ECharts palette (auto-generated via OKLCH) |
-
 ## Reference
 
-For the complete list of theme variables and mapping details: [references/vizual-theme-vars.md](references/vizual-theme-vars.md)
+For the complete list of theme variables and semantic keyword mapping: [references/vizual-theme-vars.md](references/vizual-theme-vars.md)
 
 ## Combining with Other Skills
 
-### With Vizual (vizual skill)
-
-After applying the theme, use the vizual skill to render components — they will automatically use the new theme colors. No extra integration needed.
-
-### With LiveKit (livekit skill)
-
-When the user says "试试这个主题" or "对比一下不同配色", combine with livekit to create a theme-level preview page where users can toggle between themes, adjust accent colors, and see all 32 components update in real-time.
-
-### With DESIGN.md Creator (design-md-creator skill)
-
-If the user has no design document yet but wants to create one, trigger design-md-creator instead. Use design-md-parser only when the user already has a design document to parse.
+- **vizual** — After applying the theme, use the vizual skill to render components. They automatically use the new theme colors.
+- **livekit** — When the user says "试试这个主题" or "对比一下不同配色", create a theme-level LiveKit page where users can toggle between themes and see all components update in real-time.
+- **design-md-creator** — If the user has no design document yet but wants to create one, trigger design-md-creator instead. Use design-md-parser only when the user already has a document to parse.

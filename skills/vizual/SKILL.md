@@ -1,15 +1,14 @@
 ---
 name: vizual
-version: "1.1.0"
+version: "3.0.0"
 description: >
-  Generate structured JSON specs for Vizual's 32 visualization components, or use freeform HTML
-  for unlimited design freedom. Use this skill whenever the user needs ANY kind of visual output
-  — charts, dashboards, reports, KPIs, kanban boards, timelines, data tables, forms, annotatable
-  documents, or even just "show me the data." Vizual provides 32 schema-validated components for
-  charts and complex UI, plus DocView freeform sections where AI can write arbitrary HTML/CSS for
-  dashboards, metrics, cards, and any visual design. Trigger on: charts, graphs, dashboards,
-  reports, metrics, data visualization, kanban, timeline, gantt, forms, tables, "visualize this",
-  "show me", "render", "display", "make a dashboard", or any request involving data + visuals.
+  Generate structured JSON specs for Vizual's 32 visualization components. Use this skill
+  whenever the user needs ANY kind of visual output — charts, dashboards, reports, KPIs,
+  kanban boards, timelines, data tables, forms, interactive parameter tuning, annotatable
+  documents, or even just "show me the data." Trigger on: charts, graphs, dashboards, reports,
+  metrics, data visualization, kanban, timeline, gantt, forms, tables, "visualize this",
+  "show me", "render", "display", "make a dashboard", interactive, playground, adjustable,
+  slider, or any request involving data + visuals.
 user-invocable: true
 allowed-tools:
   - Read
@@ -22,54 +21,102 @@ allowed-tools:
 
 # Vizual — Your Visualization Toolkit
 
-You have access to Vizual: 32 pre-built, schema-validated visualization components that render from JSON specs, plus the ability to design freely with HTML/CSS inside DocView freeform sections.
+You generate JSON specs that the host app renders as interactive UI via `renderSpec(spec, container)`. You have 32 components. Your job is to pick the right ones and compose them well.
 
-## Two Design Modes
+## How to Think About Components
 
-### 1. Components (for charts & complex UI)
+Vizual components fall into 6 families. Think of them as building blocks, not a lookup table. Most real-world outputs combine multiple components.
 
-Use Vizual components when you need:
-- **Charts** (19 types) — ECharts-powered with tooltips, animations, interactivity
-- **Complex UI** — DataTable, Kanban, Timeline, GanttChart, OrgChart
-- **Business** — KpiDashboard, AuditLog
-- **Forms** — FormBuilder with 18 field types and validation
-- **Layouts** — GridLayout, SplitLayout, HeroLayout
+**Charts (19)** — BarChart, LineChart, AreaChart, PieChart, ScatterChart, BubbleChart, BoxplotChart, HistogramChart, WaterfallChart, XmrChart, SankeyChart, FunnelChart, HeatmapChart, CalendarChart, SparklineChart, ComboChart, DumbbellChart, RadarChart, MermaidDiagram. All powered by ECharts with tooltips, animations, and responsive sizing.
 
-### 2. Freeform HTML (for everything else)
+**Data Display** — DataTable. Columns, striped rows, compact mode. No sorting/filtering/pagination yet.
 
-Use DocView freeform sections when you need:
-- **Dashboards** — grid/flexbox layouts, KPI cards, metric panels
-- **Cards & Metrics** — styled numbers, trends, comparisons
-- **Alerts & Banners** — styled callouts, warnings, info boxes
-- **Text & Typography** — paragraphs, descriptions, headings with custom styling
-- **Code/JSON display** — monospace blocks with custom styling
-- **Progress indicators** — custom progress bars, gauges
-- **Anything unique** — unlimited creative freedom with inline CSS
+**Business** — KpiDashboard (metric cards with trend arrows), Kanban (column-based task board), GanttChart (task timeline with dependencies), OrgChart (reporting hierarchy), Timeline (milestone chronology), AuditLog (activity log with severity).
 
-**What's allowed in freeform:** All structural HTML tags + inline `style` attributes. Semantic elements (h1-h6, section, article, aside, header, footer, figure, details) auto-receive annotation targeting.
+**Input** — FormBuilder. 18 field types, validation, conditional visibility. This is your form builder — any time the user describes input fields, dropdowns, or data collection UI, use it.
 
-**What's blocked:** `class` attribute, event handlers (`onclick`, `onerror`, `onload`), `script`, `iframe`, `style` tags.
+**Meta** — InteractivePlayground (wraps any single component with real-time controls like sliders, toggles, color pickers), DocView (document with mixed sections — text, headings, charts, KPIs, tables, callouts, markdown, freeform HTML — plus optional annotation panel).
 
-## Decision Rule
+**Layout** — GridLayout (multi-column grid), SplitLayout (two-pane split), HeroLayout (banner section). Layouts hold child components; they don't render content themselves.
 
-| What user needs | Your approach |
-|----------------|---------------|
-| A chart or graph | Vizual component JSON spec |
-| A data table with sorting | Vizual DataTable component |
-| A kanban board | Vizual Kanban component |
-| A gantt chart / timeline | Vizual GanttChart / Timeline component |
-| A form with validation | Vizual FormBuilder component |
-| **A dashboard with KPIs** | **DocView with freeform HTML sections** |
-| **Metric cards / big numbers** | **DocView freeform HTML** |
-| **Alerts, notes, callouts** | **DocView freeform HTML** |
-| **A report with mixed content** | **DocView: freeform HTML + chart components** |
-| Multiple charts composed | DocView with multiple chart sections, or GridLayout with single column |
-| A chart inside custom HTML | Write HTML, embed `vizual.standalone.js` |
-| Something Vizual doesn't cover | Write code freely |
+For the complete schema of every component, read: [references/component-catalog.md](references/component-catalog.md)
+
+## Composition Patterns
+
+Real outputs are usually compositions. Here are the common patterns:
+
+**Dashboard** — `GridLayout` holding `KpiDashboard` + charts + `DataTable`. The "KPI cards on top, charts in middle, table at bottom" layout.
+
+**Analysis Report** — `DocView` with structured sections: `heading`, `callout` (alerts), `chart` (embedded chart), `markdown` (analysis text). Use DocView's built-in section types (`kpi`, `chart`, `table`, `callout`) rather than freeform HTML for these.
+
+**Split View** — `SplitLayout` with a chart on one side and a `DataTable` on the other. Good for comparing visual and tabular representations of the same data.
+
+**Interactive Explorer** — `InteractivePlayground` wrapping any chart or business component, with controls mapped to the component's real props via `targetProp`. User adjusts sliders/toggles and sees results in real-time.
+
+**Standalone Chart** — A single chart component at the root. No layout wrapper needed.
+
+For more composition examples with full JSON, read: [references/recipes.md](references/recipes.md)
+
+## When to Use What
+
+Think about what the user is trying to accomplish, then pick components that serve that goal.
+
+**The user wants to see data visually** → Pick the chart that matches the data shape: categorical comparison → BarChart, time series → LineChart, proportions → PieChart, correlations → ScatterChart, flow → SankeyChart, funnel → FunnelChart, distribution → BoxplotChart/HistogramChart, multi-dimensional → RadarChart, calendar patterns → CalendarChart, etc. ComboChart handles dual-axis (bar + line). MermaidDiagram handles flowcharts and sequence diagrams.
+
+**The user wants metrics at a glance** → KpiDashboard. It has `trend` and `trendValue` on each metric. Use it for big numbers with trend arrows.
+
+**The user wants a table** → DataTable.
+
+**The user wants a form, input fields, settings panel, survey** → FormBuilder. Even if they don't say "form" — if they describe input fields, dropdowns, or data collection, use FormBuilder.
+
+**The user wants a board, timeline, org chart, or activity log** → Kanban, GanttChart, Timeline, OrgChart, AuditLog respectively.
+
+**The user wants to adjust parameters interactively** → InteractivePlayground wrapping the relevant component. This gives real working controls (slider, select, toggle, color, text, number, buttonGroup) via `targetProp`.
+
+```json
+{
+  "type": "InteractivePlayground",
+  "props": {
+    "type": "interactive_playground",
+    "title": "Adjustable Bar Chart",
+    "component": {
+      "type": "BarChart",
+      "props": { "type": "bar", "x": "month", "y": "revenue", "data": [...] }
+    },
+    "controls": [
+      { "type": "toggle", "name": "stacked", "label": "Stacked", "defaultValue": false, "targetProp": "stacked" },
+      { "type": "toggle", "name": "horizontal", "label": "Horizontal", "defaultValue": false, "targetProp": "horizontal" },
+      { "type": "text", "name": "chartTitle", "label": "Title", "defaultValue": "Revenue", "targetProp": "title" }
+    ],
+    "layout": "side-by-side"
+  },
+  "children": []
+}
+```
+
+**The user wants a document or report** → DocView. Use its structured section types: `heading`, `text`, `kpi`, `chart`, `table`, `callout`, `markdown`, `freeform`. Set `enableAnnotations: true` if the user wants highlighting/comments.
+
+**The user wants things arranged in a layout** → GridLayout (multi-column), SplitLayout (two-pane), HeroLayout (top banner). These are containers — they hold other components as children.
+
+**Something none of the above covers** → DocView's `freeform` section type for static visual content (styled text, code blocks, custom progress bars). This is your last resort.
+
+## Anti-Patterns — What NOT to Do
+
+These are the most common mistakes. Avoiding them is more important than memorizing the component list.
+
+1. **Don't use freeform HTML when a dedicated component exists.** KPI metrics → KpiDashboard (not freeform `<div>` cards). Data tables → DataTable (not freeform `<table>`). Forms and inputs → FormBuilder (not freeform `<input>` elements). Interactive controls → InteractivePlayground (not freeform `<input type="range">`). Freeform HTML controls are non-functional because event handlers are blocked.
+
+2. **Don't embed components as freeform HTML inside DocView.** DocView has structured section types for charts, KPIs, and tables. Use `{ "type": "chart", "data": {...} }` not `{ "type": "freeform", "content": "<div>...</div>" }` for these.
+
+3. **Don't invent props.** Only use props that exist in the schema. When unsure, read `references/component-catalog.md`. Common invented props that don't exist: `sort`, `filter`, `pagination` on DataTable; `drag` on Kanban; `height` on BarChart.
+
+4. **Don't mix up the two `type` fields.** In the element definition: PascalCase (`"BarChart"`, `"DocView"`, `"InteractivePlayground"`). Inside `props`: lowercase/snake_case literal (`"bar"`, `"doc_view"`, `"interactive_playground"`). Layout components (GridLayout, SplitLayout, HeroLayout) have no `type` in props.
+
+5. **Don't use removed components.** BigValue, Delta, Alert, Note, TextBlock no longer exist. Use KpiDashboard for metrics, DocView `callout` sections for alerts.
+
+6. **Don't hardcode brand colors in freeform HTML.** Vizual has a default dark theme that works out of the box. For light mode, set `theme: "light"` on chart components. For custom brand colors, tell the user the host app can call `loadDesignMd()`. Don't try to bypass the theme system with inline styles.
 
 ## Output Format
-
-ALWAYS output valid JSON in this structure:
 
 ```json
 {
@@ -77,209 +124,25 @@ ALWAYS output valid JSON in this structure:
   "elements": {
     "<element-id>": {
       "type": "<ComponentName>",
-      "props": {
-        "type": "<type-literal>",
-        ...component-specific props
-      },
+      "props": { "type": "<type-literal>", ... },
       "children": []
     }
   }
 }
 ```
 
-Rules:
-- `type` in the element definition = **PascalCase component name** (e.g. `BarChart`, `DocView`)
-- `type` inside `props` = **lowercase/snake_case literal** (e.g. `"bar"`, `"doc_view"`)
-- Every element needs `children: []` (even if empty)
-- Props must match the component's schema — don't invent fields
+Every element needs `children: []`. Chart components need `data: [...]`. Use realistic placeholder data when the user doesn't provide any.
 
-## Two Usage Modes
+## Theme
 
-### Mode 1: React App (npm)
+Default is dark. For light mode, set `theme: "light"` on chart components. For full brand customization, the host app calls `loadDesignMd(markdown)` — this is outside the JSON spec.
 
-```tsx
-import { registry } from 'vizual'
-import { Renderer, StateProvider } from '@json-render/react'
+## Export
 
-const spec = { /* your JSON spec */ }
-
-<StateProvider>
-  <Renderer spec={spec} registry={registry} />
-</StateProvider>
-```
-
-### Mode 2: Standalone HTML (any environment)
-
-```html
-<script src="./vizual.standalone.js"></script>
-<div id="chart"></div>
-<script>
-  const spec = {
-    root: 'main',
-    elements: {
-      main: {
-        type: 'BarChart',
-        props: { type: 'bar', x: 'quarter', y: 'revenue', data: [...] },
-        children: []
-      }
-    }
-  }
-  Vizual.renderSpec(spec, document.getElementById('chart'))
-</script>
-```
-
-## Component Selection Guide
-
-| User says | Use |
-|-----------|-----|
-| "bar chart", "column chart" | BarChart (`bar`) |
-| "line chart", "trend" | LineChart (`line`) |
-| "area chart" | AreaChart (`area`) |
-| "pie chart", "donut" | PieChart (`pie`) |
-| "scatter plot", "correlation" | ScatterChart (`scatter`) |
-| "bubble chart" | BubbleChart (`bubble`) |
-| "box plot", "distribution" | BoxplotChart (`boxplot`) |
-| "histogram", "frequency" | HistogramChart (`histogram`) |
-| "waterfall" | WaterfallChart (`waterfall`) |
-| "control chart", "SPC" | XmrChart (`xmr`) |
-| "flow", "sankey" | SankeyChart (`sankey`) |
-| "funnel", "conversion" | FunnelChart (`funnel`) |
-| "heatmap", "matrix" | HeatmapChart (`heatmap`) |
-| "calendar heatmap" | CalendarChart (`calendar`) |
-| "sparkline", "mini chart" | SparklineChart (`sparkline`) |
-| "combo chart", "mixed chart" | ComboChart (`combo`) |
-| "dumbbell", "range comparison" | DumbbellChart (`dumbbell`) |
-| "flowchart", "diagram", "sequence" | MermaidDiagram (`mermaid`) |
-| "radar", "spider chart" | RadarChart (`radar`) |
-| "table", "data grid" | DataTable (`table`) |
-| "kanban", "board" | Kanban (`kanban`) |
-| "gantt", "schedule" | GanttChart (`gantt`) |
-| "org chart", "hierarchy" | OrgChart (`org_chart`) |
-| "KPI dashboard", "metrics" | KpiDashboard (`kpi_dashboard`) or **freeform HTML** |
-| "audit log" | AuditLog (`audit_log`) |
-| "timeline", "milestones" | Timeline (`timeline`) |
-| "form builder", "dynamic form" | FormBuilder (`form_builder`) |
-| "document", "report" + annotation | DocView (`doc_view`) |
-| "grid", "card grid" | GridLayout (`grid_layout`) |
-| "split", "side by side" | SplitLayout (`split_layout`) |
-| "hero", "banner section" | HeroLayout (`hero_layout`) |
-| "dashboard", "big number", "metric" | **DocView freeform HTML** |
-| "alert", "warning", "note" | **DocView freeform HTML** |
-| "progress bar" | **DocView freeform HTML** |
-| "code display", "JSON viewer" | **DocView freeform HTML** |
-
-## DocView — Your Primary Canvas
-
-DocView supports mixed content: freeform HTML sections alongside chart/table components.
-
-```json
-{
-  "type": "DocView",
-  "props": {
-    "type": "doc_view",
-    "title": "Quarterly Report",
-    "sections": [
-      { "type": "freeform", "content": "<section style='padding:32px;background:linear-gradient(135deg,#667eea,#764ba2);border-radius:12px;margin-bottom:24px;'><h1 style='color:#fff;font-size:28px;margin:0;'>Q3 Performance</h1><p style='color:rgba(255,255,255,0.8);font-size:16px;margin-top:8px;'>Revenue exceeded targets by 18%</p></section>" },
-      { "type": "chart", "content": "", "data": { "chartType": "BarChart", "x": "quarter", "y": "revenue", "data": [...] } },
-      { "type": "freeform", "content": "<div style='display:flex;gap:16px;'><div style='flex:1;padding:20px;background:#1e293b;border-radius:8px;'><div style='color:#94a3b8;font-size:12px;'>REVENUE</div><div style='color:#e2e8f0;font-size:32px;font-weight:bold;'>$12.3M</div><div style='color:#10b981;font-size:13px;'>+15% YoY</div></div></div>" },
-      { "type": "table", "content": "", "data": { "columns": [...], "data": [...] } }
-    ]
-  }
-}
-```
-
-### Freeform CSS Variables
-
-Use these theme-aware CSS variables in inline styles:
-
-| Variable | Value | Usage |
-|----------|-------|-------|
-| `--rk-bg-primary` | #0f1117 | Main background |
-| `--rk-bg-secondary` | #1e293b | Card/secondary background |
-| `--rk-bg-tertiary` | #252836 | Input/hover background |
-| `--rk-text-primary` | #e2e8f0 | Primary text |
-| `--rk-text-secondary` | #94a3b8 | Secondary text |
-| `--rk-text-tertiary` | #64748b | Muted text |
-| `--rk-accent` | #667eea | Accent/brand color |
-| `--rk-border-subtle` | #2d3148 | Subtle borders |
-| `--rk-success` | #10b981 | Success color |
-| `--rk-warning` | #f59e0b | Warning color |
-| `--rk-error` | #ef4444 | Error color |
-| `--rk-radius-md` | 8px | Standard border radius |
-
-## Data Handling
-
-When the user provides data:
-- Use it exactly as given — don't modify numbers or labels
-- Map user's column/field names to the `x`, `y`, `value`, etc. props
-
-When the user does NOT provide data:
-- Use realistic placeholder data that tells a story
-- Don't use obviously fake data like "aaa", "xxx"
-
-## Export API
-
-All 32 components support PNG export.
-
-### React (npm)
-
-```tsx
-import { exportToPNG, downloadPNG } from 'vizual'
-const blob = await exportToPNG(element, { scale: 2 })
-await downloadPNG(element, { scale: 2, filename: 'my-chart' })
-```
-
-### Standalone HTML
-
-```js
-const blob = await Vizual.exportToPNG(element, { scale: 2 })
-await Vizual.downloadPNG(element, { scale: 2, filename: 'chart' })
-```
-
-### Options
-
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `scale` | number | 2 | Resolution multiplier (2 = Retina) |
-| `backgroundColor` | string | from theme | Override background color |
-| `filename` | string | `'vizual-export'` | Download filename (no extension) |
-
-**DocView export**: Target `[data-docview-viewport]` to export document content only (without annotation panel).
-
-**Note**: Only PNG export is supported. SVG export is not available.
-
-## Common Mistakes to Avoid
-
-1. **Wrong type literal**: `BarChart` uses `"bar"`, not `"BarChart"`. `KpiDashboard` uses `"kpi_dashboard"`, not `"kpi"`.
-2. **Missing data array**: All chart components need `data: [...]`.
-3. **Inventing props**: Only use props defined in the schema.
-4. **Forgetting children**: Every element needs `children: []`.
-5. **String vs number**: Numeric values should be numbers, not strings.
-6. **SVG export**: There is no SVG export. Use `exportToPNG` or `downloadPNG` instead.
-7. **Using removed components**: BigValue, Delta, Alert, Note, TextBlock, etc. are removed — use freeform HTML instead.
+All components support PNG export via `Vizual.exportToPNG(element, { scale: 2 })` or `Vizual.downloadPNG(element, { scale: 2, filename: 'chart' })`. Only PNG, no SVG. DocView: target `[data-docview-viewport]` for document-only export.
 
 ## Combining with Other Skills
 
-### When to combine with LiveKit
-
-If the user wants to **interactively adjust** the visualization — tune parameters, compare options, explore data — combine this skill with **livekit**. Wrap the component in `InteractivePlayground` (component-level) or generate a full HTML page (theme-level / custom-level).
-
-Trigger signals: "调一下", "试试看", "interactive", "playground", "slider", "能拖参数吗", "对比一下", "让我调调"
-
-### When to combine with DESIGN.md Parser
-
-If the user wants to **apply a custom theme** before rendering, use **design-md-parser** to extract tokens, then render with the applied theme.
-
-Trigger signals: "用我们的品牌色", "apply this theme", "换成我们的配色", user pastes a design doc
-
-### When to combine with DESIGN.md Creator
-
-If the user wants to **create a design system from scratch** and then see components in it, use **design-md-creator** first to produce the DESIGN.md + preview page.
-
-Trigger signals: "创建设计系统", "make our brand guide", "从零开始设计", user wants to define visual identity
-
-## Reference
-
-For the complete schema of every component, read: [references/component-catalog.md](references/component-catalog.md)
-
-For composition patterns and real-world examples, read: [references/recipes.md](references/recipes.md)
+- **LiveKit** — When the user wants theme-level or custom-level interactivity (multi-component interactive pages, theme preview, dark/light comparison). Single-component interactivity is handled by InteractivePlayground within this skill.
+- **design-md-parser** — When the user provides a design document and wants to extract theme tokens.
+- **design-md-creator** — When the user wants to create a design system from scratch with an interactive preview.
