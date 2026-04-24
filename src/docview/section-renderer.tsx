@@ -741,19 +741,25 @@ function normalizeChartData(data: Record<string, unknown> | undefined): Record<s
   if (Array.isArray(data.series)) return data
 
   // mviz format: { type, x, y, data: [...] }
-  if (typeof data.x === 'string' && typeof data.y === 'string' && Array.isArray(data.data)) {
+  const yIsString = typeof data.y === 'string'
+  const yIsArray = Array.isArray(data.y) && (data.y as unknown[]).every(v => typeof v === 'string')
+  if (typeof data.x === 'string' && (yIsString || yIsArray) && Array.isArray(data.data)) {
     const xField = data.x
-    const yField = data.y
-    const chartType = (data.type as string) || 'bar'
+    const yFields = yIsArray ? data.y as string[] : [data.y as string]
     const items = data.data as Array<Record<string, unknown>>
-
     const categories = items.map(item => String(item[xField] ?? ''))
-    const values = items.map(item => item[yField] ?? 0)
+
+    // Multiple y fields → multiple series (first = bar for combo, rest = line)
+    const series = yFields.map((yField, i) => ({
+      type: i === 0 ? 'bar' : 'line',
+      name: yField,
+      data: items.map(item => item[yField] ?? 0),
+    }))
 
     return {
       xAxis: { type: 'category', data: categories },
       yAxis: { type: 'value' },
-      series: [{ type: chartType, data: values }],
+      series,
     }
   }
 

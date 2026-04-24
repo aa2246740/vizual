@@ -13,10 +13,17 @@ if (isStandalone) {
     format: 'iife',
     outfile: 'dist/vizual.standalone.js',
     target: 'es2020',
-    minify: true,
+    minify: false,
     globalName: 'Vizual',
     logLevel: 'info',
-  }).then(() => {
+    sourcemap: true,
+  }).then(async (result) => {
+    // esbuild IIFE 不自动返回，需要手动添加
+    const fs = require('fs')
+    let content = fs.readFileSync('dist/vizual.standalone.js', 'utf8')
+    // 在 })(); 之前添加 return {
+    content = content.replace('})();', 'return {\n  renderSpec,\n  React,\n  ReactDOM,\n  ReactDOMClient,\n  echarts,\n  registry,\n  DocView,\n  ...registry\n};})();')
+    fs.writeFileSync('dist/vizual.standalone.js', content)
     console.log('Built standalone successfully')
   }).catch(err => {
     console.error(err)

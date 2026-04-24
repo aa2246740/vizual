@@ -151,9 +151,33 @@ export function FormBuilder({ props, bindings }: { props: FormBuilderProps; bind
       </div>
     }
 
-    // === CHECKBOX (multi-select) ===
+    // === CHECKBOX ===
     if (field.type === 'checkbox') {
       const opts = normalizeOptions(field.options)
+      // Single boolean checkbox (no options provided)
+      if (opts.length === 0) {
+        const on = !!value
+        return <div key={field.name} style={{ marginBottom: 12 }}>
+          <label style={{
+            display: 'flex', alignItems: 'center', gap: 8, cursor: field.disabled ? 'default' : 'pointer',
+          }}>
+            <span onClick={() => !field.disabled && updateField(field.name, !on)} style={{
+              width: 18, height: 18, borderRadius: tcss('--rk-radius-sm'),
+              border: `2px solid ${on ? tcss('--rk-accent') : tcss('--rk-text-tertiary')}`,
+              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+              background: on ? tcss('--rk-accent') : 'transparent',
+              color: tcss('--rk-text-primary'), fontSize: tcss('--rk-text-xs'), lineHeight: 1,
+              transition: 'all 0.15s',
+            }}>{on ? '✓' : ''}</span>
+            <span style={{ fontSize: tcss('--rk-text-base'), color: tcss('--rk-text-primary') }}>
+              {field.label}
+              {field.required && <span style={{ color: tcss('--rk-error'), marginLeft: 2 }}>*</span>}
+            </span>
+          </label>
+          {renderError(field, error)}
+        </div>
+      }
+      // Multi-select checkbox (options provided)
       const selected: (string | number)[] = Array.isArray(value) ? value : []
       return <div key={field.name} style={{ marginBottom: 12 }}>
         {renderLabel(field)}

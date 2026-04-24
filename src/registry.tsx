@@ -1,3 +1,4 @@
+import React from 'react'
 import { defineRegistry } from '@json-render/react'
 import { renderKitCatalog } from './catalog'
 
@@ -44,18 +45,30 @@ import { GridLayout } from './components/grid-layout/component'
 import { SplitLayout } from './components/split-layout/component'
 import { HeroLayout } from './components/hero-layout/component'
 
+/** 不需要 wrapper 的组件 — 布局类和 DocView 自身管理背景 */
+const NO_WRAP = new Set(['GridLayout', 'SplitLayout', 'HeroLayout', 'DocView'])
+
+/**
+ * 包装组件函数：给需要背景的组件套上自包含的容器。
+ * 这样组件在任何宿主页面里都能正确显示，不依赖外部背景色。
+ */
+function withBackgroundWrap(componentFn: React.ComponentType<any>) {
+  return (props: any) => {
+    const inner = React.createElement(componentFn, props)
+    return React.createElement('div', {
+      style: {
+        background: 'var(--rk-bg-secondary)',
+        borderRadius: 'var(--rk-radius-md)',
+        padding: '12px',
+      },
+    }, inner)
+  }
+}
+
 /**
  * AI RenderKit registry — 31 React components + 3 action handlers
- * (InteractivePlayground removed — use HTML pages with native controls for interactive parameter exploration)
- * (15 components removed — AI uses freeform HTML via DocView instead)
- *
- * Exported result includes:
- * - registry: ComponentRegistry for <Renderer>
- * - handlers: (getSetState, getState) => action handler map for JSONUIProvider
- * - executeAction: imperative action execution for use outside React tree
  */
-// @ts-ignore — Component function signatures use Zod v3 inferred types;
-// json-render's defineRegistry expects Zod v4 types. Runtime is correct.
+// @ts-ignore
 export const { registry, handlers, executeAction } = defineRegistry(renderKitCatalog, {
   components: {
     BarChart, AreaChart, LineChart, PieChart, ScatterChart, BubbleChart,
@@ -70,7 +83,6 @@ export const { registry, handlers, executeAction } = defineRegistry(renderKitCat
     GridLayout, SplitLayout, HeroLayout,
   } as any,
   actions: {
-    /** Store form submission in state. Host app can override via handlers(). */
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     submitForm: async (params: any, setState: any) => {
       const submission = {
@@ -85,7 +97,6 @@ export const { registry, handlers, executeAction } = defineRegistry(renderKitCat
       }))
     },
 
-    /** Store revision request in state. Host app wires to AI API. */
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     requestRevision: async (params: any, setState: any) => {
       const request = {
@@ -101,7 +112,6 @@ export const { registry, handlers, executeAction } = defineRegistry(renderKitCat
       }))
     },
 
-    /** Store batch annotation submission in state. Used by DocView revision loop. */
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     batchSubmit: async (params: any, setState: any) => {
       const batch = {
@@ -116,3 +126,10 @@ export const { registry, handlers, executeAction } = defineRegistry(renderKitCat
     },
   },
 })
+
+// 给非布局组件套上背景容器，让它们在任何宿主环境自包含
+for (const [name, componentFn] of Object.entries(registry)) {
+  if (!NO_WRAP.has(name) && typeof componentFn === 'function') {
+    registry[name] = withBackgroundWrap(componentFn)
+  }
+}

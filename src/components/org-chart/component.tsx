@@ -1,18 +1,41 @@
-import type { OrgChartProps } from './schema'
 import { tcss, tc } from '../../core/theme-colors'
 import { useAnnotationContext } from '../../docview/annotation-context'
 
+interface FlatNode { id: string; name: string; role?: string; parentId?: string | null }
+
+/**
+ * Flatten nested data (with children arrays) into flat nodes with parentId.
+ * json-render strips transform output, so we handle both formats in the component.
+ */
+function flattenNestedData(items: any[], parentId: string | null = null): FlatNode[] {
+  const result: FlatNode[] = []
+  for (const item of items) {
+    result.push({ id: item.id, name: item.name, role: item.title ?? item.role, parentId })
+    if (Array.isArray(item.children)) {
+      result.push(...flattenNestedData(item.children, item.id))
+    }
+  }
+  return result
+}
+
 /**
  * Organization chart with tree hierarchy.
- * 在 DocView 内时，每个节点支持独立批注。
+ * Accepts both flat `nodes[]` with parentId and nested `data[]` with children.
  */
-export function OrgChart({ props }: { props: OrgChartProps }) {
+export function OrgChart({ props }: { props: Record<string, any> }) {
   const ctx = useAnnotationContext()
-  const roots = props.nodes.filter(n => !n.parentId)
-  const getChildren = (id: string) => props.nodes.filter(n => n.parentId === id)
-  const nodeIndexMap = new Map(props.nodes.map((n, i) => [n.id, i]))
+  // Resolve nodes from either format
+  let nodes: FlatNode[] = []
+  if (Array.isArray(props.nodes) && props.nodes.length > 0) {
+    nodes = props.nodes
+  } else if (Array.isArray(props.data) && props.data.length > 0) {
+    nodes = flattenNestedData(props.data)
+  }
+  const roots = nodes.filter(n => !n.parentId)
+  const getChildren = (id: string) => nodes.filter(n => n.parentId === id)
+  const nodeIndexMap = new Map(nodes.map((n, i) => [n.id, i]))
 
-  const renderNode = (node: OrgChartProps['nodes'][number], depth: number = 0) => {
+  const renderNode = (node: FlatNode, depth: number = 0) => {
     const children = getChildren(node.id)
     const ni = nodeIndexMap.get(node.id) ?? 0
     const nodeAnnotationProps = ctx ? {

@@ -34,7 +34,7 @@ export function DataTable({ props }: { props: DataTableProps }) {
       {props.title && <div style={{fontSize:tcss('--rk-text-md'),fontWeight:tcss('--rk-weight-semibold'),marginBottom:8}}>{props.title}</div>}
       <div style={{maxHeight:400,overflowY:'auto'}}>
       <table style={{width:'100%',borderCollapse:'collapse',fontSize:props.compact?12:13}}>
-        <thead><tr>{cols.map(c=><th key={c.key} style={{textAlign:c.align??'left',padding:props.compact?'4px 8px':'8px 12px',borderBottom:`2px solid ${tcss('--rk-border-subtle')}`,color:tcss('--rk-text-secondary'),fontWeight:tcss('--rk-weight-semibold')}}>{c.label??c.key}</th>)}</tr></thead>
+        <thead><tr style={{background:tcss('--rk-bg-primary')}}>{cols.map(c=><th key={c.key} style={{textAlign:c.align??'left',padding:props.compact?'4px 8px':'8px 12px',borderBottom:`2px solid ${tcss('--rk-border-subtle')}`,color:tcss('--rk-text-secondary'),fontWeight:tcss('--rk-weight-semibold'),fontSize:12,textTransform:'uppercase',letterSpacing:0.5}}>{c.label??c.key}</th>)}</tr></thead>
         <tbody>{props.data.map((row,i)=><tr key={i} style={{background:props.striped&&i%2?tcss('--rk-bg-primary'):'transparent'}}>
           {cols.map((c, ci) => {
             const cellContent = String(row[c.key]??'')
@@ -47,7 +47,7 @@ export function DataTable({ props }: { props: DataTableProps }) {
               style: {
                 textAlign: c.align ?? 'left',
                 padding: props.compact ? '4px 8px' : '8px 12px',
-                borderBottom: `1px solid ${tcss('--rk-border')}`,
+                borderBottom: `1px solid ${tcss('--rk-border-subtle')}`,
                 color: tcss('--rk-text-primary'),
                 cursor: 'pointer' as const,
               } as React.CSSProperties,
@@ -55,7 +55,7 @@ export function DataTable({ props }: { props: DataTableProps }) {
               style: {
                 textAlign: c.align ?? 'left',
                 padding: props.compact ? '4px 8px' : '8px 12px',
-                borderBottom: `1px solid ${tcss('--rk-border')}`,
+                borderBottom: `1px solid ${tcss('--rk-border-subtle')}`,
                 color: tcss('--rk-text-primary'),
               } as React.CSSProperties,
             }

@@ -8,17 +8,48 @@ import { tcss, tc } from '../../core/theme-colors'
  * ECharts funnel chart does NOT use xAxis/yAxis.
  * Data format: [{ name: string, value: number }]
  */
-function buildFunnelFallback(props: FunnelChartProps): Record<string, unknown> {
-  // Support both x/y and category/value field naming conventions
+/**
+ * Resolve name/value field names from props.
+ * Supports: x, label, category, name for name field; y, value for value field.
+ * Auto-detects from data when no field specified.
+ */
+function resolveFunnelFields(props: FunnelChartProps) {
   const rawProps = props as Record<string, unknown>
-  const x = (props.x ?? rawProps.category ?? 'name') as string
-  const y = (props.y ?? rawProps.value ?? 'value') as string | string[]
-  const yField = Array.isArray(y) ? y[0] : y
   const data = Array.isArray(props.data) ? props.data : []
+  const first = (data[0] as Record<string, unknown>) ?? {}
+
+  // Name field: check x, label, category props; then auto-detect
+  let nameField = (props.x ?? rawProps.label ?? rawProps.category ?? rawProps.name) as string | undefined
+  if (!nameField) {
+    // Auto-detect: first string-valued key in data
+    for (const k of Object.keys(first)) {
+      if (typeof first[k] === 'string') { nameField = k; break }
+    }
+    nameField ??= 'name'
+  }
+  // Value field: check y, value props; then auto-detect
+  const yRaw = props.y ?? rawProps.value
+  let valueField: string
+  if (Array.isArray(yRaw)) {
+    valueField = yRaw[0]
+  } else if (typeof yRaw === 'string') {
+    valueField = yRaw
+  } else {
+    // Auto-detect: first numeric key
+    for (const k of Object.keys(first)) {
+      if (typeof first[k] === 'number') { valueField = k; break }
+    }
+    valueField ??= 'value'
+  }
+  return { data, nameField, valueField }
+}
+
+function buildFunnelFallback(props: FunnelChartProps): Record<string, unknown> {
+  const { data, nameField, valueField } = resolveFunnelFields(props)
 
   const funnelData = data.map(d => ({
-    name: String(d[x] ?? ''),
-    value: Number(d[yField]) || 0,
+    name: String(d[nameField] ?? ''),
+    value: Number(d[valueField]) || 0,
   }))
 
   const hasTitle = !!props.title
@@ -65,12 +96,8 @@ function buildFunnelFallback(props: FunnelChartProps): Record<string, unknown> {
  * Our schema supports x/y and category/value as aliases.
  */
 function toMvizProps(props: FunnelChartProps): Record<string, unknown> {
-  const rawProps = props as Record<string, unknown>
-  return {
-    ...props,
-    name: props.x ?? rawProps.category ?? rawProps.name ?? 'name',
-    value: Array.isArray(props.y) ? props.y[0] : (props.y ?? rawProps.value ?? 'value'),
-  }
+  const { nameField, valueField } = resolveFunnelFields(props)
+  return { ...props, name: nameField, value: valueField }
 }
 
 export const FunnelChart = createEChartsBridge('funnel', buildFunnelFallback, toMvizProps)

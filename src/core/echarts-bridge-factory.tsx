@@ -112,6 +112,17 @@ export function createEChartsBridge(
       }
     }, [option])
 
+    // 主题切换时用最新 tc() 色值重建 option 并刷新图表
+    useEffect(() => {
+      const handler = () => {
+        if (!chartRef.current) return
+        const newOption = buildOption(chartType, props, buildFallbackOption, mapToMviz)
+        chartRef.current.setOption(newOption, true)
+      }
+      document.addEventListener('vizual-theme-change', handler)
+      return () => document.removeEventListener('vizual-theme-change', handler)
+    }, [props])
+
     // 注册 ECharts 点击事件 — 数据点钻取批注
     useEffect(() => {
       const chart = chartRef.current

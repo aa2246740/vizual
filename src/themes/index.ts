@@ -183,6 +183,11 @@ ${cssRules}
   updateActiveColors(theme)
 
   currentThemeName = themeName
+
+  // 通知所有 ECharts 图表实例重建 option（主题色已变）
+  if (typeof document !== 'undefined') {
+    document.dispatchEvent(new CustomEvent('vizual-theme-change', { detail: { themeName } }))
+  }
   return true
 }
 
@@ -221,7 +226,7 @@ registerTheme('linear-light', invertThemeFn(linearTheme))
 registerTheme('vercel-light', invertThemeFn(vercelTheme))
 
 // 自动应用默认主题，确保 CSS 变量在首次渲染前就已注入 DOM
-if (typeof document !== 'undefined') {
+if (typeof document !== 'undefined' && document.body) {
   applyTheme(document.body as unknown as HTMLElement, currentThemeName)
 }
 

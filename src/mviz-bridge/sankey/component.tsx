@@ -2,20 +2,37 @@ import type { SankeyChartProps } from './schema'
 import { createEChartsBridge } from '../../core/echarts-bridge-factory'
 
 /**
- * Map schema props to mviz format.
- * mviz reads spec.data for the links array.
- * Our schema uses links for the connections.
+ * Extract links and nodes from props.
+ * Supports two formats:
+ *   1. Explicit `links` + `nodes` arrays
+ *   2. Flat `data` array with source/target/value objects (nodes inferred)
  */
-function toMvizProps(props: SankeyChartProps): Record<string, unknown> {
-  return {
-    ...props,
-    data: props.links ?? [],
+function extractSankeyData(props: SankeyChartProps) {
+  let links = Array.isArray(props.links) ? props.links : []
+  if (links.length === 0 && Array.isArray(props.data)) {
+    links = props.data.filter(
+      (d: Record<string, unknown>) => d.source && d.target
+    ) as SankeyChartProps['links']
   }
+  let nodes = Array.isArray(props.nodes) ? props.nodes : []
+  if (nodes.length === 0 && links.length > 0) {
+    const names = new Set<string>()
+    for (const l of links) {
+      if (l.source) names.add(String(l.source))
+      if (l.target) names.add(String(l.target))
+    }
+    nodes = [...names].map(n => ({ name: n }))
+  }
+  return { links, nodes }
+}
+
+function toMvizProps(props: SankeyChartProps): Record<string, unknown> {
+  const { links } = extractSankeyData(props)
+  return { ...props, data: links }
 }
 
 function buildSankeyFallback(props: SankeyChartProps): Record<string, unknown> {
-  const links = Array.isArray(props.links) ? props.links : []
-  const nodes = Array.isArray(props.nodes) ? props.nodes : []
+  const { links, nodes } = extractSankeyData(props)
   return {
     title: props.title ? { text: props.title } : undefined,
     tooltip: { trigger: 'item' },

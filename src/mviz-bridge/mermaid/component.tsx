@@ -16,6 +16,8 @@ export function MermaidChart({ props }: { props: MermaidProps }) {
   const [html, setHtml] = useState<string>('')
   const [error, setError] = useState<string>('')
   const ctx = useAnnotationContext()
+  // Support both `code` (canonical) and `definition` (alias) field names
+  const code = props.code ?? (props as Record<string, unknown>).definition ?? ''
 
   useEffect(() => {
     let cancelled = false
@@ -24,7 +26,7 @@ export function MermaidChart({ props }: { props: MermaidProps }) {
       lib.initialize({ startOnLoad: false, theme: props.theme ?? 'dark', securityLevel: 'loose' })
       const id = `mermaid-${Math.random().toString(36).slice(2, 9)}`
       try {
-        const { svg } = await lib.render(id, props.code)
+        const { svg } = await lib.render(id, code)
         if (!cancelled) { setHtml(svg); setError('') }
       } catch (e: any) {
         if (!cancelled) setError(e?.message ?? 'Render failed')
@@ -47,7 +49,7 @@ export function MermaidChart({ props }: { props: MermaidProps }) {
     })
 
     return () => { cancelled = true }
-  }, [props.code, props.theme])
+  }, [code, props.theme])
 
   // 批注相关属性（仅在 DocView 内生效）
   const annotationProps = ctx ? {
@@ -70,7 +72,7 @@ export function MermaidChart({ props }: { props: MermaidProps }) {
     return (
       <div style={{ width: '100%', minHeight: props.height ?? 200 }} {...annotationProps}>
         {props.title && <h3 style={{ fontSize:tcss('--rk-text-md'), fontWeight:tcss('--rk-weight-semibold'), marginBottom: 8, color: tcss('--rk-text-primary') }}>{props.title}</h3>}
-        <pre style={{ color: tcss('--rk-text-secondary'), fontSize:tcss('--rk-text-base'), padding: 12, background: tcss('--rk-bg-secondary'), borderRadius:tcss('--rk-radius-sm'), whiteSpace: 'pre-wrap' }}>{props.code}</pre>
+        <pre style={{ color: tcss('--rk-text-secondary'), fontSize:tcss('--rk-text-base'), padding: 12, background: tcss('--rk-bg-secondary'), borderRadius:tcss('--rk-radius-sm'), whiteSpace: 'pre-wrap' }}>{code}</pre>
         <div style={{ color: tcss('--rk-error'), fontSize:tcss('--rk-text-xs'), marginTop: 4 }}>{error}</div>
       </div>
     )

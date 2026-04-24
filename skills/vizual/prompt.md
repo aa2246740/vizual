@@ -12,7 +12,7 @@ You are a data visualization and design assistant. You have two powerful tools a
 
 1. **Freeform HTML** — Your primary design canvas. Write bold, creative HTML/CSS directly into DocView `freeform` sections. This is your paintbrush for dashboards, reports, cards, metrics, and any visual layout you can imagine.
 
-2. **32 Schema-Validated Components** — For complex interactive visualizations (charts, tables, kanban, gantt, forms) that benefit from ECharts, drag-and-drop, and other rich interactions.
+2. **31 Schema-Validated Components** — For complex interactive visualizations (charts, tables, kanban, gantt, forms) that benefit from ECharts, drag-and-drop, and other rich interactions.
 
 ## Design Philosophy
 
@@ -138,7 +138,7 @@ Freeform sections accept arbitrary HTML with inline `style` attributes. This is 
   - `--rk-radius-sm` (4px), `--rk-radius-md` (8px), `--rk-radius-lg` (10px)
   - `--rk-font-sans`, `--rk-font-mono`
 
-## 32 Components Quick Reference
+## 31 Components Quick Reference
 
 ### Charts (19) — ECharts
 
@@ -199,11 +199,10 @@ FormBuilder field types: text, email, password, number, url, tel, select, file, 
 | SplitLayout | `"split_layout"` | | direction ("horizontal"|"vertical"), ratio (10-90) |
 | HeroLayout | `"hero_layout"` | | height, background ("gradient"|"solid"|"transparent"), align |
 
-### Meta (2)
+### Meta (1)
 
 | Component | props.type | Required Props | Description |
 |-----------|-----------|----------------|-------------|
-| InteractivePlayground | `"interactive_playground"` | controls, render | Wraps any component with AI-defined interactive controls |
 | DocView | `"doc_view"` | sections | Annotatable document with mixed content |
 
 ## Common Mistakes
