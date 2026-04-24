@@ -1,0 +1,12 @@
+{
+  "eval_id": 1,
+  "eval_name": "combo-chart",
+  "prompt": "我用爬虫抓了最近7天的用户数据，帮我可视化一下。日期和注册人数：周一120，周二135，周三98，周四167，周五143，周六89，周日72。另外还想看活跃用户：周一80，周二92，周三70，周四130，周五110，周六60，周日45",
+  "assertions": [
+    {"name": "schema_valid", "description": "生成的 JSON spec 必须通过 Zod schema 验证"},
+    {"name": "correct_component", "description": "应该使用 ComboChart 或 LineChart/BarChart，不能用错误的组件"},
+    {"name": "data_format", "description": "data 必须是 object[] 数组格式，包含日期和数值字段"},
+    {"name": "type_fields_correct", "description": "element type 用 PascalCase，props type 用小写 literal"},
+    {"name": "has_children", "description": "每个 element 必须有 children 数组"}
+  ]
+}

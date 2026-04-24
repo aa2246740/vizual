@@ -1,0 +1,41 @@
+{
+  "skill_name": "vizual",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "我用爬虫抓了最近7天的用户数据，帮我可视化一下。日期和注册人数：周一120，周二135，周三98，周四167，周五143，周六89，周日72。另外还想看活跃用户：周一80，周二92，周三70，周四130，周五110，周六60，周日45",
+      "expected_output": "生成一个 ComboChart（bar=注册，line=活跃）或 LineChart/BarChart 组合。data 必须是 object[] 数组，x 是日期字段，y 是数据字段。JSON 必须通过 Zod schema 验证。",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "帮我做一个销售看板：顶部显示3个KPI（总收入¥2,450,000 涨了12%、订单数3,856 降了3%、客单价¥635 涨了8%），中间放一个按产品类目分的柱状图，底部放一个数据表格显示产品明细（名称、销量、收入、毛利率）",
+      "expected_output": "GridLayout 包含 KpiDashboard + BarChart + DataTable 的组合 spec。KpiDashboard 必须有 metrics 数组，BarChart 必须有 x/y/data，DataTable 必须有 columns/data。所有组件 type 字段必须正确（props 里的小写 literal 和 element 里的 PascalCase）。",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "帮我画一个雷达图，展示系统五个维度的评估结果。维度是：性能、安全、易用性、可扩展性、成本效益。当前评估值分别是 85, 70, 90, 65, 80",
+      "expected_output": "RadarChart 使用 indicators + series 模式。indicators 必须有 name 和 max。series 必须有 values 数组。type 必须是 radar。",
+      "files": []
+    },
+    {
+      "id": 4,
+      "prompt": "做一个销售漏斗分析：访问→注册→激活→付费→续费，各阶段人数是 10000, 4500, 2200, 800, 350",
+      "expected_output": "FunnelChart，使用正确的 props（type: 'funnel'，不能使用 series 字段）。数据格式要匹配 schema。不能使用错误的 props。",
+      "files": []
+    },
+    {
+      "id": 5,
+      "prompt": "帮我做一个项目管理的看板。待办列有3个任务，进行中有2个，已完成有4个。每个任务有标题、描述、标签、负责人。",
+      "expected_output": "Kanban 组件。必须有 columns 数组，每列有 id/title/cards。cards 必须有 id/title。不能使用 DataTable 或 freeform HTML 来模拟看板。",
+      "files": []
+    },
+    {
+      "id": 6,
+      "prompt": "用户反馈调查表单：姓名（必填）、邮箱（必填）、满意度评分（1-5星）、问题类型（下拉选择：Bug/建议/咨询/其他）、详细描述（多行文本）",
+      "expected_output": "FormBuilder，fields 数组中每个字段必须有 name 和 type。type 必须是 18 种之一（text/email/rating/select/textarea）。rating 类型不能使用 slider。select 必须有 options。",
+      "files": []
+    }
+  ]
+}

@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>Vizual 31 Component Full Eval</title>
+  <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+  <script src="https://unpkg.com/echarts@5.5.0/dist/echarts.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: var(--rk-font-sans, -apple-system, system-ui, sans-serif); background: var(--rk-bg-primary); color: var(--rk-text-primary); }
+    .header { padding: 16px 24px; border-bottom: 1px solid var(--rk-border-subtle); display: flex; align-items: center; gap: 12px; position: sticky; top: 0; background: var(--rk-bg-primary); z-index: 100; }
+    .header h1 { font-size: 18px; font-weight: 600; }
+    .badge { padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 500; }
+    .badge.pass { background: var(--rk-success-muted); color: var(--rk-success); }
+    .badge.fail { background: var(--rk-error-muted); color: var(--rk-error); }
+    .badge.warn { background: var(--rk-warning-muted); color: var(--rk-warning); }
+    #summary { padding: 8px 24px; font-size: 14px; color: var(--rk-text-secondary); border-bottom: 1px solid var(--rk-border-subtle); }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(550px, 1fr)); gap: 16px; padding: 24px; }
+    .eval-card { background: var(--rk-bg-secondary); border: 1px solid var(--rk-border-subtle); border-radius: var(--rk-radius-lg, 10px); overflow: hidden; }
+    .eval-card.full { grid-column: 1 / -1; }
+    .eval-header { padding: 10px 14px; border-bottom: 1px solid var(--rk-border-subtle); display: flex; align-items: center; justify-content: space-between; }
+    .eval-header h3 { font-size: 13px; font-weight: 500; }
+    .eval-header .status { font-size: 12px; font-weight: 600; }
+    .eval-body { padding: 14px; min-height: 280px; max-height: 500px; overflow: auto; position: relative; }
+    .eval-body.rendering { display: flex; align-items: center; justify-content: center; color: var(--rk-text-secondary); }
+    .eval-body.error { color: var(--rk-error); padding: 20px; font-size: 13px; white-space: pre-wrap; font-family: monospace; }
+    .chart-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(500px, 1fr)); }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>Vizual 31 Component Full Eval</h1>
+    <span class="badge pass" id="pass-badge">0 PASS</span>
+    <span class="badge fail" id="fail-badge">0 FAIL</span>
+    <span class="badge warn" id="pending-badge">31 PENDING</span>
+    <button id="theme-btn" style="margin-left:auto;padding:6px 14px;border-radius:var(--rk-radius-md,8px);border:1px solid var(--rk-border-subtle);background:var(--rk-bg-secondary);color:var(--rk-text-primary);cursor:pointer;font-size:13px;">切换 CMB 主题</button>
+  </div>
+  <div id="summary">Loading vizual.standalone.js...</div>
+  <div class="grid" id="grid"></div>
+
+  <script src="specs-31.js"></script>
+  <script>
+    let passCount = 0, failCount = 0, pendingCount = SPECS.length;
+    const results = {};
+
+    function updateCounts() {
+      document.getElementById('pass-badge').textContent = passCount + ' PASS';
+      document.getElementById('fail-badge').textContent = failCount + ' FAIL';
+      document.getElementById('pending-badge').textContent = pendingCount + ' PENDING';
+    }
+
+    fetch('/dist/vizual.standalone.js?_t=' + Date.now()).then(r => r.text()).then(code => {
+      (0, eval)(code);
+      document.getElementById('summary').textContent = 'Vizual loaded. Rendering 31 components...';
+      initPage();
+    }).catch(e => {
+      document.getElementById('summary').textContent = 'Failed to load: ' + e.message;
+      document.getElementById('grid').innerHTML = '<div style="color:#ef4444;padding:24px">Failed to load Vizual: ' + e.message + '</div>';
+    });
+
+    function initPage() {
+      const grid = document.getElementById('grid');
+
+      for (const { name, id, full, spec } of SPECS) {
+        const card = document.createElement('div');
+        card.className = 'eval-card' + (full ? ' full' : '');
+        card.innerHTML = `
+          <div class="eval-header">
+            <h3>${name}</h3>
+            <span class="status" id="status-${id}" style="color:var(--dim)">⏳ Rendering...</span>
+          </div>
+          <div class="eval-body" id="body-${id}"></div>
+        `;
+        grid.appendChild(card);
+
+        try {
+          const container = document.getElementById('body-' + id);
+          if (window.Vizual && window.Vizual.renderSpec) {
+            window.Vizual.renderSpec(spec, container);
+            document.getElementById('status-' + id).innerHTML = '✅ Rendered';
+            document.getElementById('status-' + id).style.color = 'var(--rk-success)';
+            passCount++;
+            pendingCount--;
+            results[id] = 'PASS';
+          } else {
+            container.className = 'eval-body error';
+            container.textContent = 'Vizual.renderSpec not found';
+            document.getElementById('status-' + id).innerHTML = '❌ No renderer';
+            document.getElementById('status-' + id).style.color = 'var(--rk-error)';
+            failCount++;
+            pendingCount--;
+            results[id] = 'FAIL: no renderSpec';
+          }
+        } catch (e) {
+          const body = document.getElementById('body-' + id);
+          body.className = 'eval-body error';
+          body.textContent = e.message + '\n\n' + (e.stack || '');
+          document.getElementById('status-' + id).innerHTML = '❌ Error';
+          document.getElementById('status-' + id).style.color = 'var(--rk-error)';
+          failCount++;
+          pendingCount--;
+          results[id] = 'FAIL: ' + e.message;
+        }
+        updateCounts();
+      }
+
+      // Print summary
+      const summaryEl = document.getElementById('summary');
+      summaryEl.textContent = `Done. ${passCount} passed, ${failCount} failed out of ${SPECS.length} components.`;
+      console.log('=== EVAL RESULTS ===');
+      console.log(JSON.stringify(results, null, 2));
+    }
+
+    // Theme switching — CMB tokens manually extracted via design-md-parser skill
+    let themeApplied = false;
+    const cmbTokens = {
+      colors: [
+        // Brand colors (dual naming: creative name + role name)
+        { name: "cmb-red", value: "#c8152d" },
+        { name: "accent", value: "#c8152d" },
+        { name: "primary", value: "#c8152d" },
+        { name: "cmb-black", value: "#000000" },
+        { name: "text", value: "#000000" },
+        { name: "foreground", value: "#000000" },
+        // Red gradient series → CMYK converted
+        { name: "deep-red", value: "#990000" },       // C0 M100 Y100 K40
+        { name: "light-red", value: "#fff5f5" },       // C0 M100 Y100 K5
+        { name: "lighter-red", value: "#ffcccc" },     // C0 M85 Y85 K0
+        // Gray scale → K values converted
+        { name: "dark-gray", value: "#4d4d4d" },       // K80
+        { name: "text-secondary", value: "#666666" },   // K60
+        { name: "light-gray", value: "#b3b3b3" },       // K30
+        { name: "hint", value: "#cccccc" },              // K20
+        { name: "white", value: "#ffffff" },              // K0
+        { name: "background", value: "#ffffff" },
+        { name: "surface", value: "#ffffff" },
+        { name: "card", value: "#f5f5f5" },
+        { name: "border", value: "#e0e0e0" },
+        { name: "border-subtle", value: "#f0f0f0" },
+        { name: "success", value: "#10b981" },
+        { name: "warning", value: "#f59e0b" },
+        { name: "error", value: "#c8152d" },
+      ],
+      typography: {
+        fontFamily: '"方正兰亭黑", "PingFang SC", "Microsoft YaHei", Arial, sans-serif',
+        sizes: { body: "14px", h3: "16px", h2: "20px", h1: "28px" },
+        weights: { regular: "400", medium: "500", bold: "700" },
+      },
+      spacing: { baseUnit: "8px" },
+      radius: { scale: { sm: "4px", md: "8px", lg: "12px" } },
+    };
+
+    document.getElementById('theme-btn').addEventListener('click', () => {
+      try {
+        if (!themeApplied) {
+          const theme = window.Vizual.mapDesignTokensToTheme(cmbTokens, 'cmb');
+          window.Vizual.registerTheme(theme.name, theme);
+          window.Vizual.setGlobalTheme(theme.name);
+          themeApplied = true;
+          document.getElementById('theme-btn').textContent = '恢复默认主题';
+        } else {
+          window.Vizual.setGlobalTheme('claude-dark');
+          themeApplied = false;
+          document.getElementById('theme-btn').textContent = '切换 CMB 主题';
+        }
+      } catch (e) {
+        alert('Theme error: ' + e.message);
+      }
+    });
+  </script>
+</body>
+</html>

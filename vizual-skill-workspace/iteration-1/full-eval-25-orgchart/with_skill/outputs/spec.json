@@ -1,0 +1,1 @@
+{"root":"c25","elements":{"c25":{"type":"OrgChart","props":{"type":"org_chart","title":"组织架构","data":[{"id":"ceo","name":"CEO","title":"首席执行官","children":[{"id":"cto","name":"CTO","title":"技术总监","children":[{"id":"fe","name":"前端组"},{"id":"be","name":"后端组"}]},{"id":"cfo","name":"CFO","title":"财务总监"},{"id":"coo","name":"COO","title":"运营总监"}]}]},"children":[]}}}

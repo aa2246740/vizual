@@ -1,0 +1,1 @@
+{"root":"c3","elements":{"c3":{"type":"AreaChart","props":{"type":"area","title":"网站流量趋势","x":"day","y":"visits","data":[{"day":"周一","visits":5000},{"day":"周二","visits":6200},{"day":"周三","visits":5800},{"day":"周四","visits":7100},{"day":"周五","visits":8000},{"day":"周六","visits":4500},{"day":"周日","visits":3200}]},"children":[]}}}

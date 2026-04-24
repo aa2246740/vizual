@@ -1,0 +1,86 @@
+{
+  "root": "root",
+  "elements": {
+    "root": {
+      "type": "GridLayout",
+      "props": { "columns": 1, "gap": 20 },
+      "children": ["kpi", "barChart", "dataTable"]
+    },
+    "kpi": {
+      "type": "KpiDashboard",
+      "props": {
+        "type": "kpi_dashboard",
+        "title": "销售核心指标",
+        "columns": 3,
+        "metrics": [
+          {
+            "label": "总收入",
+            "value": "2,450,000",
+            "prefix": "¥",
+            "trend": "up",
+            "trendValue": "+12%"
+          },
+          {
+            "label": "订单数",
+            "value": "3,856",
+            "trend": "down",
+            "trendValue": "-3%"
+          },
+          {
+            "label": "客单价",
+            "value": "635",
+            "prefix": "¥",
+            "trend": "up",
+            "trendValue": "+8%"
+          }
+        ]
+      },
+      "children": []
+    },
+    "barChart": {
+      "type": "BarChart",
+      "props": {
+        "type": "bar",
+        "title": "按产品类目收入分布",
+        "x": "category",
+        "y": "revenue",
+        "data": [
+          { "category": "电子产品", "revenue": 860000 },
+          { "category": "服装鞋帽", "revenue": 520000 },
+          { "category": "食品饮料", "revenue": 410000 },
+          { "category": "家居家装", "revenue": 340000 },
+          { "category": "美妆个护", "revenue": 320000 }
+        ],
+        "stacked": false,
+        "horizontal": false
+      },
+      "children": []
+    },
+    "dataTable": {
+      "type": "DataTable",
+      "props": {
+        "type": "table",
+        "title": "产品明细",
+        "columns": [
+          { "key": "name", "label": "名称" },
+          { "key": "sales", "label": "销量", "align": "right" },
+          { "key": "revenue", "label": "收入", "align": "right" },
+          { "key": "margin", "label": "毛利率", "align": "right" }
+        ],
+        "data": [
+          { "name": "智能手机", "sales": 1240, "revenue": "¥620,000", "margin": "32.5%" },
+          { "name": "笔记本电脑", "sales": 580, "revenue": "¥580,000", "margin": "28.1%" },
+          { "name": "运动鞋", "sales": 890, "revenue": "¥267,000", "margin": "45.3%" },
+          { "name": "连衣裙", "sales": 1560, "revenue": "¥234,000", "margin": "52.8%" },
+          { "name": "坚果零食", "sales": 3200, "revenue": "¥160,000", "margin": "38.6%" },
+          { "name": "咖啡饮品", "sales": 4100, "revenue": "¥205,000", "margin": "61.2%" },
+          { "name": "床上四件套", "sales": 420, "revenue": "¥189,000", "margin": "35.7%" },
+          { "name": "面部精华", "sales": 680, "revenue": "¥204,000", "margin": "68.4%" }
+        ],
+        "striped": true,
+        "compact": false
+      },
+      "children": []
+    }
+  }
+}

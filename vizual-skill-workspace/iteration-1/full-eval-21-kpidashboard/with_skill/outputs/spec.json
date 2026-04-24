@@ -1,0 +1,1 @@
+{"root":"c21","elements":{"c21":{"type":"KpiDashboard","props":{"type":"kpi_dashboard","title":"核心指标","columns":3,"metrics":[{"label":"DAU","value":"12.5万","trend":"up","trendValue":"+8%"},{"label":"转化率","value":"3.2%","trend":"down","trendValue":"-1.5%"},{"label":"ARPU","value":"¥45","trend":"up","trendValue":"+12%"}]},"children":[]}}}

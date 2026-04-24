@@ -1,0 +1,1 @@
+{"root":"c22","elements":{"c22":{"type":"Timeline","props":{"type":"timeline","title":"产品里程碑","events":[{"date":"2024-01-15","title":"v1.0 发布","description":"首个正式版本上线"},{"date":"2024-06-01","title":"v2.0 发布","description":"新增图表组件和主题系统"},{"date":"2024-12-01","title":"v3.0 规划中","description":"AI集成和模板编辑器"}]},"children":[]}}}

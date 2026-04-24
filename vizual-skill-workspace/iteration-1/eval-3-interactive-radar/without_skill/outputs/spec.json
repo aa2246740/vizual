@@ -1,0 +1,46 @@
+{
+  "root": "playground",
+  "elements": {
+    "playground": {
+      "type": "InteractivePlayground",
+      "props": {
+        "title": "交互式雷达图评估",
+        "description": "拖动滑块调整各维度的分值，雷达图将实时更新"
+      },
+      "children": ["radarChart"]
+    },
+    "radarChart": {
+      "type": "RadarChart",
+      "props": {
+        "data": [
+          { "dimension": "性能", "value": 70 },
+          { "dimension": "安全", "value": 70 },
+          { "dimension": "易用性", "value": 70 },
+          { "dimension": "可扩展性", "value": 70 },
+          { "dimension": "成本效益", "value": 70 }
+        ],
+        "dataKey": "value",
+        "nameKey": "dimension",
+        "width": 500,
+        "height": 500,
+        "maxValue": 100,
+        "fillColor": "#4F8EF7",
+        "fillOpacity": 0.35,
+        "strokeColor": "#4F8EF7",
+        "strokeWidth": 2,
+        "showGrid": true,
+        "showLabels": true,
+        "showDots": true,
+        "dotSize": 5,
+        "sliders": [
+          { "label": "性能", "targetProp": "data", "targetIndex": 0, "targetKey": "value", "min": 0, "max": 100, "step": 1, "defaultValue": 70 },
+          { "label": "安全", "targetProp": "data", "targetIndex": 1, "targetKey": "value", "min": 0, "max": 100, "step": 1, "defaultValue": 70 },
+          { "label": "易用性", "targetProp": "data", "targetIndex": 2, "targetKey": "value", "min": 0, "max": 100, "step": 1, "defaultValue": 70 },
+          { "label": "可扩展性", "targetProp": "data", "targetIndex": 3, "targetKey": "value", "min": 0, "max": 100, "step": 1, "defaultValue": 70 },
+          { "label": "成本效益", "targetProp": "data", "targetIndex": 4, "targetKey": "value", "min": 0, "max": 100, "step": 1, "defaultValue": 70 }
+        ]
+      },
+      "children": []
+    }
+  }
+}

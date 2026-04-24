@@ -1,0 +1,1 @@
+{"root":"c1","elements":{"c1":{"type":"BarChart","props":{"type":"bar","title":"Q1-Q4销售额","x":"quarter","y":"sales","data":[{"quarter":"Q1","sales":120},{"quarter":"Q2","sales":95},{"quarter":"Q3","sales":140},{"quarter":"Q4","sales":180}]},"children":[]}}}

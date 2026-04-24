@@ -1,0 +1,1 @@
+{"root":"c17","elements":{"c17":{"type":"DumbbellChart","props":{"type":"dumbbell","title":"部门满意度对比","x":"department","y":["s2023","s2024"],"data":[{"department":"市场","s2023":70,"s2024":80},{"department":"研发","s2023":72,"s2024":78},{"department":"运营","s2023":68,"s2024":75},{"department":"销售","s2023":75,"s2024":82},{"department":"客服","s2023":65,"s2024":72}]},"children":[]}}}

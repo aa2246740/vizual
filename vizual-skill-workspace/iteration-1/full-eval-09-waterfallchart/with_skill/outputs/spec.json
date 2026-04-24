@@ -1,0 +1,1 @@
+{"root":"c9","elements":{"c9":{"type":"WaterfallChart","props":{"type":"waterfall","title":"资金瀑布图","x":"item","y":"amount","data":[{"item":"年初","amount":100},{"item":"收入","amount":50},{"item":"成本","amount":-30},{"item":"税费","amount":-8},{"item":"利润","amount":12}]},"children":[]}}}

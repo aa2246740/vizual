@@ -1,0 +1,32 @@
+{
+  "root": "chart1",
+  "elements": {
+    "chart1": {
+      "type": "ComboChart",
+      "props": {
+        "title": "最近7天用户数据",
+        "width": 700,
+        "height": 420,
+        "data": [
+          { "label": "周一", "注册人数": 120, "活跃用户": 80 },
+          { "label": "周二", "注册人数": 135, "活跃用户": 92 },
+          { "label": "周三", "注册人数": 98, "活跃用户": 70 },
+          { "label": "周四", "注册人数": 167, "活跃用户": 130 },
+          { "label": "周五", "注册人数": 143, "活跃用户": 110 },
+          { "label": "周六", "注册人数": 89, "活跃用户": 60 },
+          { "label": "周日", "注册人数": 72, "活跃用户": 45 }
+        ],
+        "barSeries": "注册人数",
+        "lineSeries": "活跃用户",
+        "barColor": "#5B8FF9",
+        "lineColor": "#5AD8A6",
+        "xAxisLabel": "日期",
+        "yAxisLabel": "人数",
+        "showLegend": true,
+        "showGrid": true,
+        "showDataLabels": true
+      },
+      "children": []
+    }
+  }
+}

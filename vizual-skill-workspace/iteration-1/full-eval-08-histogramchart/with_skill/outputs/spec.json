@@ -1,0 +1,1 @@
+{"root":"c8","elements":{"c8":{"type":"HistogramChart","props":{"type":"histogram","title":"考试成绩分布","data":[{"range":"0-60","count":5},{"range":"60-70","count":15},{"range":"70-80","count":35},{"range":"80-90","count":30},{"range":"90-100","count":15}]},"children":[]}}}

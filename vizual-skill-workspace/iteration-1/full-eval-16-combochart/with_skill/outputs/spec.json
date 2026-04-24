@@ -1,0 +1,1 @@
+{"root":"c16","elements":{"c16":{"type":"ComboChart","props":{"type":"combo","title":"收入与增长率","x":"quarter","y":["revenue","growth"],"data":[{"quarter":"Q1","revenue":100,"growth":5},{"quarter":"Q2","revenue":120,"growth":20},{"quarter":"Q3","revenue":95,"growth":-8},{"quarter":"Q4","revenue":140,"growth":15}]},"children":[]}}}

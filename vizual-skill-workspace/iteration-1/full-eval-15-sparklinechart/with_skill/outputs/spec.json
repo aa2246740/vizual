@@ -1,0 +1,1 @@
+{"root":"c15","elements":{"c15":{"type":"SparklineChart","props":{"type":"sparkline","title":"30天股价趋势","data":[{"day":1,"price":100},{"day":5,"price":105},{"day":10,"price":98},{"day":15,"price":112},{"day":20,"price":108},{"day":25,"price":115},{"day":30,"price":120}]},"children":[]}}}

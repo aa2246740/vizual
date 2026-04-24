@@ -1,0 +1,316 @@
+[
+  {
+    "evalName": "eval-1-combo-chart",
+    "mode": "with_skill",
+    "elements": [
+      {
+        "id": "chart1",
+        "type": "ComboChart",
+        "passed": true
+      }
+    ],
+    "overallPass": true,
+    "structuralPass": true
+  },
+  {
+    "evalName": "eval-1-combo-chart",
+    "mode": "without_skill",
+    "elements": [
+      {
+        "id": "chart1",
+        "type": "ComboChart",
+        "passed": false,
+        "error": "type: Invalid literal value, expected \"combo\"; y: Invalid input"
+      }
+    ],
+    "overallPass": false,
+    "structuralPass": true
+  },
+  {
+    "evalName": "eval-2-sales-dashboard",
+    "mode": "with_skill",
+    "elements": [
+      {
+        "id": "root",
+        "type": "GridLayout",
+        "passed": true
+      },
+      {
+        "id": "kpi",
+        "type": "KpiDashboard",
+        "passed": true
+      },
+      {
+        "id": "barChart",
+        "type": "BarChart",
+        "passed": true
+      },
+      {
+        "id": "dataTable",
+        "type": "DataTable",
+        "passed": true
+      }
+    ],
+    "overallPass": true,
+    "structuralPass": true
+  },
+  {
+    "evalName": "eval-2-sales-dashboard",
+    "mode": "without_skill",
+    "elements": [
+      {
+        "id": "dashboard",
+        "type": "GridLayout",
+        "passed": true
+      },
+      {
+        "id": "kpi_section",
+        "type": "KpiDashboard",
+        "passed": false,
+        "error": "type: Invalid literal value, expected \"kpi_dashboard\"; metrics: Required"
+      },
+      {
+        "id": "bar_chart",
+        "type": "BarChart",
+        "passed": false,
+        "error": "type: Invalid literal value, expected \"bar\"; x: Required; y: Invalid input"
+      },
+      {
+        "id": "data_table",
+        "type": "DataTable",
+        "passed": false,
+        "error": "type: Invalid literal value, expected \"table\""
+      }
+    ],
+    "overallPass": false,
+    "structuralPass": true
+  },
+  {
+    "evalName": "eval-3-interactive-radar",
+    "mode": "with_skill",
+    "elements": [
+      {
+        "id": "playground-1",
+        "type": "InteractivePlayground",
+        "passed": true
+      }
+    ],
+    "overallPass": true,
+    "structuralPass": true
+  },
+  {
+    "evalName": "eval-3-interactive-radar",
+    "mode": "without_skill",
+    "elements": [
+      {
+        "id": "playground",
+        "type": "InteractivePlayground",
+        "passed": false,
+        "error": "type: Invalid literal value, expected \"interactive_playground\"; component: Required"
+      },
+      {
+        "id": "radarChart",
+        "type": "RadarChart",
+        "passed": false,
+        "error": "type: Invalid literal value, expected \"radar\""
+      }
+    ],
+    "overallPass": false,
+    "structuralPass": true
+  },
+  {
+    "evalName": "eval-4-sales-funnel",
+    "mode": "with_skill",
+    "elements": [
+      {
+        "id": "sales-funnel",
+        "type": "FunnelChart",
+        "passed": true
+      }
+    ],
+    "overallPass": true,
+    "structuralPass": true
+  },
+  {
+    "evalName": "eval-4-sales-funnel",
+    "mode": "without_skill",
+    "elements": [
+      {
+        "id": "funnel",
+        "type": "FunnelChart",
+        "passed": false,
+        "error": "type: Invalid literal value, expected \"funnel\""
+      }
+    ],
+    "overallPass": false,
+    "structuralPass": true
+  },
+  {
+    "evalName": "eval-5-project-kanban",
+    "mode": "with_skill",
+    "elements": [
+      {
+        "id": "project-kanban",
+        "type": "Kanban",
+        "passed": true
+      }
+    ],
+    "overallPass": true,
+    "structuralPass": true
+  },
+  {
+    "evalName": "eval-5-project-kanban",
+    "mode": "without_skill",
+    "elements": [
+      {
+        "id": "kanban-board",
+        "type": "KanbanBoard",
+        "passed": false,
+        "error": "type: Invalid literal value, expected \"kanban\"; columns: Required"
+      },
+      {
+        "id": "header",
+        "type": "Flex",
+        "passed": false,
+        "error": "No schema for element type \"Flex\""
+      },
+      {
+        "id": "title-text",
+        "type": "Text",
+        "passed": false,
+        "error": "No schema for element type \"Text\""
+      },
+      {
+        "id": "header-stats",
+        "type": "Flex",
+        "passed": false,
+        "error": "No schema for element type \"Flex\""
+      },
+      {
+        "id": "stat-todo",
+        "type": "Badge",
+        "passed": false,
+        "error": "No schema for element type \"Badge\""
+      },
+      {
+        "id": "stat-progress",
+        "type": "Badge",
+        "passed": false,
+        "error": "No schema for element type \"Badge\""
+      },
+      {
+        "id": "stat-done",
+        "type": "Badge",
+        "passed": false,
+        "error": "No schema for element type \"Badge\""
+      },
+      {
+        "id": "columns-container",
+        "type": "Flex",
+        "passed": false,
+        "error": "No schema for element type \"Flex\""
+      },
+      {
+        "id": "col-todo",
+        "type": "KanbanColumn",
+        "passed": false,
+        "error": "No schema for element type \"KanbanColumn\""
+      },
+      {
+        "id": "todo-1",
+        "type": "KanbanCard",
+        "passed": false,
+        "error": "No schema for element type \"KanbanCard\""
+      },
+      {
+        "id": "todo-2",
+        "type": "KanbanCard",
+        "passed": false,
+        "error": "No schema for element type \"KanbanCard\""
+      },
+      {
+        "id": "todo-3",
+        "type": "KanbanCard",
+        "passed": false,
+        "error": "No schema for element type \"KanbanCard\""
+      },
+      {
+        "id": "col-progress",
+        "type": "KanbanColumn",
+        "passed": false,
+        "error": "No schema for element type \"KanbanColumn\""
+      },
+      {
+        "id": "progress-1",
+        "type": "KanbanCard",
+        "passed": false,
+        "error": "No schema for element type \"KanbanCard\""
+      },
+      {
+        "id": "progress-2",
+        "type": "KanbanCard",
+        "passed": false,
+        "error": "No schema for element type \"KanbanCard\""
+      },
+      {
+        "id": "col-done",
+        "type": "KanbanColumn",
+        "passed": false,
+        "error": "No schema for element type \"KanbanColumn\""
+      },
+      {
+        "id": "done-1",
+        "type": "KanbanCard",
+        "passed": false,
+        "error": "No schema for element type \"KanbanCard\""
+      },
+      {
+        "id": "done-2",
+        "type": "KanbanCard",
+        "passed": false,
+        "error": "No schema for element type \"KanbanCard\""
+      },
+      {
+        "id": "done-3",
+        "type": "KanbanCard",
+        "passed": false,
+        "error": "No schema for element type \"KanbanCard\""
+      },
+      {
+        "id": "done-4",
+        "type": "KanbanCard",
+        "passed": false,
+        "error": "No schema for element type \"KanbanCard\""
+      }
+    ],
+    "overallPass": false,
+    "structuralPass": true
+  },
+  {
+    "evalName": "eval-6-feedback-form",
+    "mode": "with_skill",
+    "elements": [
+      {
+        "id": "feedback-form",
+        "type": "FormBuilder",
+        "passed": true
+      }
+    ],
+    "overallPass": true,
+    "structuralPass": true
+  },
+  {
+    "evalName": "eval-6-feedback-form",
+    "mode": "without_skill",
+    "elements": [
+      {
+        "id": "feedback-form",
+        "type": "FormBuilder",
+        "passed": false,
+        "error": "type: Invalid literal value, expected \"form_builder\"; fields.0.name: Required; fields.0.type: Invalid enum value. Expected 'text' | 'email' | 'password' | 'number' | 'url' | 'tel' | 'select' | 'file' | 'textarea' | 'radio' | 'checkbox' | 'switch' | 'slider' | 'color' | 'date' | 'datetime' | 'time' | 'rating', received 'TextInput'; fields.0.validation: Expected array, received object; fields.1.name: Required"
+      }
+    ],
+    "overallPass": false,
+    "structuralPass": true
+  }
+]

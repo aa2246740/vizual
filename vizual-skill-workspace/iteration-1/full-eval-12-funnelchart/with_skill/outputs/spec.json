@@ -1,0 +1,1 @@
+{"root":"c12","elements":{"c12":{"type":"FunnelChart","props":{"type":"funnel","title":"转化漏斗","data":[{"name":"曝光","value":10000},{"name":"点击","value":5000},{"name":"注册","value":2000},{"name":"付费","value":500},{"name":"复购","value":150}]},"children":[]}}}

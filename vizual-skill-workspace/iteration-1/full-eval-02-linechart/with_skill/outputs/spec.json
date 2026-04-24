@@ -1,0 +1,1 @@
+{"root":"c2","elements":{"c2":{"type":"LineChart","props":{"type":"line","title":"1-6月用户增长","x":"month","y":"users","data":[{"month":"1月","users":1000},{"month":"2月","users":1200},{"month":"3月","users":980},{"month":"4月","users":1500},{"month":"5月","users":1800},{"month":"6月","users":2200}]},"children":[]}}}

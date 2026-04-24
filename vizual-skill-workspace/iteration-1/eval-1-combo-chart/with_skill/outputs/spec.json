@@ -1,0 +1,24 @@
+{
+  "root": "chart1",
+  "elements": {
+    "chart1": {
+      "type": "ComboChart",
+      "props": {
+        "type": "combo",
+        "title": "最近7天用户数据",
+        "x": "date",
+        "y": ["registered", "active"],
+        "data": [
+          { "date": "周一", "registered": 120, "active": 80 },
+          { "date": "周二", "registered": 135, "active": 92 },
+          { "date": "周三", "registered": 98, "active": 70 },
+          { "date": "周四", "registered": 167, "active": 130 },
+          { "date": "周五", "registered": 143, "active": 110 },
+          { "date": "周六", "registered": 89, "active": 60 },
+          { "date": "周日", "registered": 72, "active": 45 }
+        ]
+      },
+      "children": []
+    }
+  }
+}

@@ -1,0 +1,1 @@
+{"root":"c19","elements":{"c19":{"type":"MermaidDiagram","props":{"type":"mermaid","title":"订单流程","definition":"graph LR\n    A[用户下单] --> B[支付]\n    B --> C[发货]\n    C --> D[收货]\n    D --> E[评价]"},"children":[]}}}

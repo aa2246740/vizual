@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>Vizual Eval Report</title>
+<style>body{font-family:system-ui;max-width:900px;margin:0 auto;padding:24px;background:#0f1117;color:#e2e8f0;}
+table{border-collapse:collapse;width:100%;margin:12px 0;}th,td{border:1px solid #2d3148;padding:8px 12px;text-align:left;}
+th{background:#1e293b;}code{background:#252836;padding:2px 6px;border-radius:4px;}
+h2,h3{color:#667eea;}hr{border:none;border-top:1px solid #2d3148;}</style></head><body>
+<h1>Vizual Skill Eval — Iteration 1 Report</h1>
+<h2>Summary</h2>
+<tr><td>Metric</td><td>with_skill</td><td>without_skill</td><td>Delta</td></tr>
+<tr><td>**Schema Pass**</td><td>6/6</td><td>0/6</td><td>+6</td></tr>
+<tr><td>**Structural Pass**</td><td>6/6</td><td>6/6</td><td>+0</td></tr>
+<h2>Per-Eval Results</h2>
+<h3>Eval 1: 1 Combo Chart</h3>
+<p>**Prompt:** 我用爬虫抓了最近7天的用户数据，帮我可视化一下。日期和注册人数：周一120，周二135，周三98，周四167，周五143，周六89，周日72。另外还想看活跃用户...</p>
+<tr><td>Aspect</td><td>with_skill</td><td>without_skill</td></tr>
+<tr><td>**Overall**</td><td>✅ PASS</td><td>❌ FAIL</td></tr>
+<tr><td>Structure</td><td>✅</td><td>✅</td></tr>
+<tr><td>Elements</td><td>1/1 pass</td><td>0/1 pass</td></tr>
+<p><strong>without_skill errors:</strong></p>
+<li>`chart1` (ComboChart): type: Invalid literal value, expected "combo"; y: Invalid input</li>
+<hr>
+<h3>Eval 2: 2 Sales Dashboard</h3>
+<p>**Prompt:** 帮我做一个销售看板：顶部显示3个KPI（总收入¥2,450,000 涨了12%、订单数3,856 降了3%、客单价¥635 涨了8%），中间放一个按产品类目分的...</p>
+<tr><td>Aspect</td><td>with_skill</td><td>without_skill</td></tr>
+<tr><td>**Overall**</td><td>✅ PASS</td><td>❌ FAIL</td></tr>
+<tr><td>Structure</td><td>✅</td><td>✅</td></tr>
+<tr><td>Elements</td><td>4/4 pass</td><td>1/4 pass</td></tr>
+<p><strong>without_skill errors:</strong></p>
+<li>`kpi_section` (KpiDashboard): type: Invalid literal value, expected "kpi_dashboard"; metrics: Required</li>
+<li>`bar_chart` (BarChart): type: Invalid literal value, expected "bar"; x: Required; y: Invalid input</li>
+<li>`data_table` (DataTable): type: Invalid literal value, expected "table"</li>
+<hr>
+<h3>Eval 3: 3 Interactive Radar</h3>
+<p>**Prompt:** 我需要一个交互式的雷达图，让用户可以调整各个维度的值。维度是：性能、安全、易用性、可扩展性、成本效益。默认值都是 70...</p>
+<tr><td>Aspect</td><td>with_skill</td><td>without_skill</td></tr>
+<tr><td>**Overall**</td><td>✅ PASS</td><td>❌ FAIL</td></tr>
+<tr><td>Structure</td><td>✅</td><td>✅</td></tr>
+<tr><td>Elements</td><td>1/1 pass</td><td>0/2 pass</td></tr>
+<p><strong>without_skill errors:</strong></p>
+<li>`playground` (InteractivePlayground): type: Invalid literal value, expected "interactive_playground"; component: Required</li>
+<li>`radarChart` (RadarChart): type: Invalid literal value, expected "radar"</li>
+<hr>
+<h3>Eval 4: 4 Sales Funnel</h3>
+<p>**Prompt:** 做一个销售漏斗分析：访问→注册→激活→付费→续费，各阶段人数是 10000, 4500, 2200, 800, 350...</p>
+<tr><td>Aspect</td><td>with_skill</td><td>without_skill</td></tr>
+<tr><td>**Overall**</td><td>✅ PASS</td><td>❌ FAIL</td></tr>
+<tr><td>Structure</td><td>✅</td><td>✅</td></tr>
+<tr><td>Elements</td><td>1/1 pass</td><td>0/1 pass</td></tr>
+<p><strong>without_skill errors:</strong></p>
+<li>`funnel` (FunnelChart): type: Invalid literal value, expected "funnel"</li>
+<hr>
+<h3>Eval 5: 5 Project Kanban</h3>
+<p>**Prompt:** 帮我做一个项目管理的看板。待办列有3个任务，进行中有2个，已完成有4个。每个任务有标题、描述、标签、负责人。...</p>
+<tr><td>Aspect</td><td>with_skill</td><td>without_skill</td></tr>
+<tr><td>**Overall**</td><td>✅ PASS</td><td>❌ FAIL</td></tr>
+<tr><td>Structure</td><td>✅</td><td>✅</td></tr>
+<tr><td>Elements</td><td>1/1 pass</td><td>0/20 pass</td></tr>
+<p><strong>without_skill errors:</strong></p>
+<li>`kanban-board` (KanbanBoard): type: Invalid literal value, expected "kanban"; columns: Required</li>
+<li>`header` (Flex): No schema for element type "Flex"</li>
+<li>`title-text` (Text): No schema for element type "Text"</li>
+<li>`header-stats` (Flex): No schema for element type "Flex"</li>
+<li>`stat-todo` (Badge): No schema for element type "Badge"</li>
+<li>... and 15 more errors</li>
+<hr>
+<h3>Eval 6: 6 Feedback Form</h3>
+<p>**Prompt:** 用户反馈调查表单：姓名（必填）、邮箱（必填）、满意度评分（1-5星）、问题类型（下拉选择：Bug/建议/咨询/其他）、详细描述（多行文本）...</p>
+<tr><td>Aspect</td><td>with_skill</td><td>without_skill</td></tr>
+<tr><td>**Overall**</td><td>✅ PASS</td><td>❌ FAIL</td></tr>
+<tr><td>Structure</td><td>✅</td><td>✅</td></tr>
+<tr><td>Elements</td><td>1/1 pass</td><td>0/1 pass</td></tr>
+<p><strong>without_skill errors:</strong></p>
+<li>`feedback-form` (FormBuilder): type: Invalid literal value, expected "form_builder"; fields.0.name: Required; fields.0.type: Invalid enum value. Expected 'text' | 'email' | 'password' | 'number' | 'url' | 'tel' | 'select' | 'file' | 'textarea' | 'radio' | 'checkbox' | 'switch' | 'slider' | 'color' | 'date' | 'datetime' | 'time' | 'rating', received 'TextInput'; fields.0.validation: Expected array, received object; fields.1.name: Required</li>
+<hr>
+<h2>Common Failure Patterns (without_skill)</h2>
+<p>1. **Wrong `type` literal**: Using PascalCase or wrong values in props.type (e.g., `"ComboChart"` instead of `"combo"`)</p>
+<p>2. **Wrong prop names**: Using non-existent props like `barSeries`/`lineSeries` instead of `y` array</p>
+<p>3. **Wrong element types**: Using non-existent elements like `KanbanColumn`, `KanbanCard`, `Flex`, `Badge`, `Text`</p>
+<p>4. **Wrong field types**: Using `TextInput` instead of `text`, `TextArea` instead of `textarea`</p>
+<p>5. **Missing required fields**: Forgetting `name` on form fields, `columns` on Kanban, `metrics` on KpiDashboard</p>
+<p>*Generated by generate_review.py*</p>
+</body></html>

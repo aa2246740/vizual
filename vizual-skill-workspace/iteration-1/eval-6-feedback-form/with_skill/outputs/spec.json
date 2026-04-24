@@ -1,0 +1,54 @@
+{
+  "root": "feedback-form",
+  "elements": {
+    "feedback-form": {
+      "type": "FormBuilder",
+      "props": {
+        "type": "form_builder",
+        "title": "用户反馈调查",
+        "submitLabel": "提交反馈",
+        "columns": 1,
+        "fields": [
+          {
+            "name": "name",
+            "label": "姓名",
+            "type": "text",
+            "required": true
+          },
+          {
+            "name": "email",
+            "label": "邮箱",
+            "type": "email",
+            "required": true
+          },
+          {
+            "name": "satisfaction",
+            "label": "满意度评分",
+            "type": "rating",
+            "max": 5,
+            "required": true
+          },
+          {
+            "name": "issueType",
+            "label": "问题类型",
+            "type": "select",
+            "required": true,
+            "options": [
+              { "label": "Bug", "value": "bug" },
+              { "label": "建议", "value": "suggestion" },
+              { "label": "咨询", "value": "inquiry" },
+              { "label": "其他", "value": "other" }
+            ]
+          },
+          {
+            "name": "description",
+            "label": "详细描述",
+            "type": "textarea",
+            "rows": 4
+          }
+        ]
+      },
+      "children": []
+    }
+  }
+}

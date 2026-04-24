@@ -1,0 +1,1 @@
+{"root":"c7","elements":{"c7":{"type":"BoxplotChart","props":{"type":"boxplot","title":"三个班级数学成绩分布","data":[{"class":"A班","min":60,"q1":70,"median":80,"q3":85,"max":95},{"class":"B班","min":55,"q1":65,"median":75,"q3":80,"max":90},{"class":"C班","min":50,"q1":60,"median":70,"q3":78,"max":88}]},"children":[]}}}

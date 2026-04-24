@@ -1,0 +1,84 @@
+{
+  "root": "playground-1",
+  "elements": {
+    "playground-1": {
+      "type": "InteractivePlayground",
+      "props": {
+        "type": "interactive_playground",
+        "title": "雷达图参数调节",
+        "component": {
+          "type": "RadarChart",
+          "props": {
+            "type": "radar",
+            "title": "系统评估雷达",
+            "indicators": [
+              { "name": "性能", "max": 100 },
+              { "name": "安全", "max": 100 },
+              { "name": "易用性", "max": 100 },
+              { "name": "可扩展性", "max": 100 },
+              { "name": "成本效益", "max": 100 }
+            ],
+            "series": [
+              { "name": "当前评估", "values": [70, 70, 70, 70, 70] }
+            ]
+          },
+          "children": []
+        },
+        "controls": [
+          {
+            "type": "slider",
+            "name": "dim-performance",
+            "label": "性能",
+            "defaultValue": 70,
+            "min": 0,
+            "max": 100,
+            "step": 1,
+            "targetProp": "series[0].values[0]"
+          },
+          {
+            "type": "slider",
+            "name": "dim-security",
+            "label": "安全",
+            "defaultValue": 70,
+            "min": 0,
+            "max": 100,
+            "step": 1,
+            "targetProp": "series[0].values[1]"
+          },
+          {
+            "type": "slider",
+            "name": "dim-usability",
+            "label": "易用性",
+            "defaultValue": 70,
+            "min": 0,
+            "max": 100,
+            "step": 1,
+            "targetProp": "series[0].values[2]"
+          },
+          {
+            "type": "slider",
+            "name": "dim-scalability",
+            "label": "可扩展性",
+            "defaultValue": 70,
+            "min": 0,
+            "max": 100,
+            "step": 1,
+            "targetProp": "series[0].values[3]"
+          },
+          {
+            "type": "slider",
+            "name": "dim-cost",
+            "label": "成本效益",
+            "defaultValue": 70,
+            "min": 0,
+            "max": 100,
+            "step": 1,
+            "targetProp": "series[0].values[4]"
+          }
+        ],
+        "layout": "side-by-side"
+      },
+      "children": []
+    }
+  }
+}
