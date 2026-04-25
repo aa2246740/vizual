@@ -6,7 +6,7 @@ export const CalendarChartSchema = z.object({
   x: z.string().optional(),
   y: z.union([z.string(), z.array(z.string())]).optional(),
   data: z.array(z.record(z.unknown())),
-  dateField: z.string().optional(), valueField: z.string().optional(), range: z.string().optional(),
+  dateField: z.string().optional(), valueField: z.string().optional(), date: z.string().optional(), value: z.string().optional(), range: z.string().optional(),
   theme: z.enum(['light', 'dark']).optional(),
   height: z.number().optional(),
 })

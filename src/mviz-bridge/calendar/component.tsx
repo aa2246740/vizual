@@ -17,6 +17,7 @@ function toMvizProps(props: CalendarChartProps): Record<string, unknown> {
   }))
   return {
     ...props,
+    theme: props.theme ?? 'dark',
     data: mappedData,
   }
 }

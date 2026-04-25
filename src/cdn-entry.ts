@@ -3,15 +3,16 @@
  *
  * Standalone build entry. When loaded via <script> tag, exposes window.Vizual
  */
-import { registry } from './registry'
+import { registry, handlers as createVizualHandlers } from './registry'
 import * as echarts from 'echarts'
 import * as React from 'react'
 import * as ReactDOM from 'react-dom'
 import * as ReactDOMClient from 'react-dom/client'
-import { Renderer, StateProvider, JSONUIProvider } from '@json-render/react'
+import { Renderer, JSONUIProvider, createStateStore } from '@json-render/react'
+import type { StateModel } from '@json-render/react'
 
 // Theme system
-import { loadDesignMd, setGlobalTheme, applyTheme, registerTheme, getTheme, getThemeNames, toggleMode, getCurrentThemeName, mapDesignTokensToTheme } from './themes'
+import { loadDesignMd, setGlobalTheme, applyTheme, registerTheme, getTheme, getThemeNames, toggleMode, getCurrentThemeName, mapDesignTokensToTheme, invertTheme } from './themes'
 import { tc, tcss, chartColors } from './core/theme-colors'
 
 // Export API
@@ -50,11 +51,38 @@ import { SplitLayout, SplitLayoutSchema } from './components/split-layout'
 import { HeroLayout, HeroLayoutSchema } from './components/hero-layout'
 import { DocView } from './docview/container'
 
+type RenderSpecOptions = {
+  initialState?: Record<string, unknown>
+  handlers?: Record<string, (params: Record<string, unknown>) => Promise<unknown> | unknown>
+}
+
+function createStoreBackedSetState(store: ReturnType<typeof createStateStore>) {
+  return (updater: (prev: Record<string, unknown>) => Record<string, unknown>) => {
+    const prev = store.getSnapshot() as Record<string, unknown>
+    const next = updater(prev)
+    const updates: Record<string, unknown> = {}
+    for (const key of new Set([...Object.keys(prev), ...Object.keys(next)])) {
+      updates[`/${key}`] = next[key]
+    }
+    store.update(updates)
+  }
+}
+
 // renderSpec function
-function renderSpec(spec: any, container: HTMLElement) {
+function renderSpec(spec: any, container: HTMLElement, options: RenderSpecOptions = {}) {
+  const initialState = {
+    ...((spec?.state as StateModel | undefined) ?? {}),
+    ...(options.initialState ?? {}),
+  }
+  const store = createStateStore(initialState)
+  const setState = createStoreBackedSetState(store)
+  const actionHandlers = {
+    ...createVizualHandlers(() => setState, () => store.getSnapshot()),
+    ...(options.handlers ?? {}),
+  }
   const root = ReactDOMClient.createRoot(container)
   root.render(
-    React.createElement(JSONUIProvider, { registry } as any,
+    React.createElement(JSONUIProvider, { registry, store, handlers: actionHandlers } as any,
       React.createElement(Renderer, { spec, registry })
     )
   )
@@ -78,6 +106,7 @@ const vizual = {
   // Theme system
   loadDesignMd,
   mapDesignTokensToTheme,
+  invertTheme,
   setGlobalTheme,
   applyTheme,
   registerTheme,

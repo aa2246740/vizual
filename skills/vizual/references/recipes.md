@@ -12,7 +12,7 @@ KPI cards on top, chart in middle, table at bottom:
   "elements": {
     "root": {
       "type": "GridLayout",
-      "props": { "type": "grid_layout", "columns": 1 },
+      "props": { "columns": 1 },
       "children": ["kpi", "chart", "table"]
     },
     "kpi": {
@@ -63,9 +63,185 @@ KPI cards on top, chart in middle, table at bottom:
 }
 ```
 
-## Analysis Report (DocView)
+## Chat Analysis / Dashboard Report
 
-Title + alert + chart + insight notes using DocView sections:
+Use host message text for the written conclusion, and render the visual artifact as GridLayout + components. Do not use DocView just because the user says "report" or "analysis".
+
+```json
+{
+  "root": "root",
+  "elements": {
+    "root": {
+      "type": "GridLayout",
+      "props": { "columns": 1, "gap": 16 },
+      "children": ["kpi", "funnel", "table"]
+    },
+    "kpi": {
+      "type": "KpiDashboard",
+      "props": {
+        "type": "kpi_dashboard",
+        "columns": 3,
+        "metrics": [
+          { "label": "Landing", "value": "10,000", "trend": "flat", "trendValue": "baseline" },
+          { "label": "Signup", "value": "3,000", "trend": "down", "trendValue": "-70%" },
+          { "label": "Purchase", "value": "450", "trend": "down", "trendValue": "-85% from signup" }
+        ]
+      },
+      "children": []
+    },
+    "funnel": {
+      "type": "FunnelChart",
+      "props": {
+        "type": "funnel",
+        "title": "Conversion Funnel",
+        "label": "stage",
+        "value": "count",
+        "data": [
+          { "stage": "Landing", "count": 10000 },
+          { "stage": "Signup", "count": 3000 },
+          { "stage": "Trial", "count": 1500 },
+          { "stage": "Purchase", "count": 450 }
+        ]
+      },
+      "children": []
+    },
+    "table": {
+      "type": "DataTable",
+      "props": {
+        "type": "table",
+        "columns": [
+          { "key": "stage", "label": "Stage" },
+          { "key": "count", "label": "Count", "align": "right" },
+          { "key": "drop", "label": "Drop-off" }
+        ],
+        "data": [
+          { "stage": "Landing", "count": 10000, "drop": "-" },
+          { "stage": "Signup", "count": 3000, "drop": "70%" },
+          { "stage": "Trial", "count": 1500, "drop": "50%" },
+          { "stage": "Purchase", "count": 450, "drop": "70%" }
+        ]
+      },
+      "children": []
+    }
+  }
+}
+```
+
+## AI Answer Review / Scoring Dashboard
+
+When the user asks to evaluate an AI answer, score reasoning quality, or compare analysis quality, use host text for the critique and render a compact dashboard. Do not use DocView unless the user asks to annotate or revise the critique as a document.
+
+Do not invent the original business dataset. If the prompt mentions a missing insight such as "D7 structural breakpoint" but does not provide the underlying day-by-day data, show that as a finding in the table or penalty chart. Do not create fake D1-D14 values.
+
+Good component mix:
+
+- `KpiDashboard` for total score and category scores.
+- `ComboChart` for explicit score breakdown, such as dimension score vs max score.
+- `BarChart` for penalties by issue type.
+- `RadarChart` for reasoning dimensions such as chart use, insight depth, causal caution, and visualization design.
+- `DataTable` for concrete findings and recommended improvements.
+
+Example component plan for the prompt "score this AI answer":
+
+```json
+{
+  "root": "root",
+  "elements": {
+    "root": {
+      "type": "GridLayout",
+      "props": { "columns": 1, "gap": 16 },
+      "children": ["summary", "scoreBreakdown", "penalties", "reasoningRadar", "findings"]
+    },
+    "summary": {
+      "type": "KpiDashboard",
+      "props": {
+        "type": "kpi_dashboard",
+        "columns": 4,
+        "metrics": [
+          { "label": "总分", "value": "78/100", "trend": "flat", "trendValue": "中上水平" },
+          { "label": "图表正确性", "value": "32/40", "trend": "up", "trendValue": "选图正确" },
+          { "label": "因果推理", "value": "14/20", "trend": "down", "trendValue": "过度归因" },
+          { "label": "可视化设计", "value": "6/10", "trend": "down", "trendValue": "组合图不足" }
+        ]
+      },
+      "children": []
+    },
+    "scoreBreakdown": {
+      "type": "ComboChart",
+      "props": {
+        "type": "combo",
+        "title": "评分维度",
+        "x": "维度",
+        "y": ["得分", "满分"],
+        "data": [
+          { "维度": "图表正确性", "得分": 32, "满分": 40 },
+          { "维度": "洞察深度", "得分": 26, "满分": 30 },
+          { "维度": "因果推理", "得分": 14, "满分": 20 },
+          { "维度": "可视化设计", "得分": 6, "满分": 10 }
+        ]
+      },
+      "children": []
+    },
+    "penalties": {
+      "type": "BarChart",
+      "props": {
+        "type": "bar",
+        "title": "主要扣分点",
+        "x": "问题",
+        "y": "扣分",
+        "data": [
+          { "问题": "没有读出斜率/滞后", "扣分": 8 },
+          { "问题": "虚假相关风险", "扣分": 6 },
+          { "问题": "漏掉 selection effect", "扣分": 5 },
+          { "问题": "组合图表达不足", "扣分": 4 }
+        ]
+      },
+      "children": []
+    },
+    "reasoningRadar": {
+      "type": "RadarChart",
+      "props": {
+        "type": "radar",
+        "title": "推理能力画像",
+        "indicators": [
+          { "name": "读图", "max": 10 },
+          { "name": "洞察", "max": 10 },
+          { "name": "因果谨慎", "max": 10 },
+          { "name": "业务假设", "max": 10 },
+          { "name": "图表设计", "max": 10 }
+        ],
+        "series": [
+          { "name": "当前答案", "values": [6, 8, 5, 7, 6] },
+          { "name": "顶级答案", "values": [9, 9, 9, 9, 9] }
+        ]
+      },
+      "children": []
+    },
+    "findings": {
+      "type": "DataTable",
+      "props": {
+        "type": "table",
+        "columns": [
+          { "key": "缺陷", "label": "缺陷" },
+          { "key": "为什么重要", "label": "为什么重要" },
+          { "key": "改进", "label": "改进" }
+        ],
+        "data": [
+          { "缺陷": "没提斜率和滞后", "为什么重要": "说明没有真正读图", "改进": "描述 Day5-7 active_users 增速放缓" },
+          { "缺陷": "过度因果归因", "为什么重要": "AI_ratio 和 churn 可能都是时间趋势", "改进": "明确 spurious correlation / 混杂变量风险" },
+          { "缺陷": "漏掉 selection effect", "为什么重要": "ARPPU 上升不一定代表产品变好", "改进": "解释低价值用户流失、高价值用户留下" }
+        ],
+        "striped": true
+      },
+      "children": []
+    }
+  }
+}
+```
+
+## Annotatable Document (DocView)
+
+Use DocView when the user needs comments, highlights, revision loop, version history, or a document artifact.
 
 ```json
 {
@@ -75,17 +251,18 @@ Title + alert + chart + insight notes using DocView sections:
       "type": "DocView",
       "props": {
         "type": "doc_view",
-        "title": "Conversion Funnel Analysis",
+        "title": "Conversion Funnel Review",
+        "showPanel": true,
         "sections": [
-          { "type": "heading", "content": "Conversion Funnel Analysis" },
-          { "type": "callout", "content": "Signup→Purchase conversion dropped 15% this week", "layout": "banner" },
+          { "type": "heading", "content": "Conversion Funnel Review", "level": 1 },
+          { "type": "text", "content": "This document is intended for stakeholder review and inline comments." },
+          { "type": "callout", "content": "Signup to purchase conversion dropped 15% this week." },
           { "type": "chart", "content": "", "data": { "chartType": "FunnelChart", "label": "stage", "value": "count", "data": [
             { "stage": "Landing", "count": 10000 },
             { "stage": "Signup", "count": 3000 },
             { "stage": "Trial", "count": 1500 },
             { "stage": "Purchase", "count": 450 }
-          ] } },
-          { "type": "callout", "content": "The biggest drop is at Signup (70% loss). Consider simplifying the registration form." }
+          ] } }
         ]
       },
       "children": []
@@ -102,7 +279,7 @@ Title + alert + chart + insight notes using DocView sections:
   "elements": {
     "root": {
       "type": "GridLayout",
-      "props": { "type": "grid_layout", "columns": 1 },
+      "props": { "columns": 1 },
       "children": ["title", "gantt", "kanban"]
     },
     "title": {
@@ -184,11 +361,11 @@ Title + alert + chart + insight notes using DocView sections:
 | Range comparison | DumbbellChart | `dumbbell` |
 | Flowchart/sequence/gantt diagram | MermaidDiagram | `mermaid` |
 | Radar/spider chart | RadarChart | `radar` |
-| Big number with trend | DocView kpi section | — |
-| Warning/notification | DocView callout section | — |
-| Tip/callout | DocView callout section | — |
-| Text paragraph / heading | DocView heading/text/freeform section | — |
-| Code/query display | DocView freeform HTML `<pre>` section | — |
+| Big number with trend | KpiDashboard | `kpi_dashboard` |
+| Warning/notification | Host message text, or DocView callout inside a document | — |
+| Tip/callout | Host message text, or DocView callout inside a document | — |
+| Text paragraph / heading | Host message text, or DocView heading/text inside a document | — |
+| Code/query display | Host message text, or DocView freeform HTML `<pre>` inside a document | — |
 | Data grid | DataTable | `table` |
 | Event timeline | Timeline | `timeline` |
 | Task board | Kanban | `kanban` |
@@ -198,9 +375,9 @@ Title + alert + chart + insight notes using DocView sections:
 | Operation log | AuditLog | `audit_log` |
 | Dynamic form | FormBuilder | `form_builder` |
 | Rich document with annotation | DocView | `doc_view` |
-| Multi-column layout | GridLayout | `grid_layout` |
-| Side-by-side split | SplitLayout | `split_layout` |
-| Hero banner section | HeroLayout | `hero_layout` |
+| Multi-column layout | GridLayout | no props.type |
+| Side-by-side split | SplitLayout | no props.type |
+| Hero banner section | HeroLayout | no props.type |
 
 ## Multi-Dimensional Comparison
 
@@ -243,7 +420,7 @@ KPI cards in a responsive grid with a chart below:
   "elements": {
     "root": {
       "type": "GridLayout",
-      "props": { "type": "grid_layout", "columns": 1 },
+      "props": { "columns": 1 },
       "children": ["kpi_grid", "chart"]
     },
     "kpi_grid": {
@@ -290,7 +467,7 @@ Chart and table side by side:
   "elements": {
     "root": {
       "type": "SplitLayout",
-      "props": { "type": "split_layout", "direction": "horizontal", "ratio": 55 },
+      "props": { "direction": "horizontal", "ratio": 55 },
       "children": ["chart", "table"]
     },
     "chart": {
@@ -331,7 +508,7 @@ Chart and table side by side:
 }
 ```
 
-## Hero Document
+## Annotatable Hero Document
 
 Hero heading with markdown body and data sections:
 

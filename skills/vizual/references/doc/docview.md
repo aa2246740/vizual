@@ -4,6 +4,29 @@ Element type: `"DocView"` | Props type: `"doc_view"`
 
 Interactive document with mixed sections and annotation support.
 
+## When to Use DocView
+
+Use DocView when the **document interaction** is part of the requirement:
+
+- The user asks for annotations, comments, highlighting, review, revisions, or version history.
+- The output should be a self-contained document artifact, not just a chart/dashboard in a chat message.
+- The host app supports DocView callbacks such as `onAction`, annotation panel submission, or an AI revision loop.
+
+Do **not** use DocView just because the user says "report", "analysis", or "summary". For ordinary chat answers and dashboards, render visuals with `GridLayout`/charts/KPIs/tables and put narrative explanation in the host message text.
+
+## Interacting With a Rendered DocView
+
+If the task is to test or operate an existing DocView page, do not replace it with a new spec. Use the rendered UI:
+
+1. Click the target section, KPI card, chart, table cell/row, or select text inside a text/markdown section.
+2. Wait for the annotation popup.
+3. Type the annotation or requested revision.
+4. Confirm the popup.
+5. Check that the annotation appears in the panel and the target is highlighted.
+6. For revision workflows, submit the batch or request revision from the panel so the host receives the `onAction` event.
+
+The host should receive `annotationAdded` payloads with target metadata such as section id/type, target kind, and target label when available.
+
 ## Props
 
 | Prop | Type | Required | Description |
@@ -11,7 +34,7 @@ Interactive document with mixed sections and annotation support.
 | type | `"doc_view"` | yes | fixed literal |
 | title | string | no | document title |
 | sections | Section[] | yes | array of document sections |
-| showPanel | boolean | no | show annotation panel sidebar (default true) |
+| showPanel | boolean | no | show annotation panel sidebar (default true). Use `true` for annotation workflows, `false` only for read-only document previews |
 | panelPosition | `"right"` \| `"left"` \| `"bottom"` | no | panel position (default right) |
 
 ## Section Types

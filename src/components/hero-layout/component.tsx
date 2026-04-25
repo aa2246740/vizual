@@ -8,7 +8,8 @@ import type { HeroLayoutProps } from './schema'
  */
 export function HeroLayout({ props, children }: { props: HeroLayoutProps; children?: React.ReactNode }) {
   const { height = 200, background = 'gradient', align = 'center', title, subtitle, cta } = props ?? {}
-  const hasChildren = React.Children.count(children) > 0
+  const childArray = React.Children.toArray(children)
+  const hasChildren = childArray.length > 0
 
   let bg: string
   switch (background) {
@@ -36,7 +37,7 @@ export function HeroLayout({ props, children }: { props: HeroLayoutProps; childr
       marginBottom: 16,
     }}>
       {/* 有 children 时优先渲染 children，否则渲染内置的标题布局 */}
-      {hasChildren ? children : (title || subtitle || cta) ? (
+      {hasChildren ? childArray : (title || subtitle || cta) ? (
         <div style={{ textAlign: 'center', maxWidth: 640 }}>
           {title && (
             <h1 style={{

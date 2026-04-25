@@ -12,8 +12,8 @@ function resolveFields(props: HeatmapChartProps) {
   const keys = Object.keys(first)
 
   // Auto-detect: first string key = x (categories), second string key = y, first numeric key = value
-  let xField = props.x as string | undefined
-  let yField = (props.y as string | undefined) ?? (Array.isArray(props.y) ? props.y[0] : undefined)
+  let xField = (props.xField as string | undefined) ?? (props.x as string | undefined)
+  let yField = (props.yField as string | undefined) ?? (props.y as string | undefined) ?? (Array.isArray(props.y) ? props.y[0] : undefined)
   let valueField = (props.valueField as string | undefined) ?? (props.value as string | undefined)
 
   if (!xField && keys.length > 0) {
@@ -35,24 +35,32 @@ function resolveFields(props: HeatmapChartProps) {
     yField ??= keys.find(k => k !== xField) ?? 'y'
   }
   if (!valueField) {
-    // First numeric key
+    valueField = keys.find(k => k === 'value')
+  }
+  if (!valueField) {
+    // First numeric key that is not already used as an axis
     for (const k of keys) {
-      if (typeof first[k] === 'number') { valueField = k; break }
+      if (k !== xField && k !== yField && typeof first[k] === 'number') { valueField = k; break }
     }
     valueField ??= 'value'
   }
 
-  return { xField, yField, valueField, data }
+  return {
+    xField: xField ?? 'x',
+    yField: yField ?? 'y',
+    valueField: valueField ?? 'value',
+    data,
+  }
 }
 
 function toMvizProps(props: HeatmapChartProps): Record<string, unknown> {
   const { xField, yField, valueField, data } = resolveFields(props)
   const mappedData = data.map((d: Record<string, unknown>) => ({
-    x: d[xField], y: d[yField], value: d[valueField],
+    x: String(d[xField] ?? ''), y: String(d[yField] ?? ''), value: d[valueField],
   }))
   const xCategories = [...new Set(mappedData.map(d => String(d.x ?? '')))]
   const yCategories = [...new Set(mappedData.map(d => String(d.y ?? '')))]
-  return { ...props, data: mappedData, xCategories, yCategories }
+  return { ...props, theme: props.theme ?? 'dark', data: mappedData, xCategories, yCategories }
 }
 
 function buildHeatmapFallback(props: HeatmapChartProps): Record<string, unknown> {

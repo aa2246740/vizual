@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import DOMPurify from 'dompurify'
 import type { MermaidProps } from './schema'
 import { tcss, tc } from '../../core/theme-colors'
 import { useAnnotationContext } from '../../docview/annotation-context'
@@ -23,11 +24,21 @@ export function MermaidChart({ props }: { props: MermaidProps }) {
     let cancelled = false
 
     async function renderWith(lib: any) {
-      lib.initialize({ startOnLoad: false, theme: props.theme ?? 'dark', securityLevel: 'loose' })
+      lib.initialize({
+        startOnLoad: false,
+        theme: props.theme ?? 'dark',
+        securityLevel: 'strict',
+        htmlLabels: false,
+      })
       const id = `mermaid-${Math.random().toString(36).slice(2, 9)}`
       try {
         const { svg } = await lib.render(id, code)
-        if (!cancelled) { setHtml(svg); setError('') }
+        const cleanSvg = String(DOMPurify.sanitize(svg, {
+          USE_PROFILES: { svg: true, svgFilters: true },
+          FORBID_TAGS: ['foreignObject', 'script'],
+          FORBID_ATTR: ['onerror', 'onload', 'onclick'],
+        }))
+        if (!cancelled) { setHtml(cleanSvg); setError('') }
       } catch (e: any) {
         if (!cancelled) setError(e?.message ?? 'Render failed')
       }

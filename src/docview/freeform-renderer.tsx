@@ -24,7 +24,7 @@ type SectionLike = {
 }
 
 /** DOMPurify 白名单配置 — 允许 style（AI 设计需要），禁止 class 和事件属性 */
-const PURIFY_CONFIG: DOMPurify.Config = {
+const PURIFY_CONFIG = {
   ALLOWED_TAGS: [
     // Markdown 核心标签
     'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
@@ -54,7 +54,7 @@ const PURIFY_CONFIG: DOMPurify.Config = {
   FORBID_ATTR: ['class', 'onclick', 'onerror', 'onload'],
   FORBID_TAGS: ['script', 'iframe', 'object', 'embed', 'style', 'form', 'input', 'button'],
   ADD_ATTR: ['target'],
-}
+} satisfies Parameters<typeof DOMPurify.sanitize>[1]
 
 /** 语义元素选择器 — 这些元素会自动获得批注定位属性 */
 const SEMANTIC_SELECTORS = [
@@ -154,7 +154,7 @@ function injectAnnotationTargets(html: string, sectionIndex: number): string {
  */
 export function renderFreeform(section: SectionLike, index: number): React.ReactNode {
   // Step 1: DOMPurify 净化（允许 style，禁止 class/事件）
-  const cleanHtml = DOMPurify.sanitize(section.content, PURIFY_CONFIG)
+  const cleanHtml = String(DOMPurify.sanitize(section.content, PURIFY_CONFIG))
   // Step 2: 扫描语义元素，注入批注定位属性
   const annotatedHtml = injectAnnotationTargets(cleanHtml, index)
   // Step 3: 将硬编码的主题色值替换为 CSS 变量引用，确保主题一致性

@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react'
+import React, { useRef, useEffect, useMemo } from 'react'
 import * as echarts from 'echarts'
 import type { AnnotationTarget, Annotation, ChartDataPoint } from './types'
 import { tcss, tc } from '../core/theme-colors'
@@ -40,6 +40,22 @@ const variantColors: Record<string, string> = {
 /** Heading font sizes by level (h1=32px down to h6=14px) */
 const headingSizes = [32, 24, 20, 18, 16, 14]
 
+function stableStringify(value: unknown): string {
+  const seen = new WeakSet<object>()
+  return JSON.stringify(value, (_key, val) => {
+    if (!val || typeof val !== 'object') return val
+    if (seen.has(val)) return '[Circular]'
+    seen.add(val)
+    if (Array.isArray(val)) return val
+    return Object.keys(val as Record<string, unknown>)
+      .sort()
+      .reduce<Record<string, unknown>>((acc, key) => {
+        acc[key] = (val as Record<string, unknown>)[key]
+        return acc
+      }, {})
+  }) ?? ''
+}
+
 /**
  * SectionRenderer — Converts a DocViewSchema sections array into React elements.
  *
@@ -52,7 +68,7 @@ const headingSizes = [32, 24, 20, 18, 16, 14]
  * - callout: Colored callout box based on variant
  * - component: Clickable component placeholder
  *
- * Non-text sections (chart, kpi, table, callout, component) are annotated with
+ * Sections are annotated with
  * data-docview-target, data-section-index, and data-target-type attributes to
  * support multi-granularity annotation targeting.
  */
@@ -119,6 +135,9 @@ function renderText(section: SectionRendererProps['sections'][number], _index: n
   return (
     <p
       key={`text-${_index}`}
+      data-docview-target={`text-${_index}`}
+      data-section-index={_index}
+      data-target-type="text"
       style={{
         color: tcss('--rk-text-primary'),
         fontSize:tcss('--rk-text-md'),
@@ -141,6 +160,9 @@ function renderHeading(section: SectionRendererProps['sections'][number], _index
   return (
     <Tag
       key={`heading-${_index}`}
+      data-docview-target={`heading-${_index}`}
+      data-section-index={_index}
+      data-target-type="heading"
       style={{
         color: tcss('--rk-text-primary'),
         fontSize: size,
@@ -176,19 +198,32 @@ function ChartSection({
   const chartRef = useRef<HTMLDivElement>(null)
   const chartInstanceRef = useRef<echarts.ECharts | null>(null)
   const dataPointClickedRef = useRef(false)
+  const onTargetClickRef = useRef(onTargetClick)
+  const indexRef = useRef(index)
+  const titleRef = useRef(section.title || '图表')
   const rawData = section.data as Record<string, unknown> | undefined
+  const registryChart = resolveRegistryChartData(rawData, section.title)
   // Normalize chart data: support both ECharts format and mviz format
   const data = normalizeChartData(rawData)
+  const dataKey = stableStringify(data)
+  const chartOptions = useMemo(
+    () => data ? buildChartOptions(section.title || '图表', data) : null,
+    [dataKey, section.title],
+  )
   const hasChartData = !!(data?.series && Array.isArray(data.series) && ((data.series as Record<string, unknown>[])?.[0] as Record<string, unknown>)?.data != null)
 
-  // Initialize ECharts instance and register data point click handler
+  useEffect(() => {
+    onTargetClickRef.current = onTargetClick
+    indexRef.current = index
+    titleRef.current = section.title || '图表'
+  }, [onTargetClick, index, section.title])
+
+  // Initialize ECharts once. Popup/annotation state updates must not dispose
+  // and recreate the chart, otherwise ECharts replays its entry animation.
   useEffect(() => {
     if (!hasChartData || !chartRef.current) return
-
     const chart = echarts.init(chartRef.current, 'dark')
     chartInstanceRef.current = chart
-    const options = buildChartOptions(section.title || '图表', data!)
-    chart.setOption(options)
 
     // Register ECharts click event for data point drill-down
     chart.on('click', (params: any) => {
@@ -200,12 +235,12 @@ function ChartSection({
           name: params.name || '',
           value: params.value ?? '',
         }
-        const targetId = `chart-${index}-${params.seriesIndex}-${params.dataIndex}`
-        const chartTitle = section.title || '图表'
+        const targetId = `chart-${indexRef.current}-${params.seriesIndex}-${params.dataIndex}`
+        const chartTitle = titleRef.current
         const label = `${chartTitle} › ${dp.name}: ${dp.value}`
         const containerEl = chartRef.current?.closest('[data-docview-target]') as HTMLElement
-        onTargetClick?.({
-          sectionIndex: index,
+        onTargetClickRef.current?.({
+          sectionIndex: indexRef.current,
           targetType: 'chart',
           label,
           targetId,
@@ -222,7 +257,13 @@ function ChartSection({
       chart.dispose()
       chartInstanceRef.current = null
     }
-  }, [section, data, hasChartData, onTargetClick, index])
+  }, [hasChartData])
+
+  // Only update chart data/options when the chart spec itself changes.
+  useEffect(() => {
+    if (!chartInstanceRef.current || !chartOptions) return
+    chartInstanceRef.current.setOption(chartOptions, true)
+  }, [chartOptions])
 
   // Highlight annotated data points via ECharts dispatchAction
   useEffect(() => {
@@ -249,6 +290,34 @@ function ChartSection({
       })
     }
   }, [annotations, index])
+
+  if (registryChart) {
+    const Component = registry[registryChart.componentType] as React.ComponentType<any> | undefined
+    if (Component) {
+      const contextValue = {
+        sectionIndex: index,
+        componentType: registryChart.componentType,
+        title: section.title || (registryChart.props.title as string | undefined),
+        onTargetClick: (target: AnnotationTarget, element: HTMLElement) => {
+          onTargetClick?.(target, element)
+        },
+        annotations,
+      }
+
+      return (
+        <AnnotationContext.Provider key={`chart-ctx-${index}`} value={contextValue}>
+          <div
+            data-docview-target={`chart-${index}`}
+            data-section-index={index}
+            data-target-type="chart"
+            style={{ marginBottom: 16, position: 'relative' }}
+          >
+            <Component element={{ type: registryChart.componentType, props: registryChart.props, children: [] }} props={registryChart.props} children={[]} />
+          </div>
+        </AnnotationContext.Provider>
+      )
+    }
+  }
 
   return (
     <div
@@ -557,7 +626,7 @@ function renderComponent(
   }
 
   // 从 registry 查找真实组件
-  const Component = registry[componentType]
+  const Component = registry[componentType] as React.ComponentType<any> | undefined
   if (!Component) {
     return renderComponentPlaceholder(`Unknown: ${componentType}`, index, handleClick)
   }
@@ -587,7 +656,7 @@ function renderComponent(
           position: 'relative',
         }}
       >
-        <Component props={componentProps} />
+        <Component element={{ type: componentType, props: componentProps, children: [] }} props={componentProps} children={[]} />
       </div>
     </AnnotationContext.Provider>
   )
@@ -764,4 +833,73 @@ function normalizeChartData(data: Record<string, unknown> | undefined): Record<s
   }
 
   return data
+}
+
+const CHART_TYPE_TO_COMPONENT: Record<string, string> = {
+  bar: 'BarChart',
+  area: 'AreaChart',
+  line: 'LineChart',
+  pie: 'PieChart',
+  scatter: 'ScatterChart',
+  bubble: 'BubbleChart',
+  boxplot: 'BoxplotChart',
+  histogram: 'HistogramChart',
+  waterfall: 'WaterfallChart',
+  xmr: 'XmrChart',
+  sankey: 'SankeyChart',
+  funnel: 'FunnelChart',
+  heatmap: 'HeatmapChart',
+  calendar: 'CalendarChart',
+  sparkline: 'SparklineChart',
+  combo: 'ComboChart',
+  dumbbell: 'DumbbellChart',
+  radar: 'RadarChart',
+  mermaid: 'MermaidDiagram',
+}
+
+const CHART_COMPONENT_TO_TYPE: Record<string, string> = Object.fromEntries(
+  Object.entries(CHART_TYPE_TO_COMPONENT).map(([type, component]) => [component, type])
+)
+
+function normalizeChartComponentName(value: unknown): string | undefined {
+  if (typeof value !== 'string' || !value) return undefined
+  if (registry[value]) return value
+  return CHART_TYPE_TO_COMPONENT[value]
+}
+
+function resolveRegistryChartData(
+  data: Record<string, unknown> | undefined,
+  sectionTitle?: string,
+): { componentType: string; props: Record<string, unknown> } | null {
+  if (!data || typeof data !== 'object') return null
+
+  const rawType = data.chartType ?? data.componentType ?? data.type
+  const componentType = normalizeChartComponentName(rawType)
+  if (!componentType || !registry[componentType]) return null
+
+  const nestedProps = data.props && typeof data.props === 'object' && !Array.isArray(data.props)
+    ? data.props as Record<string, unknown>
+    : undefined
+
+  const {
+    chartType: _chartType,
+    componentType: _componentType,
+    props: _props,
+    children: _children,
+    ...rest
+  } = data
+
+  const props = {
+    ...(nestedProps ?? rest),
+  }
+
+  const literalType = CHART_COMPONENT_TO_TYPE[componentType]
+  if (literalType && props.type === undefined) {
+    props.type = literalType
+  }
+  if (sectionTitle && props.title === undefined) {
+    props.title = sectionTitle
+  }
+
+  return { componentType, props }
 }

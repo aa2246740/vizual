@@ -6,4 +6,4 @@ export const SplitLayoutSchema = z.object({
   gap: z.number().optional().default(0),
 })
 
-export type SplitLayoutProps = z.infer<typeof SplitLayoutSchema>
+export type SplitLayoutProps = z.input<typeof SplitLayoutSchema>

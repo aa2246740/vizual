@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import * as echarts from 'echarts'
 import { chartColors, tc } from './theme-colors'
 import { useAnnotationContext } from '../docview/annotation-context'
@@ -9,7 +9,6 @@ import {
   buildBarOptions,
   buildLineOptions,
   buildPieOptions,
-  buildScatterOptions,
   buildAreaOptions,
   buildSparklineOptions,
   buildHistogramOptions,
@@ -29,6 +28,22 @@ import {
 
 type ChartProps = Record<string, unknown>
 
+function stableStringify(value: unknown): string {
+  const seen = new WeakSet<object>()
+  return JSON.stringify(value, (_key, val) => {
+    if (!val || typeof val !== 'object') return val
+    if (seen.has(val)) return '[Circular]'
+    seen.add(val)
+    if (Array.isArray(val)) return val
+    return Object.keys(val as Record<string, unknown>)
+      .sort()
+      .reduce<Record<string, unknown>>((acc, key) => {
+        acc[key] = (val as Record<string, unknown>)[key]
+        return acc
+      }, {})
+  }) ?? ''
+}
+
 /**
  * Map chartType to mviz build function.
  * Key = the chartType string used in createEChartsBridge('bar', ...)
@@ -39,7 +54,8 @@ const mvizBuilders: Record<string, (props: any) => any> = {
   bar: buildBarOptions,
   line: buildLineOptions,
   pie: buildPieOptions,
-  scatter: buildScatterOptions,
+  // mviz scatter currently assumes y is a scalar, while Vizual's public
+  // schema allows y arrays. Use ScatterChart's local builder instead.
   area: buildAreaOptions,
   sparkline: buildSparklineOptions,
   histogram: buildHistogramOptions,
@@ -84,8 +100,15 @@ export function createEChartsBridge(
     // 批注上下文 — 在 DocView 内时有值，独立渲染时为 null
     const annotationCtx = useAnnotationContext()
 
-    // Build option synchronously from props (mviz is statically bundled)
-    const option = buildOption(chartType, props, buildFallbackOption, mapToMviz)
+    // Keep the expensive ECharts option stable across annotation popup state
+    // changes. Parent DocView renders can recreate props objects even when the
+    // chart data has not changed; rebuilding then calling setOption replays
+    // ECharts animations.
+    const propsKey = stableStringify(props)
+    const option = useMemo(
+      () => buildOption(chartType, props, buildFallbackOption, mapToMviz),
+      [propsKey],
+    )
 
     // Init chart on mount, dispose on unmount
     useEffect(() => {
@@ -121,7 +144,7 @@ export function createEChartsBridge(
       }
       document.addEventListener('vizual-theme-change', handler)
       return () => document.removeEventListener('vizual-theme-change', handler)
-    }, [props])
+    }, [propsKey])
 
     // 注册 ECharts 点击事件 — 数据点钻取批注
     useEffect(() => {
@@ -147,7 +170,7 @@ export function createEChartsBridge(
             targetId,
             chartDataPoint: dp,
           }
-          annotationCtx.onTargetClick(target, containerRef.current!)
+          annotationCtx.onTargetClick?.(target, containerRef.current!)
         }
       }
       chart.on('click', handler)
@@ -367,7 +390,9 @@ function buildOption(
 
   // Override mviz hardcoded text/axis/tooltip/splitLine colors with theme colors
   const textColor = tc('--rk-text-secondary')
+  const primaryTextColor = tc('--rk-text-primary') || textColor
   const bgColor = tc('--rk-bg-secondary')
+  const cellBgColor = tc('--rk-bg-tertiary') || bgColor
   const borderColor = tc('--rk-border-subtle')
 
   // Axis labels
@@ -400,6 +425,71 @@ function buildOption(
       tooltip.borderColor = borderColor || bgColor
       const ts = tooltip.textStyle as Record<string, unknown> | undefined
       if (ts) ts.color = textColor
+    }
+  }
+
+  if ((chartType === 'heatmap' || chartType === 'calendar') && cellBgColor) {
+    const visualMaps = (Array.isArray(option.visualMap)
+      ? option.visualMap
+      : option.visualMap ? [option.visualMap] : []) as Record<string, unknown>[]
+    const firstChartColor = palette[0] || tc('--rk-accent') || primaryTextColor
+    const secondChartColor = palette[1] || firstChartColor
+    for (const visualMap of visualMaps) {
+      if (!visualMap || typeof visualMap !== 'object') continue
+      visualMap.inRange = {
+        ...((visualMap.inRange as Record<string, unknown> | undefined) ?? {}),
+        color: chartType === 'calendar'
+          ? [cellBgColor, firstChartColor, secondChartColor]
+          : [cellBgColor, firstChartColor],
+      }
+    }
+  }
+
+  if (chartType === 'calendar') {
+    const calendars = (Array.isArray(option.calendar)
+      ? option.calendar
+      : option.calendar ? [option.calendar] : []) as Record<string, unknown>[]
+    for (const calendar of calendars) {
+      if (!calendar || typeof calendar !== 'object') continue
+      const itemStyle = (calendar.itemStyle && typeof calendar.itemStyle === 'object')
+        ? calendar.itemStyle as Record<string, unknown>
+        : {}
+      itemStyle.color = cellBgColor
+      if (borderColor) itemStyle.borderColor = borderColor
+      calendar.itemStyle = itemStyle
+
+      const splitLine = (calendar.splitLine && typeof calendar.splitLine === 'object')
+        ? calendar.splitLine as Record<string, unknown>
+        : {}
+      const lineStyle = (splitLine.lineStyle && typeof splitLine.lineStyle === 'object')
+        ? splitLine.lineStyle as Record<string, unknown>
+        : {}
+      if (borderColor) lineStyle.color = borderColor
+      splitLine.lineStyle = lineStyle
+      calendar.splitLine = splitLine
+
+      for (const labelKey of ['dayLabel', 'monthLabel', 'yearLabel']) {
+        const label = (calendar[labelKey] && typeof calendar[labelKey] === 'object')
+          ? calendar[labelKey] as Record<string, unknown>
+          : {}
+        if (textColor) label.color = textColor
+        calendar[labelKey] = label
+      }
+    }
+  }
+
+  if (chartType === 'heatmap') {
+    const series = option.series as Record<string, unknown>[] | undefined
+    if (Array.isArray(series)) {
+      for (const s of series) {
+        if (!s || typeof s !== 'object' || s.type !== 'heatmap') continue
+        const label = (s.label && typeof s.label === 'object') ? s.label as Record<string, unknown> : {}
+        if (primaryTextColor) label.color = primaryTextColor
+        s.label = label
+        const itemStyle = (s.itemStyle && typeof s.itemStyle === 'object') ? s.itemStyle as Record<string, unknown> : {}
+        if (borderColor) itemStyle.borderColor = borderColor
+        s.itemStyle = itemStyle
+      }
     }
   }
 

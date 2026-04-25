@@ -35,7 +35,7 @@ Vizual components fall into 6 families. Think of them as building blocks, not a 
 
 **Input** — FormBuilder. 18 field types, validation, conditional visibility. This is your form builder — any time the user describes input fields, dropdowns, or data collection UI, use it.
 
-**Meta** — DocView (document with mixed sections — text, headings, charts, KPIs, tables, callouts, markdown, freeform HTML — plus optional annotation panel). InteractivePlayground has been **removed** — do NOT use it.
+**Meta** — DocView (annotatable document with mixed sections, annotation panel, revision loop, and version history). DocView is not the default report layout. Use it only when the output is meant to behave like a document. InteractivePlayground has been **removed** — do NOT use it.
 
 **Layout** — GridLayout (multi-column grid), SplitLayout (two-pane split), HeroLayout (banner section). Layouts hold child components; they don't render content themselves.
 
@@ -94,9 +94,9 @@ Use the example in the reference file as your template. Copy its structure, swap
 
 Real outputs are usually compositions. Here are the common patterns:
 
-**Dashboard** — `GridLayout` holding `KpiDashboard` + charts + `DataTable`. The "KPI cards on top, charts in middle, table at bottom" layout.
+**Dashboard / Chat Analysis** — `GridLayout` holding `KpiDashboard` + charts + `DataTable`. Put explanatory prose in the host chat/message text when the host supports text next to the Vizual render. Do not wrap ordinary chat analysis in DocView just to show headings or paragraphs.
 
-**Analysis Report** — `DocView` with structured sections: `heading`, `callout` (alerts), `chart` (embedded chart), `markdown` (analysis text). Use DocView's built-in section types (`kpi`, `chart`, `table`, `callout`) rather than freeform HTML for these.
+**Annotatable Document** — `DocView` with structured sections: `heading`, `text`, `callout`, `kpi`, `chart`, `table`, `markdown`. Use this when the user explicitly wants comments, annotations, revisions, document review, report-document export, or a long-form document UI. Set `showPanel: true` when annotations are part of the workflow; set `showPanel: false` only for read-only document previews.
 
 **Split View** — `SplitLayout` with a chart on one side and a `DataTable` on the other. Good for comparing visual and tabular representations of the same data.
 
@@ -106,9 +106,57 @@ Real outputs are usually compositions. Here are the common patterns:
 
 For more composition examples with full JSON, read: [references/recipes.md](references/recipes.md)
 
+## Host Runtime and Test Page Bridge
+
+Vizual specs are JSON artifacts. A host page must render them. When the host is `validation/vizual-test.html`, use the page's JavaScript bridge; simply typing JSON into the chat input will not render anything.
+
+Required bridge flow for agents with browser script execution (`evaluate_script`, Playwright `page.evaluate`, Chrome DevTools Protocol, etc.):
+
+```js
+const msg = window._pendingMsg;       // read the latest user message
+const id = window.createAiMsg();      // create the AI reply bubble
+window.streamText(id, answerText);    // optional narrative answer
+window.finishText(id);                // finish text streaming
+window.renderVizInMsg(id, spec);      // mount the Vizual JSON spec
+window._pendingMsg = null;            // mark the user message handled
+```
+
+If an agent can only click and type in the browser but cannot execute JavaScript in the page, it cannot complete `vizual-test.html` rendering by itself. In that case, use a host bridge, Playwright/CDP, or an auto-poll backend that calls `renderVizInMsg()`.
+
+For ordinary data-analysis prompts in `vizual-test.html`, answer in host message text and render a `GridLayout`/chart/dashboard spec. Do not choose DocView unless the user explicitly asks for annotation, comments, review, revision, or a document artifact.
+
+## Rendered DocView Interaction Checklist
+
+When the task is to operate an already-rendered DocView page, the Agent should use the UI, not regenerate the document:
+
+1. Click a KPI/card/chart/table/section target, or select text in a text/markdown section.
+2. Wait for the annotation popup.
+3. Enter the comment or revision request.
+4. Confirm the popup.
+5. Verify the annotation appears in the annotation panel and the target is highlighted.
+6. If the workflow requires submission, use the panel's submit/revision action and watch the host `onAction` event.
+
+Expected host events include `annotationAdded` with target metadata, and submission/revision actions when the user requests a revision loop.
+
 ## When to Use What
 
 Think about what the user is trying to accomplish, then pick components that serve that goal.
+
+### First Decision: Is This a Document or a Visualization?
+
+Most requests are **not** DocView requests.
+
+Use `GridLayout` or standalone components when:
+- The user asks for a chart, dashboard, KPI board, table, comparison, analysis answer, or visual summary.
+- The host/chat can display normal text outside the Vizual component.
+- The output is meant to be read, not annotated or revised in-place.
+
+Use `DocView` only when:
+- The user explicitly asks for an annotatable document, report document, review workflow, comments, highlights, revisions, version history, or document export.
+- The product surface supports DocView interactions (`onAction`, annotation panel, revision loop), not just static rendering.
+- The document itself is the artifact, not merely a way to add paragraphs around charts.
+
+If unsure between DocView and GridLayout, choose `GridLayout` and put the written explanation in the host text response.
 
 **The user wants to see data visually** → Pick the chart that matches the data shape: categorical comparison → BarChart, time series → LineChart, proportions → PieChart, correlations → ScatterChart, flow → SankeyChart, funnel → FunnelChart, distribution → BoxplotChart/HistogramChart, multi-dimensional → RadarChart, calendar patterns → CalendarChart, etc. ComboChart handles dual-axis (bar + line). MermaidDiagram handles flowcharts and sequence diagrams.
 
@@ -124,11 +172,11 @@ Think about what the user is trying to accomplish, then pick components that ser
 
 **REMOVED: InteractivePlayground** — Do NOT generate specs with `type: "InteractivePlayground"` or `type: "interactive_playground"`. This component no longer exists.
 
-**The user wants a document or report** → DocView. Use its structured section types: `heading`, `text`, `kpi`, `chart`, `table`, `callout`, `markdown`, `freeform`. Set `enableAnnotations: true` if the user wants highlighting/comments.
+**The user wants a document with annotation/revision behavior** → DocView. Use its structured section types: `heading`, `text`, `kpi`, `chart`, `table`, `callout`, `markdown`, `freeform`. Set `showPanel: true` if the user wants highlighting/comments.
 
 **The user wants things arranged in a layout** → GridLayout (multi-column), SplitLayout (two-pane), HeroLayout (top banner). These are containers — they hold other components as children. **Use GridLayout for dashboards and reports.** Only use DocView when the user explicitly wants an annotatable document with a sidebar panel.
 
-**Something none of the above covers** → DocView's `freeform` section type for static visual content (styled text, code blocks, custom progress bars). This is your last resort.
+**Something none of the above covers** → Use a host text answer plus the closest Vizual component. Use DocView `freeform` only inside a true document. Freeform HTML controls are static because event handlers are blocked.
 
 ## Anti-Patterns — What NOT to Do
 
@@ -138,23 +186,30 @@ These are the most common mistakes. Avoiding them is more important than memoriz
 
 2. **Don't embed components as freeform HTML inside DocView.** DocView has structured section types for charts, KPIs, and tables. Use `{ "type": "chart", "data": {...} }` not `{ "type": "freeform", "content": "<div>...</div>" }` for these.
 
-3. **Don't invent props.** Only use props that exist in the schema. When unsure, read the component's reference file. Common invented props that don't exist: `sort`, `filter`, `pagination` on DataTable; `drag` on Kanban; `height` on BarChart.
+3. **Don't use DocView as a generic chat/report wrapper.** If the user did not ask for annotations, comments, document review, revisions, or a document artifact, use `GridLayout`/standalone components and keep prose in the host message.
 
-4. **Don't mix up the two `type` fields.** In the element definition: PascalCase (`"BarChart"`, `"DocView"`). Inside `props`: lowercase/snake_case literal (`"bar"`, `"doc_view"`). Layout components (GridLayout, SplitLayout, HeroLayout) have no `type` in props.
+4. **Don't invent props.** Only use props that exist in the schema. When unsure, read the component's reference file. Common invented props that don't exist: `sort`, `filter`, `pagination` on DataTable; `drag` on Kanban; `height` on BarChart; `enableAnnotations` on DocView.
 
-5. **Don't use removed components.** BigValue, Delta, Alert, Note, TextBlock, **InteractivePlayground** no longer exist. Use KpiDashboard for metrics, DocView `callout` sections for alerts.
+5. **Don't mix up the two `type` fields.** In the element definition: PascalCase (`"BarChart"`, `"DocView"`). Inside `props`: lowercase/snake_case literal (`"bar"`, `"doc_view"`). Layout components (GridLayout, SplitLayout, HeroLayout) have no `type` in props.
 
-6. **Don't hardcode brand colors in freeform HTML.** Vizual has a default dark theme that works out of the box. For light mode, set `theme: "light"` on chart components. For custom brand colors, tell the user the host app can call `loadDesignMd()`. Don't try to bypass the theme system with inline styles.
+6. **Don't use removed components.** BigValue, Delta, Alert, Note, TextBlock, **InteractivePlayground** no longer exist. Use KpiDashboard for metrics. Use host text or DocView `callout` only when you are already using DocView.
+
+7. **Don't hardcode brand colors in freeform HTML.** Vizual has a default dark theme that works out of the box. For light mode, set `theme: "light"` on chart components. For custom brand colors, tell the user the host app can call `loadDesignMd()`. Don't try to bypass the theme system with inline styles.
 
 ## Output Format
 
 ```json
 {
-  "root": "<element-id>",
+  "root": "main",
   "elements": {
-    "<element-id>": {
-      "type": "<ComponentName>",
-      "props": { ... },
+    "main": {
+      "type": "BarChart",
+      "props": {
+        "type": "bar",
+        "x": "category",
+        "y": "value",
+        "data": []
+      },
       "children": []
     }
   }
@@ -167,7 +222,7 @@ Every element needs `children: []`. Chart components need `data: [...]`. Use rea
 
 Chart legends, axis labels, and table headers come from the field names in your `data` array. **Use the same language the user is speaking.** If the user writes in Chinese, use Chinese field names. If English, use English.
 
-```json
+```jsonc
 // User speaks Chinese → Chinese field names
 { "x": "分群", "y": ["用户数", "7日留存率"], "data": [{"分群": "A", "用户数": 100, "7日留存率": 0.7}] }
 
@@ -176,6 +231,14 @@ Chart legends, axis labels, and table headers come from the field names in your 
 ```
 
 This applies to **all** chart types, DataTable columns, KpiDashboard labels, and any user-facing text.
+
+## Data Integrity
+
+Do not fabricate source data for analytical claims. If the user gives raw rows, metrics, dates, or scores, visualize those values. If the user only gives a written assessment, visualize the explicit scores, categories, quoted findings, or clearly labeled qualitative severity/rubric values.
+
+For analysis-review prompts, never invent missing business time series such as fake D1-D14 values just because the text mentions a breakpoint. Say in host text that the raw series is required to chart the real breakpoint, and use a table or rubric chart to show the issue instead.
+
+Placeholder data is acceptable only when the user asks for an example/demo or gives no domain data at all. Keep placeholders obviously illustrative and do not present them as evidence.
 
 ## Theme
 

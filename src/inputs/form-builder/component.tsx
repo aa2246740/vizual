@@ -5,6 +5,9 @@ import { AnnotatableWrapper } from '../../docview/annotatable-wrapper'
 import type { FormBuilderProps } from './schema'
 
 type Field = FormBuilderProps['fields'][0]
+type RuntimeFormBuilderProps = FormBuilderProps & {
+  onSubmit?: (data: Record<string, unknown>) => void
+}
 type NormalizedOption = { label: string; value: string | number }
 type ValidationRule = NonNullable<Field['validation']>[0]
 
@@ -30,7 +33,15 @@ function normalizeOptions(options: Field['options']): NormalizedOption[] {
  * Uses useBoundProp for two-way binding on form data via $bindState,
  * falls back to local state when unbound.
  */
-export function FormBuilder({ props, bindings }: { props: FormBuilderProps; bindings?: Record<string, string> }) {
+export function FormBuilder({
+  props,
+  bindings,
+  emit = () => undefined,
+}: {
+  props: RuntimeFormBuilderProps
+  bindings?: Record<string, string>
+  emit?: (event: string) => void
+}) {
   const defaultData = props.fields.reduce((acc: Record<string, unknown>, f) => {
     if (f.defaultValue !== undefined) acc[f.name] = f.defaultValue
     return acc
@@ -52,6 +63,9 @@ export function FormBuilder({ props, bindings }: { props: FormBuilderProps; bind
   }, [setFormData, formData])
 
   const validateField = useCallback((field: Field, value: unknown): string | undefined => {
+    if (field.required && !validators.required(value)) {
+      return `${field.label || field.name} is required`
+    }
     if (!field.validation) return undefined
     for (const rule of field.validation) {
       const fn = validators[rule.rule]
@@ -62,18 +76,39 @@ export function FormBuilder({ props, bindings }: { props: FormBuilderProps; bind
     return undefined
   }, [])
 
+  const cols = props.columns ?? 1
+  const visibleFields = props.fields.filter(f => {
+    if (!f.dependsOn || f.showWhen === undefined) return true
+    return formData?.[f.dependsOn] === f.showWhen
+  })
+
+  const validateVisibleFields = useCallback(() => {
+    const nextErrors: Record<string, string> = {}
+    const nextTouched: Record<string, boolean> = {}
+    for (const field of visibleFields) {
+      nextTouched[field.name] = true
+      const err = validateField(field, formData?.[field.name])
+      if (err) nextErrors[field.name] = err
+    }
+    setTouched(prev => ({ ...prev, ...nextTouched }))
+    setErrors(nextErrors)
+    return Object.keys(nextErrors).length === 0
+  }, [visibleFields, validateField, formData])
+
+  const handleSubmit = useCallback((e: React.FormEvent) => {
+    e.preventDefault()
+    if (!validateVisibleFields()) return
+    const data = formData ?? {}
+    props.onSubmit?.(data)
+    emit('submit')
+  }, [validateVisibleFields, formData, props, emit])
+
   const handleBlur = useCallback((field: Field) => {
     setTouched(prev => ({ ...prev, [field.name]: true }))
     const val = formData?.[field.name]
     const err = validateField(field, val)
     setErrors(prev => ({ ...prev, [field.name]: err ?? '' }))
   }, [formData, validateField])
-
-  const cols = props.columns ?? 1
-  const visibleFields = props.fields.filter(f => {
-    if (!f.dependsOn || f.showWhen === undefined) return true
-    return formData?.[f.dependsOn] === f.showWhen
-  })
 
   const labelStyle: React.CSSProperties = {
     display: 'block', fontSize:tcss('--rk-text-base'), fontWeight:tcss('--rk-weight-medium'),
@@ -414,11 +449,27 @@ export function FormBuilder({ props, bindings }: { props: FormBuilderProps; bind
   }
 
   return <AnnotatableWrapper targetType="component" componentType="FormBuilder" label={props.title || `Form, ${visibleFields.length} fields`}>
-    <div>
+    <form onSubmit={handleSubmit}>
       {props.title && <h3 style={{ fontSize:tcss('--rk-text-lg'), fontWeight:tcss('--rk-weight-semibold'), marginBottom: 16, color: tcss('--rk-text-primary') }}>{props.title}</h3>}
       <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: '0 24px' }}>
         {visibleFields.map(renderField)}
       </div>
-    </div>
+      <button
+        type="submit"
+        style={{
+          marginTop: 4,
+          padding: '8px 16px',
+          fontSize: tcss('--rk-text-base'),
+          fontWeight: tcss('--rk-weight-medium'),
+          background: tcss('--rk-accent'),
+          color: '#fff',
+          border: 'none',
+          borderRadius: tcss('--rk-radius-md'),
+          cursor: 'pointer',
+        }}
+      >
+        {props.submitLabel || 'Submit'}
+      </button>
+    </form>
   </AnnotatableWrapper>
 }

@@ -8,13 +8,20 @@ import { createEChartsBridge } from '../../core/echarts-bridge-factory'
  *   2. Flat `data` array with source/target/value objects (nodes inferred)
  */
 function extractSankeyData(props: SankeyChartProps) {
-  let links = Array.isArray(props.links) ? props.links : []
+  type SankeyLink = { source: string; target: string; value?: number }
+  type SankeyNode = { name: string }
+
+  let links: SankeyLink[] = Array.isArray(props.links) ? props.links : []
   if (links.length === 0 && Array.isArray(props.data)) {
     links = props.data.filter(
       (d: Record<string, unknown>) => d.source && d.target
-    ) as SankeyChartProps['links']
+    ).map((d: Record<string, unknown>) => ({
+      source: String(d.source),
+      target: String(d.target),
+      value: typeof d.value === 'number' ? d.value : Number(d.value ?? 1),
+    }))
   }
-  let nodes = Array.isArray(props.nodes) ? props.nodes : []
+  let nodes: SankeyNode[] = Array.isArray(props.nodes) ? props.nodes : []
   if (nodes.length === 0 && links.length > 0) {
     const names = new Set<string>()
     for (const l of links) {
@@ -40,8 +47,8 @@ function buildSankeyFallback(props: SankeyChartProps): Record<string, unknown> {
       type: 'sankey',
       layout: 'none',
       emphasis: { focus: 'adjacency' },
-      data: nodes.map((n: Record<string, unknown>) => ({ name: n.name })),
-      links: links.map((l: Record<string, unknown>) => ({
+      data: nodes.map((n) => ({ name: n.name })),
+      links: links.map((l) => ({
         source: l.source, target: l.target, value: l.value,
       })),
     }],

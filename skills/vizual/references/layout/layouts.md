@@ -12,8 +12,8 @@ CSS Grid container for arranging child components.
 
 | Prop | Type | Required | Description |
 |------|------|----------|-------------|
-| columns | number | no | number of grid columns (default 3) |
-| gap | number | no | gap between items in pixels (default 16) |
+| columns | number | no | number of grid columns (default 2) |
+| gap | number | no | gap between items in pixels (default 12) |
 | columnWidths | string[] | no | custom width for each column (CSS values) |
 
 ```json
@@ -52,9 +52,9 @@ Hero banner section with configurable height and background.
 
 | Prop | Type | Required | Description |
 |------|------|----------|-------------|
-| height | number | no | hero section height in pixels (default 240) |
+| height | number | no | hero section height in pixels (default 200) |
 | background | `"gradient"` \| `"solid"` \| `"transparent"` | no | background style (default gradient) |
-| align | `"left"` \| `"center"` \| `"right"` | no | content alignment (default center) |
+| align | `"top"` \| `"center"` \| `"bottom"` | no | vertical content alignment (default center) |
 
 ```json
 {

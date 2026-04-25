@@ -9,7 +9,7 @@ import { tcss, tc } from '../../core/theme-colors'
  * Our schema uses y for measurements, x for labels.
  */
 function toMvizProps(props: XmrChartProps): Record<string, unknown> {
-  const valueField = props.value ?? props.y ?? 'value'
+  const valueField = props.value ?? (Array.isArray(props.y) ? props.y[0] : props.y) ?? 'value'
   const labelField = props.label ?? props.x ?? 'label'
   return {
     ...props,
@@ -20,7 +20,7 @@ function toMvizProps(props: XmrChartProps): Record<string, unknown> {
 
 function buildXmrFallback(props: XmrChartProps): Record<string, unknown> {
   const x = props.x ?? 'sample'
-  const y = props.y ?? 'value'
+  const y = (Array.isArray(props.y) ? props.y[0] : props.y) ?? 'value'
   const data = Array.isArray(props.data) ? props.data : []
   const labels = data.map(d => String((d as Record<string, unknown>)[x] ?? ''))
   const values = data.map(d => Number((d as Record<string, unknown>)[y]) || 0)

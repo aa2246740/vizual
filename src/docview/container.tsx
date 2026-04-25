@@ -134,7 +134,7 @@ function DocViewInner({
     let sectionType = 'text'
     try {
       const node = selection.range.commonAncestorContainer
-      const el = node instanceof HTMLElement ? el : node.parentElement
+      const el = node instanceof HTMLElement ? node : node.parentElement
       const sectionEl = el?.closest('[data-section-index]')
       if (sectionEl) {
         sectionIndex = parseInt(sectionEl.getAttribute('data-section-index') || '-1', 10)
@@ -191,6 +191,7 @@ function DocViewInner({
   const handleConfirmTargetAnnotation = useCallback((note: string, color: AnnotationColor) => {
     if (!targetAnnotation) return
     const ann = addAnnotation(targetAnnotation.target.label, note, color)
+    const annWithTarget = { ...ann, target: targetAnnotation.target }
     // Attach target metadata to the annotation
     updateAnnotation(ann.id, { target: targetAnnotation.target })
     setTargetAnnotation(null)
@@ -198,7 +199,7 @@ function DocViewInner({
     const sectionContext = sections && targetAnnotation.target.sectionIndex < sections.length
       ? buildSectionContext(sections[targetAnnotation.target.sectionIndex], targetAnnotation.target.sectionIndex)
       : undefined
-    onAction?.('annotationAdded', { annotation: ann, sectionContext })
+    onAction?.('annotationAdded', { annotation: annWithTarget, sectionContext })
   }, [targetAnnotation, addAnnotation, updateAnnotation, onAction, sections])
 
   const handleDeleteAnnotation = useCallback((id: string) => {

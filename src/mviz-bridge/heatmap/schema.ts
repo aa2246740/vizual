@@ -6,7 +6,7 @@ export const HeatmapChartSchema = z.object({
   x: z.string().optional(),
   y: z.union([z.string(), z.array(z.string())]).optional(),
   data: z.array(z.record(z.unknown())),
-  xField: z.string().optional(), yField: z.string().optional(), valueField: z.string().optional(),
+  xField: z.string().optional(), yField: z.string().optional(), valueField: z.string().optional(), value: z.string().optional(),
   theme: z.enum(['light', 'dark']).optional(),
   height: z.number().optional(),
 })
