@@ -1,9 +1,29 @@
 import { describe, it, expect, vi } from 'vitest'
 import React from 'react'
 import { fireEvent, render, screen } from '@testing-library/react'
-import { StateProvider } from '@json-render/react'
+import { StateProvider, useStateStore } from '@json-render/react'
 import { FormBuilder } from './component'
 import { FormBuilderSchema } from './schema'
+
+function BoundControlsForm() {
+  const { get } = useStateStore()
+  const controls = get('/controls') as Record<string, unknown>
+  return (
+    <FormBuilder
+      props={{
+        type: 'form_builder',
+        value: controls,
+        fields: [
+          { name: 'points', label: 'Points', type: 'slider', min: 3, max: 12 },
+          { name: 'mode', label: 'Mode', type: 'select', options: ['grouped', 'stacked'] },
+          { name: 'stacked', label: 'Stacked', type: 'switch' },
+          { name: 'brandColor', label: 'Brand', type: 'color' },
+        ],
+      }}
+      bindings={{ value: '/controls' }}
+    />
+  )
+}
 
 describe('FormBuilder Schema', () => {
   const validForm = {
@@ -119,9 +139,88 @@ describe('FormBuilder Schema', () => {
     })
     expect(result.success).toBe(true)
   })
+
+  it('accepts a bindable value prop for live control state', () => {
+    const result = FormBuilderSchema.safeParse({
+      type: 'form_builder',
+      value: { $bindState: '/controls' },
+      fields: [
+        { name: 'points', type: 'slider', min: 3, max: 12 },
+      ],
+    })
+    expect(result.success).toBe(true)
+  })
 })
 
 describe('FormBuilder component', () => {
+  it('renders form controls and submit button for interactive fields', () => {
+    const { container } = render(
+      <StateProvider>
+        <FormBuilder
+          props={{
+            type: 'form_builder',
+            submitLabel: 'Apply changes',
+            fields: [
+              { name: 'points', label: 'Points', type: 'slider', min: 3, max: 12, defaultValue: 6 },
+              { name: 'mode', label: 'Mode', type: 'select', options: ['grouped', 'stacked'], defaultValue: 'grouped' },
+              { name: 'stacked', label: 'Stacked', type: 'switch', defaultValue: false },
+              { name: 'brandColor', label: 'Brand', type: 'color', defaultValue: '#ff6b35' },
+            ],
+          }}
+        />
+      </StateProvider>,
+    )
+
+    expect(container.querySelector('form')).toBeTruthy()
+    expect(container.querySelector('input[type="range"]')).toBeTruthy()
+    expect(container.querySelector('select')).toBeTruthy()
+    expect(screen.getByRole('switch', { name: 'Stacked' })).toBeTruthy()
+    expect(container.querySelector('input[type="color"]')).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Apply changes' })).toBeTruthy()
+  })
+
+  it('writes bound form data into json-render state when controls change', () => {
+    const onStateChange = vi.fn()
+    const initialControls = {
+      points: 6,
+      mode: 'grouped',
+      stacked: false,
+      brandColor: '#ff6b35',
+    }
+
+    const { container } = render(
+      <StateProvider initialState={{ controls: initialControls }} onStateChange={onStateChange}>
+        <BoundControlsForm />
+      </StateProvider>,
+    )
+
+    fireEvent.change(container.querySelector('input[type="range"]')!, {
+      target: { value: '9' },
+    })
+    expect(onStateChange).toHaveBeenLastCalledWith([
+      { path: '/controls', value: { ...initialControls, points: 9 } },
+    ])
+
+    fireEvent.change(container.querySelector('select')!, {
+      target: { value: 'stacked' },
+    })
+    expect(onStateChange).toHaveBeenLastCalledWith([
+      { path: '/controls', value: { ...initialControls, points: 9, mode: 'stacked' } },
+    ])
+
+    fireEvent.click(screen.getByRole('switch', { name: 'Stacked' }))
+    expect(onStateChange).toHaveBeenLastCalledWith([
+      { path: '/controls', value: { ...initialControls, points: 9, mode: 'stacked', stacked: true } },
+    ])
+
+    fireEvent.change(container.querySelector('input[type="color"]')!, {
+      target: { value: '#3366ff' },
+    })
+    expect(onStateChange).toHaveBeenLastCalledWith([
+      { path: '/controls', value: { ...initialControls, points: 9, mode: 'stacked', stacked: true, brandColor: '#3366ff' } },
+    ])
+  })
+
   it('submits validated form data through callback and action event', () => {
     const onSubmit = vi.fn()
     const emit = vi.fn()

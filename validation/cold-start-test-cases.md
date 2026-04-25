@@ -143,7 +143,7 @@
 
 ---
 
-## Test 11: InteractivePlayground（LiveKit）
+## Test 11: 实时可调图表（Vizual host bridge）
 
 **用户指令：**
 > 做一个交互式柱状图演示，用户可以：
@@ -153,10 +153,11 @@
 > - 用颜色选择器改变柱子颜色
 
 **验证点：**
-- InteractivePlayground: type = `"interactive_playground"`
-- component 字段格式正确：`{ type: "BarChart", props: {...} }`
-- controls 用 `name` + `targetProp`（不是 key 或 wrappedSpec）
-- 包含 slider、toggle、select、color 四种控件
+- 必须调用 `renderInteractiveVizInMsg(id, config)`，不是返回纯 JSON spec
+- `controlsSpec` 使用 FormBuilder，且 `props.value = { "$bindState": "/controls" }`
+- `initialState.controls` 包含数据点数量、堆叠开关、配色选择、品牌色
+- `makeSpec(state)` 根据 controls 生成 BarChart；拖动 slider 后数据点数量变化
+- `applyTheme(state, Vizual)` 或 `designMd` 用于品牌色，不要把 chart `theme` 当作品牌色注入
 
 ---
 
@@ -206,7 +207,7 @@
 
 ---
 
-## Test 14: 三合一联动（Parser + LiveKit + Vizual）
+## Test 14: Design.md + 实时联动（Vizual host bridge）
 
 **用户指令：**
 > 品牌色是 #1DB954，做一个实时可调的图表，用户能：
@@ -216,9 +217,11 @@
 > - 改品牌色
 
 **验证点：**
-- 正确组合 parseDesignMd + InteractivePlayground + 主题切换
-- controls 的 targetProp 映射正确
-- 主题切换时知道重新渲染
+- 必须调用 `renderInteractiveVizInMsg(id, config)`，并提供 `designMd` 或在 `applyTheme` 里调用 `Vizual.loadDesignMd()`
+- FormBuilder 绑定 `/controls`，包含数据量、图表类型、暗色/亮色、品牌色控件
+- `makeSpec(state)` 根据图表类型返回 BarChart / LineChart / AreaChart 之一
+- 品牌色变化通过 `applyTheme(state, Vizual)` 重新 `loadDesignMd()`，不是写 `theme: "#1DB954"`
+- 暗色/亮色可以用 `Vizual.toggleMode()` / `setGlobalTheme()` / 重新加载 DESIGN.md 变体，切换后要重新渲染预览
 
 ---
 

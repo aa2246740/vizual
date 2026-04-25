@@ -10,6 +10,7 @@ import * as ReactDOM from 'react-dom'
 import * as ReactDOMClient from 'react-dom/client'
 import { Renderer, JSONUIProvider, createStateStore } from '@json-render/react'
 import type { StateModel } from '@json-render/react'
+import type { ComputedFunction } from '@json-render/core'
 
 // Theme system
 import { loadDesignMd, setGlobalTheme, applyTheme, registerTheme, getTheme, getThemeNames, toggleMode, getCurrentThemeName, mapDesignTokensToTheme, invertTheme } from './themes'
@@ -54,6 +55,38 @@ import { DocView } from './docview/container'
 type RenderSpecOptions = {
   initialState?: Record<string, unknown>
   handlers?: Record<string, (params: Record<string, unknown>) => Promise<unknown> | unknown>
+  functions?: Record<string, ComputedFunction>
+  onStateChange?: (changes: Array<{ path: string; value: unknown }>) => void
+}
+
+const mountedRoots = new WeakMap<HTMLElement, ReactDOMClient.Root>()
+
+function createObservableStateStore(
+  initialState: StateModel,
+  onStateChange?: RenderSpecOptions['onStateChange'],
+) {
+  const store = createStateStore(initialState)
+  if (!onStateChange) return store
+
+  return {
+    ...store,
+    set(path: string, value: unknown) {
+      const before = store.get(path)
+      store.set(path, value)
+      const after = store.get(path)
+      if (before !== after) onStateChange([{ path, value: after }])
+    },
+    update(updates: Record<string, unknown>) {
+      const before = Object.fromEntries(
+        Object.keys(updates).map(path => [path, store.get(path)]),
+      )
+      store.update(updates)
+      const changes = Object.entries(updates)
+        .map(([path]) => ({ path, value: store.get(path) }))
+        .filter(change => before[change.path] !== change.value)
+      if (changes.length) onStateChange(changes)
+    },
+  }
 }
 
 function createStoreBackedSetState(store: ReturnType<typeof createStateStore>) {
@@ -74,19 +107,37 @@ function renderSpec(spec: any, container: HTMLElement, options: RenderSpecOption
     ...((spec?.state as StateModel | undefined) ?? {}),
     ...(options.initialState ?? {}),
   }
-  const store = createStateStore(initialState)
+  const store = createObservableStateStore(initialState, options.onStateChange)
   const setState = createStoreBackedSetState(store)
   const actionHandlers = {
     ...createVizualHandlers(() => setState, () => store.getSnapshot()),
     ...(options.handlers ?? {}),
   }
-  const root = ReactDOMClient.createRoot(container)
+  let root = mountedRoots.get(container)
+  if (!root) {
+    root = ReactDOMClient.createRoot(container)
+    mountedRoots.set(container, root)
+  }
   root.render(
-    React.createElement(JSONUIProvider, { registry, store, handlers: actionHandlers } as any,
+    React.createElement(JSONUIProvider, {
+      registry,
+      store,
+      handlers: actionHandlers,
+      functions: options.functions,
+      onStateChange: options.onStateChange,
+    } as any,
       React.createElement(Renderer, { spec, registry })
     )
   )
   return root
+}
+
+function unmountSpec(container: HTMLElement) {
+  const root = mountedRoots.get(container)
+  if (!root) return false
+  root.unmount()
+  mountedRoots.delete(container)
+  return true
 }
 
 // === Expose to window ===
@@ -129,6 +180,7 @@ const vizual = {
 
   // renderSpec
   renderSpec,
+  unmountSpec,
 
   // All components
   BarChart,

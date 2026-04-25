@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef } from 'react'
 import { useBoundProp } from '@json-render/react'
 import { tcss, tc } from '../../core/theme-colors'
 import { AnnotatableWrapper } from '../../docview/annotatable-wrapper'
@@ -10,6 +10,10 @@ type RuntimeFormBuilderProps = FormBuilderProps & {
 }
 type NormalizedOption = { label: string; value: string | number }
 type ValidationRule = NonNullable<Field['validation']>[0]
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
 
 const validators: Record<string, (value: unknown, ruleValue?: string | number) => boolean> = {
   required: (v) => v !== undefined && v !== null && v !== '',
@@ -46,12 +50,21 @@ export function FormBuilder({
     if (f.defaultValue !== undefined) acc[f.name] = f.defaultValue
     return acc
   }, {})
+  const resolvedData = isRecord(props.value)
+    ? { ...defaultData, ...props.value }
+    : defaultData
 
-  const bound = useBoundProp<Record<string, unknown>>(defaultData, bindings?.value)
-  const [localData, setLocalData] = useState<Record<string, unknown>>(defaultData)
+  const [boundData, setBoundData] = useBoundProp<Record<string, unknown>>(resolvedData, bindings?.value)
+  const [localData, setLocalData] = useState<Record<string, unknown>>(resolvedData)
   const hasBinding = !!bindings?.value
-  const formData = hasBinding ? (bound[0] ?? {}) : localData
-  const setFormData = (v: Record<string, unknown>) => { bound[1](v); setLocalData(v) }
+  const formData = hasBinding ? (boundData ?? {}) : localData
+  const formDataRef = useRef<Record<string, unknown>>(formData)
+  formDataRef.current = formData
+  const setFormData = useCallback((v: Record<string, unknown>) => {
+    formDataRef.current = v
+    setBoundData(v)
+    setLocalData(v)
+  }, [setBoundData])
 
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [touched, setTouched] = useState<Record<string, boolean>>({})
@@ -59,8 +72,8 @@ export function FormBuilder({
   const [hoverRating, setHoverRating] = useState<Record<string, number>>({})
 
   const updateField = useCallback((name: string, value: unknown) => {
-    setFormData({ ...(formData || {}), [name]: value })
-  }, [setFormData, formData])
+    setFormData({ ...(formDataRef.current || {}), [name]: value })
+  }, [setFormData])
 
   const validateField = useCallback((field: Field, value: unknown): string | undefined => {
     if (field.required && !validators.required(value)) {
@@ -255,6 +268,18 @@ export function FormBuilder({
       return <div key={field.name} style={{ marginBottom: 12 }}>
         {renderLabel(field)}
         <div onClick={() => !field.disabled && updateField(field.name, !on)}
+          role="switch"
+          aria-label={field.label || field.name}
+          aria-checked={on}
+          aria-disabled={field.disabled || undefined}
+          tabIndex={field.disabled ? -1 : 0}
+          onKeyDown={(e) => {
+            if (field.disabled) return
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault()
+              updateField(field.name, !on)
+            }
+          }}
           style={{
             display: 'inline-flex', alignItems: 'center', gap: 8,
             cursor: field.disabled ? 'not-allowed' : 'pointer',

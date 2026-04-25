@@ -51,8 +51,17 @@
     .bubble.ai.has-viz { max-width: 100%; padding: 14px 16px; }
 
     /* Viz 容器 — 在气泡内部 */
-    .viz-wrap { margin-top: 12px; background: var(--bg-viz); border: 1px solid var(--border); border-radius: 10px; padding: 14px; min-height: 200px; min-width: 400px; position: relative; }
+    .viz-wrap { margin-top: 12px; background: var(--bg-viz); border: 1px solid var(--border); border-radius: 10px; padding: 14px; min-height: 200px; width: 100%; min-width: 0; overflow-x: auto; position: relative; }
     .viz-wrap .viz-error { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: var(--error); font-size: 13px; }
+    .interactive-wrap { display: grid; grid-template-columns: minmax(220px, 0.36fr) minmax(280px, 1fr); gap: 12px; align-items: stretch; min-width: 0; }
+    .interactive-controls, .interactive-preview { min-width: 0; border: 1px solid var(--border); border-radius: 8px; background: rgba(15,17,23,0.55); padding: 12px; }
+    .interactive-controls { overflow: auto; }
+    .interactive-preview { min-height: 260px; position: relative; }
+    .interactive-preview-root { min-height: 260px; min-width: 0; }
+    .interactive-error { margin-top: 8px; padding: 8px 10px; border: 1px solid rgba(239,68,68,0.45); border-radius: 8px; color: #fecaca; background: rgba(239,68,68,0.12); font-size: 12px; display: none; }
+    @media (max-width: 720px) {
+      .interactive-wrap { grid-template-columns: 1fr; }
+    }
 
     /* 流式光标 */
     .cursor { display: inline-block; width: 2px; height: 1em; background: var(--accent); animation: blink 1s infinite; vertical-align: text-bottom; margin-left: 2px; }
@@ -123,7 +132,8 @@
         <tr><td><code>window.createAiMsg()</code></td><td>创建 AI 消息气泡（带流式光标），返回消息 ID</td><td>string (id)</td></tr>
         <tr><td><code>window.streamText(id, text)</code></td><td>往 AI 气泡追加文字</td><td>void</td></tr>
         <tr><td><code>window.finishText(id)</code></td><td>结束流式输出（移除光标）</td><td>void</td></tr>
-        <tr><td><code>window.renderVizInMsg(id, spec)</code></td><td>渲染 Vizual JSON Spec 到气泡</td><td>boolean</td></tr>
+        <tr><td><code>window.renderVizInMsg(id, spec)</code></td><td>渲染静态 Vizual JSON Spec 到气泡</td><td>boolean</td></tr>
+        <tr><td><code>window.renderInteractiveVizInMsg(id, config)</code></td><td>渲染 FormBuilder 控件 + 实时预览；Agent 作为宿主提供 <code>makeSpec(state)</code></td><td>boolean</td></tr>
       </table>
       <pre>// 完整流程
 const id = window.createAiMsg();         // 1. 创建气泡
@@ -131,6 +141,53 @@ window.streamText(id, '正在生成图表...');  // 2. 流式文字
 window.finishText(id);                    // 3. 结束文字
 window.renderVizInMsg(id, spec);          // 4. 渲染图表
 window._pendingMsg = null;                // 5. 清除已读消息</pre>
+
+      <h3>实时 adjust-preview 场景</h3>
+      <p>实时可调图表不是纯 JSON spec。Agent 必须作为宿主调用 <code>renderInteractiveVizInMsg()</code>，用 FormBuilder 绑定 <code>/controls</code>，再由 <code>makeSpec(state)</code> 生成右侧预览图表。</p>
+      <pre>const id = window.createAiMsg();
+window.streamText(id, '可以直接调参数查看结果。');
+window.finishText(id);
+
+window.renderInteractiveVizInMsg(id, {
+  initialState: {
+    controls: { points: 8, mode: 'grouped', brandColor: '#ff6b35' },
+  },
+  designMd: 'Primary: #ff6b35\nBackground: #0f1117',
+  controlsSpec: {
+    root: 'controls',
+    elements: {
+      controls: {
+        type: 'FormBuilder',
+        props: {
+          type: 'form_builder',
+          value: { $bindState: '/controls' },
+          fields: [
+            { name: 'points', label: '数据点', type: 'slider', min: 3, max: 14 },
+            { name: 'mode', label: '模式', type: 'select', options: ['grouped', 'stacked'] },
+            { name: 'brandColor', label: '品牌色', type: 'color' },
+          ],
+        },
+      },
+    },
+  },
+  applyTheme: (state, Vizual) => {
+    Vizual.loadDesignMd('Primary: ' + state.controls.brandColor, { apply: true });
+  },
+  makeSpec: (state) => ({
+    root: 'chart',
+    elements: {
+      chart: {
+        type: 'BarChart',
+        props: {
+          title: '实时预览',
+          x: Array.from({ length: state.controls.points }, (_, i) => 'D' + (i + 1)),
+          y: Array.from({ length: state.controls.points }, (_, i) => 20 + i * 5),
+          stacked: state.controls.mode === 'stacked',
+        },
+      },
+    },
+  }),
+});</pre>
 
       <h3>Claude Code（Chrome DevTools MCP）</h3>
       <p>安装 <code>chrome-devtools-mcp</code>，Claude Code 自动获得 <code>mcp__chrome-devtools__evaluate_script</code> 工具：</p>
@@ -194,6 +251,7 @@ setInterval(async () => {
     //  状态
     // ============================================================
     window._pendingMsg = null;   // MCP 轮询读取用户最新消息
+    window._interactiveViz = {}; // 实时控件-预览控制器，按消息 ID 存储
     let vizualReady = false;
     let msgSeq = 0;
 
@@ -297,11 +355,64 @@ setInterval(async () => {
       if (cursor) cursor.remove();
     };
 
+    function cloneState(value) {
+      if (value == null) return {};
+      if (typeof structuredClone === 'function') {
+        try { return structuredClone(value); } catch (_) {}
+      }
+      return JSON.parse(JSON.stringify(value));
+    }
+
+    function decodePointerSegment(segment) {
+      return segment.replace(/~1/g, '/').replace(/~0/g, '~');
+    }
+
+    function setByPointer(target, path, value) {
+      if (!path || path === '/') return value;
+      const parts = path.replace(/^\//, '').split('/').map(decodePointerSegment);
+      let current = target;
+      for (let i = 0; i < parts.length - 1; i++) {
+        const key = parts[i];
+        if (typeof current[key] !== 'object' || current[key] === null) current[key] = {};
+        current = current[key];
+      }
+      current[parts[parts.length - 1]] = value;
+      return target;
+    }
+
+    function applyStateChanges(state, changes) {
+      if (!Array.isArray(changes)) return state;
+      for (const change of changes) {
+        if (!change || typeof change.path !== 'string') continue;
+        state = setByPointer(state, change.path, change.value);
+      }
+      return state;
+    }
+
+    function showVizError(container, err) {
+      const errEl = document.createElement('div');
+      errEl.className = 'viz-error';
+      errEl.textContent = '渲染失败: ' + (err?.message || err);
+      container.appendChild(errEl);
+    }
+
+    function ensureVizualReady(id, vizWrap, bubble) {
+      if (window.Vizual && window.Vizual.renderSpec) return true;
+      const errEl = document.createElement('div');
+      errEl.className = 'viz-error';
+      errEl.textContent = 'Vizual 尚未加载完成，请稍后重试';
+      vizWrap.appendChild(errEl);
+      vizWrap.style.display = 'block';
+      bubble.classList.add('has-viz');
+      console.error('[Vizual bridge] Vizual 未就绪:', id);
+      return false;
+    }
+
     /**
      * 渲染 Vizual 组件到消息气泡内部。
      * spec 格式: { root: 'main', elements: { main: { type: 'KpiDashboard', props: { metrics: [...] } } } }
      */
-    window.renderVizInMsg = function(id, spec) {
+    window.renderVizInMsg = function(id, spec, options) {
       const vizWrap = document.getElementById(id + '-viz');
       const bubble = document.getElementById(id + '-bubble');
       if (!vizWrap || !bubble) {
@@ -309,35 +420,140 @@ setInterval(async () => {
         return false;
       }
 
-      // 检查 Vizual 是否就绪
-      if (!window.Vizual || !window.Vizual.renderSpec) {
-        const errEl = document.createElement('div');
-        errEl.className = 'viz-error';
-        errEl.textContent = 'Vizual 尚未加载完成，请稍后重试';
-        vizWrap.appendChild(errEl);
-        vizWrap.style.display = 'block';
-        bubble.classList.add('has-viz');
-        console.error('[renderVizInMsg] Vizual 未就绪');
-        return false;
-      }
+      if (!ensureVizualReady(id, vizWrap, bubble)) return false;
+      window._interactiveViz[id]?.destroy?.();
+      delete window._interactiveViz[id];
 
       // 显示 viz 容器，气泡撑满宽
       vizWrap.style.display = 'block';
       bubble.classList.add('has-viz');
 
       try {
-        const root = window.Vizual.renderSpec(spec, vizWrap);
+        window.Vizual.renderSpec(spec, vizWrap, options || {});
         console.log('[renderVizInMsg] 渲染成功:', spec?.root ? Object.keys(spec.elements || {}).join(', ') : 'no root');
         scrollBottom();
         return true;
       } catch (err) {
         console.error('[renderVizInMsg] 渲染失败:', err);
-        const errEl = document.createElement('div');
-        errEl.className = 'viz-error';
-        errEl.textContent = '渲染失败: ' + (err.message || err);
-        vizWrap.appendChild(errEl);
+        showVizError(vizWrap, err);
         return false;
       }
+    };
+
+    /**
+     * 渲染实时可调 Vizual：左侧 FormBuilder 控件，右侧预览。
+     * Agent 必须提供 controlsSpec + makeSpec(state)。这不是纯 JSON spec。
+     */
+    window.renderInteractiveVizInMsg = function(id, config) {
+      const vizWrap = document.getElementById(id + '-viz');
+      const bubble = document.getElementById(id + '-bubble');
+      if (!vizWrap || !bubble) {
+        console.warn('[renderInteractiveVizInMsg] 找不到元素:', id);
+        return false;
+      }
+      if (!ensureVizualReady(id, vizWrap, bubble)) return false;
+      if (!config || typeof config.makeSpec !== 'function' || !config.controlsSpec) {
+        console.warn('[renderInteractiveVizInMsg] config 需要 controlsSpec 和 makeSpec(state)');
+        return false;
+      }
+
+      window._interactiveViz[id]?.destroy?.();
+      delete window._interactiveViz[id];
+      window.Vizual.unmountSpec?.(vizWrap);
+
+      const textEl = document.getElementById(id + '-text');
+      if (textEl && typeof config.answerText === 'string') {
+        textEl.textContent = config.answerText;
+        window.finishText(id);
+      }
+
+      const shell = document.createElement('div');
+      shell.className = 'interactive-wrap';
+
+      const controlsEl = document.createElement('div');
+      controlsEl.className = 'interactive-controls';
+
+      const previewShell = document.createElement('div');
+      previewShell.className = 'interactive-preview';
+      const previewEl = document.createElement('div');
+      previewEl.className = 'interactive-preview-root';
+      const errorEl = document.createElement('div');
+      errorEl.className = 'interactive-error';
+      previewShell.appendChild(previewEl);
+      previewShell.appendChild(errorEl);
+
+      shell.appendChild(controlsEl);
+      shell.appendChild(previewShell);
+      vizWrap.replaceChildren(shell);
+      vizWrap.style.display = 'block';
+      bubble.classList.add('has-viz');
+
+      let state = cloneState(config.initialState || {});
+      let previewTimer = 0;
+      let renderCount = 0;
+
+      const applyTheme = () => {
+        if (typeof config.designMd === 'string' && config.designMd.trim()) {
+          window.Vizual.loadDesignMd(config.designMd, { apply: true });
+        }
+        if (typeof config.applyTheme === 'function') {
+          config.applyTheme(state, window.Vizual);
+        }
+      };
+
+      const renderPreview = () => {
+        previewTimer = 0;
+        try {
+          applyTheme();
+          errorEl.style.display = 'none';
+          errorEl.textContent = '';
+          const spec = config.makeSpec(state);
+          window.Vizual.renderSpec(spec, previewEl);
+          renderCount += 1;
+          scrollBottom();
+        } catch (err) {
+          console.error('[renderInteractiveVizInMsg] 预览渲染失败:', err);
+          errorEl.textContent = '预览渲染失败: ' + (err?.message || err);
+          errorEl.style.display = 'block';
+        }
+      };
+
+      const schedulePreview = () => {
+        if (previewTimer) clearTimeout(previewTimer);
+        previewTimer = setTimeout(renderPreview, 0);
+      };
+
+      const onStateChange = (changes) => {
+        state = applyStateChanges(state, changes);
+        schedulePreview();
+      };
+
+      try {
+        applyTheme();
+        window.Vizual.renderSpec(config.controlsSpec, controlsEl, {
+          initialState: state,
+          onStateChange,
+        });
+        renderPreview();
+      } catch (err) {
+        console.error('[renderInteractiveVizInMsg] 渲染失败:', err);
+        errorEl.textContent = '渲染失败: ' + (err?.message || err);
+        errorEl.style.display = 'block';
+        return false;
+      }
+
+      window._interactiveViz[id] = {
+        getState: () => cloneState(state),
+        rerender: renderPreview,
+        getRenderCount: () => renderCount,
+        destroy: () => {
+          if (previewTimer) clearTimeout(previewTimer);
+          window.Vizual.unmountSpec?.(controlsEl);
+          window.Vizual.unmountSpec?.(previewEl);
+        },
+      };
+
+      return true;
     };
 
     /**

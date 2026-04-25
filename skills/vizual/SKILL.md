@@ -100,7 +100,7 @@ Real outputs are usually compositions. Here are the common patterns:
 
 **Split View** — `SplitLayout` with a chart on one side and a `DataTable` on the other. Good for comparing visual and tabular representations of the same data.
 
-**Interactive Explorer** — Use a standalone chart component with user-adjustable data. For truly interactive parameter exploration, tell the user to use a separate HTML page with native HTML controls. Do NOT use InteractivePlayground — it has been removed.
+**Interactive Explorer** — In `validation/vizual-test.html`, use the host bridge `renderInteractiveVizInMsg(id, config)`: FormBuilder controls on the left, live Vizual preview on the right, and `makeSpec(state)` to regenerate the chart. This is host JavaScript, not pure JSON. Do NOT use InteractivePlayground — it has been removed.
 
 **Standalone Chart** — A single chart component at the root. No layout wrapper needed.
 
@@ -121,7 +121,50 @@ window.renderVizInMsg(id, spec);      // mount the Vizual JSON spec
 window._pendingMsg = null;            // mark the user message handled
 ```
 
-If an agent can only click and type in the browser but cannot execute JavaScript in the page, it cannot complete `vizual-test.html` rendering by itself. In that case, use a host bridge, Playwright/CDP, or an auto-poll backend that calls `renderVizInMsg()`.
+For real-time adjust-preview tasks in `vizual-test.html`, call the interactive bridge instead of returning a pure spec:
+
+```js
+const id = window.createAiMsg();
+window.streamText(id, answerText);
+window.finishText(id);
+window.renderInteractiveVizInMsg(id, {
+  initialState: { controls: { points: 8, mode: 'grouped', brandColor: '#ff6b35' } },
+  controlsSpec: {
+    root: 'controls',
+    elements: {
+      controls: {
+        type: 'FormBuilder',
+        props: {
+          type: 'form_builder',
+          value: { $bindState: '/controls' },
+          fields: [
+            { name: 'points', label: 'Data points', type: 'slider', min: 3, max: 15 },
+            { name: 'mode', label: 'Mode', type: 'select', options: ['grouped', 'stacked'] },
+            { name: 'brandColor', label: 'Brand color', type: 'color' },
+          ],
+        },
+      },
+    },
+  },
+  designMd: 'Primary: #ff6b35',
+  applyTheme: (state, Vizual) => Vizual.loadDesignMd(`Primary: ${state.controls.brandColor}`, { apply: true }),
+  makeSpec: (state) => ({
+    root: 'chart',
+    elements: {
+      chart: {
+        type: 'BarChart',
+        props: {
+          x: Array.from({ length: state.controls.points }, (_, i) => `D${i + 1}`),
+          y: Array.from({ length: state.controls.points }, (_, i) => 20 + i * 4),
+          stacked: state.controls.mode === 'stacked',
+        },
+      },
+    },
+  }),
+});
+```
+
+If an agent can only click and type in the browser but cannot execute JavaScript in the page, it cannot complete `vizual-test.html` rendering or live interactivity by itself. In that case, provide a static spec plus explanation, or use a host bridge, Playwright/CDP, or an auto-poll backend that calls `renderVizInMsg()` / `renderInteractiveVizInMsg()`.
 
 For ordinary data-analysis prompts in `vizual-test.html`, answer in host message text and render a `GridLayout`/chart/dashboard spec. Do not choose DocView unless the user explicitly asks for annotation, comments, review, revision, or a document artifact.
 
@@ -168,7 +211,7 @@ If unsure between DocView and GridLayout, choose `GridLayout` and put the writte
 
 **The user wants a board, timeline, org chart, or activity log** → Kanban, GanttChart, Timeline, OrgChart, AuditLog respectively.
 
-**The user wants to adjust parameters interactively** → **InteractivePlayground has been removed.** Use a plain chart component with hardcoded data instead. If the user explicitly needs interactivity, tell them to use a standalone HTML page with native HTML controls and the Vizual JS API.
+**The user wants to adjust parameters interactively** → In `vizual-test.html`, call `renderInteractiveVizInMsg()` with a FormBuilder `value: { "$bindState": "/controls" }`, `initialState.controls`, and `makeSpec(state)`. Outside that test page, the host application must provide the same state-change bridge. If you cannot execute page JavaScript, generate a static spec and clearly say live interactivity needs a host bridge.
 
 **REMOVED: InteractivePlayground** — Do NOT generate specs with `type: "InteractivePlayground"` or `type: "interactive_playground"`. This component no longer exists.
 
@@ -194,7 +237,7 @@ These are the most common mistakes. Avoiding them is more important than memoriz
 
 6. **Don't use removed components.** BigValue, Delta, Alert, Note, TextBlock, **InteractivePlayground** no longer exist. Use KpiDashboard for metrics. Use host text or DocView `callout` only when you are already using DocView.
 
-7. **Don't hardcode brand colors in freeform HTML.** Vizual has a default dark theme that works out of the box. For light mode, set `theme: "light"` on chart components. For custom brand colors, tell the user the host app can call `loadDesignMd()`. Don't try to bypass the theme system with inline styles.
+7. **Don't treat `theme` as brand-color injection.** Chart `theme: "dark"` / `"light"` only selects a preset mode. For custom brand colors, the host must call `Vizual.loadDesignMd(markdown, { apply: true })`, or `renderInteractiveVizInMsg()` must provide `designMd` / `applyTheme`. Don't try to bypass the theme system with inline styles.
 
 ## Output Format
 
@@ -242,7 +285,7 @@ Placeholder data is acceptable only when the user asks for an example/demo or gi
 
 ## Theme
 
-Default is dark. For light mode, set `theme: "light"` on chart components. For full brand customization, the host app calls `loadDesignMd(markdown)` — this is outside the JSON spec.
+Default is dark. For light mode, set `theme: "light"` on chart components. This prop is not a brand palette. For full brand customization, the host app calls `Vizual.loadDesignMd(markdown, { apply: true })` before rendering, or the `vizual-test.html` interactive bridge uses `designMd` / `applyTheme`. Brand colors are outside the pure JSON spec.
 
 ## Export
 
@@ -250,6 +293,5 @@ All components support PNG export via `Vizual.exportToPNG(element, { scale: 2 })
 
 ## Combining with Other Skills
 
-- **LiveKit** — When the user wants theme-level or custom-level interactivity (multi-component interactive pages, theme preview, dark/light comparison).
 - **design-md-parser** — When the user provides a design document and wants to extract theme tokens.
 - **design-md-creator** — When the user wants to create a design system from scratch with an interactive preview.

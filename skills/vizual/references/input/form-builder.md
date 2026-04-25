@@ -12,6 +12,7 @@ Dynamic form with 18 field types, validation, and conditional visibility.
 | title | string | no | form title |
 | columns | number | no | layout columns (default 1) |
 | submitLabel | string | no | submit button text (default "Submit") |
+| value | object \| `{ "$bindState": string }` | no | full form data object; use `$bindState` for live controls |
 | fields | FormField[] | yes | array of field definitions |
 
 ## Supported field types (18)
@@ -49,7 +50,7 @@ Dynamic form with 18 field types, validation, and conditional visibility.
 | description | string | no | help text |
 | defaultValue | any | no | initial value |
 | dependsOn | string | no | name of another field this field depends on |
-| showWhen | { field: string, value: any } | no | show this field only when dependsOn field matches value |
+| showWhen | string \| number | no | show this field only when dependsOn field matches this value |
 
 ## Field-specific props
 
@@ -84,6 +85,33 @@ Dynamic form with 18 field types, validation, and conditional visibility.
   "children": []
 }
 ```
+
+## Realtime control binding
+
+For live adjust-preview workflows, FormBuilder is the control surface. Bind the whole form to a state path and let the host listen for state changes:
+
+```json
+{
+  "root": "controls",
+  "elements": {
+    "controls": {
+      "type": "FormBuilder",
+      "props": {
+        "type": "form_builder",
+        "title": "Chart controls",
+        "value": { "$bindState": "/controls" },
+        "fields": [
+          { "name": "points", "label": "Data points", "type": "slider", "min": 3, "max": 15 },
+          { "name": "mode", "label": "Mode", "type": "select", "options": ["grouped", "stacked"] },
+          { "name": "brandColor", "label": "Brand color", "type": "color" }
+        ]
+      }
+    }
+  }
+}
+```
+
+In `validation/vizual-test.html`, use this controls spec inside `renderInteractiveVizInMsg(id, { initialState, controlsSpec, makeSpec, designMd, applyTheme })`. The page bridge receives `onStateChange`, calls `makeSpec(state)`, and re-renders the preview. A pure JSON spec cannot wire a form to a separate chart by itself.
 
 ## Conditional visibility example
 
