@@ -122,6 +122,9 @@
         <button onclick="filterEast()">只看华东区</button>
         <button onclick="makeLessDense()">让图表更疏一点</button>
         <button onclick="exportPng()">导出 PNG 并记录 metadata</button>
+        <button onclick="exportPdf()">导出 PDF 并记录 metadata</button>
+        <button onclick="exportXlsx()">导出 XLSX 并记录 metadata</button>
+        <button onclick="exportCsv()">导出 CSV 并记录 metadata</button>
       </div>
       <div class="status" id="actionStatus">等待操作</div>
       <pre id="debug"></pre>
@@ -240,26 +243,63 @@
       setAction('已限制为 6 个数据点');
     }
 
+    function firstRows() {
+      return currentArtifact.spec.elements.chart.props.data || [];
+    }
+
+    async function recordExport(format, blob, filename) {
+      const target = document.getElementById('renderTarget');
+      const record = window.Vizual.createExportRecord(currentArtifact, {
+        format,
+        status: 'success',
+        filename,
+        width: target.offsetWidth,
+        height: target.offsetHeight,
+        meta: { size: blob.size, type: blob.type },
+      });
+      currentArtifact = window.Vizual.updateArtifact(currentArtifact, {
+        type: 'addExportRecord',
+        export: record,
+        reason: '用户导出 ' + format.toUpperCase(),
+      });
+      updateDebug();
+      setAction(format.toUpperCase() + ' 导出成功，metadata 已写入 artifact');
+    }
+
     async function exportPng() {
       try {
         const target = document.getElementById('renderTarget');
         const blob = await window.Vizual.exportToPNG(target, { filename: currentArtifact.id });
-        const record = window.Vizual.createExportRecord(currentArtifact, {
-          format: 'png',
-          status: 'success',
-          width: target.offsetWidth,
-          height: target.offsetHeight,
-          meta: { size: blob.size, type: blob.type },
-        });
-        currentArtifact = window.Vizual.updateArtifact(currentArtifact, {
-          type: 'addExportRecord',
-          export: record,
-          reason: '用户导出 PNG',
-        });
-        updateDebug();
-        setAction('PNG 导出成功，metadata 已写入 artifact');
+        await recordExport('png', blob, currentArtifact.id);
       } catch (err) {
         setAction('导出失败: ' + (err.message || err), false);
+      }
+    }
+
+    async function exportPdf() {
+      try {
+        const blob = await window.Vizual.exportToPDF(document.getElementById('renderTarget'), { filename: currentArtifact.id });
+        await recordExport('pdf', blob, currentArtifact.id);
+      } catch (err) {
+        setAction('PDF 导出失败: ' + (err.message || err), false);
+      }
+    }
+
+    async function exportXlsx() {
+      try {
+        const blob = await window.Vizual.exportDataToXLSX(firstRows(), { sheetName: '区域收入趋势' });
+        await recordExport('xlsx', blob, currentArtifact.id);
+      } catch (err) {
+        setAction('XLSX 导出失败: ' + (err.message || err), false);
+      }
+    }
+
+    async function exportCsv() {
+      try {
+        const blob = window.Vizual.exportDataToCSV(firstRows());
+        await recordExport('csv', blob, currentArtifact.id);
+      } catch (err) {
+        setAction('CSV 导出失败: ' + (err.message || err), false);
       }
     }
 

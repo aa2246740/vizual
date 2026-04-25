@@ -6,7 +6,7 @@ Vizual is the visual runtime for AI agents. An agent that connects to Vizual gai
 
 ## Core Principle
 
-The user sees a dynamically rendered visual artifact. Without Vizual, the host only has the structured JSON/artifact data. Images, PDFs, PPTs, and spreadsheets are export formats, not the source of truth.
+The user sees a dynamically rendered visual artifact. Without Vizual, the host only has the structured JSON/artifact data. Images, PDFs, and spreadsheets are export formats, not the source of truth.
 
 ## What Vizual Is
 
@@ -68,6 +68,7 @@ The runtime exposes three layers:
 
 - `renderSpec(spec, container)` for low-level static rendering.
 - `renderArtifact(artifactOrSpec, container)` for durable outputs with `id`, `targetMap`, `versions`, `theme`, `state`, and `exports`.
+- `VizualHostRuntime` for platform integration with memory/localStorage/custom artifact stores.
 - Host bridges such as `renderVizInMsg`, `renderArtifactInMsg`, `updateArtifactInMsg`, `renderInteractiveVizInMsg`, and `exportArtifact` for agent chat surfaces.
 
 Artifact patches are the first editing primitive. They let an agent update an existing output without rebuilding it from memory:
@@ -82,7 +83,7 @@ Artifact patches are the first editing primitive. They let an agent update an ex
 - `setTheme`
 - `addExportRecord`
 
-This is enough for the first historical-chat loop: reopen a saved visual, identify a target, change chart type, filter a region, reduce density, re-render, and record export metadata.
+This is enough for the first historical-chat loop: reopen a saved visual, identify a target, change chart type, filter a region, reduce density, re-render, and export to PNG/PDF/CSV/XLSX with metadata.
 
 ## vNext Success Standard
 
@@ -95,7 +96,7 @@ Vizual vNext is successful when an internal agent platform can do the following 
 5. The agent can identify the target artifact/component and update the rendered output.
 6. A user can open a generated report as DocView, annotate text or visual targets, and submit those threads.
 7. The agent can return a revision proposal, and the user can apply or reject it.
-8. The runtime can export the artifact or report to at least PNG initially, with PDF/PPT/table export as planned extension points.
+8. The runtime can export the artifact or report to PNG, PDF, CSV, and XLSX as appropriate for the target.
 9. The host developer can inspect current artifact state, render history, events, errors, theme, and targets.
 10. A cold-start agent that only reads the Vizual skill can generate valid outputs and use the host bridge correctly.
 

@@ -83,7 +83,8 @@ const updated = window.updateArtifactInMsg(artifact.id, [
   { type: 'filterData', targetId: target.id, field: 'region', values: '华东' },
   { type: 'limitData', targetId: target.id, limit: 8 },
 ]);
-await window.exportArtifact(updated.id, { filename: 'east-china-line' });
+await window.exportArtifact(updated.id, { format: 'pdf', filename: 'east-china-line' });
+await window.exportArtifact(updated.id, { format: 'xlsx', filename: 'east-china-data' });
 ```
 
 For live parameter tuning, use `renderInteractiveVizInMsg(id, config)` with FormBuilder bound to `/controls` and `makeSpec(state)`. This is host JavaScript, not pure JSON.
@@ -251,7 +252,7 @@ FormBuilder field types: text, email, password, number, url, tel, select, file, 
 | Using BigValue for KPIs | Use KpiDashboard | BigValue removed |
 | Using Alert for banners | Use host text, or DocView callout inside a document | Alert removed |
 | Using DocView for a normal chat analysis | Use host text + GridLayout/charts | DocView implies document/annotation workflow |
-| Using SVG export | Use PNG export only | SVG is not supported; use `exportToPNG` or `downloadPNG` |
+| Using SVG export | Use PNG/PDF/CSV/XLSX export | SVG is not supported |
 
 ## Data Guidelines
 
@@ -286,25 +287,36 @@ FormBuilder field types: text, email, password, number, url, tel, select, file, 
 
 ## Export API
 
-All components support PNG export. Use these APIs when the user wants to save/download a chart or dashboard as an image.
+Rendered visual surfaces support PNG and PDF. Data exports support CSV and XLSX.
 
 ### React (npm)
 
 ```tsx
-import { exportToPNG, downloadPNG } from 'vizual'
+import {
+  downloadExport,
+  exportDataToCSV,
+  exportDataToXLSX,
+  exportToPDF,
+  exportToPNG,
+} from 'vizual'
 
 // Get a Blob (for upload, preview, etc.)
-const blob = await exportToPNG(element, { scale: 2 })
+const png = await exportToPNG(element, { scale: 2 })
+const pdf = await exportToPDF(element, { filename: 'report' })
+const csv = exportDataToCSV(rows)
+const xlsx = await exportDataToXLSX(rows, { sheetName: '明细' })
 
 // Direct download — triggers browser download
-await downloadPNG(element, { scale: 2, filename: 'my-chart' })
+await downloadExport(element, 'pdf', { scale: 2, filename: 'my-chart' })
 ```
 
 ### Standalone HTML
 
 ```js
-const blob = await Vizual.exportToPNG(element, { scale: 2 })
-await Vizual.downloadPNG(element, { scale: 2, filename: 'chart' })
+const png = await Vizual.exportToPNG(element, { scale: 2 })
+const pdf = await Vizual.exportToPDF(element, { filename: 'report' })
+const csv = Vizual.exportDataToCSV(rows)
+const xlsx = await Vizual.exportDataToXLSX(rows, { sheetName: '明细' })
 ```
 
 ### Options
@@ -319,7 +331,7 @@ await Vizual.downloadPNG(element, { scale: 2, filename: 'chart' })
 
 ```js
 const viewport = document.querySelector('[data-docview-viewport]')
-await Vizual.downloadPNG(viewport, { filename: 'report' })
+await Vizual.downloadExport(viewport, 'pdf', { filename: 'report' })
 ```
 
 ## WaterfallChart Data Convention

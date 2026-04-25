@@ -143,6 +143,7 @@ window.updateArtifactInMsg(artifact.id, [
 ]);
 
 const exportRecord = await window.exportArtifact(artifact.id, {
+  format: 'pdf',
   filename: 'east-china-line-chart',
 });
 ```
@@ -156,7 +157,12 @@ Patch choice guide:
 - Make a dense chart sparser: `limitData` or regenerate fewer bins in a new `replaceElement`.
 - Change Design.md theme: call `Vizual.loadDesignMd()` first or use `setTheme` metadata plus host theme application.
 
-PPT/PDF export are host extension points unless the current host exposes them. Vizual's built-in export in this package is PNG.
+Built-in export formats:
+
+- Rendered surface: `png`, `pdf`.
+- Data: `csv`, `xlsx`.
+
+Use `window.exportArtifact(artifact.id, { format, filename })` in `vizual-test.html`. Use lower-level `Vizual.exportToPNG/exportToPDF/exportDataToCSV/exportDataToXLSX` in custom hosts.
 
 ## AI Answer Review / Scoring Dashboard
 

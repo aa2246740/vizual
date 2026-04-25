@@ -195,7 +195,31 @@ export { tc, tcss, chartColors, updateActiveColors } from './core/theme-colors'
 
 // Export API
 export {
+  createHostRuntime,
+  createLocalStorageArtifactStore,
+  createMemoryArtifactStore,
+  VizualHostRuntime,
+} from './core/host-runtime'
+export type {
+  ArtifactListQuery,
+  ArtifactRef,
+  ExportArtifactInput,
+  HostRenderAdapter,
+  HostRenderResult,
+  HostRuntimeEvent,
+  HostRuntimeEventHandler,
+  RenderMessageArtifactInput,
+  VizualArtifactStore,
+} from './core/host-runtime'
+export {
+  downloadBlob,
+  downloadExport,
   exportToPNG,
+  exportToPDF,
+  exportElement,
+  exportData,
+  exportDataToCSV,
+  exportDataToXLSX,
   downloadPNG,
 } from './core/export'
-export type { ExportOptions } from './core/export'
+export type { DataExportColumn, DataExportOptions, ExportOptions, PDFExportOptions } from './core/export'

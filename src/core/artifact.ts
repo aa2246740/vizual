@@ -35,6 +35,8 @@ export type VizualTargetType =
   | 'table-column'
   | 'table-cell'
   | 'chart-series'
+  | 'data-row'
+  | 'chart-data-point'
 
 export type VizualTarget = {
   id: string
@@ -61,7 +63,7 @@ export type VizualArtifactVersion = {
   patch?: unknown
 }
 
-export type VizualExportFormat = 'png' | 'pdf' | 'pptx' | 'xlsx' | 'csv' | string
+export type VizualExportFormat = 'png' | 'pdf' | 'xlsx' | 'csv' | string
 
 export type VizualExportRecord = {
   id: string
@@ -307,6 +309,31 @@ function summarizeValue(value: unknown, max = 96) {
   }
 }
 
+function normalizeFieldList(value: unknown): string[] {
+  if (Array.isArray(value)) return value.filter((item): item is string => typeof item === 'string' && !!item)
+  if (typeof value === 'string' && value) return [value]
+  return []
+}
+
+function collectChartSeriesFields(props: Record<string, unknown>, componentType: string): string[] {
+  const fields = new Set<string>()
+  for (const field of normalizeFieldList(props.y)) fields.add(field)
+  for (const key of ['value', 'valueField', 'low', 'high', 'size', 'label', 'dateField', 'xField', 'yField']) {
+    const value = props[key]
+    if (typeof value === 'string' && value) fields.add(value)
+  }
+  if (componentType === 'RadarChart' && Array.isArray(props.series)) {
+    props.series.forEach((series, index) => {
+      if (isRecord(series)) fields.add(typeof series.name === 'string' && series.name ? series.name : `series-${index}`)
+    })
+  }
+  return Array.from(fields)
+}
+
+function isChartComponent(componentType: string) {
+  return /Chart$/.test(componentType) || componentType === 'MermaidDiagram'
+}
+
 export function isVizualSpec(value: unknown): value is VizualSpec {
   return isRecord(value) && typeof value.root === 'string' && isRecord(value.elements)
 }
@@ -390,8 +417,58 @@ export function extractTargetMap(spec: VizualSpec): VizualTarget[] {
       })
     }
 
+    if (isChartComponent(componentType)) {
+      const seriesFields = collectChartSeriesFields(props, componentType)
+      seriesFields.forEach((field, index) => {
+        targets.push({
+          id: `series:${elementId}:${field}`,
+          type: 'chart-series',
+          path: pathJoin('elements', elementId, 'props'),
+          elementId,
+          componentType,
+          label: field,
+          summary: `${componentType} series ${field}`,
+          meta: { field, seriesIndex: index },
+        })
+      })
+
+      if (Array.isArray(props.data)) {
+        props.data.forEach((row, index) => {
+          if (!isRecord(row)) return
+          const rowPath = pathJoin('elements', elementId, 'props', 'data', index)
+          targets.push({
+            id: `row:${elementId}:${index}`,
+            type: 'data-row',
+            path: rowPath,
+            elementId,
+            componentType,
+            label: readLabel(row, `Row ${index + 1}`),
+            summary: summarizeValue(row),
+            meta: { rowIndex: index },
+          })
+          seriesFields.forEach((field) => {
+            if (!(field in row)) return
+            targets.push({
+              id: `point:${elementId}:${index}:${field}`,
+              type: 'chart-data-point',
+              path: `${rowPath}/${escapePointerSegment(field)}`,
+              elementId,
+              componentType,
+              label: `${field} @ ${readLabel(row, `Row ${index + 1}`)}`,
+              summary: summarizeValue(row[field]),
+              meta: { rowIndex: index, field },
+            })
+          })
+        })
+      }
+    }
+
     if (componentType === 'DataTable' && Array.isArray(props.columns)) {
-      props.columns.forEach((column, index) => {
+      const columns = props.columns
+        .map((column, index) => ({ column, index }))
+        .filter((entry): entry is { column: Record<string, unknown>; index: number } => isRecord(entry.column))
+
+      columns.forEach(({ column, index }) => {
         if (!isRecord(column)) return
         const key = typeof column.key === 'string' && column.key
           ? column.key
@@ -409,6 +486,40 @@ export function extractTargetMap(spec: VizualSpec): VizualTarget[] {
           meta: { columnKey: key, columnIndex: index },
         })
       })
+
+      if (Array.isArray(props.data)) {
+        props.data.forEach((row, rowIndex) => {
+          if (!isRecord(row)) return
+          const rowPath = pathJoin('elements', elementId, 'props', 'data', rowIndex)
+          targets.push({
+            id: `row:${elementId}:${rowIndex}`,
+            type: 'data-row',
+            path: rowPath,
+            elementId,
+            componentType,
+            label: readLabel(row, `Row ${rowIndex + 1}`),
+            summary: summarizeValue(row),
+            meta: { rowIndex },
+          })
+          columns.forEach(({ column, index: columnIndex }) => {
+            const key = typeof column.key === 'string' && column.key
+              ? column.key
+              : typeof column.field === 'string' && column.field
+                ? column.field
+                : String(columnIndex)
+            targets.push({
+              id: `cell:${elementId}:${rowIndex}:${key}`,
+              type: 'table-cell',
+              path: `${rowPath}/${escapePointerSegment(key)}`,
+              elementId,
+              componentType,
+              label: `${readLabel(column, key)} / ${readLabel(row, `Row ${rowIndex + 1}`)}`,
+              summary: summarizeValue(row[key]),
+              meta: { rowIndex, columnIndex, columnKey: key },
+            })
+          })
+        })
+      }
     }
   }
 

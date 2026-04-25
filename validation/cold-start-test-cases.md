@@ -273,9 +273,9 @@
   - `changeChartType` → `LineChart`
   - `filterData` → field/value 对应华东区
   - `limitData` 或等价的 `replaceElement` 降低密度
-- Agent 调用 `window.exportArtifact(updated.id, { filename })` 触发 PNG 导出 metadata
+- Agent 调用 `window.exportArtifact(updated.id, { format: 'png' | 'pdf' | 'csv' | 'xlsx', filename })` 触发导出 metadata
 - 更新后的 artifact 保留 `versions`，不是覆盖掉历史
-- 如果用户要求 PPT，Agent 必须说明当前页面内置 PNG，PPT 是宿主扩展点；不能假装已经导出 PPT
+- 如果用户要求表格，应使用 `csv` 或 `xlsx`；演示文稿导出暂不在当前内置范围
 
 ---
 

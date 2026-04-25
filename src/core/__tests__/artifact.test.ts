@@ -45,6 +45,17 @@ describe('Vizual artifact runtime model', () => {
       componentType: 'BarChart',
       label: 'Regional revenue',
     }))
+    expect(artifact.targetMap).toContainEqual(expect.objectContaining({
+      id: 'series:chart:revenue',
+      type: 'chart-series',
+      elementId: 'chart',
+      label: 'revenue',
+    }))
+    expect(artifact.targetMap).toContainEqual(expect.objectContaining({
+      id: 'point:chart:0:revenue',
+      type: 'chart-data-point',
+      summary: '100',
+    }))
     expect(summarizeSpec(artifact.spec)).toEqual({
       root: 'chart',
       elementCount: 1,
@@ -114,5 +125,46 @@ describe('Vizual artifact runtime model', () => {
 
     expect(getArtifactElement(artifact, 'chart')?.type).toBe('BarChart')
     expect(getArtifactElement(artifact, 'element:chart')?.type).toBe('BarChart')
+  })
+
+  it('extracts table column, row, and cell targets', () => {
+    const tableSpec = {
+      root: 'table',
+      elements: {
+        table: {
+          type: 'DataTable',
+          props: {
+            type: 'table',
+            columns: [
+              { key: 'region', label: '区域' },
+              { key: 'revenue', label: '收入' },
+            ],
+            data: [
+              { region: '华东', revenue: 120 },
+              { region: '华北', revenue: 88 },
+            ],
+          },
+          children: [],
+        },
+      },
+    }
+
+    const targets = extractTargetMap(tableSpec)
+
+    expect(targets).toContainEqual(expect.objectContaining({
+      id: 'column:region',
+      type: 'table-column',
+      label: '区域',
+    }))
+    expect(targets).toContainEqual(expect.objectContaining({
+      id: 'row:table:0',
+      type: 'data-row',
+      summary: expect.stringContaining('华东'),
+    }))
+    expect(targets).toContainEqual(expect.objectContaining({
+      id: 'cell:table:0:revenue',
+      type: 'table-cell',
+      summary: '120',
+    }))
   })
 })

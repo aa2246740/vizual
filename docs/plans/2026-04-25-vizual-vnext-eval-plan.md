@@ -78,10 +78,10 @@ Each test should be runnable by a host developer and understandable by a cold-st
 
 **Pass criteria:**
 
-- PNG export works for single artifact and DocView viewport.
+- PNG and PDF export work for rendered visual surfaces.
+- CSV and XLSX export work for artifact tabular data.
 - Export target excludes unrelated host UI unless explicitly requested.
 - Export metadata records artifact id, format, dimensions, and timestamp.
-- PDF/PPT/table export have defined extension points even if not complete in the current milestone.
 
 ### 7. Theme and Design.md
 
@@ -115,7 +115,8 @@ The validation directory should eventually contain:
 - `eval-full-31.html`: all components render.
 - `vizual-test.html`: chatbot message renderer and interactive bridge.
 - `demo-docview.html`: DocView Review SDK loop.
-- `demo-artifact-history.html`: historical recovery, target update, and PNG export metadata.
+- `demo-artifact-history.html`: historical recovery, target update, and PNG/PDF/CSV/XLSX export metadata.
+- `cold-start-eval.html`: automated runtime contract smoke test for host runtime, artifact patching, targetMap, and data export.
 - `demo-design-md.html`: theme tests.
 
 ## Stop Rule

@@ -57,6 +57,8 @@
     "dompurify": "^3.4.0",
     "echarts": "^5.6.0",
     "html2canvas": "^1.4.1",
+    "jspdf": "^4.2.1",
+    "jszip": "^3.10.1",
     "marked": "^15.0.12",
     "mermaid": "^11.14.0",
     "mviz": "^1.6.4",

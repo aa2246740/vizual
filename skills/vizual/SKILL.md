@@ -163,10 +163,11 @@ const updated = window.updateArtifactInMsg(artifact.id, [
   { type: 'changeChartType', targetId: target.id, chartType: 'LineChart' },
   { type: 'filterData', targetId: target.id, field: 'region', values: '华东' },
 ]);
-const png = await window.exportArtifact(updated.id, { filename: 'east-china-line' });
+const pdf = await window.exportArtifact(updated.id, { format: 'pdf', filename: 'east-china-line' });
+const xlsx = await window.exportArtifact(updated.id, { format: 'xlsx', filename: 'east-china-data' });
 ```
 
-If the user asks for PPT today, explain in host text that Vizual records/export-target metadata now and PNG export is available; PPT export is a host extension point unless the current platform has a PPT exporter.
+Built-in export formats are `png`, `pdf`, `csv`, and `xlsx`. PNG/PDF export the rendered visual surface. CSV/XLSX export the first tabular `props.data` dataset unless the host passes explicit rows/columns.
 
 For static charts, omit `bubbleWidth` unless you have a reason to override. The page infers `normal` for KPI/sparkline, `wide` for ordinary charts, and `full` for layouts, DocView, Sankey, Radar, FormBuilder, and tables. Pass `{ bubbleWidth: 'compact' | 'normal' | 'wide' | 'full' }` only when the user asks for a specific density.
 
@@ -409,7 +410,21 @@ Default is dark. For light mode, set `theme: "light"` on chart components. This 
 
 ## Export
 
-All components support PNG export via `Vizual.exportToPNG(element, { scale: 2 })` or `Vizual.downloadPNG(element, { scale: 2, filename: 'chart' })`. Only PNG, no SVG. DocView: target `[data-docview-viewport]` for document-only export.
+Visual surfaces support `png` and `pdf`:
+
+```js
+await window.exportArtifact(artifact.id, { format: 'png', filename: 'chart' });
+await window.exportArtifact(artifact.id, { format: 'pdf', filename: 'report' });
+```
+
+Tabular data supports `csv` and `xlsx`:
+
+```js
+await window.exportArtifact(artifact.id, { format: 'csv', filename: 'data' });
+await window.exportArtifact(artifact.id, { format: 'xlsx', filename: 'data', sheetName: '明细' });
+```
+
+Lower-level APIs are also available: `Vizual.exportToPNG`, `exportToPDF`, `exportDataToCSV`, `exportDataToXLSX`, and `downloadExport`. DocView export should target `[data-docview-viewport]` when the host wants document-only output without the annotation sidebar.
 
 ## Combining with Other Skills
 

@@ -7,6 +7,35 @@ export { SchemaNotFoundError } from './errors'
 export { resolveSchema, registerSchema, getRegisteredSchemaIds } from './router'
 export { createFallbackContainer, isFallbackContainer } from './fallback'
 export {
+  createHostRuntime,
+  createLocalStorageArtifactStore,
+  createMemoryArtifactStore,
+  VizualHostRuntime,
+} from './host-runtime'
+export type {
+  ArtifactListQuery,
+  ArtifactRef,
+  ExportArtifactInput,
+  HostRenderAdapter,
+  HostRenderResult,
+  HostRuntimeEvent,
+  HostRuntimeEventHandler,
+  RenderMessageArtifactInput,
+  VizualArtifactStore,
+} from './host-runtime'
+export {
+  downloadBlob,
+  downloadExport,
+  downloadPNG,
+  exportData,
+  exportDataToCSV,
+  exportDataToXLSX,
+  exportElement,
+  exportToPDF,
+  exportToPNG,
+} from './export'
+export type { DataExportColumn, DataExportOptions, ExportOptions, PDFExportOptions } from './export'
+export {
   applyArtifactPatch,
   cloneJson,
   createArtifact,

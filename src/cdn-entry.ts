@@ -17,7 +17,17 @@ import { loadDesignMd, setGlobalTheme, applyTheme, registerTheme, getTheme, getT
 import { tc, tcss, chartColors } from './core/theme-colors'
 
 // Export API
-import { exportToPNG, downloadPNG } from './core/export'
+import {
+  downloadBlob,
+  downloadExport,
+  downloadPNG,
+  exportData,
+  exportDataToCSV,
+  exportDataToXLSX,
+  exportElement,
+  exportToPDF,
+  exportToPNG,
+} from './core/export'
 import {
   applyArtifactPatch,
   cloneJson,
@@ -33,6 +43,12 @@ import {
   normalizeArtifact,
   summarizeSpec,
 } from './core/artifact'
+import {
+  createHostRuntime,
+  createLocalStorageArtifactStore,
+  createMemoryArtifactStore,
+  VizualHostRuntime,
+} from './core/host-runtime'
 import type {
   CreateVizualArtifactInput,
   VizualArtifact,
@@ -249,7 +265,14 @@ const vizual = {
 
   // Export
   exportToPNG,
+  exportToPDF,
+  exportElement,
+  exportData,
+  exportDataToCSV,
+  exportDataToXLSX,
   downloadPNG,
+  downloadBlob,
+  downloadExport,
 
   // Registry
   registry,
@@ -272,6 +295,10 @@ const vizual = {
   markArtifactRendered,
   normalizeArtifact,
   summarizeSpec,
+  createHostRuntime,
+  createLocalStorageArtifactStore,
+  createMemoryArtifactStore,
+  VizualHostRuntime,
 
   // All components
   BarChart,
