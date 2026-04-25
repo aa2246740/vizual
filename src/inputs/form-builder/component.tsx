@@ -154,7 +154,7 @@ export function FormBuilder({
       const opts = normalizeOptions(field.options)
       return <div key={field.name} style={{ marginBottom: 12 }}>
         {renderLabel(field)}
-        <select value={String(value ?? '')} disabled={field.disabled}
+        <select name={field.name} value={String(value ?? '')} disabled={field.disabled}
           onChange={(e) => updateField(field.name, e.target.value)}
           onBlur={() => handleBlur(field)}
           style={{ ...inputStyle, border: `1px solid ${borderStyle}` }}>
@@ -239,7 +239,7 @@ export function FormBuilder({
               background: checked ? tcss('--rk-accent-muted') : tcss('--rk-bg-primary'),
               color: checked ? tcss('--rk-accent') : tcss('--rk-text-secondary'), fontSize:tcss('--rk-text-base'),
             }}>
-              <input type="checkbox" checked={checked} disabled={field.disabled}
+              <input type="checkbox" name={field.name} checked={checked} disabled={field.disabled}
                 onChange={() => {
                   const next = checked
                     ? selected.filter(v => v !== opt.value)
@@ -268,6 +268,7 @@ export function FormBuilder({
       return <div key={field.name} style={{ marginBottom: 12 }}>
         {renderLabel(field)}
         <div onClick={() => !field.disabled && updateField(field.name, !on)}
+          data-field-name={field.name}
           role="switch"
           aria-label={field.label || field.name}
           aria-checked={on}
@@ -310,7 +311,7 @@ export function FormBuilder({
       return <div key={field.name} style={{ marginBottom: 12 }}>
         {renderLabel(field)}
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <input type="range" min={min} max={max} step={step} value={numVal}
+          <input name={field.name} type="range" min={min} max={max} step={step} value={numVal}
             disabled={field.disabled}
             onChange={(e) => updateField(field.name, Number(e.target.value))}
             style={{ flex: 1, accentColor: tcss('--rk-accent') }} />
@@ -333,7 +334,7 @@ export function FormBuilder({
             width: 36, height: 36, borderRadius:tcss('--rk-radius-md'), cursor: 'pointer',
             background: colorVal, border: `2px solid ${tcss('--rk-border-subtle')}`,
           }} />
-          <input id={'color-' + field.name} type="color" value={colorVal}
+          <input id={'color-' + field.name} name={field.name} type="color" value={colorVal}
             disabled={field.disabled}
             onChange={(e) => updateField(field.name, e.target.value)}
             style={{ position: 'absolute', opacity: 0, pointerEvents: 'none' }} />
@@ -353,7 +354,7 @@ export function FormBuilder({
             position: 'absolute', top: '50%', left: 12, transform: 'translateY(-50%)',
             fontSize:tcss('--rk-text-md'), color: tcss('--rk-text-tertiary'), pointerEvents: 'none',
           }}>{field.placeholder || 'Select a date'}</div>}
-          <input type="date" value={dateVal}
+          <input name={field.name} type="date" value={dateVal}
             disabled={field.disabled}
             onChange={(e) => updateField(field.name, e.target.value)}
             onBlur={() => handleBlur(field)}
@@ -373,7 +374,7 @@ export function FormBuilder({
             position: 'absolute', top: '50%', left: 12, transform: 'translateY(-50%)',
             fontSize:tcss('--rk-text-md'), color: tcss('--rk-text-tertiary'), pointerEvents: 'none',
           }}>{field.placeholder || 'Select date & time'}</div>}
-          <input type="datetime-local" value={dtVal}
+          <input name={field.name} type="datetime-local" value={dtVal}
             disabled={field.disabled}
             onChange={(e) => updateField(field.name, e.target.value)}
             onBlur={() => handleBlur(field)}
@@ -393,7 +394,7 @@ export function FormBuilder({
             position: 'absolute', top: '50%', left: 12, transform: 'translateY(-50%)',
             fontSize:tcss('--rk-text-md'), color: tcss('--rk-text-tertiary'), pointerEvents: 'none',
           }}>{field.placeholder || 'Select time'}</div>}
-          <input type="time" value={timeVal}
+          <input name={field.name} type="time" value={timeVal}
             disabled={field.disabled}
             onChange={(e) => updateField(field.name, e.target.value)}
             onBlur={() => handleBlur(field)}
@@ -438,7 +439,7 @@ export function FormBuilder({
     if (field.type === 'file') {
       return <div key={field.name} style={{ marginBottom: 12 }}>
         {renderLabel(field)}
-        <input type="file" accept={field.accept} multiple={field.multiple} disabled={field.disabled}
+        <input name={field.name} type="file" accept={field.accept} multiple={field.multiple} disabled={field.disabled}
           onChange={(e) => { if (e.target.files?.[0]) updateField(field.name, e.target.files[0].name) }}
           style={{ display: 'none' }} />
         <div onClick={(e) => (e.currentTarget.previousElementSibling as HTMLInputElement)?.click()}
@@ -453,7 +454,7 @@ export function FormBuilder({
     if (field.type === 'textarea') {
       return <div key={field.name} style={{ marginBottom: 12 }}>
         {renderLabel(field)}
-        <textarea value={String(value ?? '')} placeholder={field.placeholder} disabled={field.disabled}
+        <textarea name={field.name} value={String(value ?? '')} placeholder={field.placeholder} disabled={field.disabled}
           onChange={(e) => updateField(field.name, e.target.value)}
           onBlur={() => handleBlur(field)}
           rows={4}
@@ -465,7 +466,7 @@ export function FormBuilder({
     // === TEXT / EMAIL / PASSWORD / NUMBER / URL / TEL ===
     return <div key={field.name} style={{ marginBottom: 12 }}>
       {renderLabel(field)}
-      <input type={field.type} value={String(value ?? '')} placeholder={field.placeholder} disabled={field.disabled}
+      <input name={field.name} type={field.type} value={String(value ?? '')} placeholder={field.placeholder} disabled={field.disabled}
         onChange={(e) => updateField(field.name, field.type === 'number' ? Number(e.target.value) : e.target.value)}
         onBlur={() => handleBlur(field)}
         style={{ ...inputStyle, border: `1px solid ${borderStyle}` }} />

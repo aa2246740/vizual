@@ -102,7 +102,7 @@ For charts inside DocView, read `references/doc/docview.md`: use `chart` section
 
 **Split View** — `SplitLayout` with a chart on one side and a `DataTable` on the other. Good for comparing visual and tabular representations of the same data.
 
-**Interactive Explorer** — In `validation/vizual-test.html`, use the host bridge `renderInteractiveVizInMsg(id, config)`: FormBuilder controls on the left, live Vizual preview on the right, and `makeSpec(state)` to regenerate the chart. This is host JavaScript, not pure JSON. Do NOT use InteractivePlayground — it has been removed.
+**Interactive Explorer** — In `validation/vizual-test.html`, use the host bridge `renderInteractiveVizInMsg(id, config)`: FormBuilder controls on the left, live Vizual preview on the right, and `makeSpec(state)` to regenerate the chart. Use `bubbleWidth` (`compact`, `normal`, `wide`, `full`) to choose the visual bubble size. This is host JavaScript, not pure JSON. Do NOT use InteractivePlayground — it has been removed.
 
 **Standalone Chart** — A single chart component at the root. No layout wrapper needed.
 
@@ -119,9 +119,11 @@ const msg = window._pendingMsg;       // read the latest user message
 const id = window.createAiMsg();      // create the AI reply bubble
 window.streamText(id, answerText);    // optional narrative answer
 window.finishText(id);                // finish text streaming
-window.renderVizInMsg(id, spec);      // mount the Vizual JSON spec
+window.renderVizInMsg(id, spec);      // mount the Vizual JSON spec; page auto-infers bubble width
 window._pendingMsg = null;            // mark the user message handled
 ```
+
+For static charts, omit `bubbleWidth` unless you have a reason to override. The page infers `normal` for KPI/sparkline, `wide` for ordinary charts, and `full` for layouts, DocView, Sankey, Radar, FormBuilder, and tables. Pass `{ bubbleWidth: 'compact' | 'normal' | 'wide' | 'full' }` only when the user asks for a specific density.
 
 For real-time adjust-preview tasks in `vizual-test.html`, call the interactive bridge instead of returning a pure spec:
 
@@ -130,7 +132,18 @@ const id = window.createAiMsg();
 window.streamText(id, answerText);
 window.finishText(id);
 window.renderInteractiveVizInMsg(id, {
-  initialState: { controls: { points: 8, mode: 'grouped', brandColor: '#ff6b35' } },
+  bubbleWidth: 'full',
+  initialState: {
+    controls: {
+      chartType: 'bar',
+      points: 8,
+      orientation: 'vertical',
+      stacked: false,
+      smooth: false,
+      secondaryMetric: 'growth',
+      brandColor: '#ff6b35',
+    },
+  },
   controlsSpec: {
     root: 'controls',
     elements: {
@@ -140,31 +153,65 @@ window.renderInteractiveVizInMsg(id, {
           type: 'form_builder',
           value: { $bindState: '/controls' },
           fields: [
+            {
+              name: 'chartType',
+              label: 'Chart type',
+              type: 'select',
+              options: [
+                { label: 'Bar', value: 'bar' },
+                { label: 'Line', value: 'line' },
+                { label: 'Combo', value: 'combo' },
+              ],
+            },
             { name: 'points', label: 'Data points', type: 'slider', min: 3, max: 15 },
-            { name: 'mode', label: 'Mode', type: 'select', options: ['grouped', 'stacked'] },
+            {
+              name: 'orientation',
+              label: 'Bar orientation',
+              type: 'select',
+              options: [{ label: 'Vertical', value: 'vertical' }, { label: 'Horizontal', value: 'horizontal' }],
+              dependsOn: 'chartType',
+              showWhen: 'bar',
+            },
+            { name: 'stacked', label: 'Stack bars', type: 'switch', dependsOn: 'chartType', showWhen: 'bar' },
+            { name: 'smooth', label: 'Smooth line', type: 'switch', dependsOn: 'chartType', showWhen: 'line' },
+            {
+              name: 'secondaryMetric',
+              label: 'Combo line metric',
+              type: 'select',
+              options: [{ label: 'Growth', value: 'growth' }, { label: 'ARPPU', value: 'arppu' }],
+              dependsOn: 'chartType',
+              showWhen: 'combo',
+            },
             { name: 'brandColor', label: 'Brand color', type: 'color' },
           ],
         },
+        children: [],
       },
     },
   },
   designMd: 'Primary: #ff6b35',
   applyTheme: (state, Vizual) => Vizual.loadDesignMd(`Primary: ${state.controls.brandColor}`, { apply: true }),
-  makeSpec: (state) => ({
-    root: 'chart',
-    elements: {
-      chart: {
-        type: 'BarChart',
-        props: {
-          x: Array.from({ length: state.controls.points }, (_, i) => `D${i + 1}`),
-          y: Array.from({ length: state.controls.points }, (_, i) => 20 + i * 4),
-          stacked: state.controls.mode === 'stacked',
-        },
-      },
-    },
-  }),
+  makeSpec: (state) => {
+    const points = Number(state.controls.points || 8);
+    const data = Array.from({ length: points }, (_, i) => ({
+      day: `D${i + 1}`,
+      value: 20 + i * 4,
+      growth: 8 + i * 1.5,
+      arppu: 4.5 + i * 0.35,
+    }));
+    const chartType = state.controls.chartType;
+    const chart =
+      chartType === 'line'
+        ? { type: 'LineChart', props: { type: 'line', x: 'day', y: 'value', data, smooth: !!state.controls.smooth }, children: [] }
+        : chartType === 'combo'
+          ? { type: 'ComboChart', props: { type: 'combo', x: 'day', y: ['value', state.controls.secondaryMetric || 'growth'], data }, children: [] }
+          : { type: 'BarChart', props: { type: 'bar', x: 'day', y: 'value', data, stacked: !!state.controls.stacked, horizontal: state.controls.orientation === 'horizontal' }, children: [] };
+    return { root: 'chart', elements: { chart } };
+  },
 });
 ```
+
+For interactive controls, expose only options that make sense for the current component. `horizontal` and `stacked` are BarChart options; do not show or pass them to LineChart or ComboChart. Use FormBuilder `dependsOn` / `showWhen` for visibility and still normalize in `makeSpec(state)` so invalid props never reach the chart.
 
 If an agent can only click and type in the browser but cannot execute JavaScript in the page, it cannot complete `vizual-test.html` rendering or live interactivity by itself. In that case, provide a static spec plus explanation, or use a host bridge, Playwright/CDP, or an auto-poll backend that calls `renderVizInMsg()` / `renderInteractiveVizInMsg()`.
 
@@ -213,7 +260,7 @@ If unsure between DocView and GridLayout, choose `GridLayout` and put the writte
 
 **The user wants a board, timeline, org chart, or activity log** → Kanban, GanttChart, Timeline, OrgChart, AuditLog respectively.
 
-**The user wants to adjust parameters interactively** → In `vizual-test.html`, call `renderInteractiveVizInMsg()` with a FormBuilder `value: { "$bindState": "/controls" }`, `initialState.controls`, and `makeSpec(state)`. Outside that test page, the host application must provide the same state-change bridge. If you cannot execute page JavaScript, generate a static spec and clearly say live interactivity needs a host bridge.
+**The user wants to adjust parameters interactively** → In `vizual-test.html`, call `renderInteractiveVizInMsg()` with a FormBuilder `value: { "$bindState": "/controls" }`, `initialState.controls`, `bubbleWidth`, and `makeSpec(state)`. Outside that test page, the host application must provide the same state-change bridge. If one control changes the target component, use conditional controls and generate only props that belong to that component. If you cannot execute page JavaScript, generate a static spec and clearly say live interactivity needs a host bridge.
 
 **REMOVED: InteractivePlayground** — Do NOT generate specs with `type: "InteractivePlayground"` or `type: "interactive_playground"`. This component no longer exists.
 
@@ -239,7 +286,9 @@ These are the most common mistakes. Avoiding them is more important than memoriz
 
 6. **Don't use removed components.** BigValue, Delta, Alert, Note, TextBlock, **InteractivePlayground** no longer exist. Use KpiDashboard for metrics. Use host text or DocView `callout` only when you are already using DocView.
 
-7. **Don't treat `theme` as brand-color injection.** Chart `theme: "dark"` / `"light"` only selects a preset mode. For custom brand colors, the host must call `Vizual.loadDesignMd(markdown, { apply: true })`, or `renderInteractiveVizInMsg()` must provide `designMd` / `applyTheme`. Don't try to bypass the theme system with inline styles.
+7. **Don't expose incompatible interactive controls.** If a FormBuilder control switches chart type, make dependent controls conditional. BarChart-only options such as `horizontal` and `stacked` must not appear for LineChart or ComboChart, and `makeSpec(state)` must not pass those props to the wrong component.
+
+8. **Don't treat `theme` as brand-color injection.** Chart `theme: "dark"` / `"light"` only selects a preset mode. For custom brand colors, the host must call `Vizual.loadDesignMd(markdown, { apply: true })`, or `renderInteractiveVizInMsg()` must provide `designMd` / `applyTheme`. Don't try to bypass the theme system with inline styles.
 
 ## Output Format
 

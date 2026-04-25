@@ -35,7 +35,7 @@
 
     /* 消息区 */
     .main { flex: 1; overflow-y: auto; padding: 24px 20px; }
-    .messages { max-width: 780px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
+    .messages { width: 100%; max-width: min(1180px, calc(100vw - 40px)); margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
 
     /* 消息行 */
     .msg-row { display: flex; gap: 10px; animation: fadeIn 0.25s ease; }
@@ -43,12 +43,21 @@
     @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
 
     /* 气泡 */
-    .bubble { max-width: 85%; padding: 12px 16px; border-radius: 14px; font-size: 14px; line-height: 1.6; white-space: pre-wrap; word-break: break-word; }
+    .bubble { max-width: min(85%, 760px); padding: 12px 16px; border-radius: 14px; font-size: 14px; line-height: 1.6; white-space: pre-wrap; word-break: break-word; }
     .bubble.user { background: var(--accent); color: #fff; border-bottom-right-radius: 4px; }
     .bubble.ai { background: var(--bg-bubble); border: 1px solid var(--border); border-bottom-left-radius: 4px; }
 
-    /* 气泡内有图表时撑满宽度 */
-    .bubble.ai.has-viz { max-width: 100%; padding: 14px 16px; }
+    /* 气泡内有图表时由 AI/宿主选择宽度档位，避免所有图表固定成一个尺寸 */
+    .bubble.ai.has-viz {
+      width: min(var(--viz-bubble-width, 980px), 100%);
+      min-width: min(var(--viz-bubble-min, 320px), 100%);
+      max-width: 100%;
+      padding: 14px 16px;
+    }
+    .bubble.ai.bubble-compact { --viz-bubble-width: 520px; }
+    .bubble.ai.bubble-normal { --viz-bubble-width: 760px; }
+    .bubble.ai.bubble-wide { --viz-bubble-width: 980px; }
+    .bubble.ai.bubble-full { --viz-bubble-width: 1180px; }
 
     /* Viz 容器 — 在气泡内部 */
     .viz-wrap { margin-top: 12px; background: var(--bg-viz); border: 1px solid var(--border); border-radius: 10px; padding: 14px; min-height: 200px; width: 100%; min-width: 0; overflow-x: auto; position: relative; }
@@ -60,6 +69,9 @@
     .interactive-preview-root { min-height: 260px; min-width: 0; }
     .interactive-error { margin-top: 8px; padding: 8px 10px; border: 1px solid rgba(239,68,68,0.45); border-radius: 8px; color: #fecaca; background: rgba(239,68,68,0.12); font-size: 12px; display: none; }
     @media (max-width: 720px) {
+      .main { padding: 16px 12px; }
+      .messages { max-width: calc(100vw - 24px); }
+      .bubble.ai.has-viz { width: 100%; min-width: 0; }
       .interactive-wrap { grid-template-columns: 1fr; }
     }
 
@@ -132,26 +144,37 @@
         <tr><td><code>window.createAiMsg()</code></td><td>创建 AI 消息气泡（带流式光标），返回消息 ID</td><td>string (id)</td></tr>
         <tr><td><code>window.streamText(id, text)</code></td><td>往 AI 气泡追加文字</td><td>void</td></tr>
         <tr><td><code>window.finishText(id)</code></td><td>结束流式输出（移除光标）</td><td>void</td></tr>
-        <tr><td><code>window.renderVizInMsg(id, spec)</code></td><td>渲染静态 Vizual JSON Spec 到气泡</td><td>boolean</td></tr>
+        <tr><td><code>window.renderVizInMsg(id, spec, options?)</code></td><td>渲染静态 Vizual JSON Spec 到气泡；<code>options.bubbleWidth</code> 可选 compact/normal/wide/full</td><td>boolean</td></tr>
         <tr><td><code>window.renderInteractiveVizInMsg(id, config)</code></td><td>渲染 FormBuilder 控件 + 实时预览；Agent 作为宿主提供 <code>makeSpec(state)</code></td><td>boolean</td></tr>
       </table>
+      <p><code>bubbleWidth</code> 可以省略，页面会按组件类型自动推断。KPI/迷你图偏窄，普通图表偏宽，Grid/Split/DocView/Sankey/Radar/FormBuilder/DataTable 默认 full。</p>
       <pre>// 完整流程
 const id = window.createAiMsg();         // 1. 创建气泡
 window.streamText(id, '正在生成图表...');  // 2. 流式文字
 window.finishText(id);                    // 3. 结束文字
-window.renderVizInMsg(id, spec);          // 4. 渲染图表
+window.renderVizInMsg(id, spec);          // 4. 渲染图表（自动推断气泡宽度）
 window._pendingMsg = null;                // 5. 清除已读消息</pre>
 
       <h3>实时 adjust-preview 场景</h3>
       <p>实时可调图表不是纯 JSON spec。Agent 必须作为宿主调用 <code>renderInteractiveVizInMsg()</code>，用 FormBuilder 绑定 <code>/controls</code>，再由 <code>makeSpec(state)</code> 生成右侧预览图表。</p>
+      <p>控件必须按当前图表能力联动：例如横向/堆叠只属于柱状图，切换到折线图或组合图时要用 <code>dependsOn</code> / <code>showWhen</code> 隐藏，并且在 <code>makeSpec(state)</code> 里不要传入非法 props。</p>
       <pre>const id = window.createAiMsg();
 window.streamText(id, '可以直接调参数查看结果。');
 window.finishText(id);
 
 window.renderInteractiveVizInMsg(id, {
   initialState: {
-    controls: { points: 8, mode: 'grouped', brandColor: '#ff6b35' },
+    controls: {
+      chartType: 'bar',
+      points: 8,
+      orientation: 'vertical',
+      stacked: false,
+      smooth: false,
+      secondaryMetric: 'growth',
+      brandColor: '#ff6b35',
+    },
   },
+  bubbleWidth: 'full',
   designMd: 'Primary: #ff6b35\nBackground: #0f1117',
   controlsSpec: {
     root: 'controls',
@@ -162,31 +185,75 @@ window.renderInteractiveVizInMsg(id, {
           type: 'form_builder',
           value: { $bindState: '/controls' },
           fields: [
+            {
+              name: 'chartType',
+              label: '图表类型',
+              type: 'select',
+              options: [
+                { label: '柱状图', value: 'bar' },
+                { label: '折线图', value: 'line' },
+                { label: '组合图', value: 'combo' },
+              ],
+            },
             { name: 'points', label: '数据点', type: 'slider', min: 3, max: 14 },
-            { name: 'mode', label: '模式', type: 'select', options: ['grouped', 'stacked'] },
+            {
+              name: 'orientation',
+              label: '柱状方向',
+              type: 'select',
+              options: [
+                { label: '纵向', value: 'vertical' },
+                { label: '横向', value: 'horizontal' },
+              ],
+              dependsOn: 'chartType',
+              showWhen: 'bar',
+            },
+            { name: 'stacked', label: '堆叠柱状图', type: 'switch', dependsOn: 'chartType', showWhen: 'bar' },
+            { name: 'smooth', label: '平滑折线', type: 'switch', dependsOn: 'chartType', showWhen: 'line' },
+            {
+              name: 'secondaryMetric',
+              label: '组合图折线指标',
+              type: 'select',
+              options: [
+                { label: '增长率', value: 'growth' },
+                { label: 'ARPPU', value: 'arppu' },
+              ],
+              dependsOn: 'chartType',
+              showWhen: 'combo',
+            },
             { name: 'brandColor', label: '品牌色', type: 'color' },
           ],
         },
+        children: [],
       },
     },
   },
   applyTheme: (state, Vizual) => {
     Vizual.loadDesignMd('Primary: ' + state.controls.brandColor, { apply: true });
   },
-  makeSpec: (state) => ({
-    root: 'chart',
-    elements: {
-      chart: {
-        type: 'BarChart',
-        props: {
-          title: '实时预览',
-          x: Array.from({ length: state.controls.points }, (_, i) => 'D' + (i + 1)),
-          y: Array.from({ length: state.controls.points }, (_, i) => 20 + i * 5),
-          stacked: state.controls.mode === 'stacked',
+  makeSpec: (state) => {
+    const points = Number(state.controls.points || 8);
+    const data = Array.from({ length: points }, (_, i) => ({
+      day: 'D' + (i + 1),
+      value: 20 + i * 5,
+      growth: 8 + i * 1.8,
+      arppu: 4.5 + i * 0.35,
+    }));
+    const chartType = state.controls.chartType;
+    const chart =
+      chartType === 'line'
+        ? { type: 'LineChart', props: { type: 'line', title: '实时预览', x: 'day', y: 'value', data, smooth: !!state.controls.smooth }, children: [] }
+        : chartType === 'combo'
+          ? { type: 'ComboChart', props: { type: 'combo', title: '实时预览', x: 'day', y: ['value', state.controls.secondaryMetric || 'growth'], data }, children: [] }
+          : { type: 'BarChart', props: { type: 'bar', title: '实时预览', x: 'day', y: 'value', data, stacked: !!state.controls.stacked, horizontal: state.controls.orientation === 'horizontal' }, children: [] };
+    return {
+      root: 'chart',
+      elements: {
+        chart: {
+          ...chart,
         },
       },
-    },
-  }),
+    };
+  },
 });</pre>
 
       <h3>Claude Code（Chrome DevTools MCP）</h3>
@@ -252,6 +319,12 @@ setInterval(async () => {
     // ============================================================
     window._pendingMsg = null;   // MCP 轮询读取用户最新消息
     window._interactiveViz = {}; // 实时控件-预览控制器，按消息 ID 存储
+    const BUBBLE_WIDTH_CLASS = {
+      compact: 'bubble-compact',
+      normal: 'bubble-normal',
+      wide: 'bubble-wide',
+      full: 'bubble-full',
+    };
     let vizualReady = false;
     let msgSeq = 0;
 
@@ -396,6 +469,53 @@ setInterval(async () => {
       container.appendChild(errEl);
     }
 
+    function clearBubbleWidth(bubble) {
+      for (const className of Object.values(BUBBLE_WIDTH_CLASS)) {
+        bubble.classList.remove(className);
+      }
+    }
+
+    function inferBubbleWidthFromSpec(spec) {
+      const elements = Object.values(spec?.elements || {});
+      const types = new Set(elements.map(el => el?.type).filter(Boolean));
+
+      if (
+        types.has('DocView') ||
+        types.has('GridLayout') ||
+        types.has('SplitLayout') ||
+        types.has('SankeyChart') ||
+        types.has('RadarChart') ||
+        types.has('ComboChart') ||
+        types.has('FormBuilder') ||
+        types.has('DataTable')
+      ) {
+        return 'full';
+      }
+
+      if (
+        types.has('BarChart') ||
+        types.has('LineChart') ||
+        types.has('AreaChart') ||
+        types.has('HeatmapChart') ||
+        types.has('CalendarChart')
+      ) {
+        return 'wide';
+      }
+
+      if (types.has('KpiDashboard') || types.has('SparklineChart')) {
+        return 'normal';
+      }
+
+      return 'wide';
+    }
+
+    function applyBubbleWidth(bubble, requestedWidth, fallbackWidth) {
+      const width = BUBBLE_WIDTH_CLASS[requestedWidth] ? requestedWidth : fallbackWidth;
+      clearBubbleWidth(bubble);
+      bubble.classList.add(BUBBLE_WIDTH_CLASS[width] || BUBBLE_WIDTH_CLASS.wide);
+      bubble.dataset.vizBubbleWidth = width;
+    }
+
     function ensureVizualReady(id, vizWrap, bubble) {
       if (window.Vizual && window.Vizual.renderSpec) return true;
       const errEl = document.createElement('div');
@@ -427,9 +547,12 @@ setInterval(async () => {
       // 显示 viz 容器，气泡撑满宽
       vizWrap.style.display = 'block';
       bubble.classList.add('has-viz');
+      applyBubbleWidth(bubble, options?.bubbleWidth || inferBubbleWidthFromSpec(spec), 'wide');
 
       try {
-        window.Vizual.renderSpec(spec, vizWrap, options || {});
+        const renderOptions = { ...(options || {}) };
+        delete renderOptions.bubbleWidth;
+        window.Vizual.renderSpec(spec, vizWrap, renderOptions);
         console.log('[renderVizInMsg] 渲染成功:', spec?.root ? Object.keys(spec.elements || {}).join(', ') : 'no root');
         scrollBottom();
         return true;
@@ -487,6 +610,7 @@ setInterval(async () => {
       vizWrap.replaceChildren(shell);
       vizWrap.style.display = 'block';
       bubble.classList.add('has-viz');
+      applyBubbleWidth(bubble, config.bubbleWidth || 'full', 'full');
 
       let state = cloneState(config.initialState || {});
       let previewTimer = 0;

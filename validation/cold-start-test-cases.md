@@ -81,7 +81,7 @@
 - SankeyChart: type = `"sankey"`，有 nodes/links 或 x/y/data
 - RadarChart: type = `"radar"`，有 indicators/series
 - DumbbellChart: type = `"dumbbell"`，有 low/high
-- ComboChart: type = `"combo"`，有 series 数组
+- ComboChart: type = `"combo"`，有 `x`、`y` 数组和 `data`；不要用 `series`
 - MermaidDiagram 未测试 → 单独 Test 7
 
 ---
@@ -156,6 +156,7 @@
 - 必须调用 `renderInteractiveVizInMsg(id, config)`，不是返回纯 JSON spec
 - `controlsSpec` 使用 FormBuilder，且 `props.value = { "$bindState": "/controls" }`
 - `initialState.controls` 包含数据点数量、堆叠开关、配色选择、品牌色
+- `config.bubbleWidth` 可以选择 `wide` 或 `full`，不要让宿主气泡固定死
 - `makeSpec(state)` 根据 controls 生成 BarChart；拖动 slider 后数据点数量变化
 - `applyTheme(state, Vizual)` 或 `designMd` 用于品牌色，不要把 chart `theme` 当作品牌色注入
 
@@ -179,7 +180,7 @@
 - DocView: type = `"doc_view"`
 - sections 至少包含：heading、text、callout、kpi、chart、table、markdown、freeform
 - showPanel = true
-- chart section 有 componentType
+- chart section 使用 `data.chartType`；只有 component section 才使用 `data.componentType`
 - markdown section 的 content 是 markdown 源码
 - freeform section 的 content 是 HTML 字符串
 
@@ -220,6 +221,9 @@
 - 必须调用 `renderInteractiveVizInMsg(id, config)`，并提供 `designMd` 或在 `applyTheme` 里调用 `Vizual.loadDesignMd()`
 - FormBuilder 绑定 `/controls`，包含数据量、图表类型、暗色/亮色、品牌色控件
 - `makeSpec(state)` 根据图表类型返回 BarChart / LineChart / AreaChart 之一
+- 图表专属控件必须联动显示：例如 `horizontal` 只属于 BarChart，不能在 LineChart / AreaChart / ComboChart 模式下显示或传入
+- 如果支持 ComboChart，必须用 `y` 数组；不能把 BarChart 的横向/堆叠选项传给 ComboChart
+- `config.bubbleWidth` 应用 `full`，让控制区和预览区有足够空间
 - 品牌色变化通过 `applyTheme(state, Vizual)` 重新 `loadDesignMd()`，不是写 `theme: "#1DB954"`
 - 暗色/亮色可以用 `Vizual.toggleMode()` / `setGlobalTheme()` / 重新加载 DESIGN.md 变体，切换后要重新渲染预览
 

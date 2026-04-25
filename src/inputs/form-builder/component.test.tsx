@@ -172,10 +172,10 @@ describe('FormBuilder component', () => {
     )
 
     expect(container.querySelector('form')).toBeTruthy()
-    expect(container.querySelector('input[type="range"]')).toBeTruthy()
-    expect(container.querySelector('select')).toBeTruthy()
-    expect(screen.getByRole('switch', { name: 'Stacked' })).toBeTruthy()
-    expect(container.querySelector('input[type="color"]')).toBeTruthy()
+    expect(container.querySelector('input[name="points"][type="range"]')).toBeTruthy()
+    expect(container.querySelector('select[name="mode"]')).toBeTruthy()
+    expect(screen.getByRole('switch', { name: 'Stacked' }).getAttribute('data-field-name')).toBe('stacked')
+    expect(container.querySelector('input[name="brandColor"][type="color"]')).toBeTruthy()
     expect(screen.getByRole('button', { name: 'Apply changes' })).toBeTruthy()
   })
 
