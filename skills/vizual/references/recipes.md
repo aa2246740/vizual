@@ -136,13 +136,13 @@ const artifact = window.getLastArtifact();
 const target = artifact.targetMap.find(t => t.id === 'element:chart')
   || artifact.targetMap.find(t => t.type === 'element');
 
-window.updateArtifactInMsg(artifact.id, [
+const updated = window.updateArtifactInMsg(artifact.id, [
   { type: 'changeChartType', targetId: target.id, chartType: 'LineChart' },
   { type: 'filterData', targetId: target.id, field: 'region', values: '华东' },
   { type: 'limitData', targetId: target.id, limit: 8 },
-]);
+], { answerText: '已生成新的修改版图表。' });
 
-const exportRecord = await window.exportArtifact(artifact.id, {
+const exportRecord = await window.exportArtifact(updated.id, {
   format: 'pdf',
   filename: 'east-china-line-chart',
 });
@@ -162,7 +162,7 @@ Built-in export formats:
 - Rendered surface: `png`, `pdf`.
 - Data: `csv`, `xlsx`.
 
-Use `window.exportArtifact(artifact.id, { format, filename })` in `vizual-test.html`. Use lower-level `Vizual.exportToPNG/exportToPDF/exportDataToCSV/exportDataToXLSX` in custom hosts.
+Use `window.exportArtifact(artifact.id, { format, filename })` in `vizual-test.html`. For follow-up edits, export the returned `updated.id`, not the old artifact. Use lower-level `Vizual.exportToPNG/exportToPDF/exportDataToCSV/exportDataToXLSX` in custom hosts.
 
 ## AI Answer Review / Scoring Dashboard
 
@@ -278,7 +278,7 @@ Example component plan for the prompt "score this AI answer":
 
 ## Annotatable Document (DocView)
 
-Use DocView when the user needs comments, highlights, revision loop, version history, or a document artifact.
+Use DocView when the user needs comments, highlights, revision loop, version history, or a reviewable document artifact. Do not use it just because the user asks for a report, dashboard, summary, or export; those should normally be host text plus GridLayout/charts/tables and artifact export APIs.
 
 ```json
 {

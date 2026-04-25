@@ -23,14 +23,14 @@
 |------|------|--------|------|------|
 | zod | ^3.25.0 | MIT | ✅ | Schema 校验 |
 | echarts | ^5.6.0 | Apache-2.0 | ✅ | 图表引擎 |
-| mviz | ^1.6.4 | MIT | ✅ | Chart option builder |
 | @json-render/core | ^0.17.0 | Apache-2.0 | ✅ | Catalog 注册 |
 | @json-render/react | ^0.17.0 | Apache-2.0 | Registry + Renderer |
 | dompurify | ^3.4.0 | Apache-2.0 | ✅ | HTML 消毒，用于 DocView |
 | html2canvas | ^1.4.1 | MIT | ✅ | PNG 导出 |
+| jspdf | ^4.2.1 | MIT | ✅ | PDF 导出 |
+| jszip | ^3.10.1 | MIT | ✅ | XLSX 导出 |
 | marked | ^15.0.12 | MIT | ✅ | Markdown 渲染，用于 DocView |
 | mermaid | ^11.14.0 | MIT | ✅ | 图表渲染（MermaidDiagram 组件） |
-| react-highlight-words | ^0.20.0 | MIT | ✅ | 文本高亮，用于 DocView 批注 |
 
 ### Peer 依赖
 
@@ -39,7 +39,7 @@
 | react | >=18 | MIT | ✅ | UI 框架（宿主提供） |
 | react-dom | >=18 | MIT | ✅ | DOM 渲染（宿主提供） |
 
-### 间接依赖（mviz/echarts 自带）
+### 间接依赖（mermaid 自带）
 
 | 包名 | 许可证 | 商用 | 说明 |
 |------|--------|------|------|
@@ -78,12 +78,11 @@ Source: https://github.com/kieler/elkjs
 ```
 MIT ──────────── 最宽松，可与其他许可证合并
   ├── zod
-  ├── mviz
   ├── react
   ├── mermaid
   ├── html2canvas
   ├── marked
-  └── react-highlight-words
+  └── jszip
 
 Apache-2.0 ───── 宽松，允许商用，需保留 NOTICE
   ├── echarts
@@ -105,7 +104,7 @@ EPL-2.0 ──────── 允许商用，修改源码需开源
 
 ### MIT License 适用范围
 
-zod, mviz, react, react-dom, mermaid, html2canvas, marked, react-highlight-words
+zod, react, react-dom, mermaid, html2canvas, marked, jspdf, jszip
 
 ```
 MIT License

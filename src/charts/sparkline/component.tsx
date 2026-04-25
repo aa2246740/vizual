@@ -1,11 +1,6 @@
 import type { SparklineChartProps } from './schema'
 import { createEChartsBridge } from '../../core/echarts-bridge-factory'
 
-/**
- * Map schema props to mviz format.
- * mviz reads spec.value (default 'value') for the numeric field.
- * Our schema uses y (or value) to specify the value field name.
- */
 function resolveFields(props: SparklineChartProps) {
   const data = Array.isArray(props.data) ? props.data : []
   const first = (data[0] as Record<string, unknown>) ?? {}
@@ -23,11 +18,6 @@ function resolveFields(props: SparklineChartProps) {
     xField ??= keys[0] ?? 'name'
   }
   return { data, xField, yField }
-}
-
-function toMvizProps(props: SparklineChartProps): Record<string, unknown> {
-  const { yField } = resolveFields(props)
-  return { ...props, value: yField }
 }
 
 function buildSparklineFallback(props: SparklineChartProps): Record<string, unknown> {
@@ -48,4 +38,4 @@ function buildSparklineFallback(props: SparklineChartProps): Record<string, unkn
   }
 }
 
-export const SparklineChart = createEChartsBridge('sparkline', buildSparklineFallback, toMvizProps)
+export const SparklineChart = createEChartsBridge('sparkline', buildSparklineFallback)

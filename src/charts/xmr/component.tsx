@@ -2,22 +2,6 @@ import type { XmrChartProps } from './schema'
 import { createEChartsBridge } from '../../core/echarts-bridge-factory'
 import { tcss, tc } from '../../core/theme-colors'
 
-/**
- * Map schema props to mviz format.
- * mviz reads spec.value (default 'value') for the measurement field.
- * mviz reads spec.label (default 'label') for the x-axis label field.
- * Our schema uses y for measurements, x for labels.
- */
-function toMvizProps(props: XmrChartProps): Record<string, unknown> {
-  const valueField = props.value ?? (Array.isArray(props.y) ? props.y[0] : props.y) ?? 'value'
-  const labelField = props.label ?? props.x ?? 'label'
-  return {
-    ...props,
-    value: valueField,
-    label: labelField,
-  }
-}
-
 function buildXmrFallback(props: XmrChartProps): Record<string, unknown> {
   const x = props.x ?? 'sample'
   const y = (Array.isArray(props.y) ? props.y[0] : props.y) ?? 'value'
@@ -42,4 +26,4 @@ function buildXmrFallback(props: XmrChartProps): Record<string, unknown> {
   }
 }
 
-export const XmrChart = createEChartsBridge('xmr', buildXmrFallback, toMvizProps)
+export const XmrChart = createEChartsBridge('xmr', buildXmrFallback)

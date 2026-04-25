@@ -16,20 +16,19 @@ npm install vizual
 这一个命令会自动安装：
 - `vizual` 核心包
 - `echarts` ^5.6.0 — 图表引擎
-- `mviz` ^1.6.4 — Chart option builder
+- `echarts` ^5.6.0 — Chart rendering engine with Vizual-owned option builders
 - `@json-render/core` ^0.17.0 + `@json-render/react` ^0.17.0 — json-render 平台
 - `zod` ^3.25.0 — Schema 校验
 - `dompurify` ^3.4.0 — HTML 消毒（DocView 组件）
 - `html2canvas` ^1.4.1 — PNG 导出
 - `marked` ^15.0.12 — Markdown 渲染（DocView 组件）
 - `mermaid` ^11.14.0 — 图表渲染
-- `react-highlight-words` ^0.20.0 — 文本高亮（DocView 批注）
 
 你不需要额外安装任何图表或渲染依赖。
 
 ## 第二步：注册 Registry
 
-`vizual` 导出了一个预构建的 `registry`，包含 32 个组件的 type → React 组件映射：
+`vizual` 导出了一个预构建的 `registry`，包含 31 个组件的 type → React 组件映射：
 
 ```tsx
 import { registry } from 'vizual'

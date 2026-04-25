@@ -1,19 +1,6 @@
 import type { HistogramChartProps } from './schema'
 import { createEChartsBridge } from '../../core/echarts-bridge-factory'
 
-/**
- * Map schema props to mviz format.
- * mviz reads spec.value (default 'value') for the numeric field to bin.
- * Our schema uses x to specify the field name.
- */
-function toMvizProps(props: HistogramChartProps): Record<string, unknown> {
-  const valueField = props.value ?? props.x ?? 'value'
-  return {
-    ...props,
-    value: valueField,
-  }
-}
-
 function buildHistogramFallback(props: HistogramChartProps): Record<string, unknown> {
   const x = props.x ?? 'value'
   const data = Array.isArray(props.data) ? props.data : []
@@ -44,4 +31,4 @@ function buildHistogramFallback(props: HistogramChartProps): Record<string, unkn
   }
 }
 
-export const HistogramChart = createEChartsBridge('histogram', buildHistogramFallback, toMvizProps)
+export const HistogramChart = createEChartsBridge('histogram', buildHistogramFallback)

@@ -90,14 +90,4 @@ function buildFunnelFallback(props: FunnelChartProps): Record<string, unknown> {
   }
 }
 
-/**
- * Map schema props to mviz format.
- * mviz uses spec.name / spec.value for funnel dimension fields.
- * Our schema supports x/y and category/value as aliases.
- */
-function toMvizProps(props: FunnelChartProps): Record<string, unknown> {
-  const { nameField, valueField } = resolveFunnelFields(props)
-  return { ...props, name: nameField, value: valueField }
-}
-
-export const FunnelChart = createEChartsBridge('funnel', buildFunnelFallback, toMvizProps)
+export const FunnelChart = createEChartsBridge('funnel', buildFunnelFallback)

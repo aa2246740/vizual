@@ -1,18 +1,6 @@
 import type { BoxplotChartProps } from './schema'
 import { createEChartsBridge } from '../../core/echarts-bridge-factory'
 
-/**
- * Map our Schema fields to mviz's expected format.
- * mviz uses groupField/valueField for raw data aggregation.
- */
-function toMvizProps(props: BoxplotChartProps): Record<string, unknown> {
-  return {
-    ...props,
-    groupField: props.groupField ?? props.x ?? 'name',
-    valueField: props.valueField ?? (Array.isArray(props.y) ? props.y[0] : props.y) ?? 'value',
-  }
-}
-
 function buildBoxplotFallback(props: BoxplotChartProps): Record<string, unknown> {
   const groupField = props.groupField ?? props.x ?? 'name'
   const valueField = props.valueField ?? (Array.isArray(props.y) ? props.y[0] : props.y) ?? 'value'
@@ -47,4 +35,4 @@ function buildBoxplotFallback(props: BoxplotChartProps): Record<string, unknown>
   }
 }
 
-export const BoxplotChart = createEChartsBridge('boxplot', buildBoxplotFallback, toMvizProps)
+export const BoxplotChart = createEChartsBridge('boxplot', buildBoxplotFallback)

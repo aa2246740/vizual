@@ -1,6 +1,6 @@
 ---
 name: vizual
-version: "4.1.0"
+version: "4.1.1"
 description: >
   Generate structured JSON specs for Vizual's 31 visualization components. Use this skill
   whenever the user needs ANY kind of visual output — charts, dashboards, reports, KPIs,
@@ -35,7 +35,7 @@ Vizual components fall into 6 families. Think of them as building blocks, not a 
 
 **Input** — FormBuilder. 18 field types, validation, conditional visibility. This is your form builder — any time the user describes input fields, dropdowns, or data collection UI, use it.
 
-**Meta** — DocView (annotatable document with mixed sections, annotation panel, revision loop, and version history). DocView is not the default report layout. Use it only when the output is meant to behave like a document. InteractivePlayground has been **removed** — do NOT use it.
+**Meta** — DocView (annotatable document with mixed sections, annotation panel, revision loop, and version history). DocView is not the default report layout. Use it only when the output must behave like a reviewable document, with comments/annotations/revisions as part of the workflow. InteractivePlayground has been **removed** — do NOT use it.
 
 **Layout** — GridLayout (multi-column grid), SplitLayout (two-pane split), HeroLayout (banner section). Layouts hold child components; they don't render content themselves.
 
@@ -96,7 +96,7 @@ Real outputs are usually compositions. Here are the common patterns:
 
 **Dashboard / Chat Analysis** — `GridLayout` holding `KpiDashboard` + charts + `DataTable`. Put explanatory prose in the host chat/message text when the host supports text next to the Vizual render. Do not wrap ordinary chat analysis in DocView just to show headings or paragraphs.
 
-**Annotatable Document** — `DocView` with structured sections: `heading`, `text`, `callout`, `kpi`, `chart`, `table`, `markdown`. Use this when the user explicitly wants comments, annotations, revisions, document review, report-document export, or a long-form document UI. Set `showPanel: true` when annotations are part of the workflow; set `showPanel: false` only for read-only document previews. For revisable documents, give important sections stable `id` fields so Agent patches can target `sectionId`.
+**Annotatable Document** — `DocView` with structured sections: `heading`, `text`, `callout`, `kpi`, `chart`, `table`, `markdown`. Use this when the user explicitly wants comments, annotations, revisions, document review, or asks to turn an output into a reviewable document artifact. Do not choose DocView merely because the user says "report", "analysis", "dashboard", or "export"; ordinary report/export outputs should stay as host text plus `GridLayout`/charts/tables. Set `showPanel: true` when annotations are part of the workflow; set `showPanel: false` only for read-only previews of a document that can later enter review. For revisable documents, give important sections stable `id` fields so Agent patches can target `sectionId`.
 
 For charts inside DocView, read `references/doc/docview.md`: use `chart` sections with `data.chartType` for ordinary embedded charts, or `component` sections with `data.componentType` when exact standalone chart props are clearer.
 
@@ -115,8 +115,8 @@ Use the smallest runtime shape that satisfies the task:
 | Need | What to output/call | Why |
 |------|---------------------|-----|
 | One static chart/dashboard/table | JSON spec + `renderVizInMsg(id, spec)` | Fast, compatible, page wraps it into an artifact automatically |
-| Historical recovery or follow-up edits | `VizualArtifact` + `renderArtifactInMsg(id, artifact)` or `updateArtifactInMsg(ref, patch)` | Preserves `id`, `targetMap`, `versions`, `theme`, `exports` |
-| "Change this chart to line / filter region / make it less dense" | Read `getLastArtifact()` then call `updateArtifactInMsg()` | Do not regenerate from memory; patch the saved artifact |
+| Historical recovery or follow-up edits | `VizualArtifact` + `renderArtifactInMsg(id, artifact)` or `updateArtifactInMsg(ref, patch)` | Preserves `id`, `targetMap`, `versions`, `theme`, `exports`; follow-ups render as a new AI bubble by default |
+| "Change this chart to line / filter region / make it less dense" | Read `getLastArtifact()` then call `updateArtifactInMsg()` | Do not regenerate from memory; patch the saved artifact and keep the old bubble as history |
 | Live adjustable preview | `renderInteractiveVizInMsg(id, config)` | Requires host JavaScript, FormBuilder state, and `makeSpec(state)` |
 | DocView review loop | DocView UI + review controller | User annotates, Agent returns revision proposal, user applies/rejects |
 
@@ -128,7 +128,7 @@ window.updateArtifactInMsg(artifact.id, [
   { type: 'changeChartType', targetId: 'element:chart', chartType: 'LineChart' },
   { type: 'filterData', targetId: 'element:chart', field: 'region', values: '华东' },
   { type: 'limitData', targetId: 'element:chart', limit: 8 },
-]);
+], { answerText: '已按华东区改成折线图。' });
 ```
 
 Important patch types: `changeChartType`, `filterData`, `limitData`, `updateElementProps`, `replaceElement`, `replaceSpec`, `mergeState`, `setTheme`, `addExportRecord`.
@@ -162,12 +162,14 @@ const target = artifact.targetMap.find(t => t.componentType === 'BarChart' || t.
 const updated = window.updateArtifactInMsg(artifact.id, [
   { type: 'changeChartType', targetId: target.id, chartType: 'LineChart' },
   { type: 'filterData', targetId: target.id, field: 'region', values: '华东' },
-]);
+], { answerText: '已生成新的修改版图表。' });
 const pdf = await window.exportArtifact(updated.id, { format: 'pdf', filename: 'east-china-line' });
 const xlsx = await window.exportArtifact(updated.id, { format: 'xlsx', filename: 'east-china-data' });
 ```
 
 Built-in export formats are `png`, `pdf`, `csv`, and `xlsx`. PNG/PDF export the rendered visual surface. CSV/XLSX export the first tabular `props.data` dataset unless the host passes explicit rows/columns.
+
+`updateArtifactInMsg()` creates a new AI reply bubble by default so historical chat records remain stable. Pass `{ mode: 'replace' }` only for temporary in-place preview/debug.
 
 For static charts, omit `bubbleWidth` unless you have a reason to override. The page infers `normal` for KPI/sparkline, `wide` for ordinary charts, and `full` for layouts, DocView, Sankey, Radar, FormBuilder, and tables. Pass `{ bubbleWidth: 'compact' | 'normal' | 'wide' | 'full' }` only when the user asks for a specific density.
 
@@ -261,7 +263,7 @@ For interactive controls, expose only options that make sense for the current co
 
 If an agent can only click and type in the browser but cannot execute JavaScript in the page, it cannot complete `vizual-test.html` rendering or live interactivity by itself. In that case, provide a static spec plus explanation, or use a host bridge, Playwright/CDP, or an auto-poll backend that calls `renderVizInMsg()` / `renderInteractiveVizInMsg()`.
 
-For ordinary data-analysis prompts in `vizual-test.html`, answer in host message text and render a `GridLayout`/chart/dashboard spec. Do not choose DocView unless the user explicitly asks for annotation, comments, review, revision, or a document artifact.
+For ordinary data-analysis prompts in `vizual-test.html`, answer in host message text and render a `GridLayout`/chart/dashboard spec. Do not choose DocView unless the user explicitly asks for annotation, comments, review, revision, or a reviewable document artifact.
 
 ## Rendered DocView Interaction Checklist
 
@@ -298,7 +300,7 @@ Use `GridLayout` or standalone components when:
 - The output is meant to be read, not annotated or revised in-place.
 
 Use `DocView` only when:
-- The user explicitly asks for an annotatable document, report document, review workflow, comments, highlights, revisions, version history, or document export.
+- The user explicitly asks for an annotatable/revisable document, review workflow, comments, highlights, revisions, version history, or asks to turn a generated output into a document review surface.
 - The product surface supports DocView interactions (`onAction`, annotation panel, revision loop), not just static rendering.
 - The document itself is the artifact, not merely a way to add paragraphs around charts.
 
@@ -318,7 +320,7 @@ If unsure between DocView and GridLayout, choose `GridLayout` and put the writte
 
 **REMOVED: InteractivePlayground** — Do NOT generate specs with `type: "InteractivePlayground"` or `type: "interactive_playground"`. This component no longer exists.
 
-**The user wants a document with annotation/revision behavior** → DocView. Use its structured section types: `heading`, `text`, `kpi`, `chart`, `table`, `callout`, `markdown`, `freeform`. Set `showPanel: true` if the user wants highlighting/comments.
+**The user wants a document with annotation/revision behavior** → DocView. Use its structured section types: `heading`, `text`, `kpi`, `chart`, `table`, `callout`, `markdown`, `freeform`. Set `showPanel: true` if the user wants highlighting/comments. If the user only wants a normal report, dashboard, or exportable visual answer, use GridLayout and the artifact export APIs instead.
 
 **The user wants things arranged in a layout** → GridLayout (multi-column), SplitLayout (two-pane), HeroLayout (top banner). These are containers — they hold other components as children. **Use GridLayout for dashboards and reports.** Only use DocView when the user explicitly wants an annotatable document with a sidebar panel.
 
@@ -332,7 +334,7 @@ These are the most common mistakes. Avoiding them is more important than memoriz
 
 2. **Don't embed components as freeform HTML inside DocView.** DocView has structured section types for charts, KPIs, and tables. Use `{ "type": "chart", "data": {...} }` not `{ "type": "freeform", "content": "<div>...</div>" }` for these.
 
-3. **Don't use DocView as a generic chat/report wrapper.** If the user did not ask for annotations, comments, document review, revisions, or a document artifact, use `GridLayout`/standalone components and keep prose in the host message.
+3. **Don't use DocView as a generic chat/report wrapper.** If the user did not ask for annotations, comments, document review, revisions, or a reviewable document artifact, use `GridLayout`/standalone components and keep prose in the host message.
 
 4. **Don't invent props.** Only use props that exist in the schema. When unsure, read the component's reference file. Common invented props that don't exist: `sort`, `filter`, `pagination` on DataTable; `drag` on Kanban; `height` on BarChart; `enableAnnotations` on DocView.
 

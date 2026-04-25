@@ -1,4 +1,5 @@
 const esbuild = require('esbuild')
+const { rmSync } = require('fs')
 
 // build.js — vizual 构建配置
 // 三种产物：ESM（npm import）、CJS（npm require）、Standalone（全量打包，无外部依赖）
@@ -24,6 +25,7 @@ if (isStandalone) {
     process.exit(1)
   })
 } else {
+  rmSync('dist', { recursive: true, force: true })
   // 默认：同时构建 ESM + CJS（npm 包格式，React/ECharts 作为 peer dependency）
   Promise.all([
     esbuild.build({

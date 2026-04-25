@@ -119,6 +119,19 @@ function DocViewInner({
 }: DocViewProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const contentRef = useRef<HTMLDivElement>(null)
+  const [localSections, setLocalSections] = useState(sections ?? [])
+  const previousSectionTextSignatureRef = useRef<string | null>(null)
+
+  useEffect(() => {
+    setLocalSections(sections ?? [])
+    previousSectionTextSignatureRef.current = null
+  }, [sections])
+
+  const effectiveSections = localSections
+  const handleSectionsChange = useCallback((nextSections: NonNullable<DocViewProps['sections']>) => {
+    setLocalSections(nextSections)
+    onSectionsChange?.(nextSections)
+  }, [onSectionsChange])
 
   // State for target-based annotation (clicking a non-text element like chart/KPI/table)
   const [targetAnnotation, setTargetAnnotation] = useState<{
@@ -182,14 +195,14 @@ function DocViewInner({
     reviewAnnotations: annotations,
     controller,
   } = useReviewController({
-    sections,
+    sections: effectiveSections,
     annotations: controlledAnnotations,
     onAnnotationsChange,
     threads: controlledThreads,
     onThreadsChange,
     revisionProposals: controlledRevisionProposals,
     onRevisionProposalsChange,
-    onSectionsChange,
+    onSectionsChange: handleSectionsChange,
     onReviewAction: emitReviewAction,
   })
 
@@ -219,28 +232,34 @@ function DocViewInner({
     controller.submitThreads()
   }, [controller])
 
-  // Auto-detect orphaned annotations when sections change (AI returns revised content)
-  // Extracts all text from sections and passes to onContentRevised which calls markOrphans.
-  // Annotations whose text is no longer found in the revised content are marked 'orphaned'.
+  // Auto-detect anchors whose original text disappeared after a real document revision.
+  // New annotations must not immediately become orphaned just because threads changed.
   useEffect(() => {
-    if (!sections || sections.length === 0) return
-    const allText = sections
+    if (!effectiveSections || effectiveSections.length === 0) return
+    const normalize = (text: string) => text.replace(/\s+/g, ' ').trim()
+    const allText = normalize(effectiveSections
       .map(s => {
         if (typeof s.content === 'string') return s.content
         if (s.data && typeof s.data === 'object') return JSON.stringify(s.data)
         return ''
       })
       .filter(Boolean)
-      .join(' ')
-    if (allText) {
-      threads.forEach(thread => {
-        const selected = thread.anchor.textRange?.selectedText || ''
-        if (selected && thread.status !== 'orphaned' && !allText.includes(selected)) {
-          controller.updateThreadStatus(thread.id, 'orphaned')
-        }
-      })
+      .join(' '))
+    if (!allText) return
+    if (previousSectionTextSignatureRef.current === null) {
+      previousSectionTextSignatureRef.current = allText
+      return
     }
-  }, [sections, threads, controller])
+    if (previousSectionTextSignatureRef.current === allText) return
+    previousSectionTextSignatureRef.current = allText
+    threads.forEach(thread => {
+      if (thread.status === 'open' || thread.status === 'resolved' || thread.status === 'rejected' || thread.status === 'orphaned') return
+      const selected = normalize(thread.anchor.textRange?.selectedText || '')
+      if (selected && !allText.includes(selected)) {
+        controller.updateThreadStatus(thread.id, 'orphaned')
+      }
+    })
+  }, [effectiveSections, threads, controller])
 
   // Confirm annotation from text selection
   const handleConfirmAnnotation = useCallback((note: string, color: AnnotationColor) => {
@@ -264,7 +283,7 @@ function DocViewInner({
       }
     } catch { /* DOM traversal failure, leave sectionIndex = -1 */ }
 
-    const section = sectionIndex >= 0 && sections && sectionIndex < sections.length ? sections[sectionIndex] : undefined
+    const section = sectionIndex >= 0 && effectiveSections && sectionIndex < effectiveSections.length ? effectiveSections[sectionIndex] : undefined
     const anchor: AnnotationAnchor = {
       sectionIndex,
       sectionId: sectionId || (section ? getSectionId(section, sectionIndex) : undefined),
@@ -278,7 +297,7 @@ function DocViewInner({
     controller.createThread({ anchor, body: note, color })
 
     clearSelection()
-  }, [selection, controller, clearSelection, sections])
+  }, [selection, controller, clearSelection, effectiveSections])
 
   // Handle click on a non-text target element (chart, KPI, table cell, etc.)
   const handleTargetClick = useCallback((target: AnnotationTarget, element: HTMLElement) => {
@@ -299,7 +318,7 @@ function DocViewInner({
   // Confirm annotation from clicking a non-text target
   const handleConfirmTargetAnnotation = useCallback((note: string, color: AnnotationColor) => {
     if (!targetAnnotation) return
-    const section = sections?.[targetAnnotation.target.sectionIndex]
+    const section = effectiveSections?.[targetAnnotation.target.sectionIndex]
     const anchor: AnnotationAnchor = {
       ...targetAnnotation.target,
       sectionId: targetAnnotation.target.sectionId || (section ? getSectionId(section, targetAnnotation.target.sectionIndex) : undefined),
@@ -307,7 +326,7 @@ function DocViewInner({
     }
     controller.createThread({ anchor, body: note, color })
     setTargetAnnotation(null)
-  }, [targetAnnotation, controller, sections])
+  }, [targetAnnotation, controller, effectiveSections])
 
   const handleDeleteAnnotation = useCallback((id: string) => {
     controller.deleteThread(id)
@@ -326,8 +345,8 @@ function DocViewInner({
   }, [controller])
 
   // Determine content: sections mode (AI-driven) vs children mode (manual)
-  const renderedContent = sections && sections.length > 0
-    ? <SectionRenderer sections={sections} onTargetClick={handleTargetClick} annotations={annotations} />
+  const renderedContent = effectiveSections && effectiveSections.length > 0
+    ? <SectionRenderer sections={effectiveSections} onTargetClick={handleTargetClick} annotations={annotations} />
     : children
 
   const containerStyle: React.CSSProperties = {

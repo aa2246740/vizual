@@ -9,10 +9,10 @@ Interactive document with mixed sections and annotation support.
 Use DocView when the **document interaction** is part of the requirement:
 
 - The user asks for annotations, comments, highlighting, review, revisions, or version history.
-- The output should be a self-contained document artifact, not just a chart/dashboard in a chat message.
+- The output should be a self-contained reviewable document artifact, not just a chart/dashboard/report in a chat message.
 - The host app supports DocView callbacks such as `onAction`, annotation panel submission, or an AI revision loop.
 
-Do **not** use DocView just because the user says "report", "analysis", or "summary". For ordinary chat answers and dashboards, render visuals with `GridLayout`/charts/KPIs/tables and put narrative explanation in the host message text.
+Do **not** use DocView just because the user says "report", "analysis", "summary", or "export". For ordinary chat answers, dashboards, and exportable reports, render visuals with `GridLayout`/charts/KPIs/tables, put narrative explanation in the host message text, and use artifact export APIs when needed.
 
 ## Interacting With a Rendered DocView
 

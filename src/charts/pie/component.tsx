@@ -53,18 +53,4 @@ function buildPieFallback(props: PieChartProps): Record<string, unknown> {
   }
 }
 
-/**
- * Map schema props to mviz format.
- * mviz uses spec.name / spec.value for pie dimension fields.
- * Our schema supports x/y and category/value as aliases.
- */
-function toMvizProps(props: PieChartProps): Record<string, unknown> {
-  const rawProps = props as Record<string, unknown>
-  return {
-    ...props,
-    name: props.x ?? rawProps.category ?? rawProps.name ?? 'name',
-    value: Array.isArray(props.y) ? props.y[0] : (props.y ?? rawProps.value ?? 'value'),
-  }
-}
-
-export const PieChart = createEChartsBridge('pie', buildPieFallback, toMvizProps)
+export const PieChart = createEChartsBridge('pie', buildPieFallback)

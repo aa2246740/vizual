@@ -117,7 +117,7 @@ export type CreateVizualArtifactInput = {
 export type VizualArtifactPatch =
   | {
       type: 'replaceSpec'
-      spec: VizualSpec
+      spec: unknown
       reason?: string
     }
   | {
@@ -620,6 +620,61 @@ function normalizeChartType(chartType: string) {
   return CHART_TYPE_MAP[key] || chartType
 }
 
+function findDocViewElement(spec: VizualSpec): { elementId: string; element: VizualSpecElement } | undefined {
+  for (const [elementId, element] of Object.entries(spec.elements || {})) {
+    if (element?.type === 'DocView') return { elementId, element }
+  }
+  return undefined
+}
+
+function replaceDocViewSections(spec: VizualSpec, sections: unknown[]): VizualSpec {
+  const next = cloneJson(spec)
+  next.elements = next.elements || {}
+  const docView = findDocViewElement(next)
+  if (docView) {
+    docView.element.props = {
+      ...(isRecord(docView.element.props) ? docView.element.props : {}),
+      sections: cloneJson(sections),
+    }
+    next.elements[docView.elementId] = docView.element
+    return next
+  }
+  next.root = next.root || 'doc'
+  next.elements[next.root] = {
+    type: 'DocView',
+    props: { sections: cloneJson(sections) },
+  }
+  return next
+}
+
+function elementRecordToSpec(value: Record<string, unknown>): VizualSpec {
+  const type = typeof value.type === 'string' ? value.type : undefined
+  if (!type) throw new Error('replaceSpec element object requires a string type')
+  const rawProps = isRecord(value.props) ? { ...value.props } : { ...value }
+  delete rawProps.type
+  delete rawProps.children
+  return {
+    root: 'root',
+    elements: {
+      root: {
+        type,
+        props: cloneJson(rawProps),
+        children: value.children,
+      },
+    },
+  }
+}
+
+function coerceReplacementSpec(value: unknown, artifact: VizualArtifact): VizualSpec {
+  if (isVizualSpec(value)) return cloneJson(value)
+  if (Array.isArray(value)) return replaceDocViewSections(artifact.spec, value)
+  if (isRecord(value)) {
+    if (Array.isArray(value.sections)) return replaceDocViewSections(artifact.spec, value.sections)
+    if (typeof value.type === 'string') return elementRecordToSpec(value)
+  }
+  throw new Error('replaceSpec requires a full Vizual spec. For DocView revisions pass { sections: [...] } or updateElementProps({ sections }).')
+}
+
 function patchDocViewChartSection(
   artifact: VizualArtifact,
   patch: Extract<VizualArtifactPatch, { type: 'changeChartType' }>,
@@ -637,8 +692,8 @@ function patchDocViewChartSection(
 
 function applySinglePatch(artifact: VizualArtifact, patch: VizualArtifactPatch): VizualArtifact {
   if (patch.type === 'replaceSpec') {
-    artifact.spec = cloneJson(patch.spec)
-    artifact.state = cloneJson(patch.spec.state || artifact.state || {})
+    artifact.spec = coerceReplacementSpec(patch.spec, artifact)
+    artifact.state = cloneJson(artifact.spec.state || artifact.state || {})
     return artifact
   }
 

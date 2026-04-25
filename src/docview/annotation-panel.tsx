@@ -63,7 +63,7 @@ export function AnnotationPanel({
     draft: { label: '草稿', color: '#fbbf24', bg: '#fbbf2420' },
     active: { label: '已提交', color: tcss('--rk-accent'), bg: tcss('--rk-accent-muted') },
     resolved: { label: '已解决', color: tcss('--rk-success'), bg: tcss('--rk-success-muted') },
-    orphaned: { label: '孤立', color: tcss('--rk-text-secondary'), bg: tcss('--rk-bg-tertiary') },
+    orphaned: { label: '原文已变化', color: tcss('--rk-text-secondary'), bg: tcss('--rk-bg-tertiary') },
   }
   const reviewStatusLabels: Record<ReviewStatus, { label: string; color: string; bg: string }> = {
     open: { label: '待提交', color: '#fbbf24', bg: '#fbbf2420' },
@@ -72,7 +72,7 @@ export function AnnotationPanel({
     proposed: { label: '有提案', color: '#a855f7', bg: '#a855f720' },
     resolved: { label: '已解决', color: tcss('--rk-success'), bg: tcss('--rk-success-muted') },
     rejected: { label: '已拒绝', color: tcss('--rk-error'), bg: 'rgba(239,68,68,0.12)' },
-    orphaned: { label: '孤立', color: tcss('--rk-text-secondary'), bg: tcss('--rk-bg-tertiary') },
+    orphaned: { label: '原文已变化', color: tcss('--rk-text-secondary'), bg: tcss('--rk-bg-tertiary') },
   }
 
   const hasThreads = threads.length > 0
@@ -116,7 +116,7 @@ export function AnnotationPanel({
           )}
           {orphans.length > 0 && (
             <span style={{ fontSize:tcss('--rk-text-xs'), color: tcss('--rk-text-secondary'), background: tcss('--rk-bg-tertiary'), padding: '2px 8px', borderRadius:tcss('--rk-radius-lg') }}>
-              {orphans.length} 孤立
+              {orphans.length} 原文已变化
             </span>
           )}
         </div>
@@ -233,6 +233,11 @@ export function AnnotationPanel({
                   {firstComment.body}
                 </div>
               )}
+              {thread.status === 'orphaned' && (
+                <div style={{ fontSize: tcss('--rk-text-xs'), color: tcss('--rk-text-secondary'), lineHeight: 1.35, marginTop: 6 }}>
+                  文档修订后找不到原批注文字，可删除或标记解决。
+                </div>
+              )}
               <div style={{ display: 'flex', gap: 8, marginTop: 6 }}>
                 {thread.status === 'open' && (
                   <button
@@ -318,6 +323,11 @@ export function AnnotationPanel({
               {ann.note && (
                 <div style={{ fontSize:tcss('--rk-text-sm'), color: tcss('--rk-text-secondary'), lineHeight: 1.3 }}>
                   {ann.note}
+                </div>
+              )}
+              {ann.status === 'orphaned' && (
+                <div style={{ fontSize:tcss('--rk-text-xs'), color: tcss('--rk-text-secondary'), lineHeight: 1.35, marginTop: 6 }}>
+                  文档修订后找不到原批注文字，可删除或确认解决。
                 </div>
               )}
 

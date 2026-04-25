@@ -82,16 +82,18 @@ const updated = window.updateArtifactInMsg(artifact.id, [
   { type: 'changeChartType', targetId: target.id, chartType: 'LineChart' },
   { type: 'filterData', targetId: target.id, field: 'region', values: '华东' },
   { type: 'limitData', targetId: target.id, limit: 8 },
-]);
+], { answerText: '已生成新的修改版图表。' });
 await window.exportArtifact(updated.id, { format: 'pdf', filename: 'east-china-line' });
 await window.exportArtifact(updated.id, { format: 'xlsx', filename: 'east-china-data' });
 ```
+
+Follow-up edits create a new AI bubble by default. Pass `{ mode: 'replace' }` only for temporary in-place preview/debug.
 
 For live parameter tuning, use `renderInteractiveVizInMsg(id, config)` with FormBuilder bound to `/controls` and `makeSpec(state)`. This is host JavaScript, not pure JSON.
 
 ## DocView — Annotatable Documents Only
 
-DocView is for document workflows: comments, highlights, review, AI revision, version history, or document export. It is not the default for chat answers, dashboards, or ordinary analysis reports. If the host can display text next to the Vizual component, keep prose in the host message and render charts/KPIs/tables with GridLayout.
+DocView is for document workflows: comments, highlights, review, AI revision, version history, or a reviewable document artifact. It is not the default for chat answers, dashboards, ordinary analysis reports, or exportable charts. If the host can display text next to the Vizual component, keep prose in the host message and render charts/KPIs/tables with GridLayout. Use export APIs for normal dashboard/chart export; use DocView only when the document itself needs review/revision behavior.
 
 For revisable DocView documents, include stable section `id` values. Agent-driven revision loops require host/controller access (`controllerRef`, `onReviewAction`). A pure JSON spec can render the document, but cannot by itself call an LLM or apply revision proposals.
 

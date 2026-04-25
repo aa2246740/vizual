@@ -53,16 +53,6 @@ function resolveFields(props: HeatmapChartProps) {
   }
 }
 
-function toMvizProps(props: HeatmapChartProps): Record<string, unknown> {
-  const { xField, yField, valueField, data } = resolveFields(props)
-  const mappedData = data.map((d: Record<string, unknown>) => ({
-    x: String(d[xField] ?? ''), y: String(d[yField] ?? ''), value: d[valueField],
-  }))
-  const xCategories = [...new Set(mappedData.map(d => String(d.x ?? '')))]
-  const yCategories = [...new Set(mappedData.map(d => String(d.y ?? '')))]
-  return { ...props, theme: props.theme ?? 'dark', data: mappedData, xCategories, yCategories }
-}
-
 function buildHeatmapFallback(props: HeatmapChartProps): Record<string, unknown> {
   const { xField, yField, valueField, data } = resolveFields(props)
   const xCats = [...new Set(data.map(d => String((d as Record<string, unknown>)[xField] ?? '')))]
@@ -84,4 +74,4 @@ function buildHeatmapFallback(props: HeatmapChartProps): Record<string, unknown>
   }
 }
 
-export const HeatmapChart = createEChartsBridge('heatmap', buildHeatmapFallback, toMvizProps)
+export const HeatmapChart = createEChartsBridge('heatmap', buildHeatmapFallback)

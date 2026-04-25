@@ -1,5 +1,5 @@
 /**
- * Generate all mviz chart bridge files (schema.ts + component.tsx + index.ts)
+ * Generate Vizual chart files (schema.ts + component.tsx + index.ts)
  * Run: npx tsx scripts/gen-bridges.ts
  */
 import { writeFileSync, mkdirSync } from 'fs'
@@ -23,7 +23,7 @@ const charts = [
   { name: 'xmr', title: 'XMR Control Chart', extra: 'value: z.string().optional(),' },
 ]
 
-const dir = 'src/mviz-bridge'
+const dir = 'src/charts'
 
 for (const chart of charts) {
   const { name, title, extra } = chart

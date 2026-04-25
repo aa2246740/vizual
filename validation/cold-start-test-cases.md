@@ -269,7 +269,7 @@
 **验证点：**
 - Agent 先调用 `window.getLastArtifact()`，不能从聊天 DOM 或记忆里重建上一张图
 - Agent 从 `artifact.targetMap` 找目标，例如 `element:chart`
-- Agent 调用 `window.updateArtifactInMsg(artifact.id, patches)`，patch 至少包含：
+- Agent 调用 `window.updateArtifactInMsg(artifact.id, patches, { answerText })`，默认生成新的 AI 气泡；不能直接覆盖旧气泡。patch 至少包含：
   - `changeChartType` → `LineChart`
   - `filterData` → field/value 对应华东区
   - `limitData` 或等价的 `replaceElement` 降低密度

@@ -34,12 +34,27 @@ export interface DataExportOptions {
 
 export interface PDFExportOptions extends ExportOptions {
   orientation?: 'portrait' | 'landscape'
+  /** `content` uses the rendered content size with no page padding. `a4` fits into an A4 page. */
+  pageSize?: 'content' | 'a4'
+  /** PDF page margin in points for A4 mode. Defaults to 0. */
+  margin?: number
 }
 
 export type VizualExportFormat = 'png' | 'pdf' | 'csv' | 'xlsx'
 
-function getDefaultBgColor(): string {
+function isTransparentColor(value: string) {
+  const color = value.trim().toLowerCase()
+  return !color || color === 'transparent' || color === 'rgba(0, 0, 0, 0)' || color === 'rgba(0,0,0,0)'
+}
+
+function getDefaultBgColor(source?: HTMLElement): string {
   if (typeof document !== 'undefined') {
+    if (source) {
+      const style = getComputedStyle(source)
+      const localToken = style.getPropertyValue('--rk-bg-primary').trim()
+      if (localToken) return localToken
+      if (!isTransparentColor(style.backgroundColor)) return style.backgroundColor
+    }
     const dom = getComputedStyle(document.documentElement).getPropertyValue('--rk-bg-primary').trim()
     if (dom) return dom
   }
@@ -51,12 +66,12 @@ export async function exportToPNG(
   options?: ExportOptions
 ): Promise<Blob> {
   const scale = options?.scale || 2
-  const bgColor = options?.backgroundColor || getDefaultBgColor()
+  const bgColor = options?.backgroundColor || getDefaultBgColor(source)
 
-  const chartDom = source.querySelector('div[_echarts_instance_]') as HTMLElement
-  if (chartDom) {
+  const isChartOnlyExport = source.matches?.('div[_echarts_instance_]')
+  if (isChartOnlyExport) {
     const echartsLib = (window as any).echarts
-    const chart = echartsLib?.getInstanceByDom?.(chartDom)
+    const chart = echartsLib?.getInstanceByDom?.(source)
     if (chart) {
       const dataUrl: string = chart.getDataURL({
         type: 'png',
@@ -78,14 +93,30 @@ export async function exportToPDF(
   const dataUrl = await blobToDataURL(pngBlob)
   const img = await loadImage(dataUrl)
   const orientation = options?.orientation || (img.width > img.height ? 'landscape' : 'portrait')
-  const pdf = new jsPDF({ orientation, unit: 'pt', format: 'a4' })
-  const pageWidth = pdf.internal.pageSize.getWidth()
-  const pageHeight = pdf.internal.pageSize.getHeight()
-  const scale = Math.min(pageWidth / img.width, pageHeight / img.height)
-  const width = img.width * scale
-  const height = img.height * scale
-  const x = (pageWidth - width) / 2
-  const y = (pageHeight - height) / 2
+
+  if (options?.pageSize === 'a4') {
+    const pdf = new jsPDF({ orientation, unit: 'pt', format: 'a4' })
+    const pageWidth = pdf.internal.pageSize.getWidth()
+    const pageHeight = pdf.internal.pageSize.getHeight()
+    const margin = Math.max(0, options.margin ?? 0)
+    const scale = Math.min((pageWidth - margin * 2) / img.width, (pageHeight - margin * 2) / img.height)
+    const width = img.width * scale
+    const height = img.height * scale
+    const x = (pageWidth - width) / 2
+    const y = (pageHeight - height) / 2
+    pdf.addImage(dataUrl, 'PNG', x, y, width, height)
+    return pdf.output('blob')
+  }
+
+  const pdf = new jsPDF({
+    orientation,
+    unit: 'pt',
+    format: [Math.max(1, img.width), Math.max(1, img.height)],
+  })
+  const width = pdf.internal.pageSize.getWidth()
+  const height = pdf.internal.pageSize.getHeight()
+  const x = 0
+  const y = 0
   pdf.addImage(dataUrl, 'PNG', x, y, width, height)
   return pdf.output('blob')
 }
@@ -170,6 +201,7 @@ async function exportHTMLCanvasPNG(
     backgroundColor: bgColor,
     useCORS: true,
     logging: false,
+    ignoreElements: element => element instanceof HTMLElement && element.dataset.vizualExportIgnore === 'true',
   })
   return new Promise<Blob>((resolve, reject) => {
     canvas.toBlob(b => b ? resolve(b) : reject(new Error('toBlob failed')), 'image/png', 1)

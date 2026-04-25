@@ -33,10 +33,12 @@ export interface AnnotationOverlayProps {
 export function AnnotationOverlay({ children, annotations, onHighlightClick, containerRef }: AnnotationOverlayProps) {
   const contentRef = useRef<HTMLSpanElement>(null)
 
-  // Filter to active (non-orphaned) text annotations for highlighting
+  // Filter to active text annotations for highlighting. Resolved/orphaned
+  // anchors are history, not active markup on the current document.
   const activeAnnotations = useMemo(() =>
     annotations.filter(a =>
       a.status !== 'orphaned' &&
+      a.status !== 'resolved' &&
       (a.anchor?.textRange || a.target?.textRange || !a.target)
     ),
     [annotations]
@@ -182,7 +184,7 @@ function TargetHighlighter({
     if (!container) return
 
     // Find all target annotations (non-text)
-    const targetAnns = annotations.filter(a => a.target)
+    const targetAnns = annotations.filter(a => a.target && a.status !== 'resolved' && a.status !== 'orphaned')
 
     /**
      * Apply or remove outlines on component targets based on current annotations.
@@ -202,7 +204,7 @@ function TargetHighlighter({
 
       // Apply highlights for each target annotation
       for (const ann of targetAnns) {
-        if (!ann.target || ann.status === 'orphaned' || ann.target.textRange) continue
+        if (!ann.target || ann.target.textRange) continue
         // Skip chart data point annotations — handled by ECharts dispatchAction in ChartSection
         if (ann.target.chartDataPoint) continue
         // Use targetId for precise element matching (e.g., "kpi-3-1" not all kpi-3)

@@ -231,7 +231,7 @@ function ChartSection({
   const titleRef = useRef(section.title || '图表')
   const rawData = section.data as Record<string, unknown> | undefined
   const registryChart = resolveRegistryChartData(rawData, section.title)
-  // Normalize chart data: support both ECharts format and mviz format
+  // Normalize chart data: support both ECharts format and Vizual field-mapped format
   const data = normalizeChartData(rawData)
   const dataKey = stableStringify(data)
   const chartOptions = useMemo(
@@ -308,7 +308,8 @@ function ChartSection({
       a.target?.targetType === 'chart' &&
       a.target?.sectionIndex === index &&
       a.target?.chartDataPoint &&
-      a.status !== 'orphaned'
+      a.status !== 'orphaned' &&
+      a.status !== 'resolved'
     )
 
     for (const ann of chartAnns) {
@@ -868,7 +869,7 @@ function parseTableData(
  * Normalize chart data to ECharts format.
  * Accepts:
  *   1) ECharts format: { xAxis?, yAxis?, series: [{type, data}] }  — returned as-is
- *   2) mviz format:    { type, x, y, data: [{xField, yField}] }   — converted to ECharts
+ *   2) field format:   { type, x, y, data: [{xField, yField}] }   — converted to ECharts
  */
 function normalizeChartData(data: Record<string, unknown> | undefined): Record<string, unknown> | undefined {
   if (!data || typeof data !== 'object') return data
@@ -876,7 +877,7 @@ function normalizeChartData(data: Record<string, unknown> | undefined): Record<s
   // Already ECharts format — has series array
   if (Array.isArray(data.series)) return data
 
-  // mviz format: { type, x, y, data: [...] }
+  // Field-mapped format: { type, x, y, data: [...] }
   const yIsString = typeof data.y === 'string'
   const yIsArray = Array.isArray(data.y) && (data.y as unknown[]).every(v => typeof v === 'string')
   if (typeof data.x === 'string' && (yIsString || yIsArray) && Array.isArray(data.data)) {

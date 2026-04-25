@@ -19,7 +19,7 @@ function buildLineFallback(props: LineChartProps): Record<string, unknown> {
     tooltip: { trigger: 'axis' },
     legend: hasLegend ? { top: hasTitle ? 30 : 0, left: 'center' } : undefined,
     grid: {
-      left: '3%',
+      left: '4%',
       right: '4%',
       bottom: '3%',
       top: hasTitle ? (hasLegend ? 70 : 40) : (hasLegend ? 30 : 30),

@@ -33,11 +33,6 @@ function extractSankeyData(props: SankeyChartProps) {
   return { links, nodes }
 }
 
-function toMvizProps(props: SankeyChartProps): Record<string, unknown> {
-  const { links } = extractSankeyData(props)
-  return { ...props, data: links }
-}
-
 function buildSankeyFallback(props: SankeyChartProps): Record<string, unknown> {
   const { links, nodes } = extractSankeyData(props)
   return {
@@ -55,4 +50,4 @@ function buildSankeyFallback(props: SankeyChartProps): Record<string, unknown> {
   }
 }
 
-export const SankeyChart = createEChartsBridge('sankey', buildSankeyFallback, toMvizProps)
+export const SankeyChart = createEChartsBridge('sankey', buildSankeyFallback)

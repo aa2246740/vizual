@@ -1,14 +1,14 @@
 # 组件参考文档 — AI RenderKit
 
-完整列出 32 个注册组件的 Schema、props 说明和使用示例。
+完整列出 31 个注册组件的 Schema、props 说明和使用示例。
 
 > 所有图表组件（Charts 19 种）共享以下可选 props：`title?: string`、`theme?: 'light' | 'dark'`、`height?: number`
 
 ---
 
-## Charts (19) — ECharts via mviz Bridge
+## Charts (19) — Native ECharts Builders
 
-所有图表组件基于 ECharts，通过 mviz Bridge 封装。每个组件接受 `type`（固定字面量）、`data`（数据数组）及图表特有 props。
+所有图表组件基于 ECharts，由 Vizual 自有 option builder 生成配置。每个组件接受 `type`（固定字面量）、`data`（数据数组）及图表特有 props。
 
 ### BarChart
 

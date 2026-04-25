@@ -25,16 +25,6 @@ function resolveFields(props: DumbbellChartProps) {
   return { data, categoryField, lowField, highField }
 }
 
-function toMvizProps(props: DumbbellChartProps): Record<string, unknown> {
-  const { categoryField, lowField, highField } = resolveFields(props)
-  return {
-    ...props,
-    category: categoryField,
-    start: lowField,
-    end: highField,
-  }
-}
-
 function buildDumbbellFallback(props: DumbbellChartProps): Record<string, unknown> {
   const { data, categoryField, lowField, highField } = resolveFields(props)
   const categories = data.map((d: Record<string, unknown>) => String(d[categoryField] ?? ''))
@@ -68,4 +58,4 @@ function buildDumbbellFallback(props: DumbbellChartProps): Record<string, unknow
   }
 }
 
-export const DumbbellChart = createEChartsBridge('dumbbell', buildDumbbellFallback, toMvizProps)
+export const DumbbellChart = createEChartsBridge('dumbbell', buildDumbbellFallback)
