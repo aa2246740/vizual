@@ -98,6 +98,8 @@ Real outputs are usually compositions. Here are the common patterns:
 
 **Annotatable Document** — `DocView` with structured sections: `heading`, `text`, `callout`, `kpi`, `chart`, `table`, `markdown`. Use this when the user explicitly wants comments, annotations, revisions, document review, report-document export, or a long-form document UI. Set `showPanel: true` when annotations are part of the workflow; set `showPanel: false` only for read-only document previews.
 
+For charts inside DocView, read `references/doc/docview.md`: use `chart` sections with `data.chartType` for ordinary embedded charts, or `component` sections with `data.componentType` when exact standalone chart props are clearer.
+
 **Split View** — `SplitLayout` with a chart on one side and a `DataTable` on the other. Good for comparing visual and tabular representations of the same data.
 
 **Interactive Explorer** — In `validation/vizual-test.html`, use the host bridge `renderInteractiveVizInMsg(id, config)`: FormBuilder controls on the left, live Vizual preview on the right, and `makeSpec(state)` to regenerate the chart. This is host JavaScript, not pure JSON. Do NOT use InteractivePlayground — it has been removed.

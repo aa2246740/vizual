@@ -51,6 +51,51 @@ The host should receive `annotationAdded` payloads with target metadata such as 
 | markdown | string (markdown content) | - | Renders markdown |
 | freeform | string (HTML with inline CSS) | - | Arbitrary HTML (blocks class attr and event handlers) |
 
+## Embedded Charts in DocView
+
+DocView supports two chart/component embedding patterns:
+
+1. Use a `chart` section for ordinary report charts:
+
+```json
+{
+  "type": "chart",
+  "content": "",
+  "data": {
+    "chartType": "ComboChart",
+    "x": "month",
+    "y": ["revenue", "arppu"],
+    "data": [
+      { "month": "Jan", "revenue": 120, "arppu": 24 },
+      { "month": "Feb", "revenue": 140, "arppu": 26 }
+    ]
+  }
+}
+```
+
+`chartType` can name any Vizual chart component. For common Cartesian charts, use the same `x` / `y` / `data` contract as the standalone chart references; `ComboChart` may use `y` as an array.
+
+2. Use a `component` section when you need exact standalone component props or a chart shape that is easier to express as a component:
+
+```json
+{
+  "type": "component",
+  "content": "",
+  "data": {
+    "componentType": "RadarChart",
+    "indicators": [
+      { "name": "Correctness", "max": 40 },
+      { "name": "Insight", "max": 30 }
+    ],
+    "data": [
+      { "name": "Answer", "values": [32, 26] }
+    ]
+  }
+}
+```
+
+Do not put a nested `{ "type": "BarChart", "props": { ... } }` object inside a DocView section. Use `chartType` for chart sections or `componentType` for component sections.
+
 ## Section layout variants (optional `layout` field on any section)
 
 | Layout | Effect |
