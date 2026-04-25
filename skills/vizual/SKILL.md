@@ -115,13 +115,17 @@ Vizual specs are JSON artifacts. A host page must render them. When the host is 
 Required bridge flow for agents with browser script execution (`evaluate_script`, Playwright `page.evaluate`, Chrome DevTools Protocol, etc.):
 
 ```js
-const msg = window._pendingMsg;       // read the latest user message
+const pending = window.getPendingMessage?.() ?? { rawText: window._pendingMsg, text: window._pendingMsg };
+const msg = pending.rawText || pending.text; // read the exact user message; do not scrape DOM bubbles
 const id = window.createAiMsg();      // create the AI reply bubble
 window.streamText(id, answerText);    // optional narrative answer
 window.finishText(id);                // finish text streaming
 window.renderVizInMsg(id, spec);      // mount the Vizual JSON spec; page auto-infers bubble width
-window._pendingMsg = null;            // mark the user message handled
+if (window.markPendingHandled) window.markPendingHandled();
+else window._pendingMsg = null;
 ```
+
+When `getPendingMessage()` exists, use it instead of `getMsgs()` or DOM text. It preserves pasted line breaks and raw table text. After rendering, `window.__lastVizualRender` records the last spec for QA; use it to verify that generated data came from the user input.
 
 For static charts, omit `bubbleWidth` unless you have a reason to override. The page infers `normal` for KPI/sparkline, `wide` for ordinary charts, and `full` for layouts, DocView, Sankey, Radar, FormBuilder, and tables. Pass `{ bubbleWidth: 'compact' | 'normal' | 'wide' | 'full' }` only when the user asks for a specific density.
 
@@ -329,6 +333,22 @@ This applies to **all** chart types, DataTable columns, KpiDashboard labels, and
 ## Data Integrity
 
 Do not fabricate source data for analytical claims. If the user gives raw rows, metrics, dates, or scores, visualize those values. If the user only gives a written assessment, visualize the explicit scores, categories, quoted findings, or clearly labeled qualitative severity/rubric values.
+
+### Evidence extraction for messy user input
+
+User input may come from spreadsheets, web pages, PDFs, chats, or copied reports. It may be malformed. Your job is to extract usable evidence, not require a perfect Markdown table.
+
+Use this flow before generating charts from user-provided data:
+
+1. Work from the raw user message (`pending.rawText` in `vizual-test.html`), not DOM-rendered chat text.
+2. Look for structured blocks first: Markdown tables, CSV/TSV, pipe-separated rows, tab-separated spreadsheet copies, HTML tables, code blocks, and repeated lines with the same delimiter.
+3. Then try semi-structured evidence: `label: value` lines, bullet lists with numbers, day/month/category records, Chinese metric labels, percentages, currency, durations, and counts.
+4. Normalize only for parsing: trim whitespace, remove zero-width characters, repair headers split by spaces, accept `new user`, `new_user`, `new users`, and `新增用户` as equivalent candidates when the prompt makes that intent clear. Keep user-facing labels in the user's language.
+5. Before rendering, do a quick evidence check in your answer text: mention the rows/columns or metrics you extracted, for example "解析到 14 行 × 8 列 daily_metric 数据". Keep it short.
+6. If extraction is partial, render a `DataTable` preview of the rows you are confident about and state what is uncertain. Use charts only for fields you actually parsed.
+7. If no numeric evidence can be extracted, ask for clarification or a cleaner paste. Do not silently fall back to fake data.
+
+Hard rule: if the user's message contains an apparent table or multi-row numeric data, never answer "no raw data was provided" unless you have explicitly attempted extraction and can explain why every candidate failed. Never use placeholder/demo values in that case.
 
 For analysis-review prompts, never invent missing business time series such as fake D1-D14 values just because the text mentions a breakpoint. Say in host text that the raw series is required to chart the real breakpoint, and use a table or rubric chart to show the issue instead.
 

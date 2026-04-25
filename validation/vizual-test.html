@@ -81,10 +81,10 @@
 
     /* 底部输入 */
     .footer { padding: 14px 20px; border-top: 1px solid var(--border); }
-    .input-row { max-width: 780px; margin: 0 auto; display: flex; gap: 10px; }
-    input { flex: 1; padding: 12px 16px; border: 1px solid var(--border); border-radius: 10px; background: var(--bg-bubble); color: var(--text); font-size: 14px; transition: border-color 0.15s; }
-    input:focus { outline: none; border-color: var(--accent); }
-    input::placeholder { color: var(--text-muted); }
+    .input-row { max-width: 780px; margin: 0 auto; display: flex; gap: 10px; align-items: flex-end; }
+    textarea { flex: 1; min-height: 44px; max-height: 180px; padding: 12px 16px; border: 1px solid var(--border); border-radius: 10px; background: var(--bg-bubble); color: var(--text); font-size: 14px; line-height: 1.45; transition: border-color 0.15s; resize: vertical; font-family: inherit; }
+    textarea:focus { outline: none; border-color: var(--accent); }
+    textarea::placeholder { color: var(--text-muted); }
     .send-btn { padding: 12px 20px; background: var(--accent); border: none; border-radius: 10px; color: #fff; font-size: 14px; font-weight: 500; cursor: pointer; transition: background 0.15s; }
     .send-btn:hover { background: var(--accent-hover); }
 
@@ -125,7 +125,7 @@
 
   <div class="footer">
     <div class="input-row">
-      <input id="input" placeholder="说点什么..." autofocus>
+      <textarea id="input" placeholder="说点什么..." rows="1" autofocus></textarea>
       <button class="send-btn" onclick="send()">发送</button>
     </div>
   </div>
@@ -140,20 +140,24 @@
       <h3>Bridge API（页面暴露的全局函数）</h3>
       <table>
         <tr><th>API</th><th>说明</th><th>返回</th></tr>
-        <tr><td><code>window._pendingMsg</code></td><td>用户发送的最新消息（读完不会自动清，Agent 需置 null）</td><td>string | null</td></tr>
+        <tr><td><code>window._pendingMsg</code></td><td>用户发送的最新原始消息（保留换行；读完不会自动清）</td><td>string | null</td></tr>
+        <tr><td><code>window.getPendingMessage()</code></td><td>读取带 id / rawText / createdAt 的待处理消息；优先用它，不要从 DOM 反读用户输入</td><td>object | null</td></tr>
+        <tr><td><code>window.markPendingHandled()</code></td><td>标记当前待处理消息已处理，并写入 <code>__lastHandledMessage</code></td><td>void</td></tr>
         <tr><td><code>window.createAiMsg()</code></td><td>创建 AI 消息气泡（带流式光标），返回消息 ID</td><td>string (id)</td></tr>
         <tr><td><code>window.streamText(id, text)</code></td><td>往 AI 气泡追加文字</td><td>void</td></tr>
         <tr><td><code>window.finishText(id)</code></td><td>结束流式输出（移除光标）</td><td>void</td></tr>
         <tr><td><code>window.renderVizInMsg(id, spec, options?)</code></td><td>渲染静态 Vizual JSON Spec 到气泡；<code>options.bubbleWidth</code> 可选 compact/normal/wide/full</td><td>boolean</td></tr>
         <tr><td><code>window.renderInteractiveVizInMsg(id, config)</code></td><td>渲染 FormBuilder 控件 + 实时预览；Agent 作为宿主提供 <code>makeSpec(state)</code></td><td>boolean</td></tr>
       </table>
+      <p><code>window.__lastVizualRender</code> 和 <code>window.__renderHistory</code> 会记录最后一次静态/交互渲染的 spec 摘要，便于 QA 检查 Agent 是否真的使用了用户数据。</p>
       <p><code>bubbleWidth</code> 可以省略，页面会按组件类型自动推断。KPI/迷你图偏窄，普通图表偏宽，Grid/Split/DocView/Sankey/Radar/FormBuilder/DataTable 默认 full。</p>
       <pre>// 完整流程
-const id = window.createAiMsg();         // 1. 创建气泡
-window.streamText(id, '正在生成图表...');  // 2. 流式文字
-window.finishText(id);                    // 3. 结束文字
-window.renderVizInMsg(id, spec);          // 4. 渲染图表（自动推断气泡宽度）
-window._pendingMsg = null;                // 5. 清除已读消息</pre>
+const pending = window.getPendingMessage(); // 1. 读取原始输入（保留换行）
+const id = window.createAiMsg();            // 2. 创建气泡
+window.streamText(id, '正在生成图表...');     // 3. 流式文字
+window.finishText(id);                       // 4. 结束文字
+window.renderVizInMsg(id, spec);             // 5. 渲染图表（自动推断气泡宽度）
+window.markPendingHandled();                 // 6. 清除已读消息</pre>
 
       <h3>实时 adjust-preview 场景</h3>
       <p>实时可调图表不是纯 JSON spec。Agent 必须作为宿主调用 <code>renderInteractiveVizInMsg()</code>，用 FormBuilder 绑定 <code>/controls</code>，再由 <code>makeSpec(state)</code> 生成右侧预览图表。</p>
@@ -260,7 +264,7 @@ window.renderInteractiveVizInMsg(id, {
       <p>安装 <code>chrome-devtools-mcp</code>，Claude Code 自动获得 <code>mcp__chrome-devtools__evaluate_script</code> 工具：</p>
       <pre>// 监听用户输入
 const msg = await mcp__chrome-devtools__evaluate_script({
-  function: '() => window._pendingMsg'
+  function: '() => window.getPendingMessage()'
 });
 
 // 回复
@@ -271,7 +275,9 @@ await mcp__chrome-devtools__evaluate_script({
     'window.finishText(id);\n' +
     'const resp = await fetch("/validation/my-spec.json");\n' +
     'const spec = await resp.json();\n' +
-    'return window.renderVizInMsg(id, spec);\n' +
+    'const ok = window.renderVizInMsg(id, spec);\n' +
+    'window.markPendingHandled();\n' +
+    'return ok;\n' +
   '}'
 });</pre>
 
@@ -283,8 +289,9 @@ const browser = await chromium.launch({ headless: false });
 const page = await browser.newPage();
 await page.goto('http://localhost:8765/validation/vizual-test.html');
 
-// 等用户输入 — 轮询 _pendingMsg
-const msg = await page.evaluate(() => window._pendingMsg);
+// 等用户输入 — 轮询 getPendingMessage()
+const pending = await page.evaluate(() => window.getPendingMessage());
+const msg = pending?.rawText || pending?.text;
 
 // 回复
 await page.evaluate((spec) => {
@@ -292,22 +299,24 @@ await page.evaluate((spec) => {
   window.streamText(id, '这是回复文字');
   window.finishText(id);
   window.renderVizInMsg(id, spec);
+  window.markPendingHandled();
 }, mySpec);</pre>
 
       <h3>纯 HTTP 轮询（无浏览器控制）</h3>
       <p>如果 Agent 完全无法控制浏览器，可以让页面自己轮询一个后端：</p>
       <pre>// 在页面 script 里加一个自动轮询
 setInterval(async () => {
-  if (window._pendingMsg) {
+  const pending = window.getPendingMessage();
+  if (pending) {
     const resp = await fetch('http://localhost:3000/chat', {
       method: 'POST',
-      body: JSON.stringify({ message: window._pendingMsg }),
+      body: JSON.stringify({ message: pending.rawText || pending.text }),
     });
     const { spec } = await resp.json();
     const id = window.createAiMsg();
     window.finishText(id);
     window.renderVizInMsg(id, spec);
-    window._pendingMsg = null;
+    window.markPendingHandled();
   }
 }, 2000);</pre>
     </div>
@@ -317,8 +326,14 @@ setInterval(async () => {
     // ============================================================
     //  状态
     // ============================================================
-    window._pendingMsg = null;   // MCP 轮询读取用户最新消息
-    window._interactiveViz = {}; // 实时控件-预览控制器，按消息 ID 存储
+    window._pendingMsg = null;       // MCP 轮询读取用户最新原始消息
+    window._pendingMsgMeta = null;   // 带 id / createdAt / rawText 的待处理消息
+    window.__lastUserRawMessage = null;
+    window.__lastHandledMessage = null;
+    window.__userMessageLog = [];
+    window.__lastVizualRender = null;
+    window.__renderHistory = [];
+    window._interactiveViz = {};     // 实时控件-预览控制器，按消息 ID 存储
     const BUBBLE_WIDTH_CLASS = {
       compact: 'bubble-compact',
       normal: 'bubble-normal',
@@ -327,6 +342,7 @@ setInterval(async () => {
     };
     let vizualReady = false;
     let msgSeq = 0;
+    let userMsgSeq = 0;
 
     function setStatus(ok, text) {
       document.getElementById('statusDot').className = 'status-dot' + (ok ? '' : ' error');
@@ -338,15 +354,32 @@ setInterval(async () => {
     // ============================================================
     function send() {
       const input = document.getElementById('input');
-      const text = input.value.trim();
+      const rawText = input.value;
+      const text = rawText.trim();
       if (!text) return;
       input.value = '';
+      input.style.height = '';
       appendUserBubble(text);
+      const message = {
+        id: 'user-' + (++userMsgSeq),
+        text,
+        rawText,
+        createdAt: new Date().toISOString(),
+      };
       window._pendingMsg = text;
+      window._pendingMsgMeta = message;
+      window.__lastUserRawMessage = rawText;
+      window.__userMessageLog.push(message);
+      if (window.__userMessageLog.length > 50) window.__userMessageLog.shift();
       scrollBottom();
     }
     document.getElementById('input').addEventListener('keydown', e => {
       if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
+    });
+    document.getElementById('input').addEventListener('input', e => {
+      const el = e.currentTarget;
+      el.style.height = 'auto';
+      el.style.height = Math.min(el.scrollHeight, 180) + 'px';
     });
 
     // ============================================================
@@ -369,6 +402,23 @@ setInterval(async () => {
     // ============================================================
     //  MCP Bridge API — Claude 通过这些函数控制聊天
     // ============================================================
+
+    window.getPendingMessage = function() {
+      if (window._pendingMsgMeta) return { ...window._pendingMsgMeta };
+      if (!window._pendingMsg) return null;
+      return {
+        id: null,
+        text: window._pendingMsg,
+        rawText: window._pendingMsg,
+        createdAt: null,
+      };
+    };
+
+    window.markPendingHandled = function() {
+      window.__lastHandledMessage = window.getPendingMessage();
+      window._pendingMsg = null;
+      window._pendingMsgMeta = null;
+    };
 
     /**
      * 创建 AI 消息气泡（带流式光标）。
@@ -469,6 +519,35 @@ setInterval(async () => {
       container.appendChild(errEl);
     }
 
+    function safeSnapshot(value) {
+      try { return cloneState(value); } catch (_) { return null; }
+    }
+
+    function summarizeSpec(spec) {
+      const elements = spec?.elements || {};
+      return {
+        root: spec?.root || null,
+        elementCount: Object.keys(elements).length,
+        elementTypes: Object.fromEntries(
+          Object.entries(elements).map(([key, element]) => [key, element?.type || null])
+        ),
+      };
+    }
+
+    function recordVizRender(kind, id, details) {
+      const record = {
+        kind,
+        id,
+        at: new Date().toISOString(),
+        pendingMessage: window.getPendingMessage(),
+        ...details,
+      };
+      window.__lastVizualRender = record;
+      window.__renderHistory.push(record);
+      if (window.__renderHistory.length > 50) window.__renderHistory.shift();
+      return record;
+    }
+
     function clearBubbleWidth(bubble) {
       for (const className of Object.values(BUBBLE_WIDTH_CLASS)) {
         bubble.classList.remove(className);
@@ -553,11 +632,25 @@ setInterval(async () => {
         const renderOptions = { ...(options || {}) };
         delete renderOptions.bubbleWidth;
         window.Vizual.renderSpec(spec, vizWrap, renderOptions);
+        recordVizRender('static', id, {
+          status: 'success',
+          bubbleWidth: bubble.dataset.vizBubbleWidth || null,
+          spec: safeSnapshot(spec),
+          specSummary: summarizeSpec(spec),
+          options: safeSnapshot(renderOptions),
+        });
         console.log('[renderVizInMsg] 渲染成功:', spec?.root ? Object.keys(spec.elements || {}).join(', ') : 'no root');
         scrollBottom();
         return true;
       } catch (err) {
         console.error('[renderVizInMsg] 渲染失败:', err);
+        recordVizRender('static', id, {
+          status: 'error',
+          error: err?.message || String(err),
+          bubbleWidth: bubble.dataset.vizBubbleWidth || null,
+          spec: safeSnapshot(spec),
+          specSummary: summarizeSpec(spec),
+        });
         showVizError(vizWrap, err);
         return false;
       }
@@ -615,6 +708,19 @@ setInterval(async () => {
       let state = cloneState(config.initialState || {});
       let previewTimer = 0;
       let renderCount = 0;
+      const renderRecord = recordVizRender('interactive', id, {
+        status: 'mounted',
+        bubbleWidth: bubble.dataset.vizBubbleWidth || null,
+        initialState: safeSnapshot(state),
+        controlsSpec: safeSnapshot(config.controlsSpec),
+        controlsSummary: summarizeSpec(config.controlsSpec),
+        hasDesignMd: typeof config.designMd === 'string' && !!config.designMd.trim(),
+        hasApplyTheme: typeof config.applyTheme === 'function',
+        hasMakeSpec: typeof config.makeSpec === 'function',
+        lastPreviewSpec: null,
+        lastPreviewSummary: null,
+        renderCount: 0,
+      });
 
       const applyTheme = () => {
         if (typeof config.designMd === 'string' && config.designMd.trim()) {
@@ -634,9 +740,19 @@ setInterval(async () => {
           const spec = config.makeSpec(state);
           window.Vizual.renderSpec(spec, previewEl);
           renderCount += 1;
+          renderRecord.status = 'success';
+          renderRecord.state = safeSnapshot(state);
+          renderRecord.lastPreviewSpec = safeSnapshot(spec);
+          renderRecord.lastPreviewSummary = summarizeSpec(spec);
+          renderRecord.renderCount = renderCount;
+          renderRecord.updatedAt = new Date().toISOString();
           scrollBottom();
         } catch (err) {
           console.error('[renderInteractiveVizInMsg] 预览渲染失败:', err);
+          renderRecord.status = 'preview-error';
+          renderRecord.error = err?.message || String(err);
+          renderRecord.state = safeSnapshot(state);
+          renderRecord.updatedAt = new Date().toISOString();
           errorEl.textContent = '预览渲染失败: ' + (err?.message || err);
           errorEl.style.display = 'block';
         }
@@ -661,6 +777,9 @@ setInterval(async () => {
         renderPreview();
       } catch (err) {
         console.error('[renderInteractiveVizInMsg] 渲染失败:', err);
+        renderRecord.status = 'error';
+        renderRecord.error = err?.message || String(err);
+        renderRecord.updatedAt = new Date().toISOString();
         errorEl.textContent = '渲染失败: ' + (err?.message || err);
         errorEl.style.display = 'block';
         return false;
@@ -689,6 +808,18 @@ setInterval(async () => {
         text: (b.id ? document.getElementById(b.id.replace('-bubble', '-text'))?.textContent : '')
               || b.textContent
       })).filter(m => m.text.trim());
+    };
+
+    window.getVizualDebugState = function() {
+      return {
+        pending: window.getPendingMessage(),
+        lastUserRawMessage: window.__lastUserRawMessage,
+        lastHandledMessage: window.__lastHandledMessage,
+        userMessageLog: window.__userMessageLog.slice(),
+        lastVizualRender: window.__lastVizualRender,
+        renderHistory: window.__renderHistory.slice(),
+        interactiveIds: Object.keys(window._interactiveViz || {}),
+      };
     };
 
     // ============================================================
