@@ -81,7 +81,7 @@
 - SankeyChart: type = `"sankey"`，有 nodes/links 或 x/y/data
 - RadarChart: type = `"radar"`，有 indicators/series
 - DumbbellChart: type = `"dumbbell"`，有 low/high
-- ComboChart: type = `"combo"`，有 `x`、`y` 数组和 `data`；不要用 `series`
+- ComboChart: type = `"combo"`，有 `x`、`y` 数组和 `data`；如果必须显式指定柱/线映射，可用 `series: [{ type: "bar"|"line", y }]`
 - MermaidDiagram 未测试 → 单独 Test 7
 
 ---
@@ -184,7 +184,9 @@
 - chart section 使用 `data.chartType`；只有 component section 才使用 `data.componentType`
 - markdown section 的 content 是 markdown 源码
 - freeform section 的 content 是 HTML 字符串
-- 如果用户要求 AI 修订闭环，Agent 必须使用 host/controller：监听 `onReviewAction` 的 `threadsSubmitted`，返回 `RevisionProposal`，再调用 `controller.createRevisionProposal()` / `controller.applyRevision()`；不能只生成静态 JSON spec
+- 在 `vizual-test.html` 里必须用 `renderDocViewInMsg(id, { sections, showPanel: true })`，不要只用普通 `renderVizInMsg()` 做静态文档
+- 如果用户提交批注，Agent 必须通过 `getDocViewReviewState()` 读取 submitted threads，再调用 `createDocViewRevision()` 返回修订提案；不能直接覆盖老 DocView
+- 只有用户/宿主明确要求自动应用时才调用 `applyDocViewRevision()`；否则让用户在面板里点“应用”
 
 ---
 
@@ -269,7 +271,7 @@
 **验证点：**
 - Agent 先调用 `window.getLastArtifact()`，不能从聊天 DOM 或记忆里重建上一张图
 - Agent 从 `artifact.targetMap` 找目标，例如 `element:chart`
-- Agent 调用 `window.updateArtifactInMsg(artifact.id, patches, { answerText })`，默认生成新的 AI 气泡；不能直接覆盖旧气泡。patch 至少包含：
+- Agent 调用 `window.updateArtifactInMsg(artifact.id, patches, { answerText })`，默认生成新的 AI 气泡；不能直接覆盖旧气泡。必须使用 Vizual typed patches（不是 `{ op, path, value }` JSON Patch）。patch 至少包含：
   - `changeChartType` → `LineChart`
   - `filterData` → field/value 对应华东区
   - `limitData` 或等价的 `replaceElement` 降低密度

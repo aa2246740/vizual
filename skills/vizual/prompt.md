@@ -73,7 +73,7 @@ window.renderVizInMsg(id, spec);
 window.markPendingHandled();
 ```
 
-For follow-up edits to an existing chart, read and patch the artifact:
+For follow-up edits to an existing chart, read the saved artifact and apply Vizual typed patches:
 
 ```js
 const artifact = window.getLastArtifact();
@@ -88,6 +88,7 @@ await window.exportArtifact(updated.id, { format: 'xlsx', filename: 'east-china-
 ```
 
 Follow-up edits create a new AI bubble by default. Pass `{ mode: 'replace' }` only for temporary in-place preview/debug.
+Do not use RFC-style JSON Patch (`{ op, path, value }`) in normal agent work; typed patches are target-map aware and safer.
 
 For live parameter tuning, use `renderInteractiveVizInMsg(id, config)` with FormBuilder bound to `/controls` and `makeSpec(state)`. This is host JavaScript, not pure JSON.
 
@@ -95,7 +96,7 @@ For live parameter tuning, use `renderInteractiveVizInMsg(id, config)` with Form
 
 DocView is for document workflows: comments, highlights, review, AI revision, version history, or a reviewable document artifact. It is not the default for chat answers, dashboards, ordinary analysis reports, or exportable charts. If the host can display text next to the Vizual component, keep prose in the host message and render charts/KPIs/tables with GridLayout. Use export APIs for normal dashboard/chart export; use DocView only when the document itself needs review/revision behavior.
 
-For revisable DocView documents, include stable section `id` values. Agent-driven revision loops require host/controller access (`controllerRef`, `onReviewAction`). A pure JSON spec can render the document, but cannot by itself call an LLM or apply revision proposals.
+For revisable DocView documents, include stable section `id` values. Agent-driven revision loops require host/controller access (`controllerRef`, `onReviewAction`). In `validation/vizual-test.html`, use `renderDocViewInMsg(id, { sections, showPanel: true })`, then read `getDocViewReviewState(ref)` and create proposals with `createDocViewRevision(ref, input)`. A pure JSON spec can render the document, but cannot by itself call an LLM or apply revision proposals.
 
 ```json
 {

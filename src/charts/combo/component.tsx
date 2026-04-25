@@ -6,14 +6,30 @@ function toFieldList(value: unknown): string[] {
   return typeof value === 'string' && value.length > 0 ? [value] : []
 }
 
+function toNumber(value: unknown) {
+  if (typeof value === 'number') return Number.isFinite(value) ? value : 0
+  if (typeof value === 'string') {
+    const parsed = Number(value.replace(/,/g, ''))
+    return Number.isFinite(parsed) ? parsed : 0
+  }
+  return 0
+}
+
 export function buildComboOption(props: ComboChartProps): Record<string, unknown> {
   const x = props.x ?? 'name'
   const yFields = toFieldList(props.y)
   if (yFields.length === 0) yFields.push('value')
   const barFields = toFieldList(props.bar)
   const lineFields = toFieldList(props.line)
-  const resolvedBarFields = barFields.length > 0 ? barFields : [yFields[0]]
-  const resolvedLineFields = lineFields.length > 0 ? lineFields : yFields.slice(1)
+  const explicitSeries = Array.isArray(props.series)
+    ? props.series.filter(series => series && (series.type === 'bar' || series.type === 'line') && typeof series.y === 'string' && series.y.length > 0)
+    : []
+  const resolvedBarFields = explicitSeries.length > 0
+    ? explicitSeries.filter(series => series.type === 'bar').map(series => series.y)
+    : barFields.length > 0 ? barFields : [yFields[0]]
+  const resolvedLineFields = explicitSeries.length > 0
+    ? explicitSeries.filter(series => series.type === 'line').map(series => series.y)
+    : lineFields.length > 0 ? lineFields : yFields.slice(1)
   const data = Array.isArray(props.data) ? props.data : []
   const categoryData = data.map(d => String((d as Record<string, unknown>)[x] ?? ''))
 
@@ -42,13 +58,13 @@ export function buildComboOption(props: ComboChartProps): Record<string, unknown
       ...resolvedBarFields.map(f => ({
         type: 'bar',
         name: f,
-        data: data.map(d => Number((d as Record<string, unknown>)[f]) || 0),
+        data: data.map(d => toNumber((d as Record<string, unknown>)[f])),
         yAxisIndex: 0,
       })),
       ...resolvedLineFields.map(f => ({
         type: 'line',
         name: f,
-        data: data.map(d => Number((d as Record<string, unknown>)[f]) || 0),
+        data: data.map(d => toNumber((d as Record<string, unknown>)[f])),
         smooth: true,
         yAxisIndex: useDualAxis ? 1 : 0,
       })),

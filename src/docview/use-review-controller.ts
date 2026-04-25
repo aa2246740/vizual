@@ -181,7 +181,10 @@ export function useReviewController({
       const now = new Date().toISOString()
       const submitted: AnnotationThread[] = []
       const next = threadsRef.current.map(thread => {
-        if (ids ? !ids.has(thread.id) : thread.status !== 'open') return thread
+        const canSubmit = ids
+          ? ids.has(thread.id) && (thread.status === 'open' || thread.status === 'orphaned' || thread.status === 'rejected')
+          : thread.status === 'open'
+        if (!canSubmit) return thread
         const updated = { ...thread, status: 'submitted' as const, updatedAt: now }
         submitted.push(updated)
         return updated

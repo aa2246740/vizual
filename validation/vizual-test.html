@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Vizual AI 对话</title>
+  <link rel="icon" href="data:,">
   <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
   <script src="https://unpkg.com/echarts@5.5.0/dist/echarts.min.js"></script>
@@ -71,6 +72,7 @@
     .interactive-preview { min-height: 260px; position: relative; }
     .interactive-preview-root { min-height: 260px; min-width: 0; }
     .interactive-error { margin-top: 8px; padding: 8px 10px; border: 1px solid rgba(239,68,68,0.45); border-radius: 8px; color: #fecaca; background: rgba(239,68,68,0.12); font-size: 12px; display: none; }
+    .docview-bridge-root { min-height: 520px; min-width: 0; width: 100%; }
     @media (max-width: 720px) {
       .main { padding: 16px 12px; }
       .messages { max-width: calc(100vw - 24px); }
@@ -152,9 +154,13 @@
         <tr><td><code>window.renderVizInMsg(id, spec, options?)</code></td><td>渲染静态 Vizual JSON Spec 到气泡；兼容旧写法，内部会保存可编辑 artifact</td><td>boolean</td></tr>
         <tr><td><code>window.renderArtifactInMsg(id, artifact, options?)</code></td><td>渲染完整 VizualArtifact；用于历史恢复、主题、版本、targetMap</td><td>VizualArtifact | null</td></tr>
         <tr><td><code>window.getLastArtifact()</code></td><td>读取最近一次渲染的 artifact，包含 spec、targetMap、versions、exports</td><td>VizualArtifact | null</td></tr>
-        <tr><td><code>window.updateArtifactInMsg(ref, patch, options?)</code></td><td>按 artifactId/messageId/last 修改并渲染到新的 AI 气泡；仅预览/调试时传 <code>{ mode: 'replace' }</code> 原地替换</td><td>VizualArtifact | null</td></tr>
+        <tr><td><code>window.updateArtifactInMsg(ref, patches, options?)</code></td><td>用 Vizual typed patches 修改 artifact 并渲染到新的 AI 气泡；仅预览/调试时传 <code>{ mode: 'replace' }</code> 原地替换。兼容常见 JSON Patch，但 Agent 应优先使用 typed patches。</td><td>VizualArtifact | null</td></tr>
         <tr><td><code>window.exportArtifact(ref, options?)</code></td><td>导出当前 artifact 并记录 export 元数据；<code>options.format</code> 支持 png/pdf/csv/xlsx</td><td>Promise&lt;ExportRecord | null&gt;</td></tr>
         <tr><td><code>window.renderInteractiveVizInMsg(id, config)</code></td><td>渲染 FormBuilder 控件 + 实时预览；Agent 作为宿主提供 <code>makeSpec(state)</code></td><td>boolean</td></tr>
+        <tr><td><code>window.renderDocViewInMsg(id, config)</code></td><td>渲染带审阅 bridge 的 DocView；用于可批注报告、长文共建、修订循环</td><td>VizualArtifact | null</td></tr>
+        <tr><td><code>window.getDocViewReviewState(ref?)</code></td><td>读取 DocView sections、threads、revisionProposals、review events</td><td>object | null</td></tr>
+        <tr><td><code>window.createDocViewRevision(ref, input)</code></td><td>Agent 根据已提交批注创建修订提案；用户可在面板点击应用</td><td>RevisionProposal | null</td></tr>
+        <tr><td><code>window.applyDocViewRevision(ref, proposalId)</code></td><td>应用修订提案，更新 DocView sections 和 artifact</td><td>RevisionProposal | null</td></tr>
       </table>
       <p><code>window.__lastVizualRender</code>、<code>window.__renderHistory</code>、<code>window.__vizualArtifacts</code> 会记录最后一次静态/交互渲染的 spec、targetMap、版本和导出信息，便于 QA 检查 Agent 是否真的使用了用户数据。</p>
       <p><code>bubbleWidth</code> 可以省略，页面会按组件类型自动推断。KPI/迷你图偏窄，普通图表偏宽，Grid/Split/DocView/Sankey/Radar/FormBuilder/DataTable 默认 full。</p>
@@ -167,7 +173,7 @@ window.renderVizInMsg(id, spec);             // 5. 渲染图表（自动推断�
 window.markPendingHandled();                 // 6. 清除已读消息</pre>
 
       <h3>历史追问与修改</h3>
-      <p>用户后续说“这张图改成折线图，只看华东区，再导出成 PDF/图片/表格”时，不要重新猜测上一张图。先读 artifact，再用 patch 修改目标组件。默认会生成新的 AI 气泡，保留历史消息；只有临时预览才用 <code>{ mode: 'replace' }</code> 原地替换。</p>
+      <p>用户后续说“这张图改成折线图，只看华东区，再导出成 PDF/图片/表格”时，不要重新猜测上一张图。先读 artifact，再用 Vizual typed patch 修改目标组件。默认会生成新的 AI 气泡，保留历史消息；只有临时预览才用 <code>{ mode: 'replace' }</code> 原地替换。</p>
       <pre>const artifact = window.getLastArtifact();
 const updated = window.updateArtifactInMsg(artifact.id, [
   { type: 'changeChartType', targetId: 'element:chart', chartType: 'LineChart' },
@@ -278,6 +284,32 @@ window.renderInteractiveVizInMsg(id, {
   },
 });</pre>
 
+      <h3>DocView 批注循环</h3>
+      <p>只有“需要用户批注、提交、Agent 修订、再应用”的报告才用 DocView。普通 dashboard 不要用 DocView。</p>
+      <pre>const id = window.createAiMsg();
+window.streamText(id, '我生成了一份可批注报告。');
+window.finishText(id);
+const artifact = window.renderDocViewInMsg(id, {
+  sections: [
+    { id: 'title', type: 'heading', content: '经营分析报告', level: 1 },
+    { id: 'summary', type: 'text', content: '收入下滑主要来自活跃用户下降。' },
+  ],
+  showPanel: true,
+});
+
+// 用户提交批注后，Agent 读取待处理线程
+const state = window.getDocViewReviewState(artifact.id);
+const submitted = state.threads.filter(t => t.status === 'submitted');
+
+// Agent 创建修订提案
+window.createDocViewRevision(artifact.id, {
+  fromThreadIds: submitted.map(t => t.id),
+  summary: '补充收入下滑原因',
+  patches: [
+    { op: 'updateSection', sectionId: 'summary', updates: { content: '收入下滑主要来自活跃用户下降，同时高价值用户留存推高 ARPPU。' } },
+  ],
+});</pre>
+
       <h3>Claude Code（Chrome DevTools MCP）</h3>
       <p>安装 <code>chrome-devtools-mcp</code>，Claude Code 自动获得 <code>mcp__chrome-devtools__evaluate_script</code> 工具：</p>
       <pre>// 监听用户输入
@@ -352,6 +384,11 @@ setInterval(async () => {
     window.__lastVizualRender = null;
     window.__renderHistory = [];
     window._interactiveViz = {};     // 实时控件-预览控制器，按消息 ID 存储
+    window._docViewRoots = {};       // DocView 专用 React root，按消息 ID 存储
+    window._docViewSessions = {};    // DocView 审阅 session，按 artifact ID 存储
+    window.__messageDocViews = {};   // ai message id -> docview artifact id
+    window.__lastDocViewSessionId = null;
+    window.__lastDocViewEvent = null;
     window.__vizualArtifacts = {};   // artifactId -> VizualArtifact
     window.__messageArtifacts = {};  // ai message id -> artifactId
     window.__messageArtifactSnapshots = {}; // ai message id -> immutable artifact snapshot
@@ -617,6 +654,101 @@ setInterval(async () => {
       return null;
     }
 
+    function findDocViewElementInSpec(spec) {
+      const elements = spec?.elements || {};
+      for (const [elementId, element] of Object.entries(elements)) {
+        if (element?.type === 'DocView') return { elementId, element };
+      }
+      return null;
+    }
+
+    function hasDocViewElement(value) {
+      const spec = value?.spec || value;
+      return !!findDocViewElementInSpec(spec);
+    }
+
+    function destroyDocViewSessionByMessage(id) {
+      const artifactId = window.__messageDocViews[id];
+      const session = artifactId ? window._docViewSessions[artifactId] : null;
+      if (window._docViewRoots[id]) {
+        try { window._docViewRoots[id].unmount(); } catch (_) {}
+        delete window._docViewRoots[id];
+      }
+      if (session) {
+        session.destroyedAt = new Date().toISOString();
+        delete window._docViewSessions[artifactId];
+      }
+      delete window.__messageDocViews[id];
+      if (window.__lastDocViewSessionId === artifactId) window.__lastDocViewSessionId = null;
+    }
+
+    function resolveDocViewSession(ref) {
+      if (!ref || ref === 'last') {
+        return window.__lastDocViewSessionId ? window._docViewSessions[window.__lastDocViewSessionId] || null : null;
+      }
+      if (window._docViewSessions[ref]) return window._docViewSessions[ref];
+      if (window.__messageDocViews[ref]) return window._docViewSessions[window.__messageDocViews[ref]] || null;
+      if (ref && typeof ref === 'object' && ref.id && window._docViewSessions[ref.id]) return window._docViewSessions[ref.id];
+      const artifact = getArtifactByRef(ref);
+      return artifact?.id ? window._docViewSessions[artifact.id] || null : null;
+    }
+
+    function refreshDocViewSessionState(session) {
+      if (!session) return null;
+      if (session.controller) {
+        session.threads = safeSnapshot(session.controller.getThreads?.() || []);
+        session.revisionProposals = safeSnapshot(session.controller.getRevisionProposals?.() || []);
+        session.annotations = safeSnapshot(session.controller.getAnnotations?.() || []);
+      }
+      return session;
+    }
+
+    function snapshotDocViewSession(session) {
+      if (!session) return null;
+      refreshDocViewSessionState(session);
+      return {
+        id: session.id,
+        artifactId: session.artifactId,
+        messageId: session.messageId,
+        sections: safeSnapshot(session.sections),
+        threads: safeSnapshot(session.threads || []),
+        revisionProposals: safeSnapshot(session.revisionProposals || []),
+        annotations: safeSnapshot(session.annotations || []),
+        events: safeSnapshot(session.events || []),
+        lastEvent: safeSnapshot(session.lastEvent || null),
+        artifact: session.artifact ? safeSnapshot(session.artifact) : null,
+      };
+    }
+
+    function recordDocViewReviewEvent(session, event) {
+      const eventRecord = {
+        at: new Date().toISOString(),
+        ...safeSnapshot(event),
+      };
+      session.lastEvent = eventRecord;
+      session.events.push(eventRecord);
+      if (session.events.length > 100) session.events.shift();
+      window.__lastDocViewEvent = eventRecord;
+      refreshDocViewSessionState(session);
+      return eventRecord;
+    }
+
+    function syncDocViewSessionArtifact(session, nextSections, reason) {
+      session.sections = safeSnapshot(nextSections || []);
+      const updated = window.Vizual.updateArtifact(session.artifact, {
+        type: 'updateElementProps',
+        elementId: session.elementId,
+        props: { sections: session.sections },
+        reason: reason || 'DocView sections changed',
+      });
+      session.artifact = updated;
+      session.artifactId = updated.id;
+      rememberArtifact(session.messageId, updated);
+      const vizWrap = document.getElementById(session.messageId + '-viz');
+      if (vizWrap) installArtifactToolbar(session.messageId, updated, vizWrap);
+      return updated;
+    }
+
     function extractRowsFromArtifact(artifact) {
       const elements = Object.values(artifact?.spec?.elements || {});
       for (const element of elements) {
@@ -626,6 +758,21 @@ setInterval(async () => {
         }
       }
       return Array.isArray(artifact?.data) ? artifact.data : [];
+    }
+
+    function resolveExportElement(vizWrap) {
+      if (!vizWrap) return null;
+      const interactivePreview = vizWrap.querySelector('.interactive-preview-root');
+      if (interactivePreview instanceof HTMLElement) return interactivePreview;
+      const contentChildren = Array.from(vizWrap.children).filter(child =>
+        child instanceof HTMLElement &&
+        !child.classList.contains('artifact-toolbar') &&
+        !child.classList.contains('viz-error') &&
+        child.dataset.vizualExportIgnore !== 'true'
+      );
+      return contentChildren.length === 1 && contentChildren[0] instanceof HTMLElement
+        ? contentChildren[0]
+        : vizWrap;
     }
 
     function clearBubbleWidth(bubble) {
@@ -746,6 +893,7 @@ setInterval(async () => {
       if (!ensureVizualReady(id, vizWrap, bubble)) return null;
       window._interactiveViz[id]?.destroy?.();
       delete window._interactiveViz[id];
+      destroyDocViewSessionByMessage(id);
 
       let artifact;
       try {
@@ -814,10 +962,213 @@ setInterval(async () => {
     }
 
     /**
+     * 渲染带审阅 bridge 的 DocView。
+     * 这是 DocView 在聊天宿主里的正式接入口：批注、提交、Agent 修订提案、应用修订都会写回 session 和 artifact。
+     */
+    window.renderDocViewInMsg = function(id, config = {}) {
+      const vizWrap = document.getElementById(id + '-viz');
+      const bubble = document.getElementById(id + '-bubble');
+      if (!vizWrap || !bubble) {
+        console.warn('[renderDocViewInMsg] 找不到元素:', id);
+        return null;
+      }
+      if (!ensureVizualReady(id, vizWrap, bubble)) return null;
+
+      window._interactiveViz[id]?.destroy?.();
+      delete window._interactiveViz[id];
+      destroyDocViewSessionByMessage(id);
+      window.Vizual.unmountSpec?.(vizWrap);
+
+      const inputConfig = window.Vizual.isVizualSpec?.(config) || window.Vizual.isVizualArtifact?.(config)
+        ? { spec: config }
+        : (config || {});
+      const docSpec = inputConfig.spec || inputConfig.artifact || {
+        root: 'doc',
+        elements: {
+          doc: {
+            type: 'DocView',
+            props: {
+              sections: inputConfig.sections || [],
+              showPanel: inputConfig.showPanel ?? true,
+              panelPosition: inputConfig.panelPosition || 'right',
+            },
+          },
+        },
+      };
+
+      let artifact;
+      try {
+        artifact = window.Vizual.normalizeArtifact(docSpec, {
+          kind: 'docview',
+          source: {
+            messageId: id,
+            prompt: window.getPendingMessage()?.rawText || window.getPendingMessage()?.text || undefined,
+            ...(inputConfig.source || {}),
+          },
+          theme: inputConfig.theme,
+          metadata: {
+            bridge: 'renderDocViewInMsg',
+            ...(inputConfig.metadata || {}),
+          },
+        });
+      } catch (err) {
+        console.error('[renderDocViewInMsg] artifact 解析失败:', err);
+        vizWrap.style.display = 'block';
+        bubble.classList.add('has-viz');
+        applyBubbleWidth(bubble, inputConfig.bubbleWidth || 'full', 'full');
+        showVizError(vizWrap, err);
+        return null;
+      }
+
+      const docView = findDocViewElementInSpec(artifact.spec);
+      if (!docView) {
+        vizWrap.style.display = 'block';
+        bubble.classList.add('has-viz');
+        applyBubbleWidth(bubble, inputConfig.bubbleWidth || 'full', 'full');
+        showVizError(vizWrap, new Error('renderDocViewInMsg requires a DocView spec or sections array'));
+        return null;
+      }
+
+      const baseProps = docView.element.props || {};
+      const initialSections = safeSnapshot(inputConfig.sections || baseProps.sections || []);
+      const session = {
+        id: artifact.id,
+        artifactId: artifact.id,
+        messageId: id,
+        elementId: docView.elementId,
+        artifact,
+        sections: initialSections,
+        threads: [],
+        revisionProposals: [],
+        annotations: [],
+        events: [],
+        lastEvent: null,
+        controller: null,
+        mountedAt: new Date().toISOString(),
+      };
+      window._docViewSessions[artifact.id] = session;
+      window.__messageDocViews[id] = artifact.id;
+      window.__lastDocViewSessionId = artifact.id;
+
+      const textEl = document.getElementById(id + '-text');
+      if (textEl && typeof inputConfig.answerText === 'string') {
+        textEl.textContent = inputConfig.answerText;
+        window.finishText(id);
+      }
+
+      const docRoot = document.createElement('div');
+      docRoot.className = 'docview-bridge-root';
+      vizWrap.replaceChildren(docRoot);
+      vizWrap.style.display = 'block';
+      bubble.classList.add('has-viz');
+      applyBubbleWidth(bubble, inputConfig.bubbleWidth || 'full', 'full');
+
+      const onReviewAction = (event) => {
+        recordDocViewReviewEvent(session, event);
+        if (typeof inputConfig.onReviewAction === 'function') {
+          inputConfig.onReviewAction(event, snapshotDocViewSession(session));
+        }
+      };
+      const onSectionsChange = (nextSections) => {
+        syncDocViewSessionArtifact(session, nextSections, 'DocView revision applied');
+        if (typeof inputConfig.onSectionsChange === 'function') {
+          inputConfig.onSectionsChange(nextSections, snapshotDocViewSession(session));
+        }
+      };
+      const controllerRef = (controller) => {
+        session.controller = controller;
+        refreshDocViewSessionState(session);
+        if (typeof inputConfig.controllerRef === 'function') inputConfig.controllerRef(controller);
+      };
+
+      try {
+        const root = window.Vizual.ReactDOMClient.createRoot(docRoot);
+        window._docViewRoots[id] = root;
+        root.render(window.Vizual.React.createElement(window.Vizual.DocView, {
+          ...baseProps,
+          sections: initialSections,
+          showPanel: inputConfig.showPanel ?? baseProps.showPanel ?? true,
+          panelPosition: inputConfig.panelPosition || baseProps.panelPosition || 'right',
+          onReviewAction,
+          onSectionsChange,
+          controllerRef,
+          onAction: inputConfig.onAction || baseProps.onAction,
+        }));
+        artifact = rememberArtifact(id, artifact);
+        session.artifact = artifact;
+        installArtifactToolbar(id, artifact, vizWrap);
+        recordVizRender('docview', id, {
+          status: 'success',
+          artifactId: artifact.id,
+          bubbleWidth: bubble.dataset.vizBubbleWidth || null,
+          spec: safeSnapshot(artifact.spec),
+          specSummary: summarizeSpec(artifact.spec),
+          targetMap: safeSnapshot(artifact.targetMap),
+        });
+        scrollBottom();
+        return safeSnapshot(artifact);
+      } catch (err) {
+        console.error('[renderDocViewInMsg] 渲染失败:', err);
+        recordVizRender('docview', id, {
+          status: 'error',
+          artifactId: artifact.id,
+          error: err?.message || String(err),
+          bubbleWidth: bubble.dataset.vizBubbleWidth || null,
+          spec: safeSnapshot(artifact.spec),
+          specSummary: summarizeSpec(artifact.spec),
+          targetMap: safeSnapshot(artifact.targetMap),
+        });
+        showVizError(vizWrap, err);
+        return null;
+      }
+    };
+
+    window.getDocViewReviewState = function(ref) {
+      return snapshotDocViewSession(resolveDocViewSession(ref));
+    };
+
+    window.submitDocViewThreads = function(ref, threadIds) {
+      const session = resolveDocViewSession(ref);
+      if (!session?.controller) return [];
+      const submitted = session.controller.submitThreads(threadIds);
+      refreshDocViewSessionState(session);
+      return safeSnapshot(submitted);
+    };
+
+    window.createDocViewRevision = function(ref, input) {
+      const session = resolveDocViewSession(ref);
+      if (!session?.controller || !input) return null;
+      const proposal = session.controller.createRevisionProposal(input);
+      refreshDocViewSessionState(session);
+      return safeSnapshot(proposal);
+    };
+
+    window.applyDocViewRevision = function(ref, proposalId) {
+      const session = resolveDocViewSession(ref);
+      if (!session?.controller) return null;
+      const idToApply = proposalId || session.revisionProposals?.find(p => p.status === 'proposed' || p.status === 'accepted')?.id;
+      if (!idToApply) return null;
+      const proposal = session.controller.applyRevision(idToApply);
+      refreshDocViewSessionState(session);
+      return safeSnapshot(proposal);
+    };
+
+    window.deleteDocViewThread = function(ref, threadId) {
+      const session = resolveDocViewSession(ref);
+      if (!session?.controller || !threadId) return null;
+      const thread = session.controller.deleteThread(threadId);
+      refreshDocViewSessionState(session);
+      return safeSnapshot(thread);
+    };
+
+    /**
      * 渲染 Vizual Artifact 到消息气泡内部。
      * artifact 可以是 raw spec，也可以是 normalizeArtifact() 产物。
      */
     window.renderArtifactInMsg = function(id, artifactLike, options) {
+      if (options?.docViewBridge !== false && hasDocViewElement(artifactLike)) {
+        return window.renderDocViewInMsg(id, { artifact: artifactLike, ...(options || {}) });
+      }
       return renderArtifactInMessage(id, artifactLike, options, 'artifact');
     };
 
@@ -827,6 +1178,9 @@ setInterval(async () => {
      * 兼容旧 Agent：返回 boolean，同时内部会保存可追踪 artifact。
      */
     window.renderVizInMsg = function(id, spec, options) {
+      if (options?.docViewBridge !== false && hasDocViewElement(spec)) {
+        return !!window.renderDocViewInMsg(id, { spec, ...(options || {}) });
+      }
       return !!renderArtifactInMessage(id, spec, options, 'static');
     };
 
@@ -903,6 +1257,7 @@ setInterval(async () => {
       const format = options?.format || 'png';
       const messageId = getMessageIdForArtifactRef(ref, artifact);
       const vizWrap = messageId ? document.getElementById(messageId + '-viz') : null;
+      const exportEl = resolveExportElement(vizWrap);
       if (!window.Vizual?.createExportRecord) {
         console.warn('[exportArtifact] Vizual export API 尚未加载:', ref);
         return null;
@@ -916,11 +1271,11 @@ setInterval(async () => {
             sheetName: options?.sheetName,
           });
         } else {
-          if (!vizWrap || !window.Vizual?.exportElement) {
+          if (!exportEl || !window.Vizual?.exportElement) {
             console.warn('[exportArtifact] 找不到可导出的 DOM:', ref);
             return null;
           }
-          blob = await window.Vizual.exportElement(vizWrap, format, options);
+          blob = await window.Vizual.exportElement(exportEl, format, options);
         }
         const url = URL.createObjectURL(blob);
         const filename = options?.filename || artifact.id;
@@ -933,8 +1288,8 @@ setInterval(async () => {
           url,
           filename,
           status: 'success',
-          width: vizWrap?.offsetWidth,
-          height: vizWrap?.offsetHeight,
+          width: exportEl?.offsetWidth,
+          height: exportEl?.offsetHeight,
           meta: { size: blob.size, type: blob.type },
         });
         const updated = window.Vizual.updateArtifact(artifact, {
@@ -982,6 +1337,7 @@ setInterval(async () => {
 
       window._interactiveViz[id]?.destroy?.();
       delete window._interactiveViz[id];
+      destroyDocViewSessionByMessage(id);
       window.Vizual.unmountSpec?.(vizWrap);
 
       const textEl = document.getElementById(id + '-text');
@@ -1155,6 +1511,9 @@ setInterval(async () => {
         lastVizualRender: window.__lastVizualRender,
         renderHistory: window.__renderHistory.slice(),
         interactiveIds: Object.keys(window._interactiveViz || {}),
+        docViewSessionIds: Object.keys(window._docViewSessions || {}),
+        lastDocViewSession: window.getDocViewReviewState?.('last') || null,
+        lastDocViewEvent: safeSnapshot(window.__lastDocViewEvent || null),
         lastArtifact: window.__lastArtifact ? safeSnapshot(window.__lastArtifact) : null,
         artifacts: Object.values(window.__vizualArtifacts || {}).map(artifact => safeSnapshot(artifact)),
         messageArtifacts: { ...(window.__messageArtifacts || {}) },

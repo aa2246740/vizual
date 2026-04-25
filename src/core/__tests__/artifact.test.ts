@@ -80,6 +80,63 @@ describe('Vizual artifact runtime model', () => {
     expect(updated.versions[0].spec.elements?.chart?.type).toBe('BarChart')
   })
 
+  it('accepts JSON Patch operations over the spec root for cold-start agents', () => {
+    const artifact = createArtifact({ id: 'artifact-1', spec: chartSpec })
+    const updated = applyArtifactPatch(artifact, [
+      { op: 'replace', path: '/elements/chart/component', value: 'LineChart' },
+      { op: 'replace', path: '/elements/chart/props/title', value: 'East China revenue' },
+      { op: 'replace', path: '/elements/chart/props/data', value: [{ day: 'D1', region: '华东', revenue: 100 }] },
+    ])
+
+    expect(updated.spec.elements?.chart?.type).toBe('LineChart')
+    expect(updated.spec.elements?.chart?.props?.title).toBe('East China revenue')
+    expect(updated.spec.elements?.chart?.props?.data).toEqual([
+      { day: 'D1', region: '华东', revenue: 100 },
+    ])
+    expect(updated.targetMap).toContainEqual(expect.objectContaining({
+      id: 'element:chart',
+      componentType: 'LineChart',
+    }))
+    expect(updated.versions).toHaveLength(1)
+  })
+
+  it('normalizes loose element component specs into canonical type and props', () => {
+    const looseSpec = {
+      root: 'chart',
+      elements: {
+        chart: {
+          component: 'BarChart',
+          type: 'bar',
+          title: 'Loose chart',
+          x: 'day',
+          y: 'revenue',
+          data: [{ day: 'D1', revenue: 100 }],
+        },
+      },
+    }
+    const artifact = createArtifact({ id: 'artifact-1', spec: looseSpec })
+
+    expect(artifact.spec.elements?.chart?.type).toBe('BarChart')
+    expect(artifact.spec.elements?.chart?.component).toBeUndefined()
+    expect(artifact.spec.elements?.chart?.props).toEqual({
+      type: 'bar',
+      title: 'Loose chart',
+      x: 'day',
+      y: 'revenue',
+      data: [{ day: 'D1', revenue: 100 }],
+    })
+    expect(artifact.targetMap).toContainEqual(expect.objectContaining({
+      id: 'element:chart',
+      componentType: 'BarChart',
+      label: 'Loose chart',
+    }))
+  })
+
+  it('rejects unsupported patch objects instead of silently keeping the old spec', () => {
+    const artifact = createArtifact({ id: 'artifact-1', spec: chartSpec })
+    expect(() => applyArtifactPatch(artifact, { foo: 'bar' } as any)).toThrow(/Unsupported Vizual artifact patch/)
+  })
+
   it('supports DocView section targets and chart section patches', () => {
     const docSpec = {
       root: 'doc',

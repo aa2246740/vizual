@@ -126,6 +126,12 @@ export type VizualArtifactPatch =
       reason?: string
     }
   | {
+      op: 'add' | 'replace' | 'remove' | 'test'
+      path: string
+      value?: unknown
+      reason?: string
+    }
+  | {
       type: 'replaceElement'
       targetId?: string
       elementId?: string
@@ -266,21 +272,57 @@ function getByPointer(target: unknown, pointer: string): unknown {
   return current
 }
 
+function normalizeArtifactPatchPath(pointer: string) {
+  let next = pointer || ''
+  if (!next.startsWith('/')) next = `/${next}`
+  next = next.replace(
+    /^\/elements\/([^/]+)\/component(?=\/|$)/,
+    (_match, elementId: string) => `/elements/${elementId}/type`,
+  )
+  next = next.replace(
+    /^\/spec\/elements\/([^/]+)\/component(?=\/|$)/,
+    (_match, elementId: string) => `/spec/elements/${elementId}/type`,
+  )
+  return next
+}
+
 function setByPointer(target: unknown, pointer: string, value: unknown) {
   if (!isRecord(target) && !Array.isArray(target)) return target
   if (!pointer || pointer === '/') return value
   const parts = pointer.replace(/^\//, '').split('/').map(decodePointerSegment)
-  let current = target as Record<string, unknown>
+  let current = target as Record<string, unknown> | unknown[]
   for (let i = 0; i < parts.length - 1; i += 1) {
     const key = parts[i]
     const nextKey = parts[i + 1]
-    const existing = current[key]
+    const existing = (current as Record<string, unknown>)[key]
     if (!isRecord(existing) && !Array.isArray(existing)) {
-      current[key] = /^\d+$/.test(nextKey) ? [] : {}
+      ;(current as Record<string, unknown>)[key] = /^\d+$/.test(nextKey) ? [] : {}
     }
-    current = current[key] as Record<string, unknown>
+    current = (current as Record<string, unknown>)[key] as Record<string, unknown> | unknown[]
   }
-  current[parts[parts.length - 1]] = value
+  const last = parts[parts.length - 1]
+  if (Array.isArray(current)) {
+    if (last === '-') current.push(value)
+    else current[Number(last)] = value
+  } else {
+    ;(current as Record<string, unknown>)[last] = value
+  }
+  return target
+}
+
+function removeByPointer(target: unknown, pointer: string) {
+  if (!isRecord(target) && !Array.isArray(target)) return target
+  if (!pointer || pointer === '/') return undefined
+  const parts = pointer.replace(/^\//, '').split('/').map(decodePointerSegment)
+  let current: unknown = target
+  for (let i = 0; i < parts.length - 1; i += 1) {
+    if (!isRecord(current) && !Array.isArray(current)) return target
+    current = (current as Record<string, unknown>)[parts[i]]
+  }
+  if (!isRecord(current) && !Array.isArray(current)) return target
+  const last = parts[parts.length - 1]
+  if (Array.isArray(current)) current.splice(Number(last), 1)
+  else delete (current as Record<string, unknown>)[last]
   return target
 }
 
@@ -340,6 +382,50 @@ export function isVizualSpec(value: unknown): value is VizualSpec {
 
 export function isVizualArtifact(value: unknown): value is VizualArtifact {
   return isRecord(value) && typeof value.id === 'string' && isVizualSpec(value.spec)
+}
+
+function normalizeSpecElement(element: VizualSpecElement): VizualSpecElement {
+  const explicitProps = isRecord(element.props) ? cloneJson(element.props) : undefined
+  const rawType = typeof element.type === 'string' ? element.type : undefined
+  const rawComponent = typeof element.component === 'string' ? element.component : undefined
+  const mappedType = rawType ? normalizeChartType(rawType) : undefined
+  const type = rawComponent || mappedType
+
+  const structuralKeys = new Set(['type', 'component', 'props', 'children'])
+  const looseProps: Record<string, unknown> = {}
+  for (const [key, value] of Object.entries(element)) {
+    if (!structuralKeys.has(key)) looseProps[key] = value
+  }
+
+  const props = {
+    ...(rawComponent && rawType ? { type: rawType } : {}),
+    ...(!rawComponent && rawType && mappedType !== rawType ? { type: rawType } : {}),
+    ...(Object.keys(looseProps).length ? looseProps : {}),
+    ...(explicitProps || {}),
+  }
+
+  const normalized: VizualSpecElement = {
+    ...cloneJson(element),
+    ...(type ? { type } : {}),
+    props,
+  }
+  delete normalized.component
+  for (const key of Object.keys(looseProps)) delete normalized[key]
+  if (Object.keys(normalized.props || {}).length === 0) delete normalized.props
+  return normalized
+}
+
+function normalizeSpecShape(spec: VizualSpec): VizualSpec {
+  const next = cloneJson(spec)
+  if (next.elements) {
+    next.elements = Object.fromEntries(
+      Object.entries(next.elements).map(([elementId, element]) => [
+        elementId,
+        normalizeSpecElement(element),
+      ]),
+    )
+  }
+  return next
 }
 
 function inferArtifactKind(spec: VizualSpec): VizualArtifactKind {
@@ -528,7 +614,7 @@ export function extractTargetMap(spec: VizualSpec): VizualTarget[] {
 
 export function createArtifact(input: CreateVizualArtifactInput): VizualArtifact {
   const at = input.createdAt || nowIso()
-  const spec = cloneJson(input.spec)
+  const spec = normalizeSpecShape(input.spec)
   const id = input.id || createId('viz')
   return {
     id,
@@ -690,9 +776,82 @@ function patchDocViewChartSection(
   return true
 }
 
+function isJsonPatchOperation(
+  patch: VizualArtifactPatch,
+): patch is Extract<VizualArtifactPatch, { op: string }> {
+  return isRecord(patch) && typeof (patch as Record<string, unknown>).op === 'string'
+}
+
+function getJsonPatchRoot(artifact: VizualArtifact, path: string): { root: unknown; pointer: string; target: 'artifact' | 'spec' } {
+  const pointer = normalizeArtifactPatchPath(path)
+  if (pointer === '/spec' || pointer.startsWith('/spec/')) {
+    return {
+      root: artifact,
+      pointer,
+      target: 'artifact',
+    }
+  }
+  if (
+    pointer === '/state' ||
+    pointer.startsWith('/state/') ||
+    pointer === '/theme' ||
+    pointer.startsWith('/theme/') ||
+    pointer === '/metadata' ||
+    pointer.startsWith('/metadata/')
+  ) {
+    return {
+      root: artifact,
+      pointer,
+      target: 'artifact',
+    }
+  }
+  return {
+    root: artifact.spec,
+    pointer,
+    target: 'spec',
+  }
+}
+
+function applyJsonPatchOperation(
+  artifact: VizualArtifact,
+  patch: Extract<VizualArtifactPatch, { op: string }>,
+) {
+  const { root, pointer, target } = getJsonPatchRoot(artifact, patch.path)
+
+  if (patch.op === 'test') {
+    const actual = getByPointer(root, pointer)
+    if (JSON.stringify(actual) !== JSON.stringify(patch.value)) {
+      throw new Error(`JSON Patch test failed at ${patch.path}`)
+    }
+    return
+  }
+
+  if (patch.op === 'remove') {
+    const nextRoot = removeByPointer(root, pointer)
+    if (target === 'spec') artifact.spec = normalizeSpecShape(nextRoot as VizualSpec)
+    return
+  }
+
+  if (patch.op === 'add' || patch.op === 'replace') {
+    const nextRoot = setByPointer(root, pointer, cloneJson(patch.value))
+    if (target === 'spec') artifact.spec = normalizeSpecShape(nextRoot as VizualSpec)
+    else if (pointer === '/spec' || pointer.startsWith('/spec/')) {
+      artifact.spec = normalizeSpecShape(artifact.spec)
+    }
+    return
+  }
+
+  throw new Error(`Unsupported JSON Patch op: ${patch.op}`)
+}
+
 function applySinglePatch(artifact: VizualArtifact, patch: VizualArtifactPatch): VizualArtifact {
+  if (isJsonPatchOperation(patch)) {
+    applyJsonPatchOperation(artifact, patch)
+    return artifact
+  }
+
   if (patch.type === 'replaceSpec') {
-    artifact.spec = coerceReplacementSpec(patch.spec, artifact)
+    artifact.spec = normalizeSpecShape(coerceReplacementSpec(patch.spec, artifact))
     artifact.state = cloneJson(artifact.spec.state || artifact.state || {})
     return artifact
   }
@@ -712,7 +871,7 @@ function applySinglePatch(artifact: VizualArtifact, patch: VizualArtifactPatch):
     const elementId = resolveElementId(artifact, patch.targetId, patch.elementId)
     if (!elementId) throw new Error('replaceElement requires targetId or elementId')
     artifact.spec.elements = artifact.spec.elements || {}
-    artifact.spec.elements[elementId] = cloneJson(patch.element)
+    artifact.spec.elements[elementId] = normalizeSpecElement(patch.element)
     return artifact
   }
 
@@ -793,7 +952,7 @@ function applySinglePatch(artifact: VizualArtifact, patch: VizualArtifactPatch):
     return artifact
   }
 
-  return artifact
+  throw new Error(`Unsupported Vizual artifact patch: ${summarizeValue(patch)}`)
 }
 
 export function applyArtifactPatch(

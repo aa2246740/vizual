@@ -146,4 +146,38 @@ describe('DocView Review SDK controller', () => {
 
     expect(controller!.getThreads()[0].status).toBe('open')
   })
+
+  it('allows explicitly resubmitting an orphaned thread for a new revision pass', () => {
+    let controller: DocViewReviewController | null = null
+    const events: DocViewReviewActionEvent[] = []
+    render(
+      <DocView
+        showPanel={false}
+        sections={[
+          { id: 'next', type: 'markdown', content: '下一步行动：监控用户内容反馈 NPS。' },
+        ]}
+        controllerRef={(value) => { controller = value }}
+        onReviewAction={(event) => events.push(event)}
+      />,
+    )
+
+    let threadId = ''
+    act(() => {
+      threadId = controller!.createThread({
+        body: '写详细一点',
+        anchor: {
+          sectionIndex: 0,
+          sectionId: 'next',
+          targetType: 'markdown',
+          label: '下一步行动',
+          textRange: { start: 0, end: 5, selectedText: '下一步行动' },
+        },
+      }).id
+      controller!.updateThreadStatus(threadId, 'orphaned')
+      controller!.submitThreads([threadId])
+    })
+
+    expect(controller!.getThreads()[0].status).toBe('submitted')
+    expect(events.map(e => e.type)).toContain('threadsSubmitted')
+  })
 })

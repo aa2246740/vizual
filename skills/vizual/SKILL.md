@@ -118,7 +118,7 @@ Use the smallest runtime shape that satisfies the task:
 | Historical recovery or follow-up edits | `VizualArtifact` + `renderArtifactInMsg(id, artifact)` or `updateArtifactInMsg(ref, patch)` | Preserves `id`, `targetMap`, `versions`, `theme`, `exports`; follow-ups render as a new AI bubble by default |
 | "Change this chart to line / filter region / make it less dense" | Read `getLastArtifact()` then call `updateArtifactInMsg()` | Do not regenerate from memory; patch the saved artifact and keep the old bubble as history |
 | Live adjustable preview | `renderInteractiveVizInMsg(id, config)` | Requires host JavaScript, FormBuilder state, and `makeSpec(state)` |
-| DocView review loop | DocView UI + review controller | User annotates, Agent returns revision proposal, user applies/rejects |
+| DocView review loop | `renderDocViewInMsg(id, config)` in `vizual-test.html`, or DocView UI + review controller in a custom host | User annotates, Agent reads submitted threads, returns revision proposal, user applies/rejects |
 
 Artifact patch examples:
 
@@ -132,6 +132,8 @@ window.updateArtifactInMsg(artifact.id, [
 ```
 
 Important patch types: `changeChartType`, `filterData`, `limitData`, `updateElementProps`, `replaceElement`, `replaceSpec`, `mergeState`, `setTheme`, `addExportRecord`.
+
+Use these Vizual typed patch objects. Do not generate RFC-style JSON Patch (`{ op, path, value }`) unless you are maintaining a legacy host. The runtime accepts basic JSON Patch as a compatibility fallback, but typed patches are clearer, target-map aware, and less likely to mutate the wrong path.
 
 Use `targetMap` instead of guessing component paths. Common target ids look like `element:chart`, `section:trend`, `metric:revenue`, and `column:region`.
 
@@ -265,6 +267,38 @@ If an agent can only click and type in the browser but cannot execute JavaScript
 
 For ordinary data-analysis prompts in `vizual-test.html`, answer in host message text and render a `GridLayout`/chart/dashboard spec. Do not choose DocView unless the user explicitly asks for annotation, comments, review, revision, or a reviewable document artifact.
 
+For DocView review/revision tasks in `vizual-test.html`, use the DocView bridge instead of plain `renderVizInMsg()`:
+
+```js
+const id = window.createAiMsg();
+window.streamText(id, '我生成了一份可批注报告。');
+window.finishText(id);
+const artifact = window.renderDocViewInMsg(id, {
+  sections: [
+    { id: 'title', type: 'heading', content: '经营分析报告', level: 1 },
+    { id: 'summary', type: 'text', content: '收入下滑主要来自活跃用户下降。' },
+  ],
+  showPanel: true,
+});
+window.markPendingHandled?.();
+```
+
+When the user submits a DocView annotation, read the review state and create a proposal:
+
+```js
+const state = window.getDocViewReviewState(artifact.id);
+const submitted = state.threads.filter(t => t.status === 'submitted');
+window.createDocViewRevision(artifact.id, {
+  fromThreadIds: submitted.map(t => t.id),
+  summary: '补充经营解释',
+  patches: [
+    { op: 'updateSection', sectionId: 'summary', updates: { content: '收入下滑主要来自活跃用户下降，同时高价值用户留存推高 ARPPU。' } },
+  ],
+});
+```
+
+Do not directly overwrite the DocView artifact in response to a submitted annotation. The correct loop is: read submitted threads → create a revision proposal → let the user apply it in the panel, or call `applyDocViewRevision()` only when the user/host asked for automatic application.
+
 ## Rendered DocView Interaction Checklist
 
 When the task is to operate an already-rendered DocView page, the Agent should use the UI, not regenerate the document:
@@ -281,6 +315,7 @@ Expected host events include `threadCreated`, `threadsSubmitted`, `revisionPropo
 For Agent-driven revision loops, DocView is an SDK:
 
 - The Agent/host must obtain `controllerRef` from the page/app.
+- In `validation/vizual-test.html`, use `getDocViewReviewState()`, `createDocViewRevision()`, and `applyDocViewRevision()`; the page bridge owns `controllerRef`.
 - When `threadsSubmitted` fires, the Agent should return a `RevisionProposal`, not directly overwrite the document.
 - Then call `controller.createRevisionProposal({ fromThreadIds, summary, patches, author, risk })`.
 - Apply with `controller.applyRevision(proposalId)` or reject with `controller.rejectRevision(proposalId)`.

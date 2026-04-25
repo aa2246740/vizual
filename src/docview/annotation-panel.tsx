@@ -235,7 +235,7 @@ export function AnnotationPanel({
               )}
               {thread.status === 'orphaned' && (
                 <div style={{ fontSize: tcss('--rk-text-xs'), color: tcss('--rk-text-secondary'), lineHeight: 1.35, marginTop: 6 }}>
-                  文档修订后找不到原批注文字，可删除或标记解决。
+                  文档修订后找不到原批注文字，可重新提交给 Agent 处理，或标记解决。
                 </div>
               )}
               <div style={{ display: 'flex', gap: 8, marginTop: 6 }}>
@@ -245,7 +245,19 @@ export function AnnotationPanel({
                     style={{ fontSize: tcss('--rk-text-xs'), color: tcss('--rk-accent'), background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
                   >提交</button>
                 )}
+                {thread.status === 'orphaned' && (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); onSubmitThread?.(thread.id) }}
+                    style={{ fontSize: tcss('--rk-text-xs'), color: tcss('--rk-accent'), background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+                  >重新提交</button>
+                )}
                 {(thread.status === 'submitted' || thread.status === 'proposed' || thread.status === 'rejected') && (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); onUpdateStatus(thread.id, 'resolved') }}
+                    style={{ fontSize: tcss('--rk-text-xs'), color: tcss('--rk-success'), background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+                  >解决</button>
+                )}
+                {thread.status === 'orphaned' && (
                   <button
                     onClick={(e) => { e.stopPropagation(); onUpdateStatus(thread.id, 'resolved') }}
                     style={{ fontSize: tcss('--rk-text-xs'), color: tcss('--rk-success'), background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}

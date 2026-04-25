@@ -129,7 +129,7 @@ Use host message text for the written conclusion, and render the visual artifact
 
 ## Historical Follow-Up Update
 
-When the user points back to an existing rendered chart ("this chart", "the previous dashboard", "three days later in chat history"), do not reconstruct it from memory. Read the saved artifact, locate a target from `targetMap`, apply a patch, and let the host re-render the same message.
+When the user points back to an existing rendered chart ("this chart", "the previous dashboard", "three days later in chat history"), do not reconstruct it from memory. Read the saved artifact, locate a target from `targetMap`, apply a Vizual typed patch, and let the host render a new AI bubble by default so the historical message remains unchanged.
 
 ```js
 const artifact = window.getLastArtifact();
@@ -156,6 +156,8 @@ Patch choice guide:
 - Filter rows already present in `props.data`: `filterData`.
 - Make a dense chart sparser: `limitData` or regenerate fewer bins in a new `replaceElement`.
 - Change Design.md theme: call `Vizual.loadDesignMd()` first or use `setTheme` metadata plus host theme application.
+
+Prefer the Vizual typed patch objects shown above. Do not use RFC-style JSON Patch (`{ op, path, value }`) for normal agent work; it is only a runtime compatibility fallback for older hosts or accidental usage.
 
 Built-in export formats:
 
@@ -279,6 +281,8 @@ Example component plan for the prompt "score this AI answer":
 ## Annotatable Document (DocView)
 
 Use DocView when the user needs comments, highlights, revision loop, version history, or a reviewable document artifact. Do not use it just because the user asks for a report, dashboard, summary, or export; those should normally be host text plus GridLayout/charts/tables and artifact export APIs.
+
+In `validation/vizual-test.html`, render reviewable documents through `renderDocViewInMsg()` so the page exposes `getDocViewReviewState()` and `createDocViewRevision()` for the Agent revision loop. The JSON below is the document spec shape; the bridge call should pass the `sections` array or the spec.
 
 ```json
 {

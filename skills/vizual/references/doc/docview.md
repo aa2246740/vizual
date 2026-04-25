@@ -44,6 +44,31 @@ Host/Agent integration flow:
 
 Important: realtime review/revision is not a pure JSON spec feature. The Agent must operate as a host/bridge and call the page/controller APIs. Without JS evaluation or host callbacks, it can only generate a static DocView spec.
 
+In `validation/vizual-test.html`, prefer the built-in DocView bridge:
+
+```js
+const id = window.createAiMsg();
+window.streamText(id, '我生成了一份可批注报告。');
+window.finishText(id);
+const artifact = window.renderDocViewInMsg(id, {
+  sections,
+  showPanel: true,
+});
+
+// After the user submits annotations:
+const state = window.getDocViewReviewState(artifact.id);
+const submitted = state.threads.filter(t => t.status === 'submitted');
+window.createDocViewRevision(artifact.id, {
+  fromThreadIds: submitted.map(t => t.id),
+  summary: 'Apply requested document revisions',
+  patches: [
+    { op: 'updateSection', sectionId: 'exec-summary', updates: { content: 'Updated summary text.' } },
+  ],
+});
+```
+
+Do not overwrite the DocView directly after a user comment. The loop is: user annotates → user submits → Agent creates a revision proposal → user/host applies or rejects.
+
 ## Props
 
 | Prop | Type | Required | Description |
