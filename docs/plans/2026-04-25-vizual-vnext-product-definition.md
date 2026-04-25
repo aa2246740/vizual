@@ -62,6 +62,28 @@ Every Vizual output should be treated as a structured visual artifact with enoug
 
 This means Vizual artifacts need stable identifiers, spec/data/theme/state, target metadata, and optional review/export/version metadata.
 
+## vNext Runtime Contract
+
+The runtime exposes three layers:
+
+- `renderSpec(spec, container)` for low-level static rendering.
+- `renderArtifact(artifactOrSpec, container)` for durable outputs with `id`, `targetMap`, `versions`, `theme`, `state`, and `exports`.
+- Host bridges such as `renderVizInMsg`, `renderArtifactInMsg`, `updateArtifactInMsg`, `renderInteractiveVizInMsg`, and `exportArtifact` for agent chat surfaces.
+
+Artifact patches are the first editing primitive. They let an agent update an existing output without rebuilding it from memory:
+
+- `changeChartType`
+- `filterData`
+- `limitData`
+- `updateElementProps`
+- `replaceElement`
+- `replaceSpec`
+- `mergeState`
+- `setTheme`
+- `addExportRecord`
+
+This is enough for the first historical-chat loop: reopen a saved visual, identify a target, change chart type, filter a region, reduce density, re-render, and record export metadata.
+
 ## vNext Success Standard
 
 Vizual vNext is successful when an internal agent platform can do the following end to end:

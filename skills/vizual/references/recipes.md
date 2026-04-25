@@ -127,6 +127,37 @@ Use host message text for the written conclusion, and render the visual artifact
 }
 ```
 
+## Historical Follow-Up Update
+
+When the user points back to an existing rendered chart ("this chart", "the previous dashboard", "three days later in chat history"), do not reconstruct it from memory. Read the saved artifact, locate a target from `targetMap`, apply a patch, and let the host re-render the same message.
+
+```js
+const artifact = window.getLastArtifact();
+const target = artifact.targetMap.find(t => t.id === 'element:chart')
+  || artifact.targetMap.find(t => t.type === 'element');
+
+window.updateArtifactInMsg(artifact.id, [
+  { type: 'changeChartType', targetId: target.id, chartType: 'LineChart' },
+  { type: 'filterData', targetId: target.id, field: 'region', values: '华东' },
+  { type: 'limitData', targetId: target.id, limit: 8 },
+]);
+
+const exportRecord = await window.exportArtifact(artifact.id, {
+  filename: 'east-china-line-chart',
+});
+```
+
+Patch choice guide:
+
+- Change chart type: `changeChartType`.
+- Change title/axis/options: `updateElementProps`.
+- Replace the whole chart/table: `replaceElement`.
+- Filter rows already present in `props.data`: `filterData`.
+- Make a dense chart sparser: `limitData` or regenerate fewer bins in a new `replaceElement`.
+- Change Design.md theme: call `Vizual.loadDesignMd()` first or use `setTheme` metadata plus host theme application.
+
+PPT/PDF export are host extension points unless the current host exposes them. Vizual's built-in export in this package is PNG.
+
 ## AI Answer Review / Scoring Dashboard
 
 When the user asks to evaluate an AI answer, score reasoning quality, or compare analysis quality, use host text for the critique and render a compact dashboard. Do not use DocView unless the user asks to annotate or revise the critique as a document.

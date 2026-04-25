@@ -1,6 +1,6 @@
 ---
 name: vizual
-version: "4.0.0"
+version: "4.1.0"
 description: >
   Generate structured JSON specs for Vizual's 31 visualization components. Use this skill
   whenever the user needs ANY kind of visual output — charts, dashboards, reports, KPIs,
@@ -21,7 +21,7 @@ allowed-tools:
 
 # Vizual — Your Visualization Toolkit
 
-You generate JSON specs that the host app renders as interactive UI via `renderSpec(spec, container)`. You have 31 components. Your job is to pick the right ones and compose them well.
+You generate Vizual specs/artifacts that the host app renders as interactive UI. A raw JSON spec is enough for one-time static rendering. A `VizualArtifact` is required when the output must be recovered from chat history, edited later, targeted by natural language, reviewed, or exported.
 
 ## How to Think About Components
 
@@ -108,6 +108,33 @@ For charts inside DocView, read `references/doc/docview.md`: use `chart` section
 
 For more composition examples with full JSON, read: [references/recipes.md](references/recipes.md)
 
+## Runtime Model: Spec vs Artifact vs Bridge
+
+Use the smallest runtime shape that satisfies the task:
+
+| Need | What to output/call | Why |
+|------|---------------------|-----|
+| One static chart/dashboard/table | JSON spec + `renderVizInMsg(id, spec)` | Fast, compatible, page wraps it into an artifact automatically |
+| Historical recovery or follow-up edits | `VizualArtifact` + `renderArtifactInMsg(id, artifact)` or `updateArtifactInMsg(ref, patch)` | Preserves `id`, `targetMap`, `versions`, `theme`, `exports` |
+| "Change this chart to line / filter region / make it less dense" | Read `getLastArtifact()` then call `updateArtifactInMsg()` | Do not regenerate from memory; patch the saved artifact |
+| Live adjustable preview | `renderInteractiveVizInMsg(id, config)` | Requires host JavaScript, FormBuilder state, and `makeSpec(state)` |
+| DocView review loop | DocView UI + review controller | User annotates, Agent returns revision proposal, user applies/rejects |
+
+Artifact patch examples:
+
+```js
+const artifact = window.getLastArtifact();
+window.updateArtifactInMsg(artifact.id, [
+  { type: 'changeChartType', targetId: 'element:chart', chartType: 'LineChart' },
+  { type: 'filterData', targetId: 'element:chart', field: 'region', values: '华东' },
+  { type: 'limitData', targetId: 'element:chart', limit: 8 },
+]);
+```
+
+Important patch types: `changeChartType`, `filterData`, `limitData`, `updateElementProps`, `replaceElement`, `replaceSpec`, `mergeState`, `setTheme`, `addExportRecord`.
+
+Use `targetMap` instead of guessing component paths. Common target ids look like `element:chart`, `section:trend`, `metric:revenue`, and `column:region`.
+
 ## Host Runtime and Test Page Bridge
 
 Vizual specs are JSON artifacts. A host page must render them. When the host is `validation/vizual-test.html`, use the page's JavaScript bridge; simply typing JSON into the chat input will not render anything.
@@ -125,7 +152,21 @@ if (window.markPendingHandled) window.markPendingHandled();
 else window._pendingMsg = null;
 ```
 
-When `getPendingMessage()` exists, use it instead of `getMsgs()` or DOM text. It preserves pasted line breaks and raw table text. After rendering, `window.__lastVizualRender` records the last spec for QA; use it to verify that generated data came from the user input.
+When `getPendingMessage()` exists, use it instead of `getMsgs()` or DOM text. It preserves pasted line breaks and raw table text. After rendering, `window.__lastVizualRender` records the last spec for QA; `window.getLastArtifact()` records the editable artifact with `targetMap`, `versions`, and export metadata.
+
+For historical follow-up requests, use the artifact bridge:
+
+```js
+const artifact = window.getLastArtifact();
+const target = artifact.targetMap.find(t => t.componentType === 'BarChart' || t.type === 'element');
+const updated = window.updateArtifactInMsg(artifact.id, [
+  { type: 'changeChartType', targetId: target.id, chartType: 'LineChart' },
+  { type: 'filterData', targetId: target.id, field: 'region', values: '华东' },
+]);
+const png = await window.exportArtifact(updated.id, { filename: 'east-china-line' });
+```
+
+If the user asks for PPT today, explain in host text that Vizual records/export-target metadata now and PNG export is available; PPT export is a host extension point unless the current platform has a PPT exporter.
 
 For static charts, omit `bubbleWidth` unless you have a reason to override. The page infers `normal` for KPI/sparkline, `wide` for ordinary charts, and `full` for layouts, DocView, Sankey, Radar, FormBuilder, and tables. Pass `{ bubbleWidth: 'compact' | 'normal' | 'wide' | 'full' }` only when the user asks for a specific density.
 

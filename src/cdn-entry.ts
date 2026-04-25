@@ -18,6 +18,27 @@ import { tc, tcss, chartColors } from './core/theme-colors'
 
 // Export API
 import { exportToPNG, downloadPNG } from './core/export'
+import {
+  applyArtifactPatch,
+  cloneJson,
+  createArtifact,
+  createExportRecord,
+  extractTargetMap,
+  getArtifactElement,
+  getArtifactTarget,
+  isVizualArtifact,
+  isVizualSpec,
+  markArtifactError,
+  markArtifactRendered,
+  normalizeArtifact,
+  summarizeSpec,
+} from './core/artifact'
+import type {
+  CreateVizualArtifactInput,
+  VizualArtifact,
+  VizualArtifactPatch,
+  VizualSpec,
+} from './core/artifact'
 
 // All components
 import { BarChart, BarChartSchema } from './mviz-bridge/bar-chart'
@@ -140,6 +161,61 @@ function unmountSpec(container: HTMLElement) {
   return true
 }
 
+type RenderArtifactOptions = RenderSpecOptions & {
+  source?: CreateVizualArtifactInput['source']
+  theme?: CreateVizualArtifactInput['theme']
+  metadata?: CreateVizualArtifactInput['metadata']
+}
+
+function applyArtifactTheme(artifact: VizualArtifact, container?: HTMLElement) {
+  if (artifact.theme?.designMd) {
+    loadDesignMd(artifact.theme.designMd, { apply: true })
+  }
+  if (artifact.theme?.name) {
+    if (container) applyTheme(container, artifact.theme.name)
+    else setGlobalTheme(artifact.theme.name)
+  }
+}
+
+function renderArtifact(
+  input: VizualSpec | VizualArtifact | CreateVizualArtifactInput,
+  container: HTMLElement,
+  options: RenderArtifactOptions = {},
+) {
+  let artifact = normalizeArtifact(input as VizualArtifact | VizualSpec | CreateVizualArtifactInput, {
+    source: options.source,
+    theme: options.theme,
+    metadata: options.metadata,
+  })
+  const renderOptions = { ...options }
+  delete renderOptions.source
+  delete renderOptions.theme
+  delete renderOptions.metadata
+
+  try {
+    applyArtifactTheme(artifact, container)
+    const root = renderSpec(artifact.spec, container, {
+      ...renderOptions,
+      initialState: {
+        ...(artifact.state || {}),
+        ...(renderOptions.initialState || {}),
+      },
+    })
+    artifact = markArtifactRendered(artifact)
+    return { artifact, root }
+  } catch (error) {
+    artifact = markArtifactError(artifact, error)
+    throw Object.assign(error instanceof Error ? error : new Error(String(error)), { artifact })
+  }
+}
+
+function updateArtifact(
+  input: VizualArtifact,
+  patchOrPatches: VizualArtifactPatch | VizualArtifactPatch[],
+) {
+  return applyArtifactPatch(input, patchOrPatches)
+}
+
 // === Expose to window ===
 declare global {
   interface Window {
@@ -180,7 +256,22 @@ const vizual = {
 
   // renderSpec
   renderSpec,
+  renderArtifact,
+  updateArtifact,
   unmountSpec,
+  applyArtifactPatch,
+  cloneJson,
+  createArtifact,
+  createExportRecord,
+  extractTargetMap,
+  getArtifactElement,
+  getArtifactTarget,
+  isVizualArtifact,
+  isVizualSpec,
+  markArtifactError,
+  markArtifactRendered,
+  normalizeArtifact,
+  summarizeSpec,
 
   // All components
   BarChart,

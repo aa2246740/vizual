@@ -146,10 +146,14 @@
         <tr><td><code>window.createAiMsg()</code></td><td>创建 AI 消息气泡（带流式光标），返回消息 ID</td><td>string (id)</td></tr>
         <tr><td><code>window.streamText(id, text)</code></td><td>往 AI 气泡追加文字</td><td>void</td></tr>
         <tr><td><code>window.finishText(id)</code></td><td>结束流式输出（移除光标）</td><td>void</td></tr>
-        <tr><td><code>window.renderVizInMsg(id, spec, options?)</code></td><td>渲染静态 Vizual JSON Spec 到气泡；<code>options.bubbleWidth</code> 可选 compact/normal/wide/full</td><td>boolean</td></tr>
+        <tr><td><code>window.renderVizInMsg(id, spec, options?)</code></td><td>渲染静态 Vizual JSON Spec 到气泡；兼容旧写法，内部会保存可编辑 artifact</td><td>boolean</td></tr>
+        <tr><td><code>window.renderArtifactInMsg(id, artifact, options?)</code></td><td>渲染完整 VizualArtifact；用于历史恢复、主题、版本、targetMap</td><td>VizualArtifact | null</td></tr>
+        <tr><td><code>window.getLastArtifact()</code></td><td>读取最近一次渲染的 artifact，包含 spec、targetMap、versions、exports</td><td>VizualArtifact | null</td></tr>
+        <tr><td><code>window.updateArtifactInMsg(ref, patch)</code></td><td>按 artifactId/messageId/last 修改并重渲染，例如改图型、筛选、限流数据</td><td>VizualArtifact | null</td></tr>
+        <tr><td><code>window.exportArtifact(ref, options?)</code></td><td>导出当前 artifact 为 PNG 并记录 export 元数据</td><td>Promise&lt;ExportRecord | null&gt;</td></tr>
         <tr><td><code>window.renderInteractiveVizInMsg(id, config)</code></td><td>渲染 FormBuilder 控件 + 实时预览；Agent 作为宿主提供 <code>makeSpec(state)</code></td><td>boolean</td></tr>
       </table>
-      <p><code>window.__lastVizualRender</code> 和 <code>window.__renderHistory</code> 会记录最后一次静态/交互渲染的 spec 摘要，便于 QA 检查 Agent 是否真的使用了用户数据。</p>
+      <p><code>window.__lastVizualRender</code>、<code>window.__renderHistory</code>、<code>window.__vizualArtifacts</code> 会记录最后一次静态/交互渲染的 spec、targetMap、版本和导出信息，便于 QA 检查 Agent 是否真的使用了用户数据。</p>
       <p><code>bubbleWidth</code> 可以省略，页面会按组件类型自动推断。KPI/迷你图偏窄，普通图表偏宽，Grid/Split/DocView/Sankey/Radar/FormBuilder/DataTable 默认 full。</p>
       <pre>// 完整流程
 const pending = window.getPendingMessage(); // 1. 读取原始输入（保留换行）
@@ -158,6 +162,16 @@ window.streamText(id, '正在生成图表...');     // 3. 流式文字
 window.finishText(id);                       // 4. 结束文字
 window.renderVizInMsg(id, spec);             // 5. 渲染图表（自动推断气泡宽度）
 window.markPendingHandled();                 // 6. 清除已读消息</pre>
+
+      <h3>历史追问与修改</h3>
+      <p>用户后续说“这张图改成折线图，只看华东区，再导出成 PPT/图片”时，不要重新猜测上一张图。先读 artifact，再用 patch 修改目标组件。当前页面支持 PNG 导出；PPT 是上层导出扩展点。</p>
+      <pre>const artifact = window.getLastArtifact();
+const updated = window.updateArtifactInMsg(artifact.id, [
+  { type: 'changeChartType', targetId: 'element:chart', chartType: 'LineChart' },
+  { type: 'filterData', targetId: 'element:chart', field: 'region', values: '华东' },
+  { type: 'limitData', targetId: 'element:chart', limit: 8 },
+]);
+const exportRecord = await window.exportArtifact(updated.id, { filename: 'east-china-chart' });</pre>
 
       <h3>实时 adjust-preview 场景</h3>
       <p>实时可调图表不是纯 JSON spec。Agent 必须作为宿主调用 <code>renderInteractiveVizInMsg()</code>，用 FormBuilder 绑定 <code>/controls</code>，再由 <code>makeSpec(state)</code> 生成右侧预览图表。</p>
@@ -334,6 +348,11 @@ setInterval(async () => {
     window.__lastVizualRender = null;
     window.__renderHistory = [];
     window._interactiveViz = {};     // 实时控件-预览控制器，按消息 ID 存储
+    window.__vizualArtifacts = {};   // artifactId -> VizualArtifact
+    window.__messageArtifacts = {};  // ai message id -> artifactId
+    window.__artifactMessages = {};  // artifactId -> ai message id
+    window.__artifactHistory = [];
+    window.__lastArtifact = null;
     const BUBBLE_WIDTH_CLASS = {
       compact: 'bubble-compact',
       normal: 'bubble-normal',
@@ -548,6 +567,46 @@ setInterval(async () => {
       return record;
     }
 
+    function recordArtifactEvent(kind, artifact, details) {
+      const event = {
+        kind,
+        artifactId: artifact?.id || null,
+        at: new Date().toISOString(),
+        ...details,
+      };
+      window.__artifactHistory.push(event);
+      if (window.__artifactHistory.length > 100) window.__artifactHistory.shift();
+      return event;
+    }
+
+    function rememberArtifact(id, artifact) {
+      if (!artifact || !artifact.id) return artifact;
+      window.__vizualArtifacts[artifact.id] = artifact;
+      window.__messageArtifacts[id] = artifact.id;
+      window.__artifactMessages[artifact.id] = id;
+      window.__lastArtifact = artifact;
+      recordArtifactEvent('stored', artifact, {
+        messageId: id,
+        status: artifact.status || null,
+        targetCount: Array.isArray(artifact.targetMap) ? artifact.targetMap.length : 0,
+      });
+      return artifact;
+    }
+
+    function getArtifactByRef(ref) {
+      if (!ref || ref === 'last') return window.__lastArtifact || null;
+      if (window.__vizualArtifacts[ref]) return window.__vizualArtifacts[ref];
+      const artifactId = window.__messageArtifacts[ref];
+      if (artifactId) return window.__vizualArtifacts[artifactId] || null;
+      return null;
+    }
+
+    function getMessageIdForArtifactRef(ref, artifact) {
+      if (ref && window.__messageArtifacts[ref]) return ref;
+      if (artifact?.id && window.__artifactMessages[artifact.id]) return window.__artifactMessages[artifact.id];
+      return null;
+    }
+
     function clearBubbleWidth(bubble) {
       for (const className of Object.values(BUBBLE_WIDTH_CLASS)) {
         bubble.classList.remove(className);
@@ -607,52 +666,186 @@ setInterval(async () => {
       return false;
     }
 
-    /**
-     * 渲染 Vizual 组件到消息气泡内部。
-     * spec 格式: { root: 'main', elements: { main: { type: 'KpiDashboard', props: { metrics: [...] } } } }
-     */
-    window.renderVizInMsg = function(id, spec, options) {
+    function renderArtifactInMessage(id, artifactLike, options, kind) {
       const vizWrap = document.getElementById(id + '-viz');
       const bubble = document.getElementById(id + '-bubble');
       if (!vizWrap || !bubble) {
-        console.warn('[renderVizInMsg] 找不到元素:', id);
-        return false;
+        console.warn('[renderArtifactInMsg] 找不到元素:', id);
+        return null;
       }
 
-      if (!ensureVizualReady(id, vizWrap, bubble)) return false;
+      if (!ensureVizualReady(id, vizWrap, bubble)) return null;
       window._interactiveViz[id]?.destroy?.();
       delete window._interactiveViz[id];
+
+      let artifact;
+      try {
+        const source = {
+          messageId: id,
+          prompt: window.getPendingMessage()?.rawText || window.getPendingMessage()?.text || undefined,
+        };
+        artifact = window.Vizual.normalizeArtifact(artifactLike, {
+          source: { ...source, ...(options?.source || {}) },
+          theme: options?.theme,
+          metadata: options?.metadata,
+        });
+      } catch (err) {
+        console.error('[renderArtifactInMsg] artifact 解析失败:', err);
+        showVizError(vizWrap, err);
+        return null;
+      }
 
       // 显示 viz 容器，气泡撑满宽
       vizWrap.style.display = 'block';
       bubble.classList.add('has-viz');
-      applyBubbleWidth(bubble, options?.bubbleWidth || inferBubbleWidthFromSpec(spec), 'wide');
+      applyBubbleWidth(bubble, options?.bubbleWidth || inferBubbleWidthFromSpec(artifact.spec), 'wide');
 
       try {
         const renderOptions = { ...(options || {}) };
         delete renderOptions.bubbleWidth;
-        window.Vizual.renderSpec(spec, vizWrap, renderOptions);
-        recordVizRender('static', id, {
+        delete renderOptions.source;
+        delete renderOptions.theme;
+        delete renderOptions.metadata;
+        const result = window.Vizual.renderArtifact(artifact, vizWrap, renderOptions);
+        artifact = rememberArtifact(id, result.artifact);
+        recordVizRender(kind || 'artifact', id, {
           status: 'success',
+          artifactId: artifact.id,
           bubbleWidth: bubble.dataset.vizBubbleWidth || null,
-          spec: safeSnapshot(spec),
-          specSummary: summarizeSpec(spec),
+          spec: safeSnapshot(artifact.spec),
+          specSummary: summarizeSpec(artifact.spec),
+          targetMap: safeSnapshot(artifact.targetMap),
           options: safeSnapshot(renderOptions),
         });
-        console.log('[renderVizInMsg] 渲染成功:', spec?.root ? Object.keys(spec.elements || {}).join(', ') : 'no root');
+        console.log('[renderArtifactInMsg] 渲染成功:', artifact.id, artifact.spec?.root ? Object.keys(artifact.spec.elements || {}).join(', ') : 'no root');
         scrollBottom();
-        return true;
+        return artifact;
       } catch (err) {
-        console.error('[renderVizInMsg] 渲染失败:', err);
-        recordVizRender('static', id, {
+        console.error('[renderArtifactInMsg] 渲染失败:', err);
+        const failedArtifact = err?.artifact || window.Vizual.markArtifactError(artifact, err);
+        rememberArtifact(id, failedArtifact);
+        recordVizRender(kind || 'artifact', id, {
           status: 'error',
+          artifactId: failedArtifact.id,
           error: err?.message || String(err),
           bubbleWidth: bubble.dataset.vizBubbleWidth || null,
-          spec: safeSnapshot(spec),
-          specSummary: summarizeSpec(spec),
+          spec: safeSnapshot(failedArtifact.spec),
+          specSummary: summarizeSpec(failedArtifact.spec),
+          targetMap: safeSnapshot(failedArtifact.targetMap),
         });
         showVizError(vizWrap, err);
-        return false;
+        return null;
+      }
+    }
+
+    /**
+     * 渲染 Vizual Artifact 到消息气泡内部。
+     * artifact 可以是 raw spec，也可以是 normalizeArtifact() 产物。
+     */
+    window.renderArtifactInMsg = function(id, artifactLike, options) {
+      return renderArtifactInMessage(id, artifactLike, options, 'artifact');
+    };
+
+    /**
+     * 渲染 Vizual 组件到消息气泡内部。
+     * spec 格式: { root: 'main', elements: { main: { type: 'KpiDashboard', props: { metrics: [...] } } } }
+     * 兼容旧 Agent：返回 boolean，同时内部会保存可追踪 artifact。
+     */
+    window.renderVizInMsg = function(id, spec, options) {
+      return !!renderArtifactInMessage(id, spec, options, 'static');
+    };
+
+    window.getArtifact = function(ref) {
+      const artifact = getArtifactByRef(ref || 'last');
+      return artifact ? safeSnapshot(artifact) : null;
+    };
+
+    window.getLastArtifact = function() {
+      return window.getArtifact('last');
+    };
+
+    window.listArtifacts = function() {
+      return Object.values(window.__vizualArtifacts || {}).map(artifact => safeSnapshot(artifact));
+    };
+
+    window.updateArtifactInMsg = function(ref, patchOrPatches, options) {
+      if (!window.Vizual?.updateArtifact) {
+        console.warn('[updateArtifactInMsg] Vizual 尚未加载完成');
+        return null;
+      }
+      const artifact = getArtifactByRef(ref || 'last');
+      if (!artifact) {
+        console.warn('[updateArtifactInMsg] 找不到 artifact:', ref);
+        return null;
+      }
+      const messageId = getMessageIdForArtifactRef(ref, artifact);
+      if (!messageId) {
+        console.warn('[updateArtifactInMsg] 找不到 artifact 对应的消息:', ref);
+        return null;
+      }
+      try {
+        const updated = window.Vizual.updateArtifact(artifact, patchOrPatches);
+        recordArtifactEvent('updated', updated, {
+          messageId,
+          patch: safeSnapshot(patchOrPatches),
+        });
+        return renderArtifactInMessage(messageId, updated, options, 'update');
+      } catch (err) {
+        console.error('[updateArtifactInMsg] 更新失败:', err);
+        recordArtifactEvent('update-error', artifact, {
+          messageId,
+          patch: safeSnapshot(patchOrPatches),
+          error: err?.message || String(err),
+        });
+        return null;
+      }
+    };
+
+    window.exportArtifact = async function(ref, options) {
+      const artifact = getArtifactByRef(ref || 'last');
+      if (!artifact) {
+        console.warn('[exportArtifact] 找不到 artifact:', ref);
+        return null;
+      }
+      const messageId = getMessageIdForArtifactRef(ref, artifact);
+      const vizWrap = messageId ? document.getElementById(messageId + '-viz') : null;
+      if (!vizWrap || !window.Vizual?.exportToPNG) {
+        console.warn('[exportArtifact] 找不到可导出的 DOM:', ref);
+        return null;
+      }
+      try {
+        const blob = await window.Vizual.exportToPNG(vizWrap, options);
+        const url = URL.createObjectURL(blob);
+        const record = window.Vizual.createExportRecord(artifact, {
+          format: 'png',
+          url,
+          filename: options?.filename || artifact.id,
+          status: 'success',
+          width: vizWrap.offsetWidth,
+          height: vizWrap.offsetHeight,
+          meta: { size: blob.size, type: blob.type },
+        });
+        const updated = window.Vizual.updateArtifact(artifact, {
+          type: 'addExportRecord',
+          export: record,
+        });
+        rememberArtifact(messageId, updated);
+        recordArtifactEvent('exported', updated, { messageId, export: safeSnapshot(record) });
+        return safeSnapshot(record);
+      } catch (err) {
+        const record = window.Vizual.createExportRecord(artifact, {
+          format: 'png',
+          filename: options?.filename || artifact.id,
+          status: 'error',
+          error: err?.message || String(err),
+        });
+        const updated = window.Vizual.updateArtifact(artifact, {
+          type: 'addExportRecord',
+          export: record,
+        });
+        rememberArtifact(messageId, updated);
+        recordArtifactEvent('export-error', updated, { messageId, export: safeSnapshot(record) });
+        return safeSnapshot(record);
       }
     };
 
@@ -708,6 +901,7 @@ setInterval(async () => {
       let state = cloneState(config.initialState || {});
       let previewTimer = 0;
       let renderCount = 0;
+      let interactiveArtifact = null;
       const renderRecord = recordVizRender('interactive', id, {
         status: 'mounted',
         bubbleWidth: bubble.dataset.vizBubbleWidth || null,
@@ -740,10 +934,36 @@ setInterval(async () => {
           const spec = config.makeSpec(state);
           window.Vizual.renderSpec(spec, previewEl);
           renderCount += 1;
+          if (!interactiveArtifact) {
+            interactiveArtifact = window.Vizual.normalizeArtifact({
+              kind: 'interactive',
+              status: 'rendered',
+              spec,
+              state,
+              theme: typeof config.designMd === 'string' ? { designMd: config.designMd } : undefined,
+              source: {
+                messageId: id,
+                prompt: window.getPendingMessage()?.rawText || window.getPendingMessage()?.text || undefined,
+              },
+              metadata: {
+                controlsSpec: safeSnapshot(config.controlsSpec),
+                bridge: 'renderInteractiveVizInMsg',
+              },
+            });
+          } else {
+            interactiveArtifact.spec = safeSnapshot(spec);
+            interactiveArtifact.state = safeSnapshot(state);
+            interactiveArtifact.targetMap = window.Vizual.extractTargetMap(spec);
+            interactiveArtifact.status = 'rendered';
+            interactiveArtifact.updatedAt = new Date().toISOString();
+          }
+          rememberArtifact(id, interactiveArtifact);
           renderRecord.status = 'success';
+          renderRecord.artifactId = interactiveArtifact.id;
           renderRecord.state = safeSnapshot(state);
           renderRecord.lastPreviewSpec = safeSnapshot(spec);
           renderRecord.lastPreviewSummary = summarizeSpec(spec);
+          renderRecord.targetMap = safeSnapshot(interactiveArtifact.targetMap);
           renderRecord.renderCount = renderCount;
           renderRecord.updatedAt = new Date().toISOString();
           scrollBottom();
@@ -787,6 +1007,7 @@ setInterval(async () => {
 
       window._interactiveViz[id] = {
         getState: () => cloneState(state),
+        getArtifact: () => safeSnapshot(interactiveArtifact),
         rerender: renderPreview,
         getRenderCount: () => renderCount,
         destroy: () => {
@@ -819,6 +1040,11 @@ setInterval(async () => {
         lastVizualRender: window.__lastVizualRender,
         renderHistory: window.__renderHistory.slice(),
         interactiveIds: Object.keys(window._interactiveViz || {}),
+        lastArtifact: window.__lastArtifact ? safeSnapshot(window.__lastArtifact) : null,
+        artifacts: Object.values(window.__vizualArtifacts || {}).map(artifact => safeSnapshot(artifact)),
+        messageArtifacts: { ...(window.__messageArtifacts || {}) },
+        artifactMessages: { ...(window.__artifactMessages || {}) },
+        artifactHistory: window.__artifactHistory.slice(),
       };
     };
 

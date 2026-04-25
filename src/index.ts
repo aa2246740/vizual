@@ -145,6 +145,37 @@ export type { HeroLayoutProps } from './components/hero-layout'
 // Core utilities
 export { EChartsWrapper } from './core/echarts-wrapper'
 export type { EChartsWrapperProps } from './core/echarts-wrapper'
+export {
+  applyArtifactPatch,
+  cloneJson,
+  createArtifact,
+  createExportRecord,
+  extractTargetMap,
+  getArtifactElement,
+  getArtifactTarget,
+  isVizualArtifact,
+  isVizualSpec,
+  markArtifactError,
+  markArtifactRendered,
+  normalizeArtifact,
+  summarizeSpec,
+} from './core/artifact'
+export type {
+  CreateVizualArtifactInput,
+  VizualArtifact,
+  VizualArtifactKind,
+  VizualArtifactPatch,
+  VizualArtifactSource,
+  VizualArtifactStatus,
+  VizualArtifactTheme,
+  VizualArtifactVersion,
+  VizualExportFormat,
+  VizualExportRecord,
+  VizualSpec,
+  VizualSpecElement,
+  VizualTarget,
+  VizualTargetType,
+} from './core/artifact'
 
 // Theme system
 export { registerTheme, getTheme, getThemeNames, applyTheme, setGlobalTheme, loadDesignMd, toggleMode, getCurrentThemeName } from './themes'

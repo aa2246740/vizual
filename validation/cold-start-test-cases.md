@@ -258,7 +258,28 @@
 
 ---
 
-## Test 16: 已删除组件陷阱
+## Test 16: 历史图表追问 — 必须 patch artifact
+
+**前置状态：**
+`vizual-test.html` 已经渲染过一张区域收入柱状图，`window.getLastArtifact()` 可以读到最近的 artifact，targetMap 至少包含 `element:chart`。
+
+**用户指令：**
+> 这张图改成折线图，只看华东区，然后让它疏一点，导出图片。
+
+**验证点：**
+- Agent 先调用 `window.getLastArtifact()`，不能从聊天 DOM 或记忆里重建上一张图
+- Agent 从 `artifact.targetMap` 找目标，例如 `element:chart`
+- Agent 调用 `window.updateArtifactInMsg(artifact.id, patches)`，patch 至少包含：
+  - `changeChartType` → `LineChart`
+  - `filterData` → field/value 对应华东区
+  - `limitData` 或等价的 `replaceElement` 降低密度
+- Agent 调用 `window.exportArtifact(updated.id, { filename })` 触发 PNG 导出 metadata
+- 更新后的 artifact 保留 `versions`，不是覆盖掉历史
+- 如果用户要求 PPT，Agent 必须说明当前页面内置 PNG，PPT 是宿主扩展点；不能假装已经导出 PPT
+
+---
+
+## Test 17: 已删除组件陷阱
 
 **用户指令：**
 > 做一个大数字展示组件显示 "$2.4M"，加一个趋势标签。
@@ -284,4 +305,4 @@
 | ⚠️ MINOR | 基本正确但有小瑕疵（如缺可选字段、数据不够真实） |
 | ❌ FAIL | 组件名错误、props 结构错误、使用了已删除组件 |
 
-**通过标准：** 15 个测试全部 ✅ 或 ⚠️，0 个 ❌
+**通过标准：** 17 个测试全部 ✅ 或 ⚠️，0 个 ❌

@@ -115,8 +115,7 @@ The validation directory should eventually contain:
 - `eval-full-31.html`: all components render.
 - `vizual-test.html`: chatbot message renderer and interactive bridge.
 - `demo-docview.html`: DocView Review SDK loop.
-- `demo-artifact-history.html`: historical recovery and update.
-- `demo-export.html`: export target tests.
+- `demo-artifact-history.html`: historical recovery, target update, and PNG export metadata.
 - `demo-design-md.html`: theme tests.
 
 ## Stop Rule
