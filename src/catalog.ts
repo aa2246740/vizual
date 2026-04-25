@@ -203,7 +203,7 @@ export const renderKitCatalog = defineCatalog(schema, {
         text: z.string(),
         note: z.string(),
       }) as any,
-      description: 'Request AI revision for a specific annotation. Host app wires this to its AI API with the annotation context.',
+      description: 'Legacy compatibility event for requesting AI revision for a single annotation. New hosts should prefer DocView onReviewAction/controllerRef.',
     },
     batchSubmit: {
       params: z.object({
@@ -214,7 +214,7 @@ export const renderKitCatalog = defineCatalog(schema, {
           color: z.string(),
         })),
       }) as any,
-      description: 'Batch submit multiple annotations for AI revision. Used by DocView revision loop to send all draft annotations at once.',
+      description: 'Legacy compatibility event for batch annotation submission. New hosts should prefer DocView threadsSubmitted review events and RevisionProposal patches.',
     },
   },
 })

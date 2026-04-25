@@ -10,10 +10,12 @@ import React from 'react'
 import { marked } from 'marked'
 import DOMPurify from 'dompurify'
 import { tcss } from '../core/theme-colors'
+import { getSectionId } from './review-sdk'
 
 /** Section 类型定义，与 DocViewSchema 中的 Section 保持一致 */
 type SectionLike = {
   type: string
+  id?: string
   content: string
   data?: unknown
   layout?: string
@@ -100,8 +102,9 @@ export function renderMarkdown(section: SectionLike, index: number): React.React
   return (
     <div
       key={`markdown-${index}`}
-      data-docview-target={`markdown-${index}`}
+      data-docview-target={`markdown-${section.id || index}`}
       data-section-index={index}
+      data-section-id={getSectionId(section, index)}
       data-target-type="markdown"
     >
       <style dangerouslySetInnerHTML={{ __html: scopedCss }} />

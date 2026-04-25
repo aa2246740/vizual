@@ -15,6 +15,8 @@ import type { AnnotationTarget, Annotation } from './types'
 export interface AnnotationContextValue {
   /** 当前 section 在 sections 数组中的索引 */
   sectionIndex: number
+  /** Stable section id for review anchors */
+  sectionId?: string
   /** 组件类型名 (e.g. 'BarChart', 'Kanban') */
   componentType: string
   /** 可选标题 */

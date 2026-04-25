@@ -180,9 +180,11 @@
 - DocView: type = `"doc_view"`
 - sections 至少包含：heading、text、callout、kpi、chart、table、markdown、freeform
 - showPanel = true
+- revisable document sections should include stable `id` fields for important targets
 - chart section 使用 `data.chartType`；只有 component section 才使用 `data.componentType`
 - markdown section 的 content 是 markdown 源码
 - freeform section 的 content 是 HTML 字符串
+- 如果用户要求 AI 修订闭环，Agent 必须使用 host/controller：监听 `onReviewAction` 的 `threadsSubmitted`，返回 `RevisionProposal`，再调用 `controller.createRevisionProposal()` / `controller.applyRevision()`；不能只生成静态 JSON spec
 
 ---
 

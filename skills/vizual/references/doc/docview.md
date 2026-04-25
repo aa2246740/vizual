@@ -23,9 +23,26 @@ If the task is to test or operate an existing DocView page, do not replace it wi
 3. Type the annotation or requested revision.
 4. Confirm the popup.
 5. Check that the annotation appears in the panel and the target is highlighted.
-6. For revision workflows, submit the batch or request revision from the panel so the host receives the `onAction` event.
+6. For revision workflows, submit the batch or request revision from the panel so the host receives the `onReviewAction` / legacy `onAction` event.
 
 The host should receive `annotationAdded` payloads with target metadata such as section id/type, target kind, and target label when available.
+
+## Agent Review SDK Contract
+
+DocView is an SDK surface for AI-agent document review. It does **not** call an LLM by itself.
+
+Host/Agent integration flow:
+
+1. Host renders DocView with `controllerRef`, `onReviewAction`, and usually controlled `sections`.
+2. User creates review threads by selecting text or clicking chart/KPI/table targets.
+3. User submits threads from the panel.
+4. Host receives `onReviewAction({ type: "threadsSubmitted", threads, sectionContexts })`.
+5. Agent reads the thread anchors and section contexts, calls its model, and returns a `RevisionProposal`.
+6. Host calls `controller.createRevisionProposal(proposal)`.
+7. User or host calls `controller.applyRevision(proposalId)` or `controller.rejectRevision(proposalId)`.
+8. `applyRevision` emits `onSectionsChange(nextSections)`; host persists the updated sections.
+
+Important: realtime review/revision is not a pure JSON spec feature. The Agent must operate as a host/bridge and call the page/controller APIs. Without JS evaluation or host callbacks, it can only generate a static DocView spec.
 
 ## Props
 
@@ -36,6 +53,16 @@ The host should receive `annotationAdded` payloads with target metadata such as 
 | sections | Section[] | yes | array of document sections |
 | showPanel | boolean | no | show annotation panel sidebar (default true). Use `true` for annotation workflows, `false` only for read-only document previews |
 | panelPosition | `"right"` \| `"left"` \| `"bottom"` | no | panel position (default right) |
+
+Host-only SDK props:
+
+| Prop | Type | Description |
+|------|------|-------------|
+| controllerRef | function/ref | receives `DocViewReviewController` |
+| onReviewAction | function | typed review events: `threadCreated`, `threadsSubmitted`, `revisionProposalCreated`, `revisionApplied`, etc. |
+| onSectionsChange | function | receives next sections when `applyRevision()` applies proposal patches |
+| threads / onThreadsChange | controlled state | optional controlled review threads |
+| revisionProposals / onRevisionProposalsChange | controlled state | optional controlled revision proposals |
 
 ## Section Types
 
@@ -50,6 +77,36 @@ The host should receive `annotationAdded` payloads with target metadata such as 
 | component | "" | { componentType, ...props } | Embedded vizual component |
 | markdown | string (markdown content) | - | Renders markdown |
 | freeform | string (HTML with inline CSS) | - | Arbitrary HTML (blocks class attr and event handlers) |
+
+Every section may include optional `id`. Use stable IDs when the document can be revised:
+
+```json
+{ "id": "exec-summary", "type": "text", "content": "..." }
+```
+
+Agents should prefer `sectionId` over `sectionIndex` when creating revision patches.
+
+## Revision Proposal Shape
+
+Agents should return proposals, not direct document overwrites:
+
+```json
+{
+  "fromThreadIds": ["thread_123"],
+  "summary": "Clarify the churn explanation and update the risk callout.",
+  "patches": [
+    {
+      "op": "updateSection",
+      "sectionId": "risk-callout",
+      "updates": { "content": "Churn risk remains elevated because..." }
+    }
+  ],
+  "author": { "id": "agent", "role": "agent" },
+  "risk": "low"
+}
+```
+
+Supported patch ops: `updateSection`, `replaceSection`, `insertSection`, `deleteSection`. Prefer `sectionId`; use `sectionIndex` only as fallback.
 
 ## Embedded Charts in DocView
 

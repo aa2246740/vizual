@@ -96,7 +96,7 @@ Real outputs are usually compositions. Here are the common patterns:
 
 **Dashboard / Chat Analysis** — `GridLayout` holding `KpiDashboard` + charts + `DataTable`. Put explanatory prose in the host chat/message text when the host supports text next to the Vizual render. Do not wrap ordinary chat analysis in DocView just to show headings or paragraphs.
 
-**Annotatable Document** — `DocView` with structured sections: `heading`, `text`, `callout`, `kpi`, `chart`, `table`, `markdown`. Use this when the user explicitly wants comments, annotations, revisions, document review, report-document export, or a long-form document UI. Set `showPanel: true` when annotations are part of the workflow; set `showPanel: false` only for read-only document previews.
+**Annotatable Document** — `DocView` with structured sections: `heading`, `text`, `callout`, `kpi`, `chart`, `table`, `markdown`. Use this when the user explicitly wants comments, annotations, revisions, document review, report-document export, or a long-form document UI. Set `showPanel: true` when annotations are part of the workflow; set `showPanel: false` only for read-only document previews. For revisable documents, give important sections stable `id` fields so Agent patches can target `sectionId`.
 
 For charts inside DocView, read `references/doc/docview.md`: use `chart` sections with `data.chartType` for ordinary embedded charts, or `component` sections with `data.componentType` when exact standalone chart props are clearer.
 
@@ -230,9 +230,17 @@ When the task is to operate an already-rendered DocView page, the Agent should u
 3. Enter the comment or revision request.
 4. Confirm the popup.
 5. Verify the annotation appears in the annotation panel and the target is highlighted.
-6. If the workflow requires submission, use the panel's submit/revision action and watch the host `onAction` event.
+6. If the workflow requires submission, use the panel's submit/revision action and watch the host `onReviewAction` event. Legacy hosts may also emit `onAction`.
 
-Expected host events include `annotationAdded` with target metadata, and submission/revision actions when the user requests a revision loop.
+Expected host events include `threadCreated`, `threadsSubmitted`, `revisionProposalCreated`, and `revisionApplied`. Legacy `annotationAdded`, `batchSubmit`, and `requestRevision` events may also be present.
+
+For Agent-driven revision loops, DocView is an SDK:
+
+- The Agent/host must obtain `controllerRef` from the page/app.
+- When `threadsSubmitted` fires, the Agent should return a `RevisionProposal`, not directly overwrite the document.
+- Then call `controller.createRevisionProposal({ fromThreadIds, summary, patches, author, risk })`.
+- Apply with `controller.applyRevision(proposalId)` or reject with `controller.rejectRevision(proposalId)`.
+- Patches should target stable `sectionId` when available; use `sectionIndex` only as fallback.
 
 ## When to Use What
 

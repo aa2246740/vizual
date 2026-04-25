@@ -100,38 +100,45 @@ Vizual.renderSpec({
 }, container)
 ```
 
-### DocView — 批注回调
+### DocView — Review SDK 批注循环
 
-用户批注文档后，批注数据通过回调返回：
+DocView 是给 Agent 接入的 review SDK。用户批注文档后，宿主通过 `onReviewAction` 接收 thread 事件；Agent 返回 `RevisionProposal`；宿主通过 controller 写回提案或应用修改。
 
 ```tsx
-Vizual.renderSpec({
-  root: 'doc',
-  elements: {
-    doc: {
-      type: 'DocView',
-      props: {
-        title: '报告草稿',
-        sections: [
-          { type: 'heading', content: 'Q1 业绩回顾' },
-          { type: 'text', content: '营收同比增长 15%...' }
-        ],
-        onAnnotationAdd: (annotation) => {
-          // 用户添加了新批注
-        },
-        onAnnotationSubmit: ({ annotationId, text, note, target }) => {
-          // 用户请求 AI 修订
-          agent.revise({ annotationId, text, note, target })
-        },
-        onBatchSubmit: (annotations) => {
-          // 用户批量提交所有批注
-          agent.reviseAll(annotations)
-        }
-      }
-    }
+const controllerRef = useRef<Vizual.DocViewReviewController | null>(null)
+const [sections, setSections] = useState([
+  { id: 'title', type: 'heading', content: 'Q1 业绩回顾' },
+  { id: 'summary', type: 'text', content: '营收同比增长 15%...' },
+])
+
+<Vizual.DocView
+  sections={sections}
+  showPanel
+  controllerRef={controllerRef}
+  onSectionsChange={setSections}
+  onReviewAction={async (event) => {
+    if (event.type !== 'threadsSubmitted') return
+    const proposal = await agent.revise(event)
+    controllerRef.current?.createRevisionProposal(proposal)
   }
-}, container)
+/>
 ```
+
+Agent 返回的 proposal 示例：
+
+```json
+{
+  "fromThreadIds": ["thread_123"],
+  "summary": "补充营收增长原因",
+  "patches": [
+    { "op": "updateSection", "sectionId": "summary", "updates": { "content": "营收同比增长 15%，主要由续费率提升驱动。" } }
+  ],
+  "author": { "id": "agent", "role": "agent" },
+  "risk": "low"
+}
+```
+
+旧版 `onAction` 兼容事件仍存在，但新 Agent 应优先使用 `onReviewAction + controllerRef`。
 
 ### 接入方需要实现的逻辑
 

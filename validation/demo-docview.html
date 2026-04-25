@@ -227,30 +227,71 @@
     var React = Vizual.React;
     var ReactDOMClient = Vizual.ReactDOMClient;
     var currentRoot = null;
+    var reviewController = null;
+
+    function sectionPatchesForRevision() {
+      return revisedSections.map(function(section, index) {
+        return { op: 'replaceSection', sectionIndex: index, section: section };
+      });
+    }
+
+    function DemoDocViewApp(props) {
+      var state = React.useState(props.initialSections);
+      var sections = state[0];
+      var setSections = state[1];
+      var threadState = React.useState([]);
+      var threads = threadState[0];
+      var setThreads = threadState[1];
+      var proposalState = React.useState([]);
+      var revisionProposals = proposalState[0];
+      var setRevisionProposals = proposalState[1];
+
+      return React.createElement(Vizual.DocView, {
+        sections: sections,
+        threads: threads,
+        onThreadsChange: setThreads,
+        revisionProposals: revisionProposals,
+        onRevisionProposalsChange: setRevisionProposals,
+        showPanel: true,
+        panelPosition: 'right',
+        controllerRef: function(controller) {
+          reviewController = controller;
+        },
+        onSectionsChange: function(nextSections) {
+          setSections(nextSections);
+        },
+        onReviewAction: function(event) {
+          logAction(event.type, event);
+          if (event.type === 'threadsSubmitted') {
+            setStatus('AI 正在生成修订提案...', 'warn');
+            setTimeout(function() {
+              if (!reviewController) return;
+              reviewController.createRevisionProposal({
+                fromThreadIds: event.threads.map(function(thread) { return thread.id; }),
+                summary: '根据已提交批注生成修订版运营月报。点击「应用」后写入文档，并保留 review 记录。',
+                patches: sectionPatchesForRevision(),
+                author: { id: 'demo-agent', name: 'Demo Agent', role: 'agent' },
+                risk: 'low'
+              });
+              setStatus('修订提案已生成，等待应用', 'info');
+            }, 900);
+          }
+          if (event.type === 'revisionApplied') {
+            setStatus('修订已应用', 'success');
+            logAction('修订完成', { msg: '文档内容已更新，原始批注中文字被修改的将标记为「孤立」' });
+          }
+          if (event.type === 'revisionRejected') {
+            setStatus('修订已拒绝', 'info');
+          }
+        }
+      });
+    }
 
     function render(sections) {
       var app = document.getElementById('app');
       if (currentRoot) { try { currentRoot.unmount(); } catch(e) {} }
       var root = ReactDOMClient.createRoot(app);
-      root.render(
-        React.createElement(Vizual.DocView, {
-          sections: sections,
-          showPanel: true,
-          panelPosition: 'right',
-          onAction: function(name, params) {
-            logAction(name, params);
-            // 提交批注后自动触发 AI 修订
-            if (name === 'batchSubmit' || name === 'requestRevision') {
-              setStatus('AI 修订中...', 'warn');
-              setTimeout(function() {
-                render(revisedSections);
-                setStatus('修订完成', 'success');
-                logAction('修订完成', { msg: '文档内容已更新，原始批注中文字被修改的将标记为「孤立」' });
-              }, 1500);
-            }
-          }
-        })
-      );
+      root.render(React.createElement(DemoDocViewApp, { initialSections: sections }));
       currentRoot = root;
     }
 

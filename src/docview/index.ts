@@ -21,6 +21,15 @@ export { useRevisionLoop } from './use-revision-loop'
 export type { UseRevisionLoopOptions, UseRevisionLoopReturn } from './use-revision-loop'
 export { useVersionHistory } from './use-version-history'
 export type { UseVersionHistoryOptions, UseVersionHistoryReturn, Snapshot } from './use-version-history'
+export { useReviewController } from './use-review-controller'
+export type { UseReviewControllerOptions, UseReviewControllerReturn } from './use-review-controller'
+export {
+  applySectionPatches,
+  createReviewId,
+  getSectionId,
+  threadToAnnotation,
+  threadsToAnnotations,
+} from './review-sdk'
 
 // Sub-components (for custom layouts)
 export { AnnotationOverlay } from './annotation-overlay'
@@ -41,5 +50,26 @@ export type { SectionContext } from './section-context'
 export { buildSectionContext, buildSectionContextMap } from './section-context'
 
 // Types and constants
-export type { Annotation, AnnotationStatus, AnnotationColor, AnnotationTarget, OnAnnotationsChange, OnAction } from './types'
+export type {
+  Annotation,
+  AnnotationAnchor,
+  AnnotationComment,
+  AnnotationStatus,
+  AnnotationColor,
+  AnnotationTarget,
+  AnnotationThread,
+  CreateRevisionProposalInput,
+  CreateThreadInput,
+  DocViewReviewActionEvent,
+  DocViewReviewController,
+  OnAnnotationsChange,
+  OnAction,
+  ReviewActor,
+  ReviewStatus,
+  RevisionProposal,
+  RevisionProposalStatus,
+  SectionPatch,
+  TableCellAnchor,
+  TextRangeAnchor,
+} from './types'
 export { ANNOTATION_COLORS } from './types'

@@ -64,6 +64,8 @@ Rules:
 
 DocView is for document workflows: comments, highlights, review, AI revision, version history, or document export. It is not the default for chat answers, dashboards, or ordinary analysis reports. If the host can display text next to the Vizual component, keep prose in the host message and render charts/KPIs/tables with GridLayout.
 
+For revisable DocView documents, include stable section `id` values. Agent-driven revision loops require host/controller access (`controllerRef`, `onReviewAction`). A pure JSON spec can render the document, but cannot by itself call an LLM or apply revision proposals.
+
 ```json
 {
   "root": "report",
@@ -76,11 +78,13 @@ DocView is for document workflows: comments, highlights, review, AI revision, ve
         "showPanel": true,
         "sections": [
           {
+            "id": "title",
             "type": "heading",
             "content": "Q3 Performance Review",
             "level": 1
           },
           {
+            "id": "exec-summary",
             "type": "text",
             "content": "Revenue exceeded target and needs stakeholder review."
           },

@@ -86,6 +86,15 @@ export { useRevisionLoop } from './docview/use-revision-loop'
 export type { UseRevisionLoopOptions, UseRevisionLoopReturn } from './docview/use-revision-loop'
 export { useVersionHistory } from './docview/use-version-history'
 export type { UseVersionHistoryOptions, UseVersionHistoryReturn, Snapshot } from './docview/use-version-history'
+export { useReviewController } from './docview/use-review-controller'
+export type { UseReviewControllerOptions, UseReviewControllerReturn } from './docview/use-review-controller'
+export {
+  applySectionPatches,
+  createReviewId,
+  getSectionId,
+  threadsToAnnotations,
+  threadToAnnotation,
+} from './docview/review-sdk'
 
 // DocView sub-components (for custom layouts)
 export { AnnotationOverlay } from './docview/annotation-overlay'
@@ -96,7 +105,28 @@ export { AnnotationInput } from './docview/annotation-input'
 export type { AnnotationInputProps } from './docview/annotation-input'
 
 // DocView types and constants
-export type { Annotation, AnnotationStatus, AnnotationColor, AnnotationTarget, OnAnnotationsChange, OnAction } from './docview/types'
+export type {
+  Annotation,
+  AnnotationAnchor,
+  AnnotationComment,
+  AnnotationStatus,
+  AnnotationColor,
+  AnnotationTarget,
+  AnnotationThread,
+  CreateRevisionProposalInput,
+  CreateThreadInput,
+  DocViewReviewActionEvent,
+  DocViewReviewController,
+  OnAnnotationsChange,
+  OnAction,
+  ReviewActor,
+  ReviewStatus,
+  RevisionProposal,
+  RevisionProposalStatus,
+  SectionPatch,
+  TableCellAnchor,
+  TextRangeAnchor,
+} from './docview/types'
 export type { DocViewProps } from './docview/types'
 export { ANNOTATION_COLORS } from './docview/types'
 

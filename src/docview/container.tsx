@@ -1,14 +1,21 @@
 import React, { useRef, useCallback, useState, useEffect } from 'react'
-import { tcss, tc } from '../core/theme-colors'
+import { tcss } from '../core/theme-colors'
 import { useTextSelection } from './use-text-selection'
-import { useAnnotations } from './use-annotations'
-import { useRevisionLoop } from './use-revision-loop'
+import { useReviewController } from './use-review-controller'
 import { AnnotationOverlay } from './annotation-overlay'
 import { AnnotationPanel } from './annotation-panel'
 import { AnnotationInput } from './annotation-input'
 import { SectionRenderer } from './section-renderer'
-import { buildSectionContextMap, buildSectionContext } from './section-context'
-import type { DocViewProps, AnnotationColor, AnnotationStatus, AnnotationTarget } from './types'
+import { getSectionId, threadToAnnotation } from './review-sdk'
+import type {
+  AnnotationAnchor,
+  AnnotationColor,
+  AnnotationStatus,
+  AnnotationTarget,
+  DocViewProps,
+  DocViewReviewActionEvent,
+  TextRangeAnchor,
+} from './types'
 
 /**
  * DocView — Document annotation overlay container.
@@ -60,11 +67,50 @@ export function DocView(rawProps: DocViewProps & { props?: DocViewProps; childre
   return <DocViewInner {...p}>{children ?? (props as DocViewProps)?.children}</DocViewInner>
 }
 
+function targetTypeFromTargetId(targetId: string): AnnotationTarget['targetType'] {
+  if (targetId.startsWith('chart-')) return 'chart'
+  if (targetId.startsWith('kpi-')) return 'kpi'
+  if (targetId.startsWith('table-')) return 'table'
+  if (targetId.startsWith('callout-')) return 'callout'
+  if (targetId.startsWith('component-')) return 'component'
+  if (targetId.startsWith('freeform-')) return 'freeform'
+  if (targetId.startsWith('markdown-')) return 'markdown'
+  if (targetId.startsWith('heading-')) return 'heading'
+  return 'text'
+}
+
+function buildTextRangeAnchor(range: Range, sectionEl: HTMLElement, selectedText: string): TextRangeAnchor | undefined {
+  try {
+    const preRange = range.cloneRange()
+    preRange.selectNodeContents(sectionEl)
+    preRange.setEnd(range.startContainer, range.startOffset)
+    const start = preRange.toString().length
+    const end = start + selectedText.length
+    const content = sectionEl.textContent || ''
+    return {
+      start,
+      end,
+      selectedText,
+      quoteBefore: content.slice(Math.max(0, start - 40), start),
+      quoteAfter: content.slice(end, Math.min(content.length, end + 40)),
+    }
+  } catch {
+    return { start: 0, end: selectedText.length, selectedText }
+  }
+}
+
 function DocViewInner({
   children,
   sections,
   annotations: controlledAnnotations,
   onAnnotationsChange,
+  threads: controlledThreads,
+  onThreadsChange,
+  revisionProposals: controlledRevisionProposals,
+  onRevisionProposalsChange,
+  onSectionsChange,
+  onReviewAction,
+  controllerRef,
   showPanel = true,
   panelPosition = 'right',
   onAction,
@@ -80,15 +126,71 @@ function DocViewInner({
     position: { top: number; left: number }
   } | null>(null)
 
+  const emitReviewAction = useCallback((event: DocViewReviewActionEvent) => {
+    onReviewAction?.(event)
+
+    // Legacy onAction bridge. New hosts should use onReviewAction/controllerRef.
+    switch (event.type) {
+      case 'threadCreated': {
+        onAction?.('annotationAdded', {
+          annotation: threadToAnnotation(event.thread),
+          sectionContext: event.sectionContext,
+          thread: event.thread,
+        })
+        break
+      }
+      case 'threadDeleted':
+        onAction?.('annotationDeleted', { annotation: threadToAnnotation(event.thread), thread: event.thread })
+        break
+      case 'threadsSubmitted': {
+        const annotations = event.threads.map(thread => ({
+          ...threadToAnnotation(thread),
+          sectionContext: event.sectionContexts[thread.id],
+        }))
+        onAction?.('batchSubmit', { annotations, threads: event.threads, sectionContexts: event.sectionContexts })
+        if (event.threads.length === 1) {
+          const thread = event.threads[0]
+          onAction?.('requestRevision', {
+            annotationId: thread.id,
+            threadId: thread.id,
+            text: thread.anchor.textRange?.selectedText || thread.anchor.label,
+            note: thread.comments[0]?.body || '',
+            target: thread.anchor,
+            sectionContext: event.sectionContexts[thread.id],
+          })
+        }
+        break
+      }
+      case 'revisionProposalCreated':
+        onAction?.('revisionProposalCreated', { proposal: event.proposal, threads: event.threads })
+        break
+      case 'revisionAccepted':
+        onAction?.('revisionAccepted', { proposal: event.proposal, threads: event.threads })
+        break
+      case 'revisionRejected':
+        onAction?.('revisionRejected', { proposal: event.proposal, threads: event.threads })
+        break
+      case 'revisionApplied':
+        onAction?.('revisionApplied', { proposal: event.proposal, sections: event.sections, threads: event.threads })
+        break
+    }
+  }, [onAction, onReviewAction])
+
   const {
-    annotations,
-    addAnnotation,
-    updateAnnotation,
-    deleteAnnotation,
-    markOrphans,
-  } = useAnnotations({
+    threads,
+    revisionProposals,
+    reviewAnnotations: annotations,
+    controller,
+  } = useReviewController({
+    sections,
     annotations: controlledAnnotations,
     onAnnotationsChange,
+    threads: controlledThreads,
+    onThreadsChange,
+    revisionProposals: controlledRevisionProposals,
+    onRevisionProposalsChange,
+    onSectionsChange,
+    onReviewAction: emitReviewAction,
   })
 
   const { selection, clearSelection } = useTextSelection({
@@ -97,14 +199,25 @@ function DocViewInner({
     onSelectionChange: () => { if (targetAnnotation) setTargetAnnotation(null) },
   })
 
-  // Revision loop integration
-  const { submitAllDrafts, requestRevision, onContentRevised, drafts, orphans } = useRevisionLoop({
-    annotations,
-    updateAnnotation,
-    markOrphans,
-    onAction,
-    sections,  // Pass sections for context enrichment in revision payloads
-  })
+  useEffect(() => {
+    if (!controllerRef) return
+    if (typeof controllerRef === 'function') {
+      controllerRef(controller)
+      return () => controllerRef(null)
+    }
+    controllerRef.current = controller
+    return () => { controllerRef.current = null }
+  }, [controller, controllerRef])
+
+  const drafts = threads.length > 0
+    ? threads.filter(t => t.status === 'open').map(threadToAnnotation)
+    : annotations.filter(a => a.status === 'draft')
+  const orphans = threads.length > 0
+    ? threads.filter(t => t.status === 'orphaned').map(threadToAnnotation)
+    : annotations.filter(a => a.status === 'orphaned')
+  const submitAllDrafts = useCallback(() => {
+    controller.submitThreads()
+  }, [controller])
 
   // Auto-detect orphaned annotations when sections change (AI returns revised content)
   // Extracts all text from sections and passes to onContentRevised which calls markOrphans.
@@ -120,56 +233,52 @@ function DocViewInner({
       .filter(Boolean)
       .join(' ')
     if (allText) {
-      onContentRevised(allText)
+      threads.forEach(thread => {
+        const selected = thread.anchor.textRange?.selectedText || ''
+        if (selected && thread.status !== 'orphaned' && !allText.includes(selected)) {
+          controller.updateThreadStatus(thread.id, 'orphaned')
+        }
+      })
     }
-  }, [sections, onContentRevised])
+  }, [sections, threads, controller])
 
   // Confirm annotation from text selection
   const handleConfirmAnnotation = useCallback((note: string, color: AnnotationColor) => {
     if (!selection) return
-    const ann = addAnnotation(selection.text, note, color)
 
     // Resolve section index from the DOM range by walking up to [data-section-index]
     let sectionIndex = -1
-    let sectionType = 'text'
+    let sectionType: AnnotationTarget['targetType'] = 'text'
+    let sectionEl: HTMLElement | null = null
+    let targetId: string | undefined
+    let sectionId: string | undefined
     try {
       const node = selection.range.commonAncestorContainer
       const el = node instanceof HTMLElement ? node : node.parentElement
-      const sectionEl = el?.closest('[data-section-index]')
+      sectionEl = el?.closest('[data-section-index]') as HTMLElement | null
       if (sectionEl) {
         sectionIndex = parseInt(sectionEl.getAttribute('data-section-index') || '-1', 10)
-        // Derive targetType from data-docview-target prefix (chart-*, kpi-*, table-*) or default to 'text'
-        const targetId = sectionEl.getAttribute('data-docview-target') || ''
-        if (targetId.startsWith('chart-')) sectionType = 'chart'
-        else if (targetId.startsWith('kpi-')) sectionType = 'kpi'
-        else if (targetId.startsWith('table-')) sectionType = 'table'
-        else if (targetId.startsWith('callout-')) sectionType = 'callout'
-        else if (targetId.startsWith('freeform-')) sectionType = 'freeform'
-        else if (targetId.startsWith('markdown-')) sectionType = 'markdown'
-        else if (targetId.startsWith('heading-')) sectionType = 'heading'
-        // text sections 没有显式 targetId 前缀，默认保持 'text'
+        targetId = sectionEl.getAttribute('data-docview-target') || undefined
+        sectionId = sectionEl.getAttribute('data-section-id') || undefined
+        sectionType = targetTypeFromTargetId(targetId || '')
       }
     } catch { /* DOM traversal failure, leave sectionIndex = -1 */ }
 
-    // Attach target so buildSectionContextMap can locate the section
-    if (sectionIndex >= 0 && sections && sectionIndex < sections.length) {
-      updateAnnotation(ann.id, {
-        target: {
-          sectionIndex,
-          targetType: sectionType as AnnotationTarget['targetType'],
-          label: sections[sectionIndex].content?.substring(0, 50) || sections[sectionIndex].type,
-        }
-      })
+    const section = sectionIndex >= 0 && sections && sectionIndex < sections.length ? sections[sectionIndex] : undefined
+    const anchor: AnnotationAnchor = {
+      sectionIndex,
+      sectionId: sectionId || (section ? getSectionId(section, sectionIndex) : undefined),
+      targetType: sectionType,
+      targetId,
+      targetPath: targetId ? `[data-docview-target="${targetId}"]` : undefined,
+      label: section?.content?.substring(0, 50) || selection.text.substring(0, 50) || section?.type || 'Text',
+      textRange: sectionEl ? buildTextRangeAnchor(selection.range, sectionEl, selection.text) : { start: 0, end: selection.text.length, selectedText: selection.text },
     }
 
+    controller.createThread({ anchor, body: note, color })
+
     clearSelection()
-    // Build section contexts — re-read the annotation with target attached
-    const annWithTarget = { ...ann, target: sectionIndex >= 0 ? { sectionIndex, targetType: sectionType, label: sections?.[sectionIndex]?.content?.substring(0, 50) || '' } : undefined }
-    const sectionContext = sectionIndex >= 0 && sections
-      ? buildSectionContext(sections[sectionIndex], sectionIndex)
-      : undefined
-    onAction?.('annotationAdded', { annotation: annWithTarget, sectionContext })
-  }, [selection, addAnnotation, updateAnnotation, clearSelection, onAction, sections])
+  }, [selection, controller, clearSelection, sections])
 
   // Handle click on a non-text target element (chart, KPI, table cell, etc.)
   const handleTargetClick = useCallback((target: AnnotationTarget, element: HTMLElement) => {
@@ -190,31 +299,31 @@ function DocViewInner({
   // Confirm annotation from clicking a non-text target
   const handleConfirmTargetAnnotation = useCallback((note: string, color: AnnotationColor) => {
     if (!targetAnnotation) return
-    const ann = addAnnotation(targetAnnotation.target.label, note, color)
-    const annWithTarget = { ...ann, target: targetAnnotation.target }
-    // Attach target metadata to the annotation
-    updateAnnotation(ann.id, { target: targetAnnotation.target })
+    const section = sections?.[targetAnnotation.target.sectionIndex]
+    const anchor: AnnotationAnchor = {
+      ...targetAnnotation.target,
+      sectionId: targetAnnotation.target.sectionId || (section ? getSectionId(section, targetAnnotation.target.sectionIndex) : undefined),
+      targetPath: targetAnnotation.target.targetPath || (targetAnnotation.target.targetId ? `[data-docview-target="${targetAnnotation.target.targetId}"]` : undefined),
+    }
+    controller.createThread({ anchor, body: note, color })
     setTargetAnnotation(null)
-    // Build section context for the targeted section
-    const sectionContext = sections && targetAnnotation.target.sectionIndex < sections.length
-      ? buildSectionContext(sections[targetAnnotation.target.sectionIndex], targetAnnotation.target.sectionIndex)
-      : undefined
-    onAction?.('annotationAdded', { annotation: annWithTarget, sectionContext })
-  }, [targetAnnotation, addAnnotation, updateAnnotation, onAction, sections])
+  }, [targetAnnotation, controller, sections])
 
   const handleDeleteAnnotation = useCallback((id: string) => {
-    const ann = annotations.find(a => a.id === id)
-    deleteAnnotation(id)
-    if (ann) onAction?.('annotationDeleted', { annotation: ann })
-  }, [annotations, deleteAnnotation, onAction])
+    controller.deleteThread(id)
+  }, [controller])
 
   const handleUpdateStatus = useCallback((id: string, status: AnnotationStatus) => {
-    updateAnnotation(id, { status })
-    const ann = annotations.find(a => a.id === id)
-    if (ann && status === 'active') {
-      requestRevision(id)
+    if (status === 'active') {
+      controller.submitThreads([id])
+    } else if (status === 'resolved') {
+      controller.resolveThread(id)
+    } else if (status === 'orphaned') {
+      controller.updateThreadStatus(id, 'orphaned')
+    } else {
+      controller.reopenThread(id)
     }
-  }, [annotations, updateAnnotation, requestRevision])
+  }, [controller])
 
   // Determine content: sections mode (AI-driven) vs children mode (manual)
   const renderedContent = sections && sections.length > 0
@@ -280,6 +389,8 @@ function DocViewInner({
       {showPanel && (
         <AnnotationPanel
           annotations={annotations}
+          threads={threads}
+          revisionProposals={revisionProposals}
           onDelete={handleDeleteAnnotation}
           onUpdateStatus={handleUpdateStatus}
           onClickAnnotation={(ann) => onAction?.('annotationClicked', { annotation: ann })}
@@ -287,6 +398,9 @@ function DocViewInner({
           drafts={drafts}
           orphans={orphans}
           onSubmitAllDrafts={submitAllDrafts}
+          onSubmitThread={(threadId) => controller.submitThreads([threadId])}
+          onApplyRevision={(proposalId) => controller.applyRevision(proposalId)}
+          onRejectRevision={(proposalId) => controller.rejectRevision(proposalId)}
         />
       )}
     </div>
