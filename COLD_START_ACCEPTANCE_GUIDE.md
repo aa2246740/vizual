@@ -8,15 +8,37 @@
 
 本地静态服务：
 
-- 主聊天测试页：`http://127.0.0.1:8793/validation/vizual-test.html`
-- 31 组件完整回归：`http://127.0.0.1:8793/validation/eval-full-31.html`
+- 冷启动主测试页：`http://127.0.0.1:8793/validation/vizual-test.html`
+- 组件回归参考页：`http://127.0.0.1:8793/validation/eval-full-31.html`
 - DocView 独立兜底页：`http://127.0.0.1:8793/validation/demo-docview.html`
+
+冷启动验收的主线只测 `vizual-test.html`。`eval-full-31.html` 是开发者维护组件库时使用的回归页，不是冷启动 Agent 的主要任务；除非用户明确要求，否则被测 Agent 不要跳去跑 31 组件页。
 
 优先使用已有浏览器：
 
 - Chrome DevTools Protocol：`http://127.0.0.1:9224`
 
-冷启动 Agent 应优先连接已有 Chrome/CDP。除非这个端口不可用，否则不要下载或启动新的 Playwright Chrome。
+冷启动 Agent 必须使用用户能看到的同一个浏览器页面。优先连接已有 Chrome/CDP。除非这个端口不可用，否则不要下载、启动或切换到新的 Playwright Chrome。
+
+## 测试模式：可见页面监听
+
+这个测试不是“让 Agent 写脚本自动跑完”。正确模式是：
+
+1. 用户在自己能看到的 Chrome 里打开 `vizual-test.html`。
+2. 被测 Agent 连接同一个 Chrome/CDP 和同一个页面。
+3. 用户在页面聊天框里输入测试 prompt。
+4. 被测 Agent 通过 `window.getPendingMessage()` 读取用户输入。
+5. 被测 Agent 在同一个可见页面里调用 bridge API 生成 AI 回复、渲染 Vizual、追问修改、交互控件、DocView 或导出。
+6. 用户能肉眼看到每一步结果。
+
+禁止行为：
+
+- 不要启动 headless 浏览器。
+- 不要新开一个用户看不到的 Playwright Chromium。
+- 不要把测试改成“自己写 Python/Playwright 脚本跑完”。
+- 不要告诉用户“不用输入，我自动测”。这个页面的核心就是测 Agent 能否监听和响应用户输入。
+- 如果用户说“我想看着你测”，被测 Agent 应该等待用户在页面里输入，并说明“我会监听这个页面并响应你的输入”。
+- 不要把 `eval-full-31.html` 当成冷启动主任务。
 
 ## 被测 Agent 约束
 
@@ -45,15 +67,17 @@
 - 只在需要时读取 ~/.claude/skills/vizual/references/ 下被 SKILL.md 指向的组件参考文件。
 - 不要读取 Vizual 仓库源码、validation HTML 源码、git history、历史 QA 报告，或任何实现对话。
 - 优先使用 Chrome DevTools MCP，或连接已有浏览器/CDP： http://127.0.0.1:9224。
-- 测试主页面： http://127.0.0.1:8793/validation/vizual-test.html?cold-start-claude=<timestamp>
-- 同时测试 31 组件页面： http://127.0.0.1:8793/validation/eval-full-31.html?cold-start-claude=<timestamp>
+- 只测试主页面： http://127.0.0.1:8793/validation/vizual-test.html?cold-start-claude=<timestamp>
+- 你必须连接用户正在看的同一个可见 Chrome 页面。不要启动 headless 浏览器，不要启动新的 Playwright Chromium。
+- 这个测试是“监听用户输入并响应”，不是“自己写脚本自动跑完”。用户会在页面聊天框输入测试内容，你要读取页面 pending message 并在同一个页面里回复。
+- 除非用户明确要求，不要测试 eval-full-31.html。
 
 你的任务：
 1. 假装自己是嵌入在 SaaS / Chatbot 产品里的业务 Agent，Vizual 是你的可视化运行时。
 2. 根据 Vizual skill 判断何时使用静态 spec、可编辑 artifact、实时交互 bridge、DocView。
 3. 完成本验收指南里的所有场景。
 4. 不要只看 PASS 文案。只有页面上真实渲染正确 UI，并且宿主 debug API 状态合理时，才能判定 PASS。
-5. eval-full-31.html 必须逐个组件做视觉确认。只汇报 “31 PASS” 但没有截图或逐项视觉证据，视为测试不合格。
+5. 用户输入后，你要在可见页面里生成新的 AI 回复气泡或交互结果，让用户能跟着看。
 6. 输出一份 Markdown QA 报告，包含：
    - 场景 ID
    - 用户输入
@@ -398,32 +422,35 @@ Prompt B：
 - 页面不能崩溃。
 - 后续再渲染合法内容仍然正常。
 
-### S11. 31 组件完整回归
+### S11. 主页面代表性视觉抽查
 
-打开：
-
-```text
-http://127.0.0.1:8793/validation/eval-full-31.html?cold-start=<timestamp>
-```
+仍然只在 `vizual-test.html` 里测试。用户会在同一个聊天页面输入几个较难的可视化需求，被测 Agent 需要监听并响应。
 
 通过标准：
 
-- 顶部显示 `31 PASS`、`0 FAIL`、`0 PENDING`。
-- 不能只看顶部 PASS。必须逐个组件肉眼检查，并在报告里给截图或逐项视觉证据。
-- 每个组件至少有一个真实可见、语义合理的渲染结果。
+- 被测 Agent 没有离开 `vizual-test.html`。
+- 所有结果都出现在用户正在看的同一个聊天页面。
+- 每个结果都是真实渲染的 Vizual UI，不是 raw JSON。
+- 需要截图或人工可见证据，但不需要跳到 `eval-full-31.html`。
 - 没有 console error。
 
-重点检查这些曾经出过问题的组件：
+建议覆盖这些曾经出过问题的组件和图形语义：
 
-- `ScatterChart`：必须看到散点，不能只有坐标轴。
-- `BoxplotChart`：必须看到 A/B/C 等多组箱线，不能退化成 unknown / 0。
-- `HistogramChart`：必须看到多个柱，不能塌成一个柱或一个点。
-- `CalendarChart`：如果标题是 2024 年 1 月，就应该是 1 月视图，不能把 1 月数据挤在全年日历左侧。
-- `DumbbellChart`：必须能看出两个点之间的连接；数值很近时连接会短，但不能完全没有。
-- `ComboChart`：第二条线不能是 0 直线。
-- `MermaidDiagram`：不能空白。
-- `HeatmapChart`：必须有非零值和颜色差异，不能全白/全 0。
-- `SankeyChart`：节点、流向、标签都应可见。
+- 相关性：生成 `ScatterChart`，必须看到散点，不能只有坐标轴。
+- 分布：生成 `BoxplotChart` 或 `HistogramChart`，箱线/多柱必须可见，不能退化成 unknown / 0 / 单柱。
+- 时间日历：生成 `CalendarChart`，如果用户指定某月，就应该是该月视图，不能把一个月的数据挤到全年日历里。
+- 对比变化：生成 `DumbbellChart`，两个点之间应有连接；数值接近时连接会短，但不能完全没有。
+- 双轴组合：生成 `ComboChart`，第二条线不能是 0 直线。
+- 流程/关系：生成 `MermaidDiagram` 或 `SankeyChart`，不能空白，标签和流向应可见。
+
+测试方式：
+
+1. 用户在 `vizual-test.html` 聊天框输入上述需求。
+2. 被测 Agent 用 `getPendingMessage()` 获取用户输入。
+3. 被测 Agent 用 Vizual bridge 在同一个可见页面回复。
+4. 用户肉眼确认结果；Agent 记录截图或 debug state。
+
+`eval-full-31.html` 可以由维护者另行打开做组件库回归，但它不属于冷启动 Agent 的主线验收。
 
 ### S12. 宿主 API 稳定性
 
@@ -449,7 +476,9 @@ Agent 应该通过宿主 API 检查状态，而不是脆弱地抓 DOM 文本。
 - 不要展示与当前图表类型不兼容的控件。
 - 不要生成第二条线全为 0 的 ComboChart。
 - 不要把空白 Mermaid / Heatmap / Calendar / Scatter / Histogram 当成 PASS。
-- 不要只看 `31 PASS`，必须做逐项视觉确认。
+- 不要启动 headless / 不可见浏览器。
+- 不要把测试改成纯脚本自动化。
+- 不要跳去 `eval-full-31.html` 当主线测试。
 
 ## 最终 QA 报告格式
 
@@ -506,5 +535,5 @@ vNext 冷启动验收只有在满足下面条件时才算通过：
 - 实时控件能更新预览和 state。
 - DocView 批注/修订闭环可用。
 - 至少一个普通 chart/dashboard artifact 和一个 DocView artifact 能导出。
-- `eval-full-31.html` 显示 `31 PASS / 0 FAIL / 0 PENDING`。
-- `eval-full-31.html` 的 31 个组件已逐项视觉确认，不接受“只看顶部 PASS”的报告。
+- S11 的代表性视觉抽查都在 `vizual-test.html` 的可见聊天页面完成。
+- 被测 Agent 全程使用用户可见页面，不能用 headless 或用户看不到的新浏览器冒充验收。
