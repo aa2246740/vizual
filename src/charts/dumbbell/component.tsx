@@ -7,7 +7,7 @@ import { createEChartsBridge } from '../../core/echarts-bridge-factory'
  */
 function resolveFields(props: DumbbellChartProps) {
   const data = Array.isArray(props.data) ? props.data : []
-  const categoryField = props.x ?? 'name'
+  const categoryField = props.groupField ?? props.x ?? 'name'
   let lowField = props.low
   let highField = props.high
   // When y is an array like ["s2023","s2024"], use first as low, second as high

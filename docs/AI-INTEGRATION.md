@@ -99,7 +99,7 @@ const updated = await runtime.updateArtifact(artifact.id, [
 `validation/vizual-test.html` 的参考 API：
 
 ```js
-window.renderInteractiveVizInMsg(id, {
+const snapshot = window.renderInteractiveVizInMsg(id, {
   answerText: '可以实时调整图表类型、数据点和品牌色。',
   initialState: {
     controls: { chartType: 'bar', points: 8, brandColor: '#ff6b35' },
@@ -143,7 +143,7 @@ window.renderInteractiveVizInMsg(id, {
 })
 ```
 
-多个 interactive artifact 必须隔离 state 和 theme scope。不要让图 1 的颜色选择器影响图 2。
+返回值是实时预览 snapshot：`{ artifact, state, lastPreviewSpec, renderCount }`。多个 interactive artifact 必须隔离 state 和 theme scope。不要让图 1 的颜色选择器影响图 2。后续测试或导出优先使用 `snapshot.artifact.id`，不要只用 `'last'`。
 
 ## DocView 批注修订循环
 
@@ -203,9 +203,11 @@ Proposal 示例：
 宿主可以按 artifact 导出：
 
 ```js
-await window.exportArtifact(artifact.id, { format: 'pdf', filename: 'report' })
-await window.exportArtifact(artifact.id, { format: 'xlsx', filename: 'data' })
+const pdf = await window.exportArtifact(artifact.id, { format: 'pdf', filename: 'report' })
+const xlsx = await window.exportArtifact(artifact.id, { format: 'xlsx', filename: 'data' })
 ```
+
+`validation/vizual-test.html` 的 `exportArtifact()` 返回 `ExportRecord | null`。成功记录包含 `status: "success"`、`url`、`filename`、`format`、`meta.size/type`、`width`、`height`；失败记录包含 `status: "error"` 和 `error`。不要把返回值当成本地下载句柄。
 
 库级 API：
 

@@ -151,12 +151,12 @@
         <tr><td><code>window.createAiMsg()</code></td><td>创建 AI 消息气泡（带流式光标），返回消息 ID</td><td>string (id)</td></tr>
         <tr><td><code>window.streamText(id, text)</code></td><td>往 AI 气泡追加文字</td><td>void</td></tr>
         <tr><td><code>window.finishText(id)</code></td><td>结束流式输出（移除光标）</td><td>void</td></tr>
-        <tr><td><code>window.renderVizInMsg(id, spec, options?)</code></td><td>渲染静态 Vizual JSON Spec 到气泡；兼容旧写法，内部会保存可编辑 artifact</td><td>boolean</td></tr>
+        <tr><td><code>window.renderVizInMsg(id, spec, options?)</code></td><td>渲染静态 Vizual JSON Spec 到气泡；内部会保存可编辑 artifact</td><td>VizualArtifact | null</td></tr>
         <tr><td><code>window.renderArtifactInMsg(id, artifact, options?)</code></td><td>渲染完整 VizualArtifact；用于历史恢复、主题、版本、targetMap</td><td>VizualArtifact | null</td></tr>
         <tr><td><code>window.getLastArtifact()</code></td><td>读取最近一次渲染的 artifact，包含 spec、targetMap、versions、exports</td><td>VizualArtifact | null</td></tr>
         <tr><td><code>window.updateArtifactInMsg(ref, patches, options?)</code></td><td>用 Vizual typed patches 修改 artifact 并渲染到新的 AI 气泡；仅预览/调试时传 <code>{ mode: 'replace' }</code> 原地替换。兼容常见 JSON Patch，但 Agent 应优先使用 typed patches。</td><td>VizualArtifact | null</td></tr>
-        <tr><td><code>window.exportArtifact(ref, options?)</code></td><td>导出当前 artifact 并记录 export 元数据；<code>options.format</code> 支持 png/pdf/csv/xlsx</td><td>Promise&lt;ExportRecord | null&gt;</td></tr>
-        <tr><td><code>window.renderInteractiveVizInMsg(id, config)</code></td><td>渲染 FormBuilder 控件 + 实时预览；Agent 作为宿主提供 <code>makeSpec(state)</code></td><td>boolean</td></tr>
+        <tr><td><code>window.exportArtifact(ref, options?)</code></td><td>导出当前 artifact 并记录 export 元数据；<code>options.format</code> 支持 png/pdf/csv/xlsx；失败也会返回 <code>status: "error"</code> 记录</td><td>Promise&lt;ExportRecord | null&gt;</td></tr>
+        <tr><td><code>window.renderInteractiveVizInMsg(id, config)</code></td><td>渲染 FormBuilder 控件 + 实时预览；Agent 作为宿主提供 <code>makeSpec(state)</code></td><td>InteractiveSnapshot | null</td></tr>
         <tr><td><code>window.updateInteractiveVizInMsg(ref, patch, options?)</code></td><td>以稳定 API 更新实时预览 state；自动化测试不要模拟 React DOM 输入事件</td><td>object | null</td></tr>
         <tr><td><code>window.getInteractiveVizState(ref?)</code></td><td>读取实时预览 state、artifact、lastPreviewSpec 和 renderCount</td><td>object | null</td></tr>
         <tr><td><code>window.getVizualConversationState()</code></td><td>读取稳定的消息、artifact、控件和渲染历史状态；自动化测试不要猜 DOM class</td><td>object</td></tr>
@@ -174,7 +174,7 @@ const pending = window.getPendingMessage(); // 1. 读取原始输入（保留换
 const id = window.createAiMsg();            // 2. 创建气泡
 window.streamText(id, '正在生成图表...');     // 3. 流式文字
 window.finishText(id);                       // 4. 结束文字
-window.renderVizInMsg(id, spec);             // 5. 渲染图表（自动推断气泡宽度）
+const artifact = window.renderVizInMsg(id, spec); // 5. 渲染图表并拿到 artifact
 window.markPendingHandled();                 // 6. 清除已读消息</pre>
 
       <h3>历史追问与修改</h3>
@@ -330,9 +330,9 @@ await mcp__chrome-devtools__evaluate_script({
     'window.finishText(id);\n' +
     'const resp = await fetch("/validation/my-spec.json");\n' +
     'const spec = await resp.json();\n' +
-    'const ok = window.renderVizInMsg(id, spec);\n' +
+    'const artifact = window.renderVizInMsg(id, spec);\n' +
     'window.markPendingHandled();\n' +
-    'return ok;\n' +
+    'return artifact;\n' +
   '}'
 });</pre>
 
@@ -1337,13 +1337,14 @@ setInterval(async () => {
     /**
      * 渲染 Vizual 组件到消息气泡内部。
      * spec 格式: { root: 'main', elements: { main: { type: 'KpiDashboard', props: { metrics: [...] } } } }
-     * 兼容旧 Agent：返回 boolean，同时内部会保存可追踪 artifact。
+     * 返回 artifact snapshot；旧 Agent 只做 truthy 判断仍兼容。
      */
     window.renderVizInMsg = function(id, spec, options) {
       if (options?.docViewBridge !== false && hasDocViewElement(spec)) {
-        return !!window.renderDocViewInMsg(id, { spec, ...(options || {}) });
+        return window.renderDocViewInMsg(id, { spec, ...(options || {}) });
       }
-      return !!renderArtifactInMessage(id, spec, options, 'static');
+      const artifact = renderArtifactInMessage(id, spec, options, 'static');
+      return artifact ? safeSnapshot(artifact) : null;
     };
 
     window.getArtifact = function(ref) {
@@ -1489,12 +1490,12 @@ setInterval(async () => {
       const bubble = document.getElementById(id + '-bubble');
       if (!vizWrap || !bubble) {
         console.warn('[renderInteractiveVizInMsg] 找不到元素:', id);
-        return false;
+        return null;
       }
-      if (!ensureVizualReady(id, vizWrap, bubble)) return false;
+      if (!ensureVizualReady(id, vizWrap, bubble)) return null;
       if (!config || typeof config.makeSpec !== 'function' || !config.controlsSpec) {
         console.warn('[renderInteractiveVizInMsg] config 需要 controlsSpec 和 makeSpec(state)');
-        return false;
+        return null;
       }
 
       window._interactiveViz[id]?.destroy?.();
@@ -1669,7 +1670,7 @@ setInterval(async () => {
         renderRecord.updatedAt = new Date().toISOString();
         errorEl.textContent = '渲染失败: ' + (err?.message || err);
         errorEl.style.display = 'block';
-        return false;
+        return null;
       }
 
       window._interactiveViz[id] = {
@@ -1686,7 +1687,7 @@ setInterval(async () => {
         },
       };
 
-      return true;
+      return getSnapshot();
     };
 
     function resolveInteractiveVizSession(ref) {

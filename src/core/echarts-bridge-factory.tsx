@@ -264,8 +264,13 @@ function buildOption(
     const axes = (Array.isArray(raw) ? raw : raw ? [raw] : []) as Record<string, unknown>[]
     for (const axis of axes) {
       if (!axis || typeof axis !== 'object') continue
-      const label = axis.axisLabel as Record<string, unknown> | undefined
-      if (label && textColor) label.color = textColor
+      const label = axis.axisLabel && typeof axis.axisLabel === 'object'
+        ? axis.axisLabel as Record<string, unknown>
+        : {}
+      if (textColor) {
+        label.color = textColor
+        axis.axisLabel = label
+      }
       const splitLine = axis.splitLine as Record<string, unknown> | undefined
       if (splitLine && borderColor) {
         const lineStyle = splitLine.lineStyle as Record<string, unknown> | undefined

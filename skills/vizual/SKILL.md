@@ -149,7 +149,7 @@ const msg = pending.rawText || pending.text; // read the exact user message; do 
 const id = window.createAiMsg();      // create the AI reply bubble
 window.streamText(id, answerText);    // optional narrative answer
 window.finishText(id);                // finish text streaming
-window.renderVizInMsg(id, spec);      // mount the Vizual JSON spec; page auto-infers bubble width
+const artifact = window.renderVizInMsg(id, spec); // mount the spec and receive the artifact snapshot
 if (window.markPendingHandled) window.markPendingHandled();
 else window._pendingMsg = null;
 ```
@@ -157,6 +157,20 @@ else window._pendingMsg = null;
 When `getPendingMessage()` exists, use it instead of `getMsgs()` or DOM text. It preserves pasted line breaks and raw table text. After rendering, `window.__lastVizualRender` records the last spec for QA; `window.getLastArtifact()` records the editable artifact with `targetMap`, `versions`, and export metadata.
 
 For QA and browser automation, do not guess chat DOM selectors such as `.message`. Prefer `window.getVizualConversationState()` and `window.getVizualDebugState()`. If you must inspect DOM, use the stable host attributes: `[data-message-row="true"]`, `[data-ai-msg="true"]`, `[data-user-msg="true"]`, `[data-viz-container="true"]`, and `[data-artifact-id]`.
+
+Bridge return values in `vizual-test.html`:
+
+| API | Return | How to use it |
+|-----|--------|---------------|
+| `renderVizInMsg(id, spec, options?)` | `VizualArtifact | null` | Store `artifact.id` for follow-up edits/export. Old truthy checks still work. |
+| `renderArtifactInMsg(id, artifact, options?)` | `VizualArtifact | null` | Use when restoring or rendering a known artifact. |
+| `updateArtifactInMsg(ref, patches, options?)` | `VizualArtifact | null` | Default creates a new AI bubble; export/edit the returned artifact. |
+| `renderInteractiveVizInMsg(id, config)` | `InteractiveSnapshot | null` | Use `snapshot.artifact.id`, `snapshot.state.controls`, and `snapshot.lastPreviewSpec`. |
+| `getInteractiveVizState(ref?)` | `InteractiveSnapshot | null` | Pass a message id or artifact id when multiple live widgets exist. |
+| `renderDocViewInMsg(id, config)` | `VizualArtifact | null` | Use returned `artifact.id` for DocView thread/revision APIs. |
+| `exportArtifact(ref, options)` | `Promise<ExportRecord | null>` | Check `record.status`; success includes `url`, `filename`, `meta.size/type`, `width`, and `height`; errors return `status: "error"` plus `error`. |
+
+If an older host returns only `true`, fall back to `window.getLastArtifact()` before follow-up operations.
 
 For historical follow-up requests, use the artifact bridge:
 
@@ -169,6 +183,9 @@ const updated = window.updateArtifactInMsg(artifact.id, [
 ], { answerText: '已生成新的修改版图表。' });
 const pdf = await window.exportArtifact(updated.id, { format: 'pdf', filename: 'east-china-line' });
 const xlsx = await window.exportArtifact(updated.id, { format: 'xlsx', filename: 'east-china-data' });
+if (pdf?.status !== 'success' || xlsx?.status !== 'success') {
+  console.warn('Export failed', { pdf, xlsx });
+}
 ```
 
 Built-in export formats are `png`, `pdf`, `csv`, and `xlsx`. PNG/PDF export the rendered visual surface. CSV/XLSX export the first tabular `props.data` dataset unless the host passes explicit rows/columns.
@@ -277,7 +294,7 @@ const spec = state.lastPreviewSpec;
 `getInteractiveVizState(ref?)` details:
 
 - Pass the artifact id or message id when you want one interactive widget. Pass `'last'` or omit `ref` only for quick debugging of the most recent widget.
-- The returned object is `{ id, messageId, artifact, state, lastPreviewSpec, renderCount, lastUpdatedAt }`.
+- The returned object is `{ id, artifact, state, renderCount, pending, lastPreviewSpec, lastPreviewSummary, status, error }`.
 - Current control values live under `state.controls`; the current rendered chart spec lives under `lastPreviewSpec`.
 - Multiple interactive widgets are isolated. Do not reuse one widget's `state.controls` or `applyTheme` callback for another widget.
 
@@ -348,9 +365,9 @@ When the task is to operate an already-rendered DocView page, the Agent should u
 3. Enter the comment or revision request.
 4. Confirm the popup.
 5. Verify the annotation appears in the annotation panel and the target is highlighted.
-6. If the workflow requires submission, use the panel's submit/revision action and watch the host `onReviewAction` event. Legacy hosts may also emit `onAction`.
+6. If the workflow requires submission, use the panel's submit/revision action and watch the host `onReviewAction` event.
 
-Expected host events include `threadCreated`, `threadsSubmitted`, `revisionProposalCreated`, and `revisionApplied`. Legacy `annotationAdded`, `batchSubmit`, and `requestRevision` events may also be present.
+Expected host events include `threadCreated`, `threadsSubmitted`, `revisionProposalCreated`, and `revisionApplied`. Legacy `onAction`, `annotationAdded`, `batchSubmit`, and `requestRevision` are compatibility-only names. Do not build new integrations on them.
 
 For Agent-driven revision loops, DocView is an SDK:
 
@@ -376,7 +393,7 @@ Use `GridLayout` or standalone components when:
 
 Use `DocView` only when:
 - The user explicitly asks for an annotatable/revisable document, review workflow, comments, highlights, revisions, version history, or asks to turn a generated output into a document review surface.
-- The product surface supports DocView interactions (`onAction`, annotation panel, revision loop), not just static rendering.
+- The product surface supports DocView interactions (`onReviewAction`, annotation panel, revision loop), not just static rendering.
 - The document itself is the artifact, not merely a way to add paragraphs around charts.
 
 If unsure between DocView and GridLayout, choose `GridLayout` and put the written explanation in the host text response.
@@ -502,6 +519,8 @@ await window.exportArtifact(artifact.id, { format: 'xlsx', filename: 'data', she
 ```
 
 In `vizual-test.html`, `exportArtifact(ref, options)` exports the artifact resolved by `ref` (artifact id, message id, or `'last'`), not the whole chat page. PNG/PDF use the rendered DOM surface for that artifact; CSV/XLSX use the first tabular dataset in the artifact unless explicit rows/columns are provided by the host. Re-exporting an artifact after it has been modified or expanded can change PDF size because the rendered DOM is different.
+
+The return value is an `ExportRecord` snapshot, not a downloaded file handle. On success, check `record.status === "success"` and use `record.url`, `record.filename`, `record.format`, `record.meta.size`, and `record.meta.type` for QA or links. On export failure, the bridge still returns a record with `status: "error"` and `error`; it returns `null` only when the artifact or export surface cannot be resolved.
 
 Lower-level APIs are also available: `Vizual.exportToPNG`, `exportToPDF`, `exportDataToCSV`, `exportDataToXLSX`, and `downloadExport`. DocView export should target `[data-docview-viewport]` when the host wants document-only output without the annotation sidebar.
 

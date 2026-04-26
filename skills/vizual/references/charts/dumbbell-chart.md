@@ -13,7 +13,9 @@ Range comparison chart.
 | data | object[] | yes | data array |
 | low | string | no | low value field |
 | high | string | no | high value field |
-| groupField | string | no | group field |
+| x | string | no | category field alias |
+| y | string[] | no | `[lowField, highField]` shorthand |
+| groupField | string | no | preferred category/group label field |
 | theme | `"light"` \| `"dark"` | no | color theme |
 | height | number | no | chart height in pixels |
 
@@ -36,3 +38,5 @@ Range comparison chart.
   "children": []
 }
 ```
+
+Use `groupField` or `x` for the category labels. The field does not need to be named `name`; for regional comparison, `groupField: "region"` with rows like `{ "region": "华东", "before": 30, "after": 65 }` is valid.

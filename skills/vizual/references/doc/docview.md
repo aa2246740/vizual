@@ -10,7 +10,7 @@ Use DocView when the **document interaction** is part of the requirement:
 
 - The user asks for annotations, comments, highlighting, review, revisions, or version history.
 - The output should be a self-contained reviewable document artifact, not just a chart/dashboard/report in a chat message.
-- The host app supports DocView callbacks such as `onAction`, annotation panel submission, or an AI revision loop.
+- The host app supports DocView review callbacks such as `onReviewAction`, annotation panel submission, or an AI revision loop.
 
 Do **not** use DocView just because the user says "report", "analysis", "summary", or "export". For ordinary chat answers, dashboards, and exportable reports, render visuals with `GridLayout`/charts/KPIs/tables, put narrative explanation in the host message text, and use artifact export APIs when needed.
 
@@ -23,9 +23,9 @@ If the task is to test or operate an existing DocView page, do not replace it wi
 3. Type the annotation or requested revision.
 4. Confirm the popup.
 5. Check that the annotation appears in the panel and the target is highlighted.
-6. For revision workflows, submit the batch or request revision from the panel so the host receives the `onReviewAction` / legacy `onAction` event.
+6. For revision workflows, submit the batch or request revision from the panel so the host receives the `onReviewAction` event.
 
-The host should receive `annotationAdded` payloads with target metadata such as section id/type, target kind, and target label when available.
+The host should receive typed review events such as `threadCreated`, `threadsSubmitted`, `revisionProposalCreated`, and `revisionApplied`. Legacy `onAction` / `annotationAdded` / `batchSubmit` names are compatibility-only; do not build a new integration around them.
 
 ## Agent Review SDK Contract
 

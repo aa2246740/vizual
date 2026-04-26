@@ -31,4 +31,25 @@ describe('DumbbellChart option builder', () => {
     expect(shape.children[0].shape).toEqual({ x: -2.5, y: 70, width: 5, height: 10 })
     expect(shape.children[0].style.opacity).toBe(0.85)
   })
+
+  it('uses groupField as the preferred category field', () => {
+    const option = buildDumbbellFallback({
+      type: 'dumbbell',
+      groupField: 'region',
+      low: 'before',
+      high: 'after',
+      data: [
+        { region: '华东', before: 30, after: 65 },
+        { region: '华北', before: 45, after: 70 },
+      ],
+    })
+
+    const xAxis = option.xAxis as { data: string[] }
+    const series = option.series as Array<{ data: number[][] }>
+    expect(xAxis.data).toEqual(['华东', '华北'])
+    expect(series[0].data).toEqual([
+      [0, 30, 65],
+      [1, 45, 70],
+    ])
+  })
 })
