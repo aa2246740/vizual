@@ -1,4 +1,4 @@
-# AI 集成指南 — Vizual vNext
+# AI 集成指南 — Vizual
 
 Vizual 是给 AI Agent 产品接入的视觉运行时。Agent 不只返回 Markdown，而是返回 Vizual spec/artifact；宿主前端把它渲染成图表、Dashboard、表格、实时可调面板、可导出报表或可批注文档。
 

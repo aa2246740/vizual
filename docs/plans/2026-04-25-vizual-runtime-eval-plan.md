@@ -1,4 +1,4 @@
-# Vizual vNext Eval Plan
+# Vizual Eval Plan
 
 ## Goal
 

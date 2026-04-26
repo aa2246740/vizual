@@ -1,4 +1,4 @@
-# Vizual vNext Product Definition
+# Vizual Product Definition
 
 ## One-Sentence Definition
 
@@ -62,7 +62,7 @@ Every Vizual output should be treated as a structured visual artifact with enoug
 
 This means Vizual artifacts need stable identifiers, spec/data/theme/state, target metadata, and optional review/export/version metadata.
 
-## vNext Runtime Contract
+## Runtime Contract
 
 The runtime exposes three layers:
 
@@ -85,9 +85,9 @@ Artifact patches are the first editing primitive. They let an agent update an ex
 
 This is enough for the first historical-chat loop: reopen a saved visual, identify a target, change chart type, filter a region, reduce density, re-render, and export to PNG/PDF/CSV/XLSX with metadata.
 
-## vNext Success Standard
+## Success Standard
 
-Vizual vNext is successful when an internal agent platform can do the following end to end:
+Vizual is successful when an internal agent platform can do the following end to end:
 
 1. Agent returns a Vizual-compatible artifact in a normal chat reply.
 2. The B2B host chat window automatically renders it.
@@ -121,7 +121,7 @@ The semantic chart contract should belong to Vizual. Any third-party chart adapt
 
 ## Development Stop Condition
 
-Development should stop for a vNext milestone only when the eval suite proves the complete loop:
+Development should stop for a release milestone only when the eval suite proves the complete loop:
 
 - render in chat
 - recover from history

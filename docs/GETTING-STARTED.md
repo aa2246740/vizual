@@ -1,4 +1,4 @@
-# Getting Started — Vizual vNext
+# Getting Started — Vizual
 
 面向开发者和 Agent 平台接入方的快速上手指南。
 

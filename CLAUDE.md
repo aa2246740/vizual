@@ -1,4 +1,4 @@
-# CLAUDE.md — Vizual vNext 开发上下文
+# CLAUDE.md — Vizual 开发上下文
 
 ## 项目定义
 
@@ -21,7 +21,7 @@ Vizual 是面向 AI Agent 产品的视觉运行时。Agent 输出 Vizual spec/ar
   - 1 DocView
   - 3 layout：GridLayout, SplitLayout, HeroLayout
 - Native ECharts option builders are internal to Vizual. Do not add an external chart-builder runtime back.
-- vNext host/runtime：artifact targetMap、版本、patch、导出、interactive bridge、DocView review bridge。
+- Host/runtime：artifact targetMap、版本、patch、导出、interactive bridge、DocView review bridge。
 
 ## 技术栈
 

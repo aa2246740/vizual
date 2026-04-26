@@ -1,4 +1,4 @@
-# 组件参考文档 — Vizual vNext
+# 组件参考文档 — Vizual
 
 完整列出 31 个注册组件的 Schema、props 说明和使用示例。
 

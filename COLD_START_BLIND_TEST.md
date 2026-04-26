@@ -1,4 +1,4 @@
-# Vizual vNext 冷启动盲测任务书
+# Vizual 冷启动盲测任务书
 
 这份文档只给**被测 Agent** 使用。目标是验证：一个只读过 Vizual skill、没有项目上下文的 Agent，能否在 `vizual-test.html` 中独立完成真实对话式可视化工作。
 
