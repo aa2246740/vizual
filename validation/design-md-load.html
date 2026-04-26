@@ -309,6 +309,97 @@
       background: #ffffff;
       max-height: 320px;
     }
+    body[data-profile="starbucks"] {
+      background: var(--rk-bg-primary, #f2f0eb);
+      color: var(--rk-text-primary, rgba(0, 0, 0, 0.87));
+      letter-spacing: -0.01em;
+    }
+    body[data-profile="starbucks"] header {
+      border-bottom: 0;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1), 0 2px 2px rgba(0,0,0,0.06), 0 0 2px rgba(0,0,0,0.07);
+      padding: 18px 28px;
+    }
+    body[data-profile="starbucks"] h1 {
+      color: #006241;
+      font-size: 24px;
+      font-weight: 700;
+      line-height: 1.2;
+      letter-spacing: -0.16px;
+    }
+    body[data-profile="starbucks"] main {
+      max-width: 1320px;
+      gap: 24px;
+      padding: 28px;
+    }
+    body[data-profile="starbucks"] .panel {
+      background: #ffffff;
+      border: 0;
+      border-radius: 12px;
+      box-shadow: var(--rk-shadow);
+      padding: 24px;
+    }
+    body[data-profile="starbucks"] .status-badge,
+    body[data-profile="starbucks"] .theme-switch {
+      border-radius: 50px;
+      border: 1px solid #00754A;
+      background: #ffffff;
+    }
+    body[data-profile="starbucks"] .status-badge {
+      color: #00754A;
+      font-weight: 700;
+    }
+    body[data-profile="starbucks"] .theme-button {
+      border-radius: 50px;
+      color: rgba(0,0,0,0.58);
+      transition: all .2s ease;
+    }
+    body[data-profile="starbucks"] .theme-button:active {
+      transform: scale(.95);
+    }
+    body[data-profile="starbucks"] .theme-button[aria-pressed="true"] {
+      background: #00754A;
+      color: #ffffff;
+      border-color: #00754A;
+    }
+    body[data-profile="starbucks"] h2 {
+      color: #006241;
+      font-size: 18px;
+      font-weight: 700;
+    }
+    body[data-profile="starbucks"] .swatches {
+      gap: 12px;
+    }
+    body[data-profile="starbucks"] .swatch,
+    body[data-profile="starbucks"] .font-demo,
+    body[data-profile="starbucks"] pre {
+      border: 0;
+      border-radius: 12px;
+      box-shadow: var(--rk-shadow);
+      background: #ffffff;
+    }
+    body[data-profile="starbucks"] .font-display {
+      color: #006241;
+      font-size: 30px;
+      font-weight: 700;
+      letter-spacing: -0.16px;
+    }
+    body[data-profile="starbucks"] .font-body {
+      font-size: 16px;
+      line-height: 1.5;
+      letter-spacing: -0.01em;
+    }
+    body[data-profile="starbucks"] .font-ui {
+      color: #00754A;
+      letter-spacing: -0.01em;
+      text-transform: none;
+    }
+    body[data-profile="starbucks"] .font-mono {
+      font-family: var(--rk-font-script, cursive);
+      color: #006241;
+      font-size: 15px;
+      text-transform: none;
+      letter-spacing: 0;
+    }
     @media (max-width: 900px) {
       body[data-profile="wired"] main {
         grid-template-columns: 1fr;
@@ -331,6 +422,7 @@
       <div class="theme-switch" aria-label="切换 Design.md 主题">
         <button class="theme-button" type="button" data-theme-option="cmb" aria-pressed="false">CMB</button>
         <button class="theme-button" type="button" data-theme-option="wired" aria-pressed="false">WIRED</button>
+        <button class="theme-button" type="button" data-theme-option="starbucks" aria-pressed="false">STARBUCKS</button>
       </div>
       <div id="status" class="status-badge">加载中</div>
     </div>
@@ -437,6 +529,46 @@ Everything else is black, paper white, and two grays. Strictly square corners on
 WIRED's depth philosophy is flat by religion. There are no shadows and no box-shadow on story tiles, headers, modals, or cards.
 `;
 
+    const starbucksDesignMd = `
+# Design System Inspired by Starbucks
+
+## 1. Visual Theme & Atmosphere
+Starbucks' design system is a warm, confident retail flagship. The canvas alternates between Neutral Warm (\`#f2f0eb\`) and Ceramic (\`#edebe9\`), while Starbucks Green (\`#006241\`) anchors headings, Green Accent (\`#00754A\`) drives CTAs, and House Green (\`#1E3932\`) carries feature bands and footer surfaces.
+Typography uses proprietary SoDoSans, with Rewards serif "Lander Tall" and Careers script "Kalam" in localized contexts.
+
+## 2. Color Palette & Roles
+- **Starbucks Green** (\`#006241\`): Historic brand green used on h1 headings and brand moments.
+- **Green Accent** (\`#00754A\`): Primary filled-CTA color and floating Frap circular button fill.
+- **House Green** (\`#1E3932\`): Footer surface, feature-band backgrounds, reward-status dark surfaces.
+- **Green Uplift** (\`#2b5148\`): Secondary mid-dark green used sparingly.
+- **Green Light** (\`#d4e9e2\`): Pale mint wash used for valid form states.
+- **Gold** (\`#cba258\`): Rewards-status ceremony only.
+- **Neutral Warm** (\`#f2f0eb\`): Primary page canvas.
+- **Ceramic** (\`#edebe9\`): Soft page-section wash and separators.
+- **White** (\`#ffffff\`): Primary card and modal surface.
+- **Black** (\`#000000\`): High-contrast top-nav sign-in buttons.
+- **Text Black** (\`rgba(0, 0, 0, 0.87)\`): Primary heading and body text.
+- **Text Black Soft** (\`rgba(0, 0, 0, 0.58)\`): Secondary and metadata text.
+- **Text White** (\`rgba(255, 255, 255, 1)\`): Text on dark green surfaces.
+- **Text White Soft** (\`rgba(255, 255, 255, 0.70)\`): Secondary text on dark green surfaces.
+- **Red** (\`#c82014\`): Error and destructive state.
+- **Yellow** (\`#fbbc05\`): Warning state.
+
+## 3. Typography Rules
+- **Primary:** \`SoDoSans, "Helvetica Neue", Helvetica, Arial, sans-serif\`
+- **Rewards Serif:** \`"Lander Tall", "Iowan Old Style", Georgia, serif\`
+- **Careers Script:** \`"Kalam", "Comic Sans MS", cursive\`
+
+## 5. Layout Principles
+### Border Radius Scale
+- \`12px\` | Cards, modals, menu-item tiles.
+- \`50px\` | All buttons — full-pill radius.
+
+## 6. Depth & Elevation
+Card shadow: \`0 0 0.5px rgba(0,0,0,0.14), 0 1px 1px rgba(0,0,0,0.24)\`.
+Whisper-soft, layered over solid surfaces.
+`;
+
     const profiles = {
       cmb: {
         title: 'CMB DESIGN.md Theme',
@@ -475,10 +607,30 @@ WIRED's depth philosophy is flat by religion. There are no shadows and no box-sh
           { label: 'Radius', value: '0px', trendValue: 'square corners', trend: 'flat' },
         ],
       },
+      starbucks: {
+        title: 'Starbucks DESIGN.md Theme',
+        pageTitle: 'DESIGN.md 主题导入验证：Starbucks',
+        markdown: starbucksDesignMd,
+        expected: {
+          accent: '#00754A',
+          background: '#f2f0eb',
+          text: 'rgba(0, 0, 0, 0.87)',
+          chart1: '#00754A',
+          radiusMd: '12px',
+          radiusPill: '50px',
+          fontDisplayIncludes: 'SoDoSans',
+          shadow: '0 0 0.5px rgba(0,0,0,0.14), 0 1px 1px rgba(0,0,0,0.24)',
+        },
+        kpis: [
+          { label: 'Canvas', value: '#f2f0eb', trendValue: 'warm neutral', trend: 'flat' },
+          { label: 'CTA', value: '#00754A', trendValue: 'pill system', trend: 'up' },
+          { label: 'Radius', value: '50px', trendValue: 'buttons', trend: 'flat' },
+        ],
+      },
     };
 
     const params = new URLSearchParams(location.search);
-    let selectedProfile = params.get('theme') === 'wired' || params.has('wired') ? 'wired' : 'cmb';
+    let selectedProfile = profiles[params.get('theme')] ? params.get('theme') : (params.has('wired') ? 'wired' : 'cmb');
     let profile = profiles[selectedProfile];
 
     function buildSpec(profileName) {
@@ -537,6 +689,7 @@ WIRED's depth philosophy is flat by religion. There are no shadows and no box-sh
                 { token: '--rk-bg-primary', expected: activeProfile.expected.background, actual: 'see panel' },
                 { token: '--rk-text-primary', expected: activeProfile.expected.text, actual: 'see panel' },
                 { token: '--rk-radius-md', expected: activeProfile.expected.radiusMd, actual: 'see panel' },
+                { token: '--rk-radius-pill', expected: activeProfile.expected.radiusPill || 'theme default', actual: 'see panel' },
                 { token: '--rk-shadow', expected: activeProfile.expected.shadow || 'theme default', actual: 'see panel' },
               ],
             },
@@ -568,6 +721,12 @@ WIRED's depth philosophy is flat by religion. There are no shadows and no box-sh
       profile = profiles[selectedProfile];
       document.body.dataset.profile = selectedProfile;
       document.querySelector('h1').textContent = profile.pageTitle;
+      document.getElementById('font-display-sample').textContent = selectedProfile === 'starbucks' ? 'Warm retail headline sample' : 'Display headline sample';
+      document.getElementById('font-body-sample').textContent = selectedProfile === 'starbucks'
+        ? 'Body copy sits on a warm cream canvas with tight SoDoSans tracking.'
+        : 'Body copy sample uses the document reading face or a practical fallback.';
+      document.getElementById('font-ui-sample').textContent = selectedProfile === 'starbucks' ? 'Pill button label sample' : 'UI LABEL SAMPLE';
+      document.getElementById('font-mono-sample').textContent = selectedProfile === 'starbucks' ? 'Kalam cup-name touch' : 'mono kicker sample';
       setActiveThemeButton(selectedProfile);
 
       const theme = window.Vizual.loadDesignMd(profile.markdown, { name: selectedProfile + '-design-md-browser', apply: true });
@@ -581,6 +740,7 @@ WIRED's depth philosophy is flat by religion. There are no shadows and no box-sh
         text: cssVar('--rk-text-primary'),
         chart1: cssVar('--rk-chart-1'),
         radiusMd: cssVar('--rk-radius-md'),
+        radiusPill: cssVar('--rk-radius-pill'),
         font: cssVar('--rk-font-sans'),
         fontDisplay: cssVar('--rk-font-display'),
         fontBody: cssVar('--rk-font-body'),
@@ -596,13 +756,14 @@ WIRED's depth philosophy is flat by religion. There are no shadows and no box-sh
       document.getElementById('debug').textContent = JSON.stringify(result, null, 2);
 
       const ok = result.mode === 'light'
-        && result.accent.toLowerCase() === profile.expected.accent
-        && result.background.toLowerCase() === profile.expected.background
-        && result.text.toLowerCase() === profile.expected.text
-        && result.chart1.toLowerCase() === profile.expected.chart1
-        && result.radiusMd.toLowerCase() === profile.expected.radiusMd
+        && result.accent.toLowerCase() === profile.expected.accent.toLowerCase()
+        && result.background.toLowerCase() === profile.expected.background.toLowerCase()
+        && result.text.toLowerCase() === profile.expected.text.toLowerCase()
+        && result.chart1.toLowerCase() === profile.expected.chart1.toLowerCase()
+        && result.radiusMd.toLowerCase() === profile.expected.radiusMd.toLowerCase()
+        && (!profile.expected.radiusPill || result.radiusPill.toLowerCase() === profile.expected.radiusPill.toLowerCase())
         && result.fontDisplay.includes(profile.expected.fontDisplayIncludes)
-        && (!profile.expected.shadow || result.shadow.toLowerCase() === profile.expected.shadow);
+        && (!profile.expected.shadow || result.shadow.toLowerCase() === profile.expected.shadow.toLowerCase());
 
       document.getElementById('status').textContent = ok ? `PASS：${selectedProfile.toUpperCase()} 主题已应用` : 'FAIL：主题映射不完整';
       document.getElementById('status').dataset.status = ok ? 'pass' : 'fail';

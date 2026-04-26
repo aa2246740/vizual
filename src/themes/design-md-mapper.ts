@@ -549,6 +549,7 @@ export function mapDesignTokensToTheme(
       ui: '--rk-font-ui',
       sans: '--rk-font-sans',
       mono: '--rk-font-mono',
+      script: '--rk-font-script',
     }
     for (const [role, value] of Object.entries(fontFamilies)) {
       const varName = roleMap[role]

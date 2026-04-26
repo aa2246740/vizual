@@ -68,6 +68,44 @@ Everything else is black, paper white, and two grays.
 WIRED's depth philosophy is flat by religion. There are no shadows and no box-shadow on story tiles, headers, modals, or cards.
 `
 
+const starbucksDesignMd = `
+# Design System Inspired by Starbucks
+
+## 1. Visual Theme & Atmosphere
+Starbucks uses warm-neutral canvas (#f2f0eb / #edebe9), Starbucks Green (#006241), Green Accent (#00754A), and House Green (#1E3932).
+Typography uses SoDoSans with tight tracking, Rewards serif "Lander Tall", and Careers script "Kalam".
+
+## 2. Color Palette & Roles
+- **Starbucks Green** (\`#006241\`): historic brand green used on h1 headings.
+- **Green Accent** (\`#00754A\`): primary filled-CTA color and floating Frap button fill.
+- **House Green** (\`#1E3932\`): footer surface and feature-band backgrounds.
+- **Green Uplift** (\`#2b5148\`): secondary mid-dark green.
+- **Green Light** (\`#d4e9e2\`): valid state tint.
+- **Gold** (\`#cba258\`): Rewards-status ceremony only.
+- **Neutral Warm** (\`#f2f0eb\`): primary page canvas.
+- **Ceramic** (\`#edebe9\`): soft page-section wash.
+- **White** (\`#ffffff\`): primary card and modal surface.
+- **Black** (\`#000000\`): high-contrast top-nav sign-in buttons.
+- **Text Black** (\`rgba(0, 0, 0, 0.87)\`): primary heading and body text.
+- **Text Black Soft** (\`rgba(0, 0, 0, 0.58)\`): secondary metadata text.
+- **Red** (\`#c82014\`): error and destructive state.
+- **Yellow** (\`#fbbc05\`): warning state.
+
+## 3. Typography Rules
+- **Primary:** \`SoDoSans, "Helvetica Neue", Helvetica, Arial, sans-serif\`
+- **Rewards Serif:** \`"Lander Tall", "Iowan Old Style", Georgia, serif\`
+- **Careers Script:** \`"Kalam", "Comic Sans MS", cursive\`
+
+## 5. Layout Principles
+### Border Radius Scale
+- \`12px\` | Cards, modals, menu-item tiles.
+- \`50px\` | All buttons — full-pill radius.
+
+## 6. Depth & Elevation
+Card shadow: \`0 0 0.5px rgba(0,0,0,0.14), 0 1px 1px rgba(0,0,0,0.24)\`.
+Whisper-soft, layered over solid surfaces.
+`
+
 describe('DESIGN.md theme loading', () => {
   it('maps a semi-structured CMB brand document to Vizual theme roles', () => {
     const tokens = parseDesignMd(cmbDesignMd)
@@ -115,5 +153,31 @@ describe('DESIGN.md theme loading', () => {
     expect(theme.cssVariables['--rk-font-sans']).toContain('Apercu')
     expect(theme.cssVariables['--rk-shadow']).toBe('none')
     expect(theme._mappingReport?.roles.error).toBe(false)
+  })
+
+  it('maps a Starbucks-style retail document with warm canvas and pill/card geometry', () => {
+    const tokens = parseDesignMd(starbucksDesignMd)
+    const theme = loadDesignMd(starbucksDesignMd, { name: 'starbucks-unit', apply: false })
+
+    expect(tokens.colors).toContainEqual({ name: 'accent', value: '#00754A' })
+    expect(tokens.colors).toContainEqual({ name: 'background', value: '#f2f0eb' })
+    expect(tokens.colors).toContainEqual({ name: 'text-primary', value: 'rgba(0, 0, 0, 0.87)' })
+
+    expect(theme.mode).toBe('light')
+    expect(theme.cssVariables['--rk-accent']).toBe('#00754A')
+    expect(theme.cssVariables['--rk-bg-primary']).toBe('#f2f0eb')
+    expect(theme.cssVariables['--rk-bg-secondary']).toBe('#ffffff')
+    expect(theme.cssVariables['--rk-bg-tertiary']).toBe('#edebe9')
+    expect(theme.cssVariables['--rk-text-primary']).toBe('rgba(0, 0, 0, 0.87)')
+    expect(theme.cssVariables['--rk-text-secondary']).toBe('rgba(0, 0, 0, 0.58)')
+    expect(theme.cssVariables['--rk-error']).toBe('#c82014')
+    expect(theme.cssVariables['--rk-warning']).toBe('#cba258')
+    expect(theme.cssVariables['--rk-chart-1']).toBe('#00754A')
+    expect(theme.cssVariables['--rk-radius-md']).toBe('12px')
+    expect(theme.cssVariables['--rk-radius-pill']).toBe('50px')
+    expect(theme.cssVariables['--rk-shadow']).toBe('0 0 0.5px rgba(0,0,0,0.14), 0 1px 1px rgba(0,0,0,0.24)')
+    expect(theme.cssVariables['--rk-font-display']).toContain('SoDoSans')
+    expect(theme.cssVariables['--rk-font-serif']).toContain('Lander Tall')
+    expect(theme.cssVariables['--rk-font-script']).toContain('Kalam')
   })
 })

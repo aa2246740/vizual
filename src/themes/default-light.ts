@@ -43,6 +43,7 @@ export const defaultLightTheme = {
     '--rk-font-display': '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
     '--rk-font-serif': 'Georgia, "Times New Roman", serif',
     '--rk-font-mono': '"SF Mono", "Fira Code", Consolas, monospace',
+    '--rk-font-script': '"Comic Sans MS", cursive',
     '--rk-text-xs': '11px',
     '--rk-text-sm': '12px',
     '--rk-text-base': '13px',

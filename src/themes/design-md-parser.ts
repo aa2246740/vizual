@@ -121,6 +121,10 @@ const KNOWN_COLOR_NAMES = [
   'WIRED Black', 'Page Ink', 'Paper White', 'Link Blue', 'Brand Hover Blue',
   'Newsprint', 'Footer Ink', 'Hairline Tint', 'Headline Black', 'Body Gray',
   'Caption Gray', 'Disabled Gray', 'Hairline Border',
+  'Starbucks Green', 'Green Accent', 'House Green', 'Green Uplift', 'Green Light',
+  'Gold Lightest', 'Gold Light', 'Gold', 'Neutral Cool', 'Neutral Warm',
+  'Ceramic', 'Text Black Soft', 'Text Black', 'Text White Soft', 'Text White',
+  'Rewards Green', 'Red Tint', 'Red', 'Yellow', 'White', 'Black',
   'Deep Red', 'Light Red', 'Lighter Red',
   'Light Brown', 'Medium Brown', 'Dark Brown',
   'Dark Gray', 'Medium Gray', 'Light Gray', 'Very Light Gray',
@@ -166,6 +170,43 @@ function inferColorAliases(name: string, line: string, value: string): string[] 
     for (const item of items) aliases.add(item)
   }
 
+  if (nameLower.includes('green-accent')) {
+    add('primary', 'brand', 'accent', 'chart-1')
+  }
+  if (nameLower.includes('starbucks-green')) {
+    add('brand-heading', 'chart-2')
+  }
+  if (nameLower.includes('house-green')) {
+    add('chart-3')
+  }
+  if (nameLower.includes('green-uplift')) {
+    add('chart-4')
+  }
+  if (nameLower.includes('green-light')) {
+    add('success-muted', 'accent-muted')
+  }
+  if (nameLower === 'neutral-warm' || nameLower.includes('neutral-warm')) {
+    add('background', 'canvas', 'surface')
+  }
+  if (nameLower.includes('ceramic')) {
+    add('bg-tertiary', 'surface-tertiary')
+  }
+  if (nameLower.includes('neutral-cool')) {
+    add('bg-secondary', 'surface-secondary')
+  }
+  if (nameLower.includes('text-black-soft') || nameLower.includes('text-white-soft')) {
+    add('text-secondary')
+  }
+  if (nameLower === 'gold' || nameLower.includes('gold-light')) {
+    add('warning', 'chart-5')
+  }
+  if (lower.includes('error') || lower.includes('destructive') || nameLower === 'red') {
+    add('error')
+  }
+  if (lower.includes('warning') || lower.includes('caution') || nameLower === 'yellow') {
+    add('warning')
+  }
+
   if (
     lower.includes('primary brand') ||
     lower.includes('brand color') ||
@@ -186,7 +227,10 @@ function inferColorAliases(name: string, line: string, value: string): string[] 
 
   const explicitBackgroundName = nameLower.includes('background') || nameLower.includes('canvas') || nameLower.includes('surface') || nameLower.includes('newsprint')
   const explicitWhiteName = nameLower.includes('white') || nameLower.includes('cmb-white')
-  if (explicitBackgroundName || explicitWhiteName || (looksLikeWhite(value) && lower.includes('white'))) {
+  const cardWhite = explicitWhiteName && /(card|modal|tile|gift-card|content card)/i.test(lower) && !/(canvas|page|white space|background)/i.test(lower)
+  if (cardWhite) {
+    add('bg-secondary', 'surface-secondary')
+  } else if (explicitBackgroundName || explicitWhiteName || (looksLikeWhite(value) && lower.includes('white'))) {
     add('background', 'canvas', 'surface')
   }
   if (nameLower.includes('footer') || lower.includes('inverted region') || lower.includes('panel')) {
@@ -194,7 +238,7 @@ function inferColorAliases(name: string, line: string, value: string): string[] 
   }
 
   if (
-    nameLower.includes('black') ||
+    (nameLower.includes('black') && nameLower !== 'black') ||
     nameLower.includes('ink') ||
     nameLower.includes('headline') ||
     nameLower.includes('body') ||
@@ -386,6 +430,9 @@ function parseTypographySection(content: string): TypographyToken {
     if (normalized.includes('brevetext')) return '"BreveText", Georgia, "Times New Roman", serif'
     if (normalized.includes('apercu')) return '"Apercu", Inter, Helvetica, Arial, sans-serif'
     if (normalized.includes('wiredmono') || normalized.includes('mono')) return '"WiredMono", "SF Mono", Monaco, "Courier New", monospace'
+    if (normalized.includes('sodosans')) return 'SoDoSans, "Helvetica Neue", Helvetica, Arial, sans-serif'
+    if (normalized.includes('landertall')) return '"Lander Tall", "Iowan Old Style", Georgia, serif'
+    if (normalized.includes('kalam')) return '"Kalam", "Comic Sans MS", cursive'
     if (normalized.includes('inter')) return 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'
     if (normalized.includes('founderlantinghei') || font.includes('方正兰亭黑')) {
       return '"Founder Lanting Hei", "方正兰亭黑", Arial, Heiti, sans-serif'
@@ -403,10 +450,27 @@ function parseTypographySection(content: string): TypographyToken {
     if (normalized.includes('brevetext') || lower.includes('body') || lower.includes('article') || lower.includes('deck') || lower.includes('caption') || lower.includes('reading')) return ['body', 'serif']
     if (normalized.includes('apercu') || lower.includes('ui') || lower.includes('button') || lower.includes('navigation') || lower.includes('label')) return ['ui', 'sans']
     if (normalized.includes('wiredmono') || lower.includes('mono') || lower.includes('kicker') || lower.includes('eyebrow') || lower.includes('timestamp') || lower.includes('all caps')) return ['mono']
+    if (normalized.includes('sodosans')) return ['display', 'body', 'ui', 'sans']
+    if (normalized.includes('landertall')) return ['serif']
+    if (normalized.includes('kalam')) return ['script']
     if (normalized.includes('inter')) return ['ui', 'sans']
     return ['sans']
   }
 
+  if (/SoDoSans/i.test(content)) {
+    const stack = 'SoDoSans, "Helvetica Neue", Helvetica, Arial, sans-serif'
+    setFontRole('display', stack)
+    setFontRole('body', stack)
+    setFontRole('ui', stack)
+    setFontRole('sans', stack)
+    addFont('SoDoSans')
+  }
+  if (/Lander\s+Tall/i.test(content)) {
+    setFontRole('serif', '"Lander Tall", "Iowan Old Style", Georgia, serif')
+  }
+  if (/\bKalam\b/i.test(content)) {
+    setFontRole('script', '"Kalam", "Comic Sans MS", cursive')
+  }
   if (/Founder\s+Lanting\s+Hei/i.test(content)) addFont('"Founder Lanting Hei"')
   if (/方正兰亭黑/.test(content)) addFont('"方正兰亭黑"')
   if (/\bArial\b/i.test(content)) addFont('Arial')
@@ -422,7 +486,7 @@ function parseTypographySection(content: string): TypographyToken {
     const fontLine = line.match(/^\s*[-*]\s+\*\*([^*]+)\*\*.*(?:font|serif|sans|mono|fallback|custom|system|ui|body|headline|display)/i)
     if (fontLine) {
       const font = fontLine[1].trim()
-      if (font && font.length < 40 && !/role|principle|note/i.test(font)) {
+      if (font && font.length < 40 && !/role|principle|note|primary|fallback|rewards|careers/i.test(font)) {
         addFont(quoteFont(font))
         const stack = stackForFont(font, line)
         for (const role of classifyFontRole(font, line)) {
@@ -563,6 +627,16 @@ function parseRadiusSection(content: string): RadiusToken {
     }
   }
 
+  if (/12px[^.\n]*(card|modal|tile)|(?:card|modal|tile)[^.\n]*12px/i.test(content)) {
+    result.scale!.md = result.scale!.md || '12px'
+    result.scale!.lg = result.scale!.lg || '12px'
+    result.scale!.card = result.scale!.card || '12px'
+  }
+  if (/50px[^.\n]*(pill|button)|(?:pill|button)[^.\n]*50px/i.test(content)) {
+    result.scale!.pill = result.scale!.pill || '50px'
+    result.scale!.button = result.scale!.button || '50px'
+  }
+
   for (const line of lines) {
     // sm: 4px / md: 8px / lg: 16px
     const match = line.match(
@@ -627,6 +701,11 @@ function parseEffectsSection(content: string): EffectsToken {
 
   if (noShadowPatterns.some(pattern => pattern.test(content))) {
     result.shadow = 'none'
+    return result
+  }
+
+  if (/whisper-soft|card shadow|0\s+0\s+0\.5px\s+rgba?\(/i.test(content)) {
+    result.shadow = '0 0 0.5px rgba(0,0,0,0.14), 0 1px 1px rgba(0,0,0,0.24)'
     return result
   }
 
