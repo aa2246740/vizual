@@ -110,6 +110,9 @@ function extractColorFromLine(line: string): string | undefined {
 
 const KNOWN_COLOR_NAMES = [
   'CMB Red', 'CMB Black', 'CMB White',
+  'WIRED Black', 'Page Ink', 'Paper White', 'Link Blue', 'Brand Hover Blue',
+  'Newsprint', 'Footer Ink', 'Hairline Tint', 'Headline Black', 'Body Gray',
+  'Caption Gray', 'Disabled Gray', 'Hairline Border',
   'Deep Red', 'Light Red', 'Lighter Red',
   'Light Brown', 'Medium Brown', 'Dark Brown',
   'Dark Gray', 'Medium Gray', 'Light Gray', 'Very Light Gray',
@@ -160,23 +163,37 @@ function inferColorAliases(name: string, line: string, value: string): string[] 
     lower.includes('brand color') ||
     lower.includes('cmb-red') ||
     lower.includes('cmb red') ||
+    nameLower.includes('link-blue') ||
+    nameLower.includes('brand-hover-blue') ||
+    lower.includes('accent color') ||
     lower.includes('cta') ||
     lower.includes('active state') ||
     lower.includes('link')
   ) {
     add('primary', 'brand', 'accent', 'chart-1')
   }
+  if (nameLower.includes('hover') || lower.includes('hover')) {
+    add('accent-hover')
+  }
 
-  const explicitBackgroundName = nameLower.includes('background') || nameLower.includes('canvas') || nameLower.includes('surface')
+  const explicitBackgroundName = nameLower.includes('background') || nameLower.includes('canvas') || nameLower.includes('surface') || nameLower.includes('newsprint')
   const explicitWhiteName = nameLower.includes('white') || nameLower.includes('cmb-white')
   if (explicitBackgroundName || explicitWhiteName || (looksLikeWhite(value) && lower.includes('white'))) {
     add('background', 'canvas', 'surface')
   }
+  if (nameLower.includes('footer') || lower.includes('inverted region') || lower.includes('panel')) {
+    add('bg-secondary')
+  }
 
   if (
     nameLower.includes('black') ||
+    nameLower.includes('ink') ||
+    nameLower.includes('headline') ||
+    nameLower.includes('body') ||
     nameLower.includes('text') ||
     lower.includes('primary text') ||
+    lower.includes('body type') ||
+    lower.includes('headlines') ||
     lower.includes('official communications')
   ) {
     add('text', 'text-primary', 'foreground')
@@ -185,14 +202,23 @@ function inferColorAliases(name: string, line: string, value: string): string[] 
   if (lower.includes('dark-gray') || lower.includes('dark gray') || lower.includes('strong emphasis')) {
     add('text-secondary')
   }
-  if (lower.includes('medium-gray') || lower.includes('medium gray') || lower.includes('secondary text')) {
+  if (lower.includes('medium-gray') || lower.includes('medium gray') || lower.includes('caption') || lower.includes('metadata') || lower.includes('secondary text')) {
     add('text-secondary')
+  }
+  if (lower.includes('disabled') || lower.includes('inactive') || lower.includes('placeholder')) {
+    add('text-tertiary')
   }
   if (lower.includes('light-gray') || lower.includes('light gray') || lower.includes('subtle text')) {
     add('text-tertiary', 'border-subtle')
   }
   if (lower.includes('very-light-gray') || lower.includes('very light gray') || lower.includes('hints')) {
     add('bg-secondary', 'border')
+  }
+  if (lower.includes('hairline') || lower.includes('subtle') || lower.includes('separator')) {
+    add('border-subtle')
+  }
+  if (lower.includes('border') || lower.includes('divider') || lower.includes('rule')) {
+    add('border')
   }
 
   aliases.delete(name)
@@ -345,6 +371,15 @@ function parseTypographySection(content: string): TypographyToken {
   if (/方正兰亭黑/.test(content)) addFont('"方正兰亭黑"')
   if (/\bArial\b/i.test(content)) addFont('Arial')
   if (/Heiti|黑体/.test(content)) addFont('Heiti')
+  for (const line of lines) {
+    const fontLine = line.match(/^\s*[-*]\s+\*\*([^*]+)\*\*.*(?:font|serif|sans|mono|fallback|custom|system|ui|body|headline|display)/i)
+    if (fontLine) {
+      const font = fontLine[1].trim()
+      if (font && font.length < 40 && !/role|principle|note/i.test(font)) {
+        addFont(/\s/.test(font) ? `"${font}"` : font)
+      }
+    }
+  }
   if (fontCandidates.length > 0) {
     result.fontFamily = [...fontCandidates, 'sans-serif'].join(', ')
   }
@@ -457,6 +492,18 @@ function parseRadiusSection(content: string): RadiusToken {
   const result: RadiusToken = { scale: {} }
   const lines = content.split('\n').filter(l => l.trim())
 
+  if (/`?0`?\s*[—-].*(every|default|container|image|button|input|corner)/i.test(content)) {
+    result.scale = {
+      xs: '0px',
+      sm: '0px',
+      md: '0px',
+      lg: '0px',
+      xl: '0px',
+      card: '0px',
+      button: '0px',
+    }
+  }
+
   for (const line of lines) {
     // sm: 4px / md: 8px / lg: 16px
     const match = line.match(
@@ -556,11 +603,11 @@ export function parseDesignMd(markdown: string): DesignTokens {
   }
 
   // Typography
-  const typoSection = sections.find(s =>
+  const typoSections = sections.filter(s =>
     sectionMatches(s.heading, ['typo', 'font', 'type', '字体', '排版'])
   )
-  if (typoSection) {
-    tokens.typography = parseTypographySection(typoSection.content)
+  if (typoSections.length > 0) {
+    tokens.typography = parseTypographySection(typoSections.map(s => s.content).join('\n'))
   }
 
   // Spacing
@@ -616,11 +663,11 @@ export const COLOR_KEYWORD_MAP: Record<string, string[]> = {
   '--rk-text-tertiary':   ['text-tertiary', 'text-disabled', 'placeholder', 'hint', 'text-hint'],
   '--rk-border':          ['border', 'divider', 'stroke', 'separator', 'outline'],
   '--rk-border-subtle':   ['border-subtle', 'border-light', 'divider-subtle', 'border-hover'],
-  '--rk-error':           ['error', 'danger', 'red', 'destructive', 'negative', 'critical'],
+  '--rk-error':           ['error', 'danger', 'destructive', 'negative', 'critical'],
   '--rk-error-muted':     ['error-muted', 'error-light', 'danger-muted', 'error-bg'],
-  '--rk-success':         ['success', 'green', 'positive', 'confirmed', 'valid'],
+  '--rk-success':         ['success', 'positive', 'confirmed', 'valid'],
   '--rk-success-muted':   ['success-muted', 'success-light', 'success-bg'],
-  '--rk-warning':         ['warning', 'yellow', 'amber', 'caution', 'alert'],
+  '--rk-warning':         ['warning', 'caution', 'alert'],
   '--rk-warning-muted':   ['warning-muted', 'warning-light', 'warning-bg'],
   '--rk-chart-1':         ['chart-1', 'chart-primary', 'data-1', 'series-1', 'graph-1'],
   '--rk-chart-2':         ['chart-2', 'data-2', 'series-2', 'graph-2'],

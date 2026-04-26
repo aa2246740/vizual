@@ -161,6 +161,83 @@ English Font Family
 - Primary: Arial — never substitute with other fonts
 `;
 
+    const wiredDesignMd = `
+# Design System Inspired by WIRED
+
+## 1. Visual Theme & Atmosphere
+There is exactly one accent color that matters: a saturated link blue (\`#057dbc\`) that lights up underlined hover states.
+Everything else is black, paper white, and two grays. Strictly square corners on every image, container, and ribbon.
+
+## 2. Color Palette & Roles
+### Primary (Editorial Ink)
+- **WIRED Black** (\`#000000\`): Pure ink for ribbons, section dividers, button borders, headline rules.
+- **Page Ink** (\`#1a1a1a\`): Near-black used for headlines and body type.
+- **Paper White** (\`#ffffff\`): Default canvas for the entire site.
+
+### Secondary (Editorial Voice)
+- **Link Blue** (\`#057dbc\`): The single brand accent. Used for inline link hovers and breadcrumbs.
+
+### Neutrals & Text
+- **Caption Gray** (\`#757575\`): Secondary metadata: bylines, timestamps, photo credits.
+- **Disabled Gray** (\`#999999\`): Inactive links, low-priority labels.
+- **Hairline Border** (\`#e2e8f0\`): Subtle separators only.
+
+## 3. Typography Rules
+### Font Family
+- **WiredDisplay** (custom serif, fallback \`helvetica\`) — Display headlines and feature titles.
+- **BreveText** (humanist serif, fallback \`helvetica\`) — Article body, decks, longer captions.
+- **Apercu** (geometric sans, fallback \`helvetica\`) — UI labels, buttons, navigation.
+- **WiredMono** (custom monospace, fallback \`helvetica\`) — Eyebrows, kickers, timestamps.
+- **Inter** (sans, system fallback) — Utility UI in newer modules.
+
+## 5. Layout Principles
+### Border Radius Scale
+- \`0\` — every container, every image, every button, every input. The default.
+- \`1920px\` — only inside text spans that need to look like a full pill.
+- \`50%\` — only on round icon buttons and circular author avatars.
+`;
+
+    const profiles = {
+      cmb: {
+        title: 'CMB DESIGN.md Theme',
+        pageTitle: 'DESIGN.md 主题导入验证：CMB',
+        markdown: cmbDesignMd,
+        expected: {
+          accent: '#c8152d',
+          background: '#ffffff',
+          text: '#000000',
+          chart1: '#c8152d',
+          radiusMd: '8px',
+        },
+        kpis: [
+          { label: 'Accent', value: '#c8152d', trendValue: '+ applied', trend: 'up' },
+          { label: 'Mode', value: 'Light', trendValue: 'white canvas', trend: 'flat' },
+          { label: 'Font', value: 'Lanting Hei', trendValue: 'Arial fallback', trend: 'flat' },
+        ],
+      },
+      wired: {
+        title: 'WIRED DESIGN.md Theme',
+        pageTitle: 'DESIGN.md 主题导入验证：WIRED',
+        markdown: wiredDesignMd,
+        expected: {
+          accent: '#057dbc',
+          background: '#ffffff',
+          text: '#000000',
+          chart1: '#057dbc',
+          radiusMd: '0px',
+        },
+        kpis: [
+          { label: 'Accent', value: '#057dbc', trendValue: '+ link blue', trend: 'up' },
+          { label: 'Mode', value: 'Light', trendValue: 'paper white', trend: 'flat' },
+          { label: 'Radius', value: '0px', trendValue: 'square corners', trend: 'flat' },
+        ],
+      },
+    };
+
+    const params = new URLSearchParams(location.search);
+    const selectedProfile = params.get('theme') === 'wired' || params.has('wired') ? 'wired' : 'cmb';
+    const profile = profiles[selectedProfile];
+
     const spec = {
       root: 'dashboard',
       elements: {
@@ -176,13 +253,9 @@ English Font Family
           type: 'KpiDashboard',
           props: {
             type: 'kpi_dashboard',
-            title: 'CMB DESIGN.md Theme',
+            title: profile.title,
             columns: 1,
-            metrics: [
-              { label: 'Accent', value: '#c8152d', trendValue: '+ applied', trend: 'up' },
-              { label: 'Mode', value: 'Light', trendValue: 'white canvas', trend: 'flat' },
-              { label: 'Font', value: 'Lanting Hei', trendValue: 'Arial fallback', trend: 'flat' },
-            ],
+            metrics: profile.kpis,
           },
           children: [],
         },
@@ -190,7 +263,7 @@ English Font Family
           type: 'BarChart',
           props: {
             type: 'bar',
-            title: '品牌色驱动的图表调色板',
+            title: selectedProfile === 'wired' ? 'Link Blue 驱动的图表调色板' : '品牌色驱动的图表调色板',
             x: 'day',
             y: 'value',
             data: [
@@ -215,9 +288,10 @@ English Font Family
               { key: 'actual', label: 'Actual' },
             ],
             data: [
-              { token: '--rk-accent', expected: '#c8152d', actual: 'see panel' },
-              { token: '--rk-bg-primary', expected: '#ffffff', actual: 'see panel' },
-              { token: '--rk-text-primary', expected: '#000000', actual: 'see panel' },
+              { token: '--rk-accent', expected: profile.expected.accent, actual: 'see panel' },
+              { token: '--rk-bg-primary', expected: profile.expected.background, actual: 'see panel' },
+              { token: '--rk-text-primary', expected: profile.expected.text, actual: 'see panel' },
+              { token: '--rk-radius-md', expected: profile.expected.radiusMd, actual: 'see panel' },
             ],
           },
           children: [],
@@ -230,7 +304,8 @@ English Font Family
     }
 
     function init() {
-      const theme = window.Vizual.loadDesignMd(cmbDesignMd, { name: 'cmb-design-md-browser', apply: true });
+      document.querySelector('h1').textContent = profile.pageTitle;
+      const theme = window.Vizual.loadDesignMd(profile.markdown, { name: selectedProfile + '-design-md-browser', apply: true });
       window.Vizual.renderSpec(spec, document.getElementById('viz'));
 
       const result = {
@@ -240,6 +315,7 @@ English Font Family
         background: cssVar('--rk-bg-primary'),
         text: cssVar('--rk-text-primary'),
         chart1: cssVar('--rk-chart-1'),
+        radiusMd: cssVar('--rk-radius-md'),
         font: cssVar('--rk-font-sans'),
         report: theme._mappingReport,
       };
@@ -250,12 +326,13 @@ English Font Family
       document.getElementById('debug').textContent = JSON.stringify(result, null, 2);
 
       const ok = result.mode === 'light'
-        && result.accent.toLowerCase() === '#c8152d'
-        && result.background.toLowerCase() === '#ffffff'
-        && result.text.toLowerCase() === '#000000'
-        && result.chart1.toLowerCase() === '#c8152d';
+        && result.accent.toLowerCase() === profile.expected.accent
+        && result.background.toLowerCase() === profile.expected.background
+        && result.text.toLowerCase() === profile.expected.text
+        && result.chart1.toLowerCase() === profile.expected.chart1
+        && result.radiusMd.toLowerCase() === profile.expected.radiusMd;
 
-      document.getElementById('status').textContent = ok ? 'PASS：CMB 主题已应用' : 'FAIL：主题映射不完整';
+      document.getElementById('status').textContent = ok ? `PASS：${selectedProfile.toUpperCase()} 主题已应用` : 'FAIL：主题映射不完整';
       document.getElementById('status').dataset.status = ok ? 'pass' : 'fail';
       if (!ok) throw new Error('DESIGN.md theme mapping failed');
     }
