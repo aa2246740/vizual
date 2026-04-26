@@ -157,12 +157,16 @@
         <tr><td><code>window.updateArtifactInMsg(ref, patches, options?)</code></td><td>用 Vizual typed patches 修改 artifact 并渲染到新的 AI 气泡；仅预览/调试时传 <code>{ mode: 'replace' }</code> 原地替换。兼容常见 JSON Patch，但 Agent 应优先使用 typed patches。</td><td>VizualArtifact | null</td></tr>
         <tr><td><code>window.exportArtifact(ref, options?)</code></td><td>导出当前 artifact 并记录 export 元数据；<code>options.format</code> 支持 png/pdf/csv/xlsx</td><td>Promise&lt;ExportRecord | null&gt;</td></tr>
         <tr><td><code>window.renderInteractiveVizInMsg(id, config)</code></td><td>渲染 FormBuilder 控件 + 实时预览；Agent 作为宿主提供 <code>makeSpec(state)</code></td><td>boolean</td></tr>
+        <tr><td><code>window.updateInteractiveVizInMsg(ref, patch, options?)</code></td><td>以稳定 API 更新实时预览 state；自动化测试不要模拟 React DOM 输入事件</td><td>object | null</td></tr>
+        <tr><td><code>window.getInteractiveVizState(ref?)</code></td><td>读取实时预览 state、artifact、lastPreviewSpec 和 renderCount</td><td>object | null</td></tr>
+        <tr><td><code>window.getVizualConversationState()</code></td><td>读取稳定的消息、artifact、控件和渲染历史状态；自动化测试不要猜 DOM class</td><td>object</td></tr>
+        <tr><td><code>window.getVizualDebugState()</code></td><td>读取 pending message、artifact registry、DocView session 和最近渲染记录</td><td>object</td></tr>
         <tr><td><code>window.renderDocViewInMsg(id, config)</code></td><td>渲染带审阅 bridge 的 DocView；用于可批注报告、长文共建、修订循环</td><td>VizualArtifact | null</td></tr>
         <tr><td><code>window.getDocViewReviewState(ref?)</code></td><td>读取 DocView sections、threads、revisionProposals、review events</td><td>object | null</td></tr>
         <tr><td><code>window.createDocViewRevision(ref, input)</code></td><td>Agent 根据已提交批注创建修订提案；用户可在面板点击应用</td><td>RevisionProposal | null</td></tr>
         <tr><td><code>window.applyDocViewRevision(ref, proposalId)</code></td><td>应用修订提案，更新 DocView sections 和 artifact</td><td>RevisionProposal | null</td></tr>
       </table>
-      <p><code>window.__lastVizualRender</code>、<code>window.__renderHistory</code>、<code>window.__vizualArtifacts</code> 会记录最后一次静态/交互渲染的 spec、targetMap、版本和导出信息，便于 QA 检查 Agent 是否真的使用了用户数据。</p>
+      <p><code>window.getVizualConversationState()</code>、<code>window.__lastVizualRender</code>、<code>window.__renderHistory</code>、<code>window.__vizualArtifacts</code> 会记录最后一次静态/交互渲染的 spec、targetMap、版本和导出信息，便于 QA 检查 Agent 是否真的使用了用户数据。</p>
       <p><code>bubbleWidth</code> 可以省略，页面会按组件类型自动推断。KPI/迷你图偏窄，普通图表偏宽，Grid/Split/DocView/Sankey/Radar/FormBuilder/DataTable 默认 full。</p>
       <pre>// 完整流程
 const pending = window.getPendingMessage(); // 1. 读取原始输入（保留换行）
@@ -420,13 +424,13 @@ setInterval(async () => {
       if (!text) return;
       input.value = '';
       input.style.height = '';
-      appendUserBubble(text);
       const message = {
         id: 'user-' + (++userMsgSeq),
         text,
         rawText,
         createdAt: new Date().toISOString(),
       };
+      appendUserBubble(text, message.id);
       window._pendingMsg = text;
       window._pendingMsgMeta = message;
       window.__lastUserRawMessage = rawText;
@@ -446,10 +450,26 @@ setInterval(async () => {
     // ============================================================
     //  用户气泡
     // ============================================================
-    function appendUserBubble(text) {
+    function appendUserBubble(text, id) {
       const row = document.createElement('div');
-      row.className = 'msg-row user';
-      row.innerHTML = '<div class="bubble user">' + esc(text) + '</div>';
+      row.className = 'msg-row user message user-message';
+      if (id) {
+        row.id = id + '-row';
+        row.dataset.messageRow = 'true';
+        row.dataset.messageId = id;
+        row.dataset.messageRole = 'user';
+        row.dataset.userMsg = 'true';
+      }
+      const bubble = document.createElement('div');
+      bubble.className = 'bubble user';
+      if (id) {
+        bubble.id = id + '-bubble';
+        bubble.dataset.messageId = id;
+        bubble.dataset.messageRole = 'user';
+        bubble.dataset.bubble = 'true';
+      }
+      bubble.textContent = text;
+      row.appendChild(bubble);
       document.getElementById('messages').appendChild(row);
     }
 
@@ -489,16 +509,25 @@ setInterval(async () => {
     window.createAiMsg = function() {
       const id = 'msg-' + (++msgSeq);
       const row = document.createElement('div');
-      row.className = 'msg-row';
+      row.className = 'msg-row message ai-message';
+      row.id = id + '-row';
+      row.dataset.messageRow = 'true';
+      row.dataset.messageId = id;
+      row.dataset.messageRole = 'ai';
+      row.dataset.aiMsg = 'true';
 
       // 单个气泡，内含文字区 + viz 容器
       const bubble = document.createElement('div');
       bubble.className = 'bubble ai';
       bubble.id = id + '-bubble';
+      bubble.dataset.messageId = id;
+      bubble.dataset.messageRole = 'ai';
+      bubble.dataset.bubble = 'true';
 
       // 文字区
       const textEl = document.createElement('div');
       textEl.id = id + '-text';
+      textEl.dataset.messageText = 'true';
       textEl.innerHTML = '<span class="cursor"></span>';
       bubble.appendChild(textEl);
 
@@ -506,6 +535,8 @@ setInterval(async () => {
       const vizWrap = document.createElement('div');
       vizWrap.id = id + '-viz';
       vizWrap.className = 'viz-wrap';
+      vizWrap.dataset.messageId = id;
+      vizWrap.dataset.vizContainer = 'true';
       vizWrap.style.display = 'none';
       bubble.appendChild(vizWrap);
 
@@ -573,6 +604,23 @@ setInterval(async () => {
       return state;
     }
 
+    function isPlainObject(value) {
+      return !!value && typeof value === 'object' && !Array.isArray(value);
+    }
+
+    function mergeStatePatch(base, patch) {
+      if (!isPlainObject(patch)) return base;
+      const next = isPlainObject(base) ? base : {};
+      for (const [key, value] of Object.entries(patch)) {
+        if (isPlainObject(value) && isPlainObject(next[key])) {
+          next[key] = mergeStatePatch({ ...next[key] }, value);
+        } else {
+          next[key] = cloneState(value);
+        }
+      }
+      return next;
+    }
+
     function showVizError(container, err) {
       container.querySelectorAll('.viz-error').forEach(el => el.remove());
       const errEl = document.createElement('div');
@@ -622,6 +670,23 @@ setInterval(async () => {
       return event;
     }
 
+    function tagArtifactDom(id, artifact) {
+      if (!id || !artifact?.id) return;
+      const row = document.getElementById(id + '-row');
+      const bubble = document.getElementById(id + '-bubble');
+      const vizWrap = document.getElementById(id + '-viz');
+      for (const el of [row, bubble, vizWrap]) {
+        if (!el) continue;
+        el.dataset.artifactId = artifact.id;
+        el.dataset.vizualArtifactId = artifact.id;
+        el.dataset.artifactStatus = artifact.status || '';
+      }
+      if (vizWrap) {
+        vizWrap.dataset.vizualArtifact = 'true';
+        vizWrap.dataset.artifactKind = artifact.kind || 'vizual';
+      }
+    }
+
     function rememberArtifact(id, artifact) {
       if (!artifact || !artifact.id) return artifact;
       window.__vizualArtifacts[artifact.id] = artifact;
@@ -629,6 +694,7 @@ setInterval(async () => {
         window.__messageArtifacts[id] = artifact.id;
         window.__messageArtifactSnapshots[id] = safeSnapshot(artifact);
         window.__artifactMessages[artifact.id] = id;
+        tagArtifactDom(id, artifact);
       }
       window.__lastArtifact = artifact;
       recordArtifactEvent('stored', artifact, {
@@ -1455,16 +1521,48 @@ setInterval(async () => {
       };
 
       const onStateChange = (changes) => {
-        state = applyStateChanges(state, changes);
+        state = applyStateChanges(cloneState(state), changes);
         schedulePreview();
+      };
+
+      const renderControls = () => window.Vizual.renderSpec(config.controlsSpec, controlsEl, {
+        initialState: state,
+        onStateChange,
+      });
+
+      const getSnapshot = () => ({
+        id,
+        state: safeSnapshot(state),
+        artifact: safeSnapshot(interactiveArtifact),
+        renderCount,
+        pending: !!previewTimer,
+        lastPreviewSpec: safeSnapshot(renderRecord.lastPreviewSpec),
+        lastPreviewSummary: safeSnapshot(renderRecord.lastPreviewSummary),
+        status: renderRecord.status,
+        error: renderRecord.error || null,
+      });
+
+      const updateState = (patch, options = {}) => {
+        if (Array.isArray(patch)) {
+          state = applyStateChanges(cloneState(state), patch);
+        } else if (options.replace === true) {
+          state = cloneState(patch || {});
+        } else {
+          state = mergeStatePatch(cloneState(state), patch || {});
+        }
+        renderControls();
+        if (options.immediate === true || options.render === 'sync') {
+          if (previewTimer) clearTimeout(previewTimer);
+          renderPreview();
+        } else {
+          schedulePreview();
+        }
+        return getSnapshot();
       };
 
       try {
         applyTheme();
-        window.Vizual.renderSpec(config.controlsSpec, controlsEl, {
-          initialState: state,
-          onStateChange,
-        });
+        renderControls();
         renderPreview();
       } catch (err) {
         console.error('[renderInteractiveVizInMsg] 渲染失败:', err);
@@ -1479,6 +1577,8 @@ setInterval(async () => {
       window._interactiveViz[id] = {
         getState: () => cloneState(state),
         getArtifact: () => safeSnapshot(interactiveArtifact),
+        getSnapshot,
+        updateState,
         rerender: renderPreview,
         getRenderCount: () => renderCount,
         destroy: () => {
@@ -1491,9 +1591,69 @@ setInterval(async () => {
       return true;
     };
 
+    function resolveInteractiveVizSession(ref) {
+      const sessions = window._interactiveViz || {};
+      if (ref && ref !== 'last') {
+        if (sessions[ref]) return { id: ref, session: sessions[ref] };
+        const artifact = getArtifactByRef(ref);
+        const messageId = artifact?.source?.messageId || getMessageIdForArtifactRef(ref, artifact);
+        if (messageId && sessions[messageId]) return { id: messageId, session: sessions[messageId] };
+      }
+      const lastRecord = [...window.__renderHistory].reverse().find(record =>
+        record.kind === 'interactive' && record.id && sessions[record.id]
+      );
+      if (lastRecord) return { id: lastRecord.id, session: sessions[lastRecord.id] };
+      const ids = Object.keys(sessions);
+      const id = ids[ids.length - 1];
+      return id ? { id, session: sessions[id] } : null;
+    }
+
+    window.getInteractiveVizState = function(ref = 'last') {
+      const resolved = resolveInteractiveVizSession(ref);
+      return resolved?.session?.getSnapshot?.() || null;
+    };
+
+    window.updateInteractiveVizInMsg = function(ref = 'last', patch = {}, options = {}) {
+      const resolved = resolveInteractiveVizSession(ref);
+      if (!resolved?.session?.updateState) {
+        console.warn('[updateInteractiveVizInMsg] 找不到实时预览:', ref);
+        return null;
+      }
+      return resolved.session.updateState(patch, options);
+    };
+
     /**
      * 获取所有消息（用于上下文）。
      */
+    window.getVizualConversationState = function() {
+      return {
+        messages: Array.from(document.querySelectorAll('[data-message-row="true"]')).map(row => {
+          const id = row.dataset.messageId || null;
+          const role = row.dataset.messageRole || (row.classList.contains('user') ? 'user' : 'ai');
+          const textEl = id ? document.getElementById(id + '-text') : null;
+          const bubble = id ? document.getElementById(id + '-bubble') : row.querySelector('.bubble');
+          const vizWrap = id ? document.getElementById(id + '-viz') : row.querySelector('[data-viz-container="true"], .viz-wrap');
+          return {
+            id,
+            role,
+            text: (textEl?.textContent || bubble?.textContent || row.textContent || '').trim(),
+            artifactId: row.dataset.artifactId || vizWrap?.dataset.artifactId || null,
+            hasViz: !!(vizWrap && vizWrap.style.display !== 'none'),
+            hasCanvas: !!row.querySelector('canvas'),
+            hasSvg: !!row.querySelector('svg'),
+            controls: {
+              inputs: row.querySelectorAll('input').length,
+              selects: row.querySelectorAll('select').length,
+              buttons: row.querySelectorAll('button').length,
+            },
+          };
+        }),
+        artifacts: window.listArtifacts(),
+        lastArtifact: window.getLastArtifact(),
+        renderHistory: window.__renderHistory.slice(),
+      };
+    };
+
     window.getMsgs = function() {
       return Array.from(document.querySelectorAll('.bubble')).map(b => ({
         role: b.classList.contains('user') ? 'user' : 'ai',
@@ -1511,9 +1671,13 @@ setInterval(async () => {
         lastVizualRender: window.__lastVizualRender,
         renderHistory: window.__renderHistory.slice(),
         interactiveIds: Object.keys(window._interactiveViz || {}),
+        interactiveSessions: Object.fromEntries(
+          Object.entries(window._interactiveViz || {}).map(([id, session]) => [id, session.getSnapshot?.() || null])
+        ),
         docViewSessionIds: Object.keys(window._docViewSessions || {}),
         lastDocViewSession: window.getDocViewReviewState?.('last') || null,
         lastDocViewEvent: safeSnapshot(window.__lastDocViewEvent || null),
+        conversation: window.getVizualConversationState(),
         lastArtifact: window.__lastArtifact ? safeSnapshot(window.__lastArtifact) : null,
         artifacts: Object.values(window.__vizualArtifacts || {}).map(artifact => safeSnapshot(artifact)),
         messageArtifacts: { ...(window.__messageArtifacts || {}) },

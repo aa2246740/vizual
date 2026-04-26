@@ -73,6 +73,8 @@ window.renderVizInMsg(id, spec);
 window.markPendingHandled();
 ```
 
+For browser QA, do not guess chat DOM classes. Prefer `window.getVizualConversationState()` and `window.getVizualDebugState()`. If DOM inspection is needed, use stable attributes such as `[data-message-row="true"]`, `[data-ai-msg="true"]`, `[data-viz-container="true"]`, and `[data-artifact-id]`.
+
 For follow-up edits to an existing chart, read the saved artifact and apply Vizual typed patches:
 
 ```js
@@ -91,6 +93,8 @@ Follow-up edits create a new AI bubble by default. Pass `{ mode: 'replace' }` on
 Do not use RFC-style JSON Patch (`{ op, path, value }`) in normal agent work; typed patches are target-map aware and safer.
 
 For live parameter tuning, use `renderInteractiveVizInMsg(id, config)` with FormBuilder bound to `/controls` and `makeSpec(state)`. This is host JavaScript, not pure JSON.
+
+For automated QA of live previews, use `updateInteractiveVizInMsg(id, { controls: {...} }, { immediate: true })` and inspect `getInteractiveVizState(id).lastPreviewSpec`. Do not rely on brittle DOM selectors or plain `el.value = ...` event dispatch to prove React controls updated.
 
 ## DocView — Annotatable Documents Only
 

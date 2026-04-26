@@ -156,6 +156,8 @@ else window._pendingMsg = null;
 
 When `getPendingMessage()` exists, use it instead of `getMsgs()` or DOM text. It preserves pasted line breaks and raw table text. After rendering, `window.__lastVizualRender` records the last spec for QA; `window.getLastArtifact()` records the editable artifact with `targetMap`, `versions`, and export metadata.
 
+For QA and browser automation, do not guess chat DOM selectors such as `.message`. Prefer `window.getVizualConversationState()` and `window.getVizualDebugState()`. If you must inspect DOM, use the stable host attributes: `[data-message-row="true"]`, `[data-ai-msg="true"]`, `[data-user-msg="true"]`, `[data-viz-container="true"]`, and `[data-artifact-id]`.
+
 For historical follow-up requests, use the artifact bridge:
 
 ```js
@@ -262,6 +264,17 @@ window.renderInteractiveVizInMsg(id, {
 ```
 
 For interactive controls, expose only options that make sense for the current component. `horizontal` and `stacked` are BarChart options; do not show or pass them to LineChart or ComboChart. Use FormBuilder `dependsOn` / `showWhen` for visibility and still normalize in `makeSpec(state)` so invalid props never reach the chart.
+
+For automated QA of an interactive preview, prefer the stable host APIs instead of simulating React DOM input events:
+
+```js
+window.updateInteractiveVizInMsg(id, { controls: { points: 12 } }, { immediate: true });
+window.updateInteractiveVizInMsg(id, { controls: { chartType: 'line', brandColor: '#123456' } }, { immediate: true });
+const state = window.getInteractiveVizState(id);
+const spec = state.lastPreviewSpec;
+```
+
+Use real UI interactions only when testing the browser UX itself. If you must drive native inputs from JavaScript, use the DOM prototype value setter before dispatching `input` / `change`; simple `el.value = ...` can be ignored by React's value tracker.
 
 If an agent can only click and type in the browser but cannot execute JavaScript in the page, it cannot complete `vizual-test.html` rendering or live interactivity by itself. In that case, provide a static spec plus explanation, or use a host bridge, Playwright/CDP, or an auto-poll backend that calls `renderVizInMsg()` / `renderInteractiveVizInMsg()`.
 
