@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vizual DESIGN.md Theme Test</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--rk-bg-primary, #ffffff);
+      color: var(--rk-text-primary, #111827);
+      font-family: var(--rk-font-sans, -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif);
+    }
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 16px 24px;
+      background: var(--rk-bg-primary, #ffffff);
+      border-bottom: 1px solid var(--rk-border-subtle, #e5e7eb);
+    }
+    h1 { margin: 0; font-size: 20px; }
+    main {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 360px;
+      gap: 16px;
+      padding: 20px;
+      max-width: 1280px;
+      margin: 0 auto;
+    }
+    .panel {
+      min-width: 0;
+      background: var(--rk-bg-secondary, #f8fafc);
+      border: 1px solid var(--rk-border-subtle, #e5e7eb);
+      border-radius: var(--rk-radius-lg, 12px);
+      padding: 16px;
+    }
+    #viz { min-height: 520px; }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: var(--rk-accent-muted, rgba(200, 21, 45, .12));
+      color: var(--rk-accent, #c8152d);
+      font-weight: 700;
+    }
+    .swatches {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin: 16px 0;
+    }
+    .swatch {
+      min-height: 76px;
+      border-radius: var(--rk-radius-md, 8px);
+      padding: 10px;
+      border: 1px solid var(--rk-border-subtle, #e5e7eb);
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      font-size: 12px;
+      overflow: hidden;
+    }
+    .swatch strong { font-size: 13px; }
+    pre {
+      margin: 0;
+      padding: 12px;
+      max-height: 380px;
+      overflow: auto;
+      border-radius: var(--rk-radius-md, 8px);
+      background: var(--rk-bg-tertiary, #f1f5f9);
+      color: var(--rk-text-primary, #111827);
+      font-size: 12px;
+      line-height: 1.5;
+      white-space: pre-wrap;
+    }
+    @media (max-width: 900px) {
+      main { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>DESIGN.md 主题导入验证</h1>
+    <div id="status" class="badge">加载中</div>
+  </header>
+  <main>
+    <section class="panel">
+      <div id="viz"></div>
+    </section>
+    <aside class="panel">
+      <h2 style="margin-top:0;font-size:16px;">解析结果</h2>
+      <div class="swatches">
+        <div class="swatch" style="background:var(--rk-accent);color:white;">
+          <strong>Accent</strong>
+          <span id="accent"></span>
+        </div>
+        <div class="swatch" style="background:var(--rk-bg-primary);color:var(--rk-text-primary);">
+          <strong>Background</strong>
+          <span id="bg"></span>
+        </div>
+        <div class="swatch" style="background:var(--rk-text-primary);color:var(--rk-bg-primary);">
+          <strong>Text</strong>
+          <span id="text"></span>
+        </div>
+        <div class="swatch" style="background:var(--rk-chart-1);color:white;">
+          <strong>Chart 1</strong>
+          <span id="chart"></span>
+        </div>
+      </div>
+      <pre id="debug"></pre>
+    </aside>
+  </main>
+
+  <script>
+    const cmbDesignMd = `
+Design System: China Merchants Bank
+
+1. Visual Theme & Atmosphere
+China Merchants Bank uses CMB Red (Pantone 193 / #c8152d) and CMB Black as core visual elements.
+Pure white canvas with CMB Red (Pantone 193 / #c8152d) as the primary brand color.
+The typography uses Founder Lanting Hei (方正兰亭黑) and Arial for English text.
+
+2. Color Palette & Roles
+Primary Brand Colors
+- CMB Red (#c8152d / Pantone 193): Primary brand color, CTA buttons, active states, brand accent
+- CMB Black (#000000 / Pantone Black): Primary text color, official communications
+
+Gray Scale
+- CMB Black (K100): Primary text
+- Dark Gray (K80): Strong emphasis
+- Medium Gray (K60): Secondary text
+- Light Gray (K30): Subtle text
+- Very Light Gray (K20): Hints
+- CMB White (K0): White space
+
+3. Typography Rules
+Chinese Font Family
+- Primary: Founder Lanting Hei (方正兰亭黑) — never substitute with other fonts
+English Font Family
+- Primary: Arial — never substitute with other fonts
+`;
+
+    const spec = {
+      root: 'dashboard',
+      elements: {
+        dashboard: {
+          type: 'GridLayout',
+          props: {
+            columns: 2,
+            gap: 16,
+          },
+          children: ['kpi', 'bar', 'table'],
+        },
+        kpi: {
+          type: 'KpiDashboard',
+          props: {
+            type: 'kpi_dashboard',
+            title: 'CMB DESIGN.md Theme',
+            columns: 1,
+            metrics: [
+              { label: 'Accent', value: '#c8152d', trendValue: '+ applied', trend: 'up' },
+              { label: 'Mode', value: 'Light', trendValue: 'white canvas', trend: 'flat' },
+              { label: 'Font', value: 'Lanting Hei', trendValue: 'Arial fallback', trend: 'flat' },
+            ],
+          },
+          children: [],
+        },
+        bar: {
+          type: 'BarChart',
+          props: {
+            type: 'bar',
+            title: '品牌色驱动的图表调色板',
+            x: 'day',
+            y: 'value',
+            data: [
+              { day: 'D1', value: 120 },
+              { day: 'D2', value: 156 },
+              { day: 'D3', value: 188 },
+              { day: 'D4', value: 210 },
+              { day: 'D5', value: 238 },
+            ],
+            height: 300,
+          },
+          children: [],
+        },
+        table: {
+          type: 'DataTable',
+          props: {
+            type: 'table',
+            title: '主题 token 验证',
+            columns: [
+              { key: 'token', label: 'Token' },
+              { key: 'expected', label: 'Expected' },
+              { key: 'actual', label: 'Actual' },
+            ],
+            data: [
+              { token: '--rk-accent', expected: '#c8152d', actual: 'see panel' },
+              { token: '--rk-bg-primary', expected: '#ffffff', actual: 'see panel' },
+              { token: '--rk-text-primary', expected: '#000000', actual: 'see panel' },
+            ],
+          },
+          children: [],
+        },
+      },
+    };
+
+    function cssVar(name) {
+      return getComputedStyle(document.body).getPropertyValue(name).trim();
+    }
+
+    function init() {
+      const theme = window.Vizual.loadDesignMd(cmbDesignMd, { name: 'cmb-design-md-browser', apply: true });
+      window.Vizual.renderSpec(spec, document.getElementById('viz'));
+
+      const result = {
+        name: theme.name,
+        mode: theme.mode,
+        accent: cssVar('--rk-accent'),
+        background: cssVar('--rk-bg-primary'),
+        text: cssVar('--rk-text-primary'),
+        chart1: cssVar('--rk-chart-1'),
+        font: cssVar('--rk-font-sans'),
+        report: theme._mappingReport,
+      };
+      document.getElementById('accent').textContent = result.accent;
+      document.getElementById('bg').textContent = result.background;
+      document.getElementById('text').textContent = result.text;
+      document.getElementById('chart').textContent = result.chart1;
+      document.getElementById('debug').textContent = JSON.stringify(result, null, 2);
+
+      const ok = result.mode === 'light'
+        && result.accent.toLowerCase() === '#c8152d'
+        && result.background.toLowerCase() === '#ffffff'
+        && result.text.toLowerCase() === '#000000'
+        && result.chart1.toLowerCase() === '#c8152d';
+
+      document.getElementById('status').textContent = ok ? 'PASS：CMB 主题已应用' : 'FAIL：主题映射不完整';
+      document.getElementById('status').dataset.status = ok ? 'pass' : 'fail';
+      if (!ok) throw new Error('DESIGN.md theme mapping failed');
+    }
+
+    fetch('/dist/vizual.standalone.js?_t=' + Date.now()).then(r => r.text()).then(code => {
+      (0, eval)(code);
+      init();
+    }).catch(error => {
+      document.getElementById('status').textContent = 'FAIL：' + error.message;
+      document.getElementById('debug').textContent = error.stack || error.message;
+    });
+  </script>
+</body>
+</html>

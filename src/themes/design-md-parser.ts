@@ -67,9 +67,18 @@ function extractRgbColors(text: string): string[] {
     .map(m => m[0])
 }
 
+/** 提取 CMYK / K-only 颜色值，交给 mapper 统一转换 */
+function extractCmykColors(text: string): string[] {
+  const cmyk = [...text.matchAll(/\bC\s*\d{1,3}\s*M\s*\d{1,3}\s*Y\s*\d{1,3}\s*K\s*\d{1,3}\b/gi)]
+    .map(m => m[0])
+  const kOnly = [...text.matchAll(/\bK\d{1,3}\b/g)]
+    .map(m => m[0])
+  return [...cmyk, ...kOnly]
+}
+
 /** 提取所有颜色（hex + rgb） */
 function extractAllColors(text: string): string[] {
-  return [...extractHexColors(text), ...extractRgbColors(text)]
+  return [...extractHexColors(text), ...extractRgbColors(text), ...extractCmykColors(text)]
 }
 
 /** 标准化语义名 → 小写、去特殊字符 */
@@ -91,7 +100,111 @@ function extractColorFromLine(line: string): string | undefined {
   // 其次取 rgb
   const rgb = line.match(/rgba?\(\s*\d+\s*,\s*\d+\s*,\s*\d+(?:\s*,\s*[\d.]+)?\s*\)/)
   if (rgb) return rgb[0]
+  // 再取 CMYK / K-only
+  const cmyk = line.match(/\bC\s*\d{1,3}\s*M\s*\d{1,3}\s*Y\s*\d{1,3}\s*K\s*\d{1,3}\b/i)
+  if (cmyk) return cmyk[0]
+  const kOnly = line.match(/\bK\d{1,3}\b/)
+  if (kOnly) return kOnly[0]
   return undefined
+}
+
+const KNOWN_COLOR_NAMES = [
+  'CMB Red', 'CMB Black', 'CMB White',
+  'Deep Red', 'Light Red', 'Lighter Red',
+  'Light Brown', 'Medium Brown', 'Dark Brown',
+  'Dark Gray', 'Medium Gray', 'Light Gray', 'Very Light Gray',
+  'Gold Foil', 'Silver Foil',
+]
+
+function inferNameBeforeColor(line: string, color: string): string {
+  const colorIndex = line.indexOf(color)
+  if (colorIndex < 0) return ''
+
+  const beforeColor = line.slice(0, colorIndex)
+  for (const known of KNOWN_COLOR_NAMES) {
+    const re = new RegExp(`\\b${known.replace(/\s+/g, '\\s+')}\\b`, 'i')
+    const match = beforeColor.match(re)
+    if (match) return match[0]
+  }
+
+  let candidate = beforeColor
+    .replace(/^\s*[-*]\s*/, '')
+    .replace(/^\s*\|\s*/, '')
+    .replace(/[\s(/:：-]+$/, '')
+    .trim()
+
+  const lastClause = candidate.match(/(?:is|as|called|named|为|是)\s+([^,，。.;；]+)$/i)
+  if (lastClause) candidate = lastClause[1].trim()
+
+  // 自然语言长句不要整句当 token 名；留给 alias 规则处理。
+  if (candidate.length > 48 || candidate.split(/\s+/).length > 6) return ''
+  return candidate
+}
+
+function looksLikeWhite(value: string): boolean {
+  const normalized = value.trim().toLowerCase()
+  return normalized === 'k0' || normalized === '#fff' || normalized === '#ffffff' || normalized === '#ffffffff'
+}
+
+function inferColorAliases(name: string, line: string, value: string): string[] {
+  const aliases = new Set<string>()
+  const nameLower = name.toLowerCase()
+  const lower = `${name} ${line}`.toLowerCase()
+
+  const add = (...items: string[]) => {
+    for (const item of items) aliases.add(item)
+  }
+
+  if (
+    lower.includes('primary brand') ||
+    lower.includes('brand color') ||
+    lower.includes('cmb-red') ||
+    lower.includes('cmb red') ||
+    lower.includes('cta') ||
+    lower.includes('active state') ||
+    lower.includes('link')
+  ) {
+    add('primary', 'brand', 'accent', 'chart-1')
+  }
+
+  const explicitBackgroundName = nameLower.includes('background') || nameLower.includes('canvas') || nameLower.includes('surface')
+  const explicitWhiteName = nameLower.includes('white') || nameLower.includes('cmb-white')
+  if (explicitBackgroundName || explicitWhiteName || (looksLikeWhite(value) && lower.includes('white'))) {
+    add('background', 'canvas', 'surface')
+  }
+
+  if (
+    nameLower.includes('black') ||
+    nameLower.includes('text') ||
+    lower.includes('primary text') ||
+    lower.includes('official communications')
+  ) {
+    add('text', 'text-primary', 'foreground')
+  }
+
+  if (lower.includes('dark-gray') || lower.includes('dark gray') || lower.includes('strong emphasis')) {
+    add('text-secondary')
+  }
+  if (lower.includes('medium-gray') || lower.includes('medium gray') || lower.includes('secondary text')) {
+    add('text-secondary')
+  }
+  if (lower.includes('light-gray') || lower.includes('light gray') || lower.includes('subtle text')) {
+    add('text-tertiary', 'border-subtle')
+  }
+  if (lower.includes('very-light-gray') || lower.includes('very light gray') || lower.includes('hints')) {
+    add('bg-secondary', 'border')
+  }
+
+  aliases.delete(name)
+  return Array.from(aliases)
+}
+
+function pushColorWithAliases(tokens: ColorToken[], name: string, value: string, line: string): void {
+  const normalized = normalizeName(name || `color-${tokens.length + 1}`)
+  tokens.push({ name: normalized, value })
+  for (const alias of inferColorAliases(normalized, line, value)) {
+    tokens.push({ name: alias, value })
+  }
 }
 
 // ─── Section 分割 ──────────────────────────────────────────
@@ -179,6 +292,9 @@ function parseColorsSection(content: string): ColorToken[] {
     // 格式3: --color-semantic: #hex
     const cssVarMatch = line.match(/--(?:color-?)?([a-zA-Z-]+)\s*:/)
 
+    // 格式4: CMB Red (#c8152d / Pantone 193): ...
+    const beforeColorName = inferNameBeforeColor(line, color)
+
     if (cssVarMatch) {
       name = cssVarMatch[1]
     } else if (tableMatch && tableMatch[1].trim()) {
@@ -189,6 +305,8 @@ function parseColorsSection(content: string): ColorToken[] {
       }
     } else if (colonMatch) {
       name = colonMatch[1].trim()
+    } else if (beforeColorName) {
+      name = beforeColorName
     }
 
     // 去掉行内的颜色值和尾部分隔符，得到更干净的名字
@@ -201,7 +319,7 @@ function parseColorsSection(content: string): ColorToken[] {
       name = `color-${tokens.length + 1}`
     }
 
-    tokens.push({ name, value: color })
+    pushColorWithAliases(tokens, name, color, line)
   }
 
   // 去重（同名取第一个）
@@ -218,6 +336,18 @@ function parseColorsSection(content: string): ColorToken[] {
 function parseTypographySection(content: string): TypographyToken {
   const result: TypographyToken = {}
   const lines = content.split('\n').filter(l => l.trim())
+
+  const fontCandidates: string[] = []
+  const addFont = (font: string) => {
+    if (!fontCandidates.includes(font)) fontCandidates.push(font)
+  }
+  if (/Founder\s+Lanting\s+Hei/i.test(content)) addFont('"Founder Lanting Hei"')
+  if (/方正兰亭黑/.test(content)) addFont('"方正兰亭黑"')
+  if (/\bArial\b/i.test(content)) addFont('Arial')
+  if (/Heiti|黑体/.test(content)) addFont('Heiti')
+  if (fontCandidates.length > 0) {
+    result.fontFamily = [...fontCandidates, 'sans-serif'].join(', ')
+  }
 
   // 提取 font-family
   for (const line of lines) {
