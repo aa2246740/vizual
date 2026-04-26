@@ -1,7 +1,7 @@
 {
   "name": "vizual",
   "version": "1.1.0",
-  "description": "Vizual — AI speaks JSON, Vizual makes it visual. 31 interactive visualization components for json-render: charts, dashboards, kanban, gantt, input forms, layouts & more.",
+  "description": "Vizual — AI Agent visual runtime for JSON specs, editable artifacts, charts, dashboards, live controls, DocView review loops, and export.",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
   "types": "dist/index.d.ts",

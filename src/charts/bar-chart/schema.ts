@@ -1,7 +1,7 @@
 import { z } from 'zod'
 
 /**
- * Zod v4 schema for Vizual BarChart spec
+ * Zod schema for Vizual BarChart spec
  */
 export const BarChartSchema = z.object({
   type: z.literal('bar'),

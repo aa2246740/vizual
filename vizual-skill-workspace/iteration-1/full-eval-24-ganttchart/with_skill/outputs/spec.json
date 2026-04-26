@@ -1,1 +1,0 @@
-{"root":"c24","elements":{"c24":{"type":"GanttChart","props":{"type":"gantt","title":"项目排期","tasks":[{"id":"t1","name":"需求分析","start":"2024-01-01","end":"2024-01-05"},{"id":"t2","name":"开发","start":"2024-01-06","end":"2024-01-15"},{"id":"t3","name":"测试","start":"2024-01-16","end":"2024-01-20"}]},"children":[]}}}

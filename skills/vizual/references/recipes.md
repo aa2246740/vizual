@@ -1,4 +1,4 @@
-# Common Recipes — AI RenderKit
+# Common Recipes — Vizual
 
 Patterns for combining components to solve real-world visualization needs.
 

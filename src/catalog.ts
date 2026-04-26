@@ -46,8 +46,8 @@ import { SplitLayoutSchema } from './components/split-layout/schema'
 import { HeroLayoutSchema } from './components/hero-layout/schema'
 
 /**
- * AI RenderKit catalog — 31 components registered as json-render visualization catalog
- * (InteractivePlayground removed — use HTML pages with native controls for interactive parameter exploration)
+ * Vizual catalog — 31 components registered as json-render visualization catalog
+ * Use host bridges such as renderInteractiveVizInMsg for live parameter exploration.
  * (15 components removed — AI uses freeform HTML via DocView instead)
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

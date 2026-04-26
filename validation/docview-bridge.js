@@ -12,7 +12,7 @@ const path = require('path')
 
 const PORT = 8780
 const DIR = __dirname
-const PARENT = path.dirname(DIR)  // ai-renderkit-pkg root — needed for ../dist/
+const PARENT = path.dirname(DIR)  // Vizual repo root — needed for ../dist/
 const ANNOTATIONS_FILE = path.join(DIR, 'annotations.json')
 const SECTIONS_FILE = path.join(DIR, 'sections.json')
 

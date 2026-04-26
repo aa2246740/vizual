@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * AI RenderKit Spec Validator
+ * Vizual Spec Validator
  *
  * Validates a JSON spec against the 31-component catalog + 3 layout components.
  * Usage:

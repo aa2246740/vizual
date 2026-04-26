@@ -1,115 +1,157 @@
-# AI 集成指南 — Vizual
+# AI 集成指南 — Vizual vNext
 
-Vizual 是专为 **AI Agent** 设计的可视化组件库。通过 Skill 模式，AI Agent 能够智能选择组件并生成符合规范的 JSON spec。
+Vizual 是给 AI Agent 产品接入的视觉运行时。Agent 不只返回 Markdown，而是返回 Vizual spec/artifact；宿主前端把它渲染成图表、Dashboard、表格、实时可调面板、可导出报表或可批注文档。
 
-## 设计理念
+## 适用场景
 
-Vizual **不支持** ChatGPT / Claude.ai 等聊天机器人场景。我们专注于：
+Vizual 适合：
 
-- **AI Agent 代码生成**（Claude Code、Cursor、Windsurf 等）
-- **自动化工作流**（CI/CD、数据管道、报告生成）
-- **程序化集成**（通过 npm 包在代码中调用）
+- 自有 SaaS / B 端系统里的 Agent 对话框
+- 类 ChatGPT 的独立 Agent 对话页面
+- 数据分析 Agent 的图表、报表和导出结果
+- 可被用户批注、由 Agent 修订的长文档 / 报告
+- 需要保存历史对话并支持后续追问修改的 Agent 平台
 
-如果你需要在聊天界面中使用，请寻找其他支持对话式交互的方案。
+Vizual 不能直接在 ChatGPT / Claude.ai 等封闭消费级聊天界面里渲染，除非该平台集成 Vizual runtime。它不是“让任意聊天机器人直接显示图表”的魔法；它需要一个宿主前端。
 
-## Claude Code 集成
+## 两层接入
 
-### 安装 Skills
+### 1. Agent 层：让 Agent 知道怎么输出
 
-Vizual 提供 3 个 Claude Code Skill，各有不同用途：
+Claude Code 推荐安装 skill：
 
 ```bash
-# 1. 核心可视化 Skill — 生成 JSON spec
-cp -r skills/vizual/ ~/.claude/skills/vizual/
-
-# 2. 主题解析 Skill — 将设计文档转为主题 token
-cp -r skills/design-md-parser/ ~/.claude/skills/design-md-parser/
-
-# 3. 实时交互 Skill — 创建可调整参数的交互页面
-cp -r skills/livekit/ ~/.claude/skills/livekit/
+cp -R skills/vizual/ ~/.claude/skills/vizual/
+cp -R skills/design-md-parser/ ~/.claude/skills/design-md-parser/
+cp -R skills/design-md-creator/ ~/.claude/skills/design-md-creator/
 ```
 
-### 使用方式
+其他 Agent 可把 `skills/vizual/prompt.md` 作为系统提示，并按需读取 `skills/vizual/references/` 下的组件文档。
 
-安装后，当用户请求以下内容时 Skill 自动触发：
+### 2. 宿主层：让前端会渲染和回调
 
-**vizual Skill** — 可视化生成：
-- "做一个柱状图展示季度销售"
-- "生成 KPI 仪表盘"
-- "用甘特图显示项目排期"
-- "创建看板管理任务"
+宿主前端需要支持：
 
-**design-md-parser Skill** — 主题解析：
-- "把这个设计文档转成主题"
-- "用我们品牌色配色"
-- "apply this theme"
-- 粘贴包含 hex 颜色、字体、间距值的内容
+- 渲染一次性 JSON spec
+- 保存 `VizualArtifact` 到聊天记录或业务存储
+- 后续追问时基于 artifact targetMap 做 patch
+- 导出 PNG/PDF/CSV/XLSX
+- 实时可调场景下提供 FormBuilder state bridge
+- DocView 场景下接入 review controller 和 revision proposal loop
 
-**livekit Skill** — 实时交互：
-- "试试这个配色方案"
-- "调一下看看效果"
-- "做个参数探索"
-- "对比一下暗色和亮色模式"
-
-## 前端渲染
-
-AI Agent 输出的 JSON spec 通过 json-render 渲染：
+## 渲染普通 spec
 
 ```tsx
 import { registry } from 'vizual'
 import { Renderer, StateProvider } from '@json-render/react'
 
-function AgentOutput({ aiJsonOutput }) {
+function AgentVisual({ spec }) {
   return (
     <StateProvider>
-      <Renderer spec={aiJsonOutput} registry={registry} />
+      <Renderer spec={spec} registry={registry} />
     </StateProvider>
   )
 }
 ```
 
-## 双向通信机制
+普通数据分析、Dashboard、报表默认用宿主文本 + `GridLayout` / charts / `KpiDashboard` / `DataTable`。不要因为用户说“报告”就使用 DocView。
 
-Vizual 支持前端与 Agent 的双向通信，实现用户交互闭环。
+## 保存可追问 Artifact
 
-### FormBuilder — 表单数据回调
+当用户之后可能会说“这张图改成折线图”“只看华东区”“导出 PDF”时，保存 artifact，而不是只保存原始 JSON。
 
-当用户提交表单时，数据通过 `onSubmit` 回调返回：
+```ts
+import { createHostRuntime, createMemoryArtifactStore } from 'vizual'
 
-```tsx
-Vizual.renderSpec({
-  root: 'form',
-  elements: {
-    form: {
-      type: 'FormBuilder',
-      props: {
-        title: '用户调研',
-        fields: [
-          { name: 'email', type: 'email', label: '邮箱', required: true },
-          { name: 'satisfaction', type: 'rating', label: '满意度', max: 5 },
-          { name: 'feedback', type: 'textarea', label: '反馈意见' }
-        ],
-        onSubmit: (data) => {
-          // data = { email: '...', satisfaction: 4, feedback: '...' }
-          // 将数据发送给 Agent 继续处理
-          agent.continue({ formData: data })
-        }
-      }
-    }
-  }
-}, container)
+const runtime = createHostRuntime({
+  store: createMemoryArtifactStore(),
+  renderArtifact: async (artifact, container) => {
+    // 宿主用自己的 React root + Renderer 渲染 artifact.spec
+    renderVizualSpec(artifact.spec, container)
+    return { artifact }
+  },
+})
+
+const artifact = await runtime.renderMessageArtifact({
+  conversationId,
+  messageId,
+  prompt: userText,
+  spec: aiSpec,
+  container,
+})
+
+const updated = await runtime.updateArtifact(artifact.id, [
+  { type: 'changeChartType', targetId: 'element:chart', chartType: 'LineChart' },
+  { type: 'filterData', targetId: 'element:chart', field: 'region', values: '华东' },
+])
 ```
 
-### DocView — Review SDK 批注循环
+关键原则：
 
-DocView 是给 Agent 接入的 review SDK。用户批注文档后，宿主通过 `onReviewAction` 接收 thread 事件；Agent 返回 `RevisionProposal`；宿主通过 controller 写回提案或应用修改。
+- 使用 targetMap，不要猜 JSON path。
+- follow-up 修改默认生成新的 AI 气泡，旧气泡作为历史保留。
+- `mode: 'replace'` 只适合临时预览，不适合真实聊天历史。
+
+## 实时可调图表
+
+实时可调不是纯 JSON spec。宿主需要提供 bridge：左侧 FormBuilder 控件绑定 state，右侧由 `makeSpec(state)` 重新渲染预览。
+
+`validation/vizual-test.html` 的参考 API：
+
+```js
+window.renderInteractiveVizInMsg(id, {
+  answerText: '可以实时调整图表类型、数据点和品牌色。',
+  initialState: {
+    controls: { chartType: 'bar', points: 8, brandColor: '#ff6b35' },
+  },
+  controlsSpec: {
+    root: 'controls',
+    elements: {
+      controls: {
+        type: 'FormBuilder',
+        props: {
+          type: 'form_builder',
+          value: { $bindState: '/controls' },
+          fields: [
+            { name: 'chartType', type: 'select', label: '图表类型', options: ['bar', 'line'] },
+            { name: 'points', type: 'slider', label: '数据点', min: 3, max: 15 },
+            { name: 'brandColor', type: 'color', label: '主色' },
+          ],
+        },
+        children: [],
+      },
+    },
+  },
+  applyTheme: (state, Vizual) => {
+    Vizual.loadDesignMd(`Primary: ${state.controls.brandColor}`, { apply: true })
+  },
+  makeSpec: (state) => ({
+    root: 'chart',
+    elements: {
+      chart: {
+        type: state.controls.chartType === 'line' ? 'LineChart' : 'BarChart',
+        props: {
+          type: state.controls.chartType === 'line' ? 'line' : 'bar',
+          x: 'day',
+          y: 'value',
+          data: makeData(Number(state.controls.points || 8)),
+        },
+        children: [],
+      },
+    },
+  }),
+})
+```
+
+多个 interactive artifact 必须隔离 state 和 theme scope。不要让图 1 的颜色选择器影响图 2。
+
+## DocView 批注修订循环
+
+DocView 是 SDK，不会自己调用 LLM。宿主负责把用户批注交给 Agent，Agent 返回 revision proposal。
 
 ```tsx
 const controllerRef = useRef<Vizual.DocViewReviewController | null>(null)
-const [sections, setSections] = useState([
-  { id: 'title', type: 'heading', content: 'Q1 业绩回顾' },
-  { id: 'summary', type: 'text', content: '营收同比增长 15%...' },
-])
+const [sections, setSections] = useState(initialSections)
 
 <Vizual.DocView
   sections={sections}
@@ -118,170 +160,75 @@ const [sections, setSections] = useState([
   onSectionsChange={setSections}
   onReviewAction={async (event) => {
     if (event.type !== 'threadsSubmitted') return
-    const proposal = await agent.revise(event)
+    const proposal = await agent.revise({
+      threads: event.threads,
+      sectionContexts: event.sectionContexts,
+    })
     controllerRef.current?.createRevisionProposal(proposal)
-  }
+  }}
 />
 ```
 
-Agent 返回的 proposal 示例：
+Proposal 示例：
 
 ```json
 {
   "fromThreadIds": ["thread_123"],
-  "summary": "补充营收增长原因",
+  "summary": "补充下一步行动细节",
   "patches": [
-    { "op": "updateSection", "sectionId": "summary", "updates": { "content": "营收同比增长 15%，主要由续费率提升驱动。" } }
+    {
+      "op": "updateSection",
+      "sectionId": "next-steps",
+      "updates": {
+        "content": "1. 明确实验负责人...\n2. 设置 7 天观察窗口..."
+      }
+    }
   ],
   "author": { "id": "agent", "role": "agent" },
   "risk": "low"
 }
 ```
 
-旧版 `onAction` 兼容事件仍存在，但新 Agent 应优先使用 `onReviewAction + controllerRef`。
+在 `validation/vizual-test.html` 中测试 DocView 时，使用：
 
-### 接入方需要实现的逻辑
+- `renderDocViewInMsg(id, config)`
+- `createDocViewThread(ref, input)`
+- `submitDocViewThreads(ref, threadIds?)`
+- `getDocViewReviewState(ref?)`
+- `createDocViewRevision(ref, input)`
+- `applyDocViewRevision(ref, proposalId?)`
 
-1. **传入回调**：渲染时传入 `onSubmit`/`onAction` 等回调
-2. **转发数据**：回调里把数据通过 WebSocket / HTTP / 你的应用层协议 发给 Agent
-3. **Agent 继续**：Agent 收到数据后继续对话
+## 导出
 
-```tsx
-// 示例：WebSocket 转发
-const onFormSubmit = (data) => {
-  ws.send(JSON.stringify({ type: 'form_submit', data }))
-}
+宿主可以按 artifact 导出：
 
-// Agent 端接收
-ws.on('message', async (msg) => {
-  const { type, data } = JSON.parse(msg)
-  if (type === 'form_submit') {
-    await agent.continue(`用户提交了表单：${JSON.stringify(data)}`)
-  }
-})
+```js
+await window.exportArtifact(artifact.id, { format: 'pdf', filename: 'report' })
+await window.exportArtifact(artifact.id, { format: 'xlsx', filename: 'data' })
 ```
 
-## AI 输出格式规范
+库级 API：
 
-### 单组件示例
+```ts
+import { exportElement, exportDataToXLSX, downloadBlob } from 'vizual'
 
-```json
-{
-  "root": "main",
-  "elements": {
-    "main": {
-      "type": "BarChart",
-      "props": {
-        "type": "bar",
-        "title": "季度销售额",
-        "x": "quarter",
-        "y": "revenue",
-        "data": [
-          { "quarter": "Q1", "revenue": 120 },
-          { "quarter": "Q2", "revenue": 200 },
-          { "quarter": "Q3", "revenue": 180 },
-          { "quarter": "Q4", "revenue": 310 }
-        ]
-      },
-      "children": []
-    }
-  }
-}
+const pdf = await exportElement(element, 'pdf', { filename: 'report' })
+const xlsx = await exportDataToXLSX(rows, { sheetName: '明细' })
+
+await downloadBlob(pdf, 'report.pdf')
+await downloadBlob(xlsx, 'data.xlsx')
 ```
 
-### 多组件组合示例
+## 冷启动验收
 
-```json
-{
-  "root": "root",
-  "elements": {
-    "root": {
-      "type": "GridLayout",
-      "props": { "columns": 2, "gap": 16 },
-      "children": ["chart", "table"]
-    },
-    "chart": {
-      "type": "LineChart",
-      "props": {
-        "type": "line",
-        "title": "收入趋势",
-        "x": "month",
-        "y": "revenue",
-        "data": [
-          { "month": "Jan", "revenue": 100 },
-          { "month": "Feb", "revenue": 120 },
-          { "month": "Mar", "revenue": 150 }
-        ]
-      },
-      "children": []
-    },
-    "table": {
-      "type": "DataTable",
-      "props": {
-        "type": "table",
-        "columns": [
-          { "key": "product", "label": "产品" },
-          { "key": "sales", "label": "销量" }
-        ],
-        "data": [
-          { "product": "A", "sales": 100 },
-          { "product": "B", "sales": 200 }
-        ]
-      },
-      "children": []
-    }
-  }
-}
-```
+主验收页面是 `validation/vizual-test.html`。它模拟真实 Agent 聊天宿主，覆盖：
 
-## 最佳实践
+- 乱格式数据解析并渲染 Dashboard
+- 历史追问改图，新气泡保留旧历史
+- 实时调参和品牌色变更
+- 多个 interactive artifact 隔离
+- ComboChart、Scatter、Histogram、Calendar、Dumbbell、Mermaid 等复杂图
+- DocView 批注、提交、修订 proposal、apply、resolved
+- 普通 dashboard 和 DocView 导出
 
-### 提供完整数据
-
-AI Agent 需要数据才能生成有意义的可视化。在请求中包含完整的数据集：
-
-```
-"用以下数据创建柱状图：Q1=120万, Q2=200万, Q3=180万, Q4=310万"
-```
-
-### 指定组件类型
-
-虽然 AI 可以自动推断，但明确指定组件类型可以获得更准确的结果：
-
-```
-"用甘特图展示项目排期" → GanttChart
-"创建看板" → Kanban
-"展示 KPI" → KpiDashboard
-```
-
-### 使用布局组件组合
-
-AI 可以通过布局组件（GridLayout、SplitLayout、HeroLayout）组合多个组件，创建复杂仪表盘布局：
-
-```
-"做一个仪表盘：顶部显示 KPI，中间两列放柱状图和表格"
-→ HeroLayout + KpiDashboard, GridLayout + BarChart + DataTable
-```
-
-### 用 FormBuilder 收集用户信息
-
-当需要向用户收集信息时，用 FormBuilder：
-
-```
-"帮我做一个用户调研表单"
-→ FormBuilder + onSubmit 回调 → Agent 接收数据继续处理
-```
-
-## 组件总览
-
-Vizual 共注册 **31 个组件**，分为 5 类：
-
-| 类别 | 数量 | 组件 |
-|------|------|------|
-| 图表 (ECharts) | 19 | BarChart, AreaChart, LineChart, PieChart, ScatterChart, BubbleChart, BoxplotChart, HistogramChart, WaterfallChart, XmrChart, SankeyChart, FunnelChart, HeatmapChart, CalendarChart, SparklineChart, ComboChart, DumbbellChart, RadarChart, MermaidDiagram |
-| 数据组件 | 1 | DataTable |
-| 业务组件 | 6 | Timeline, Kanban, GanttChart, OrgChart, KpiDashboard, AuditLog |
-| 布局组件 | 3 | GridLayout, SplitLayout, HeroLayout |
-| 表单组件 | 1 | FormBuilder |
-| 文档组件 | 1 | DocView |
-| **合计** | **31** | |
+盲测任务书：`COLD_START_BLIND_TEST.md`。验收指南：`COLD_START_ACCEPTANCE_GUIDE.md`。

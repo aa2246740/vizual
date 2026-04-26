@@ -1,1 +1,0 @@
-{"root":"c13","elements":{"c13":{"type":"HeatmapChart","props":{"type":"heatmap","title":"网站访问热力图","data":[{"hour":0,"day":"周一","value":120},{"hour":12,"day":"周一","value":500},{"hour":18,"day":"周五","value":800},{"hour":21,"day":"周日","value":350}]},"children":[]}}}

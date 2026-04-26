@@ -98,7 +98,7 @@ Real outputs are usually compositions. Here are the common patterns:
 
 **Annotatable Document** — `DocView` with structured sections: `heading`, `text`, `callout`, `kpi`, `chart`, `table`, `markdown`. Use this when the user explicitly wants comments, annotations, revisions, document review, or asks to turn an output into a reviewable document artifact. Do not choose DocView merely because the user says "report", "analysis", "dashboard", or "export"; ordinary report/export outputs should stay as host text plus `GridLayout`/charts/tables. Set `showPanel: true` when annotations are part of the workflow; set `showPanel: false` only for read-only previews of a document that can later enter review. For revisable documents, give important sections stable `id` fields so Agent patches can target `sectionId`.
 
-For charts inside DocView, read `references/doc/docview.md`: use `chart` sections with `data.chartType` for ordinary embedded charts, or `component` sections with `data.componentType` when exact standalone chart props are clearer.
+For charts inside DocView, read `references/doc/docview.md`: use `chart` sections with `data.chartType` for ordinary embedded charts, or `component` sections with top-level `componentType` and component props in `data` when exact standalone props are clearer.
 
 **Split View** — `SplitLayout` with a chart on one side and a `DataTable` on the other. Good for comparing visual and tabular representations of the same data.
 

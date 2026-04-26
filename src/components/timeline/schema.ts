@@ -1,7 +1,7 @@
 import { z } from 'zod'
 
 /**
- * Zod v4 schema for Timeline custom component
+ * Zod schema for Timeline custom component
  */
 export const TimelineSchema = z.object({
   type: z.literal('timeline'),

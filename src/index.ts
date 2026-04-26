@@ -1,4 +1,4 @@
-// AI RenderKit — json-render 可视化 Catalog
+// Vizual — AI Agent visual runtime catalog
 export { renderKitCatalog } from './catalog'
 export { registry, handlers, executeAction } from './registry'
 

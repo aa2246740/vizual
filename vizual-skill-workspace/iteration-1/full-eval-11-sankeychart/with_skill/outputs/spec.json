@@ -1,1 +1,0 @@
-{"root":"c11","elements":{"c11":{"type":"SankeyChart","props":{"type":"sankey","title":"能源流向","data":[{"source":"煤电","target":"工业","value":30},{"source":"煤电","target":"民用","value":20},{"source":"煤电","target":"商用","value":15},{"source":"水电","target":"工业","value":10},{"source":"水电","target":"民用","value":15},{"source":"水电","target":"商用","value":10}]},"children":[]}}}

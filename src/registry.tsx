@@ -75,7 +75,7 @@ function withBackgroundWrap(name: string, componentFn: React.ComponentType<any>)
 }
 
 /**
- * AI RenderKit registry — 31 React components + 3 action handlers
+ * Vizual registry — 31 React components + action handlers
  */
 // @ts-ignore
 export const { registry, handlers, executeAction } = defineRegistry(renderKitCatalog, {

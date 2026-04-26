@@ -131,7 +131,7 @@ Host-only SDK props:
 | chart | "" | { chartType, x, y, data, ... } | Embedded chart |
 | table | "" | { columns: [{key, label}], data: [...] } | Data table |
 | callout | string (callout text) | - | Highlighted callout/alert note |
-| component | "" | { componentType, ...props } | Embedded vizual component |
+| component | "" | component props object | Embedded Vizual component. Put `componentType` on the section itself, and component props in `data` |
 | markdown | string (markdown content) | - | Renders markdown |
 | freeform | string (HTML with inline CSS) | - | Arbitrary HTML (blocks class attr and event handlers) |
 
@@ -195,8 +195,9 @@ DocView supports two chart/component embedding patterns:
 {
   "type": "component",
   "content": "",
+  "componentType": "RadarChart",
   "data": {
-    "componentType": "RadarChart",
+    "type": "radar",
     "indicators": [
       { "name": "Correctness", "max": 40 },
       { "name": "Insight", "max": 30 }
@@ -208,7 +209,7 @@ DocView supports two chart/component embedding patterns:
 }
 ```
 
-Do not put a nested `{ "type": "BarChart", "props": { ... } }` object inside a DocView section. Use `chartType` for chart sections or `componentType` for component sections.
+Do not put a nested `{ "type": "BarChart", "props": { ... } }` object inside a DocView section. Use `chartType` in `data` for chart sections. For component sections, put `componentType` on the section and put the component props in `data`.
 
 ## Section layout variants (optional `layout` field on any section)
 

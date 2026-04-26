@@ -1,8 +1,8 @@
-# 开源许可证说明 — AI RenderKit
+# 开源许可证说明 — Vizual
 
 ## 项目许可证
 
-**AI RenderKit** 使用 **MIT License** 发布。
+**Vizual** 使用 **MIT License** 发布。
 
 这意味着你可以：
 - ✅ 商业使用
@@ -94,7 +94,7 @@ EPL-2.0 ──────── 允许商用，修改源码需开源
   └── elkjs (mermaid 间接依赖)
 ```
 
-**结论：AI RenderKit 及其所有依赖均允许商业使用。** 没有 GPL/AGPL 等传染性许可证。
+**结论：Vizual 及其所有依赖均允许商业使用。** 没有 GPL/AGPL 等传染性许可证。
 
 ---
 

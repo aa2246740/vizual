@@ -22,14 +22,14 @@
 
 冷启动 Agent 必须使用用户能看到的同一个浏览器页面。测试主持人负责启动服务、打开 Chrome、打开 `vizual-test.html`，以及确保 Chrome DevTools MCP 能看到这个页面。被测 Agent 不负责启动、重启、杀掉或切换 Chrome，也不负责下载 Playwright 浏览器。
 
-## 测试模式：可见页面监听
+## 测试模式：可见页面自驱动盲测
 
-这个测试不是“让 Agent 写脚本自动跑完”。正确模式是：
+这个测试不是 headless 脚本冒充验收，也不是让用户手动输入 9 轮消息。正确模式是：
 
 1. 用户在自己能看到的 Chrome 里打开 `vizual-test.html`。
 2. 被测 Agent 连接同一个 Chrome/CDP 和同一个页面。
-3. 用户在页面聊天框里输入测试 prompt。
-4. 被测 Agent 通过 `window.getPendingMessage()` 读取用户输入。
+3. 被测 Agent 按盲测任务书，自己把每轮用户消息输入到页面聊天框并发送。
+4. 被测 Agent 通过 `window.getPendingMessage()` 读取刚发送的用户输入，像真实业务 Agent 一样处理。
 5. 被测 Agent 在同一个可见页面里调用 bridge API 生成 AI 回复、渲染 Vizual、追问修改、交互控件、DocView 或导出。
 6. 用户能肉眼看到每一步结果。
 
@@ -40,9 +40,9 @@
 - 不要启动 headless 浏览器。
 - 不要新开一个用户看不到的 Playwright Chromium。
 - 不要运行 `playwright install`、`npx playwright install`、`playwright install chromium` 或任何会下载浏览器的命令。
-- 不要把测试改成“自己写 Python/Playwright 脚本跑完”。
-- 不要告诉用户“不用输入，我自动测”。这个页面的核心就是测 Agent 能否监听和响应用户输入。
-- 如果用户说“我想看着你测”，被测 Agent 应该等待用户在页面里输入，并说明“我会监听这个页面并响应你的输入”。
+- 不要把测试改成用户看不到的 Python/Playwright headless 脚本。
+- 不要绕过聊天框直接调用所有 API 跑完；每轮都要先在页面聊天框形成一条用户消息，再由 Agent 读取 pending message 并响应。
+- 如果用户说“我想看着你测”，被测 Agent 应该在同一个可见页面里逐轮输入测试消息并响应，让用户能看见过程。
 - 不要把 `eval-full-31.html` 当成冷启动主任务。
 
 如果 Chrome DevTools MCP 没有列出 `vizual-test.html`，被测 Agent 应该停止并告诉测试主持人：“我现在看不到你打开的 `vizual-test.html`，请你确认页面已经打开并且 DevTools MCP 已连接到这个 Chrome。”不要自行重启浏览器或换端口。
@@ -73,13 +73,13 @@
 - 第一步先读 ~/.claude/skills/vizual/SKILL.md。
 - 只在需要时读取 ~/.claude/skills/vizual/references/ 下被 SKILL.md 指向的组件参考文件。
 - 不要读取 Vizual 仓库源码、validation HTML 源码、git history、历史 QA 报告，或任何实现对话。
-- 测试主持人已经打开了可见页面。你只负责连接和监听，不负责启动 Chrome、重启 Chrome、杀 Chrome、打开新浏览器或切换调试端口。
+- 测试主持人已经打开了可见页面。你只负责连接这个页面、输入测试消息并响应，不负责启动 Chrome、重启 Chrome、杀 Chrome、打开新浏览器或切换调试端口。
 - 优先使用 Chrome DevTools MCP 连接当前页面；如果 MCP 暴露了多个 tab，只选择 URL 为 http://127.0.0.1:8793/validation/vizual-test.html... 的 tab。
 - 只测试主页面： http://127.0.0.1:8793/validation/vizual-test.html?cold-start-claude=<timestamp>
 - 你必须连接用户正在看的同一个可见 Chrome 页面。不要启动 headless 浏览器，不要启动新的 Playwright Chromium。
 - 不要运行 `playwright install` 或任何下载 Chromium 的命令；测试只允许连接现有页面。
 - 如果你无法通过 MCP 看到这个页面，直接告诉用户“我看不到已打开的 vizual-test.html，请你确认 DevTools MCP 连接的是这个 Chrome”，然后等待。不要自己执行 open/kill/curl/json/new 等浏览器管理命令。
-- 这个测试是“监听用户输入并响应”，不是“自己写脚本自动跑完”。用户会在页面聊天框输入测试内容，你要读取页面 pending message 并在同一个页面里回复。
+- 这个测试是“可见页面自驱动盲测”，不是 headless 自动化。你要自己在页面聊天框输入每轮测试内容，发送后读取页面 pending message，并在同一个页面里回复。
 - 除非用户明确要求，不要测试 eval-full-31.html。
 
 你的任务：
@@ -87,7 +87,7 @@
 2. 根据 Vizual skill 判断何时使用静态 spec、可编辑 artifact、实时交互 bridge、DocView。
 3. 完成本验收指南里的所有场景。
 4. 不要只看 PASS 文案。只有页面上真实渲染正确 UI，并且宿主 debug API 状态合理时，才能判定 PASS。
-5. 用户输入后，你要在可见页面里生成新的 AI 回复气泡或交互结果，让用户能跟着看。
+5. 每轮测试消息发送后，你要在可见页面里生成新的 AI 回复气泡或交互结果，让用户能跟着看。
 6. 输出一份 Markdown QA 报告，包含：
    - 场景 ID
    - 用户输入
@@ -401,7 +401,7 @@ Prompt B：
 期望行为：
 
 - 批注提交时带有 section / target metadata。
-- 如果选中文本属于某个 section，不能变成 orphaned / 孤立。
+- 如果选中文本属于某个 section，不能丢失 section / target metadata 或退化成失效锚点状态。
 - Agent 能读取已提交的批注线程。
 - Agent 能提出或应用修订。
 - 修订后 DocView 内容更新。
@@ -446,7 +446,7 @@ Prompt B：
 
 ### S11. 主页面代表性视觉抽查
 
-仍然只在 `vizual-test.html` 里测试。用户会在同一个聊天页面输入几个较难的可视化需求，被测 Agent 需要监听并响应。
+仍然只在 `vizual-test.html` 里测试。被测 Agent 在同一个聊天页面输入几个较难的可视化需求，然后读取 pending message 并响应。
 
 通过标准：
 
@@ -467,8 +467,8 @@ Prompt B：
 
 测试方式：
 
-1. 用户在 `vizual-test.html` 聊天框输入上述需求。
-2. 被测 Agent 用 `getPendingMessage()` 获取用户输入。
+1. 被测 Agent 在 `vizual-test.html` 聊天框输入上述需求并发送。
+2. 被测 Agent 用 `getPendingMessage()` 获取刚发送的用户输入。
 3. 被测 Agent 用 Vizual bridge 在同一个可见页面回复。
 4. 用户肉眼确认结果；Agent 记录截图或 debug state。
 
@@ -490,7 +490,7 @@ Agent 应该通过宿主 API 检查状态，而不是脆弱地抓 DOM 文本。
 被测 Agent 必须明确避免这些错误：
 
 - 不要使用 `InteractivePlayground`，它已经移除。
-- 不要提 LiveKit 作为 Vizual 交互方案。
+- 不要提外部实时交互框架作为 Vizual 交互方案；当前实时能力来自 Vizual host bridge。
 - 不要因为用户说“报告”就滥用 DocView。
 - 不要在历史追问里原地修改老气泡。
 - 不要假设 raw JSON spec 能自动完成实时交互。

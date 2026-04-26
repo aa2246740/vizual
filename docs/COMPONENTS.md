@@ -1,4 +1,4 @@
-# 组件参考文档 — AI RenderKit
+# 组件参考文档 — Vizual vNext
 
 完整列出 31 个注册组件的 Schema、props 说明和使用示例。
 
@@ -554,7 +554,7 @@ Mermaid 流程图/序列图/甘特图等。
 
 ### DataTable
 
-数据表格，支持排序、分页、紧凑模式。
+数据表格，支持列定义、对齐、斑马纹、紧凑模式。在 DocView 内，每个单元格可以成为批注目标。当前不内置排序、筛选或分页。
 
 ```json
 {
@@ -892,7 +892,7 @@ SplitLayout 将前两个子组件分别放入主面板和次面板。
 
 ### DocView
 
-可批注文档组件，支持多种 section 类型（文本、标题、图表、KPI、表格、callout、嵌入组件等）和完整的批注系统。用户可以对任意文本或组件目标添加批注、提交 AI 修订请求，库自动检测内容变更后的孤立批注。
+可批注文档组件，支持多种 section 类型（文本、标题、图表、KPI、表格、callout、嵌入组件等）和完整的批注系统。用户可以对任意文本或组件目标添加批注、提交 AI 修订请求，库会在内容修订后维护批注状态。
 
 ```json
 {
@@ -908,7 +908,7 @@ SplitLayout 将前两个子组件分别放入主面板和次面板。
     { "type": "table", "content": "", "data": { "columns": [{"key":"name","label":"名称"},{"key":"value","label":"数值"}], "data": [{"name":"Q1","value":120},{"name":"Q2","value":200}] } },
     { "type": "callout", "content": "注意：所有数据为初步统计。" },
     { "type": "markdown", "content": "## 详细分析\n\n这是 **Markdown** 内容。" },
-    { "type": "component", "content": "", "componentType": "KpiDashboard", "data": { "metrics": [{"label":"DAU","value":"12.5K","trend":"up"}] } }
+    { "type": "component", "content": "", "componentType": "KpiDashboard", "data": { "type": "kpi_dashboard", "metrics": [{"label":"DAU","value":"12.5K","trend":"up"}] } }
   ]
 }
 ```
@@ -931,7 +931,7 @@ SplitLayout 将前两个子组件分别放入主面板和次面板。
 | kpi | "" | { metrics: [{label, value, trend, trendValue}] } | KPI 指标卡片 |
 | table | "" | { columns: [{key, label}], data: [...] } | 数据表格 |
 | callout | string | — | 高亮提示，可用 `variant` (`info`/`warning`/`success`/`error`/`neutral`) |
-| component | "" | { ...props } | 嵌入 vizual 组件，用 `componentType` 指定组件 |
+| component | "" | { ...props } | 嵌入 Vizual 组件，section 顶层用 `componentType` 指定组件，`data` 放该组件 props |
 | markdown | string | — | Markdown 内容 |
 | freeform | string (HTML) | — | 原始 HTML 内容 |
 

@@ -1,6 +1,6 @@
 # Vizual — AI Agent System Prompt
 
-> **DEPRECATED for Chatbots**: This prompt is designed for AI agents (Claude Code, Cursor, Windsurf) that generate code. It is NOT suitable for ChatGPT / Claude.ai / Gemini chatbot interfaces. Vizual focuses on programmatic AI integration, not conversational interfaces.
+> **Host runtime required**: This prompt is for AI agents (Claude Code, Cursor, Windsurf, or a custom Agent inside your SaaS) that can output Vizual specs/artifacts and call a host bridge. It can power chatbot-style UI when that UI embeds Vizual. It cannot render inside closed consumer chat surfaces such as ChatGPT / Claude.ai / Gemini unless that platform integrates Vizual.
 >
 > For AI agents: Use this prompt as the System Prompt.
 >
