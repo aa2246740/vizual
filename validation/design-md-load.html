@@ -31,6 +31,11 @@
       font-size: 22px;
       letter-spacing: 0;
     }
+    h2 {
+      margin-top: 0;
+      font-family: var(--rk-font-ui, var(--rk-font-sans));
+      font-size: 16px;
+    }
     main {
       display: grid;
       grid-template-columns: minmax(0, 1fr) 360px;
@@ -143,6 +148,122 @@
     @media (max-width: 900px) {
       main { grid-template-columns: 1fr; }
     }
+    body[data-profile="wired"] {
+      background: #ffffff;
+      color: #000000;
+    }
+    body[data-profile="wired"] header {
+      position: static;
+      border-bottom: 2px solid #000000;
+      padding: 18px 24px 14px;
+    }
+    body[data-profile="wired"] h1 {
+      font-size: 32px;
+      line-height: 0.98;
+      letter-spacing: 0;
+    }
+    body[data-profile="wired"] main {
+      max-width: 1360px;
+      grid-template-columns: minmax(0, 1fr) 380px;
+      gap: 0;
+      padding: 20px 24px 32px;
+    }
+    body[data-profile="wired"] .panel {
+      background: #ffffff;
+      border: 0;
+      border-radius: 0;
+      box-shadow: none;
+      padding: 20px 28px;
+    }
+    body[data-profile="wired"] main > .panel:first-child {
+      border-right: 1px solid #000000;
+      padding-left: 0;
+    }
+    body[data-profile="wired"] aside.panel {
+      padding-right: 0;
+    }
+    body[data-profile="wired"] .status-badge {
+      min-width: 0;
+      border: 2px solid #000000;
+      border-radius: 0;
+      background: #ffffff;
+      color: #000000;
+      font-family: var(--rk-font-mono, monospace);
+      font-size: 12px;
+      letter-spacing: 1.1px;
+      text-transform: uppercase;
+    }
+    body[data-profile="wired"] .status-badge[data-status="pass"],
+    body[data-profile="wired"] .status-badge[data-status="fail"] {
+      border-color: #000000;
+      color: #000000;
+    }
+    body[data-profile="wired"] h2 {
+      margin: 0 0 14px;
+      padding: 8px 10px;
+      background: #000000;
+      color: #ffffff;
+      font-family: var(--rk-font-mono, monospace);
+      font-size: 12px;
+      letter-spacing: 1.2px;
+      line-height: 1;
+      text-transform: uppercase;
+    }
+    body[data-profile="wired"] .swatches {
+      gap: 0;
+      border-top: 2px solid #000000;
+      border-left: 1px solid #000000;
+      margin: 14px 0 18px;
+    }
+    body[data-profile="wired"] .swatch {
+      min-height: 86px;
+      border: 0;
+      border-right: 1px solid #000000;
+      border-bottom: 1px solid #000000;
+      border-radius: 0;
+      font-family: var(--rk-font-mono, monospace);
+      letter-spacing: .9px;
+      text-transform: uppercase;
+    }
+    body[data-profile="wired"] .swatch strong {
+      font-size: 11px;
+    }
+    body[data-profile="wired"] .font-demo {
+      border: 2px solid #000000;
+      border-left: 0;
+      border-right: 0;
+      border-radius: 0;
+      background: #ffffff;
+      padding: 14px 0;
+    }
+    body[data-profile="wired"] .font-display {
+      font-size: 34px;
+      line-height: 1.02;
+      font-weight: 700;
+    }
+    body[data-profile="wired"] .font-body {
+      font-size: 16px;
+      line-height: 1.5;
+    }
+    body[data-profile="wired"] pre {
+      border: 1px solid #000000;
+      border-radius: 0;
+      background: #ffffff;
+      max-height: 320px;
+    }
+    @media (max-width: 900px) {
+      body[data-profile="wired"] main {
+        grid-template-columns: 1fr;
+      }
+      body[data-profile="wired"] main > .panel:first-child {
+        border-right: 0;
+        border-bottom: 1px solid #000000;
+        padding-right: 0;
+      }
+      body[data-profile="wired"] aside.panel {
+        padding-left: 0;
+      }
+    }
   </style>
 </head>
 <body>
@@ -155,7 +276,7 @@
       <div id="viz"></div>
     </section>
     <aside class="panel">
-      <h2 style="margin-top:0;font-size:16px;">解析结果</h2>
+      <h2>解析结果</h2>
       <div class="swatches">
         <div class="swatch" style="background:var(--rk-accent);color:white;">
           <strong>Accent</strong>
@@ -363,6 +484,7 @@ WIRED's depth philosophy is flat by religion. There are no shadows and no box-sh
     }
 
     function init() {
+      document.body.dataset.profile = selectedProfile;
       document.querySelector('h1').textContent = profile.pageTitle;
       const theme = window.Vizual.loadDesignMd(profile.markdown, { name: selectedProfile + '-design-md-browser', apply: true });
       window.Vizual.renderSpec(spec, document.getElementById('viz'));
@@ -403,10 +525,26 @@ WIRED's depth philosophy is flat by religion. There are no shadows and no box-sh
       if (!ok) throw new Error('DESIGN.md theme mapping failed');
     }
 
-    fetch('/dist/vizual.standalone.js?_t=' + Date.now()).then(r => r.text()).then(code => {
-      (0, eval)(code);
-      init();
-    }).catch(error => {
+    function standaloneUrl() {
+      const cacheBust = '_t=' + Date.now();
+      if (location.protocol === 'file:') {
+        return new URL('../dist/vizual.standalone.js?' + cacheBust, location.href).href;
+      }
+      return '/dist/vizual.standalone.js?' + cacheBust;
+    }
+
+    function loadStandalone() {
+      if (window.Vizual) return Promise.resolve();
+      return new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = standaloneUrl();
+        script.onload = resolve;
+        script.onerror = () => reject(new Error('Failed to load ' + script.src));
+        document.head.appendChild(script);
+      });
+    }
+
+    loadStandalone().then(init).catch(error => {
       document.getElementById('status').textContent = 'FAIL：' + error.message;
       document.getElementById('debug').textContent = error.stack || error.message;
     });
