@@ -97,7 +97,7 @@ if (pdf?.status !== 'success' || xlsx?.status !== 'success') console.warn('Expor
 Follow-up edits create a new AI bubble by default. Pass `{ mode: 'replace' }` only for temporary in-place preview/debug.
 Do not use RFC-style JSON Patch (`{ op, path, value }`) in normal agent work; typed patches are target-map aware and safer.
 
-For live parameter tuning, use `renderInteractiveVizInMsg(id, config)` with FormBuilder bound to `/controls` and `makeSpec(state)`. This is host JavaScript, not pure JSON.
+For live parameter tuning, use `renderInteractiveVizInMsg(id, config)` with FormBuilder bound to `/controls` and `makeSpec(state)`. This is host JavaScript, not pure JSON. In a custom React host, render FormBuilder through `VizualRenderer` and update controls with `getVizualStateValue(changes, '/controls', prevControls)`. Do not shallow-merge `/controls` changes into the controls object itself.
 
 For automated QA of live previews, use `updateInteractiveVizInMsg(id, { controls: {...} }, { immediate: true })` and inspect `getInteractiveVizState(id).lastPreviewSpec`. Do not rely on brittle DOM selectors or plain `el.value = ...` event dispatch to prove React controls updated.
 

@@ -1,7 +1,12 @@
 import { fireEvent, render, waitFor } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { normalizeArtifact, type VizualSpec } from './artifact'
-import { VizualArtifactView, VizualRenderer } from './react-renderer'
+import {
+  VizualArtifactView,
+  VizualRenderer,
+  applyVizualStateChanges,
+  getVizualStateValue,
+} from './react-renderer'
 
 function makeControlsSpec(title: unknown = 'Controls'): VizualSpec {
   return {
@@ -32,6 +37,25 @@ function makeControlsSpec(title: unknown = 'Controls'): VizualSpec {
 }
 
 describe('VizualRenderer', () => {
+  it('applies and extracts state changes by JSON pointer path', () => {
+    const previous = {
+      controls: { chartType: 'bar', points: 6 },
+      other: { locked: true },
+    }
+    const changes = [
+      { path: '/controls', value: { chartType: 'line', points: 10 } },
+    ]
+
+    expect(applyVizualStateChanges(previous, changes)).toEqual({
+      controls: { chartType: 'line', points: 10 },
+      other: { locked: true },
+    })
+    expect(getVizualStateValue(changes, '/controls', previous.controls)).toEqual({
+      chartType: 'line',
+      points: 10,
+    })
+  })
+
   it('wraps json-render with the required providers', async () => {
     const onStateChange = vi.fn()
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined)

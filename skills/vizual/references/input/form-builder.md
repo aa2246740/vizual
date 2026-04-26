@@ -147,6 +147,29 @@ For live adjust-preview workflows, FormBuilder is the control surface. Bind the 
 
 In `validation/vizual-test.html`, use this controls spec inside `renderInteractiveVizInMsg(id, { initialState, controlsSpec, makeSpec, designMd, applyTheme, bubbleWidth })`. The page bridge receives `onStateChange`, calls `makeSpec(state)`, and re-renders the preview. A pure JSON spec cannot wire a form to a separate chart by itself.
 
+For a custom React host, use `VizualRenderer` and extract the bound object by path:
+
+```tsx
+import { VizualRenderer, getVizualStateValue } from 'vizual'
+
+const [controls, setControls] = useState({
+  chartType: 'bar',
+  points: 8,
+  brandColor: '#ff6b35',
+})
+
+<VizualRenderer
+  spec={controlsSpec}
+  initialState={{ controls }}
+  onStateChange={(changes) => {
+    setControls(prev => getVizualStateValue(changes, '/controls', prev))
+  }}
+/>
+<VizualRenderer spec={makeSpec(controls)} />
+```
+
+Do not shallow-merge `/controls` changes into the controls object itself. That creates `{ controls: {...} }` inside the controls state and the preview will keep reading stale top-level values.
+
 Use conditional controls when a field only applies to one target component. For example, `orientation` and `stacked` are BarChart controls; hide them when `chartType` is `line` or `combo`, and also filter them out in host `makeSpec(state)`.
 
 `dependsOn` / `showWhen` only implements equality-based visibility. It does not dynamically rewrite option lists. For complex linked controls, use separate conditional fields or enforce the allowed values in the host bridge.

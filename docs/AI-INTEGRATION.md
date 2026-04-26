@@ -113,6 +113,24 @@ const updated = await runtime.updateArtifact(artifact.id, [
 
 实时可调不是纯 JSON spec。宿主需要提供 bridge：左侧 FormBuilder 控件绑定 state，右侧由 `makeSpec(state)` 重新渲染预览。
 
+自有 React 宿主推荐用 `VizualRenderer` 加 `getVizualStateValue()`。注意：当 FormBuilder 绑定 `value: { "$bindState": "/controls" }` 时，`onStateChange` 返回的是 `/controls` 整个对象，不是顶层 controls 字段的增量。不要把这个 change 直接浅合并进 controls 本身。
+
+```tsx
+import { VizualRenderer, getVizualStateValue } from 'vizual'
+
+const [controls, setControls] = useState({ chartType: 'bar', points: 8, brandColor: '#ff6b35' })
+
+<VizualRenderer
+  spec={controlsSpec}
+  initialState={{ controls }}
+  onStateChange={(changes) => {
+    setControls(prev => getVizualStateValue(changes, '/controls', prev))
+  }}
+/>
+
+<VizualRenderer spec={makeSpec(controls)} />
+```
+
 `validation/vizual-test.html` 的参考 API：
 
 ```js

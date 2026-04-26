@@ -226,6 +226,8 @@ export type {
   InteractiveSnapshot,
 } from './core/agent-bridge'
 export {
+  applyVizualStateChanges,
+  getVizualStateValue,
   VizualArtifactView,
   VizualRenderer,
 } from './core/react-renderer'

@@ -38,6 +38,17 @@ export type {
   InteractiveSnapshot,
 } from './agent-bridge'
 export {
+  applyVizualStateChanges,
+  getVizualStateValue,
+  VizualArtifactView,
+  VizualRenderer,
+} from './react-renderer'
+export type {
+  VizualArtifactViewProps,
+  VizualRendererProps,
+  VizualStateChange,
+} from './react-renderer'
+export {
   downloadBlob,
   downloadExport,
   downloadPNG,

@@ -160,6 +160,26 @@ executeAction('submitForm', { formId: 'myForm', data: { name: 'Alice' } })
 
 实时可调图表不是纯 JSON schema；宿主需要把 FormBuilder 的 `value: { "$bindState": "/controls" }` 绑定到 state，再由 `makeSpec(state)` 重新生成预览图表。`validation/vizual-test.html` 的 `renderInteractiveVizInMsg()` 是推荐参考实现。
 
+自有 React 宿主可以这样接：
+
+```tsx
+import { VizualRenderer, getVizualStateValue } from 'vizual'
+
+const [controls, setControls] = useState({ chartType: 'bar', points: 8, brandColor: '#ff6b35' })
+
+<VizualRenderer
+  spec={controlsSpec}
+  initialState={{ controls }}
+  onStateChange={(changes) => {
+    setControls(prev => getVizualStateValue(changes, '/controls', prev))
+  }}
+/>
+
+<VizualRenderer spec={makeSpec(controls)} />
+```
+
+不要把 `/controls` change 直接浅合并到 `controls` 对象本身，否则会得到 `{ controls: {...} }` 这样的嵌套状态，预览不会跟着控件变。
+
 ### 主题色函数：tc() 和 tcss()
 
 Vizual 的主题系统提供两个颜色访问函数：

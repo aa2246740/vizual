@@ -284,6 +284,8 @@ window.renderInteractiveVizInMsg(id, {
 });
 ```
 
+For a custom React host, use `VizualRenderer` and `getVizualStateValue(changes, '/controls', prevControls)` when FormBuilder binds the whole form to `/controls`. Do not shallow-merge `/controls` changes into the controls object itself; that creates nested stale state and the preview will not update correctly. If you keep a larger runtime object, keep it shaped as `{ controls }` and use `applyVizualStateChanges(runtimeState, changes)`.
+
 For interactive controls, expose only options that make sense for the current component. `horizontal` and `stacked` are BarChart options; do not show or pass them to LineChart or ComboChart. Use FormBuilder `dependsOn` / `showWhen` for visibility and still normalize in `makeSpec(state)` so invalid props never reach the chart.
 
 For automated QA of an interactive preview, prefer the stable host APIs instead of simulating React DOM input events:

@@ -25,6 +25,53 @@ export type VizualArtifactViewProps = Omit<VizualRendererProps, 'spec'> & {
   artifact: VizualArtifact
 }
 
+function splitStatePath(path: string) {
+  return path.replace(/^\/+/, '').split('/').filter(Boolean)
+}
+
+function readAtStatePath(value: unknown, path: string) {
+  let cursor = value as any
+  for (const part of splitStatePath(path)) {
+    if (cursor == null || typeof cursor !== 'object') return undefined
+    cursor = cursor[part]
+  }
+  return cursor
+}
+
+export function applyVizualStateChanges<T extends Record<string, unknown>>(
+  previous: T,
+  changes: VizualStateChange[],
+): T {
+  const next = structuredClone(previous) as Record<string, unknown>
+  for (const change of changes) {
+    const parts = splitStatePath(change.path)
+    if (!parts.length) continue
+    let cursor: any = next
+    for (let index = 0; index < parts.length - 1; index += 1) {
+      const part = parts[index]
+      if (cursor[part] == null || typeof cursor[part] !== 'object' || Array.isArray(cursor[part])) {
+        cursor[part] = {}
+      }
+      cursor = cursor[part]
+    }
+    cursor[parts[parts.length - 1]] = change.value
+  }
+  return next as T
+}
+
+export function getVizualStateValue<T>(
+  changes: VizualStateChange[],
+  path: string,
+  fallback: T,
+): T {
+  for (const change of changes) {
+    if (change.path === path) return change.value as T
+  }
+  const patched = applyVizualStateChanges({}, changes)
+  const value = readAtStatePath(patched, path)
+  return value === undefined ? fallback : value as T
+}
+
 function createObservableStateStore(
   initialState: StateModel,
   onStateChange?: VizualRendererProps['onStateChange'],
