@@ -1,7 +1,12 @@
 import type { ScatterChartProps } from './schema'
 import { createEChartsBridge } from '../../core/echarts-bridge-factory'
 
-function buildScatterFallback(props: ScatterChartProps): Record<string, unknown> {
+function finiteNumber(value: unknown, fallback = 0): number {
+  const num = Number(value)
+  return Number.isFinite(num) ? num : fallback
+}
+
+export function buildScatterFallback(props: ScatterChartProps): Record<string, unknown> {
   const x = props.x ?? 'name'
   const yFields = Array.isArray(props.y) ? props.y : [props.y ?? 'value']
   const xValues = props.data.map(d => d[x])
@@ -33,15 +38,15 @@ function buildScatterFallback(props: ScatterChartProps): Record<string, unknown>
     series: yFields.map((f, index) => ({
       type: index === 0 ? 'scatter' : 'line',
       name: f,
-      data: props.data.map(d => ({
-        name: String((props.groupField ? d[props.groupField] : undefined) ?? d[x] ?? ''),
-        value: [
-          numericX ? Number(d[x]) || 0 : String(d[x] ?? ''),
-          Number(d[f]) || 0,
-          props.size ? Number(d[props.size]) || 0 : undefined,
-        ],
-      })),
-      symbolSize: index === 0 ? symbolSize : undefined,
+      data: props.data.map(d => {
+        const point: unknown[] = [
+          numericX ? finiteNumber(d[x]) : String(d[x] ?? ''),
+          finiteNumber(d[f]),
+        ]
+        if (props.size) point.push(finiteNumber(d[props.size]))
+        return point
+      }),
+      symbolSize: index === 0 ? (symbolSize ?? 10) : undefined,
       showSymbol: index === 0,
       smooth: index > 0,
     })),

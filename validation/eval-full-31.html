@@ -43,11 +43,154 @@
   <script>
     let passCount = 0, failCount = 0, pendingCount = SPECS.length;
     const results = {};
+    const ECHARTS_COMPONENTS = new Set([
+      'BarChart', 'LineChart', 'AreaChart', 'PieChart', 'ScatterChart', 'BubbleChart',
+      'BoxplotChart', 'HistogramChart', 'WaterfallChart', 'XmrChart', 'SankeyChart',
+      'FunnelChart', 'HeatmapChart', 'CalendarChart', 'ComboChart', 'DumbbellChart',
+      'RadarChart'
+    ]);
 
     function updateCounts() {
       document.getElementById('pass-badge').textContent = passCount + ' PASS';
       document.getElementById('fail-badge').textContent = failCount + ' FAIL';
       document.getElementById('pending-badge').textContent = pendingCount + ' PENDING';
+    }
+
+    function updateSummary() {
+      const summaryEl = document.getElementById('summary');
+      if (pendingCount > 0) {
+        summaryEl.textContent = `Rendering and validating visuals... ${passCount} passed, ${failCount} failed, ${pendingCount} pending.`;
+      } else {
+        summaryEl.textContent = `Done. ${passCount} passed, ${failCount} failed out of ${SPECS.length} components.`;
+      }
+    }
+
+    function getRootElementSpec(spec) {
+      return spec?.elements?.[spec.root] || null;
+    }
+
+    function getCanvasSignal(container) {
+      const canvases = Array.from(container.querySelectorAll('canvas'));
+      let colored = 0;
+      let opaque = 0;
+      let sampled = 0;
+
+      for (const canvas of canvases) {
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+        if (!ctx || !canvas.width || !canvas.height) continue;
+        let image;
+        try {
+          image = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+        } catch (_e) {
+          continue;
+        }
+        const step = Math.max(1, Math.floor(Math.sqrt((canvas.width * canvas.height) / 50000)));
+        for (let y = 0; y < canvas.height; y += step) {
+          for (let x = 0; x < canvas.width; x += step) {
+            const i = (y * canvas.width + x) * 4;
+            const r = image[i], g = image[i + 1], b = image[i + 2], a = image[i + 3];
+            if (a < 20) continue;
+            opaque++;
+            sampled++;
+            const max = Math.max(r, g, b);
+            const min = Math.min(r, g, b);
+            const saturation = max - min;
+            const isSeriesLike = saturation > 45 && max > 90;
+            if (isSeriesLike) colored++;
+          }
+        }
+      }
+      return { canvasCount: canvases.length, colored, opaque, sampled };
+    }
+
+    function numericRange(values) {
+      const nums = values
+        .flat(Infinity)
+        .map(v => Number(v))
+        .filter(Number.isFinite);
+      if (nums.length === 0) return 0;
+      return Math.max(...nums) - Math.min(...nums);
+    }
+
+    function getBoxplotSpecValues(props) {
+      const rows = Array.isArray(props?.data) ? props.data : [];
+      return rows.flatMap(row => {
+        const five = ['min', 'q1', 'median', 'q3', 'max']
+          .map(key => Number(row?.[key]))
+          .filter(Number.isFinite);
+        if (five.length === 5) return five;
+        if (Array.isArray(row?.value)) return row.value.map(Number).filter(Number.isFinite);
+        const valueField = props.valueField || props.y || 'value';
+        const raw = Number(row?.[Array.isArray(valueField) ? valueField[0] : valueField]);
+        return Number.isFinite(raw) ? [raw] : [];
+      });
+    }
+
+    function validateRenderedSpec(spec, container) {
+      const root = getRootElementSpec(spec);
+      const type = root?.type;
+      if (!type) return { ok: false, reason: 'Missing root element type' };
+
+      if (ECHARTS_COMPONENTS.has(type)) {
+        const signal = getCanvasSignal(container);
+        if (signal.canvasCount === 0) return { ok: false, reason: 'ECharts canvas not found' };
+        const props = root.props || {};
+        if (Array.isArray(props.data) && props.data.length === 0) {
+          return { ok: false, reason: 'Chart data is empty' };
+        }
+
+        if (type === 'ScatterChart') {
+          if (signal.colored < 120) {
+            return { ok: false, reason: `Scatter has no visible point marks (colored pixels: ${signal.colored})` };
+          }
+        }
+
+        if (type === 'BoxplotChart') {
+          const rows = Array.isArray(props.data) ? props.data : [];
+          const range = numericRange(getBoxplotSpecValues(props));
+          if (rows.length < 2) {
+            return { ok: false, reason: `Boxplot has too few source rows (${rows.length})` };
+          }
+          if (range <= 1) {
+            return { ok: false, reason: `Boxplot values are degenerate (range: ${range})` };
+          }
+          if (signal.colored < 120) {
+            return { ok: false, reason: `Boxplot has no visible box marks (colored pixels: ${signal.colored})` };
+          }
+        }
+      }
+
+      if (type === 'MermaidDiagram' && !container.querySelector('svg')) {
+        return { ok: false, reason: 'Mermaid SVG not found' };
+      }
+
+      return { ok: true };
+    }
+
+    function markPass(id) {
+      document.getElementById('status-' + id).innerHTML = '✅ Rendered';
+      document.getElementById('status-' + id).style.color = 'var(--rk-success)';
+      passCount++;
+      pendingCount--;
+      results[id] = 'PASS';
+      updateCounts();
+      updateSummary();
+    }
+
+    function markFail(id, message) {
+      const body = document.getElementById('body-' + id);
+      body.classList.add('error');
+      const existing = body.textContent?.trim();
+      if (!existing || !existing.includes(message)) {
+        body.insertAdjacentHTML('afterbegin', `<div style="margin-bottom:12px;font-weight:600">Visual validation failed: ${message}</div>`);
+      }
+      document.getElementById('status-' + id).innerHTML = '❌ Failed';
+      document.getElementById('status-' + id).style.color = 'var(--rk-error)';
+      failCount++;
+      pendingCount--;
+      results[id] = 'FAIL: ' + message;
+      updateCounts();
+      updateSummary();
     }
 
     fetch('/dist/vizual.standalone.js?_t=' + Date.now()).then(r => r.text()).then(code => {
@@ -78,38 +221,31 @@
           const container = document.getElementById('body-' + id);
           if (window.Vizual && window.Vizual.renderSpec) {
             window.Vizual.renderSpec(spec, container);
-            document.getElementById('status-' + id).innerHTML = '✅ Rendered';
-            document.getElementById('status-' + id).style.color = 'var(--rk-success)';
-            passCount++;
-            pendingCount--;
-            results[id] = 'PASS';
+            window.setTimeout(() => {
+              const validation = validateRenderedSpec(spec, container);
+              if (validation.ok) markPass(id);
+              else markFail(id, validation.reason || 'Unknown visual validation failure');
+            }, 450);
           } else {
             container.className = 'eval-body error';
             container.textContent = 'Vizual.renderSpec not found';
-            document.getElementById('status-' + id).innerHTML = '❌ No renderer';
-            document.getElementById('status-' + id).style.color = 'var(--rk-error)';
-            failCount++;
-            pendingCount--;
-            results[id] = 'FAIL: no renderSpec';
+            markFail(id, 'Vizual.renderSpec not found');
           }
         } catch (e) {
           const body = document.getElementById('body-' + id);
           body.className = 'eval-body error';
           body.textContent = e.message + '\n\n' + (e.stack || '');
-          document.getElementById('status-' + id).innerHTML = '❌ Error';
-          document.getElementById('status-' + id).style.color = 'var(--rk-error)';
-          failCount++;
-          pendingCount--;
-          results[id] = 'FAIL: ' + e.message;
+          markFail(id, e.message);
         }
         updateCounts();
+        updateSummary();
       }
 
       // Print summary
-      const summaryEl = document.getElementById('summary');
-      summaryEl.textContent = `Done. ${passCount} passed, ${failCount} failed out of ${SPECS.length} components.`;
-      console.log('=== EVAL RESULTS ===');
-      console.log(JSON.stringify(results, null, 2));
+      window.setTimeout(() => {
+        console.log('=== EVAL RESULTS ===');
+        console.log(JSON.stringify(results, null, 2));
+      }, 900);
     }
 
     // Theme switching — CMB tokens manually extracted via design-md-parser skill
