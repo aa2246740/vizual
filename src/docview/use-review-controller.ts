@@ -19,6 +19,8 @@ import {
   createRevisionProposal,
   createReviewId,
   createThreadFromAnnotation,
+  findSectionIndex,
+  getSectionId,
   getProposalThreads,
   normalizeColor,
   threadsToAnnotations,
@@ -48,6 +50,61 @@ function emitThreadAnnotations(
   onAnnotationsChange?: (annotations: Annotation[]) => void,
 ) {
   onAnnotationsChange?.(threadsToAnnotations(nextThreads))
+}
+
+function getSectionTypeForAnchor(section: DocViewSchemaProps['sections'][number] | undefined): AnnotationThread['anchor']['targetType'] {
+  const type = section?.type
+  switch (type) {
+    case 'heading':
+    case 'chart':
+    case 'kpi':
+    case 'table':
+    case 'callout':
+    case 'component':
+    case 'freeform':
+    case 'markdown':
+    case 'text':
+      return type
+    default:
+      return 'text'
+  }
+}
+
+function getSectionPlainText(section: DocViewSchemaProps['sections'][number] | undefined): string {
+  if (!section) return ''
+  if (typeof section.content === 'string') return section.content
+  if (typeof section.title === 'string') return section.title
+  return ''
+}
+
+function normalizeThreadAnchor(
+  input: CreateThreadInput,
+  sections: DocViewSchemaProps['sections'],
+): AnnotationThread['anchor'] {
+  const rawAnchor = input.anchor
+  const index = findSectionIndex(sections, rawAnchor?.sectionId || input.sectionId, rawAnchor?.sectionIndex ?? input.sectionIndex)
+  const sectionIndex = rawAnchor?.sectionIndex ?? index
+  const section = sectionIndex >= 0 ? sections[sectionIndex] : undefined
+  const sectionId = rawAnchor?.sectionId || input.sectionId || (sectionIndex >= 0 ? getSectionId(section, sectionIndex) : undefined)
+  const sectionText = getSectionPlainText(section)
+  const selectedText = rawAnchor?.textRange?.selectedText || input.selectedText || input.targetText || ''
+  const foundAt = selectedText ? sectionText.indexOf(selectedText) : -1
+  const textRange = rawAnchor?.textRange || (selectedText
+    ? {
+        start: foundAt >= 0 ? foundAt : 0,
+        end: foundAt >= 0 ? foundAt + selectedText.length : selectedText.length,
+        selectedText,
+      }
+    : undefined)
+
+  return {
+    ...rawAnchor,
+    sectionIndex,
+    sectionId,
+    targetType: rawAnchor?.targetType || input.targetType || getSectionTypeForAnchor(section),
+    label: rawAnchor?.label || input.label || selectedText || section?.title || sectionText.slice(0, 80) || 'DocView section',
+    textRange,
+  }
 }
 
 export function useReviewController({
@@ -114,10 +171,11 @@ export function useReviewController({
 
     const createThread = (input: CreateThreadInput): AnnotationThread => {
       const now = new Date().toISOString()
+      const anchor = normalizeThreadAnchor(input, sectionsRef.current)
       const comment = createComment(input.body, input.author, 'comment')
       const thread: AnnotationThread = {
         id: createReviewId('thread'),
-        anchor: input.anchor,
+        anchor,
         comments: [comment],
         color: normalizeColor(input.color),
         status: 'open',
@@ -130,8 +188,8 @@ export function useReviewController({
       }
       const next = [...threadsRef.current, thread]
       emitThreads(next)
-      const sectionContext = input.anchor.sectionIndex >= 0 && input.anchor.sectionIndex < sectionsRef.current.length
-        ? buildSectionContext(sectionsRef.current[input.anchor.sectionIndex], input.anchor.sectionIndex)
+      const sectionContext = anchor.sectionIndex >= 0 && anchor.sectionIndex < sectionsRef.current.length
+        ? buildSectionContext(sectionsRef.current[anchor.sectionIndex], anchor.sectionIndex)
         : undefined
       emitReview({ type: 'threadCreated', thread, sectionContext })
       return thread

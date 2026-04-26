@@ -274,6 +274,13 @@ const state = window.getInteractiveVizState(id);
 const spec = state.lastPreviewSpec;
 ```
 
+`getInteractiveVizState(ref?)` details:
+
+- Pass the artifact id or message id when you want one interactive widget. Pass `'last'` or omit `ref` only for quick debugging of the most recent widget.
+- The returned object is `{ id, messageId, artifact, state, lastPreviewSpec, renderCount, lastUpdatedAt }`.
+- Current control values live under `state.controls`; the current rendered chart spec lives under `lastPreviewSpec`.
+- Multiple interactive widgets are isolated. Do not reuse one widget's `state.controls` or `applyTheme` callback for another widget.
+
 Use real UI interactions only when testing the browser UX itself. If you must drive native inputs from JavaScript, use the DOM prototype value setter before dispatching `input` / `change`; simple `el.value = ...` can be ignored by React's value tracker.
 
 If an agent can only click and type in the browser but cannot execute JavaScript in the page, it cannot complete `vizual-test.html` rendering or live interactivity by itself. In that case, provide a static spec plus explanation, or use a host bridge, Playwright/CDP, or an auto-poll backend that calls `renderVizInMsg()` / `renderInteractiveVizInMsg()`.
@@ -299,6 +306,14 @@ window.markPendingHandled?.();
 When the user submits a DocView annotation, read the review state and create a proposal:
 
 ```js
+// For automated QA or host-side simulation, create a thread through the bridge.
+window.createDocViewThread?.(artifact.id, {
+  sectionId: 'summary',
+  selectedText: '收入下滑',
+  body: '写详细一点',
+});
+window.submitDocViewThreads?.(artifact.id);
+
 const state = window.getDocViewReviewState(artifact.id);
 const submitted = state.threads.filter(t => t.status === 'submitted');
 window.createDocViewRevision(artifact.id, {
@@ -309,6 +324,18 @@ window.createDocViewRevision(artifact.id, {
   ],
 });
 ```
+
+`createDocViewThread(ref, input)` accepts:
+
+- `sectionId` or `sectionIndex`: preferred target section. Use stable `sectionId` whenever the section has one.
+- `selectedText` / `targetText` / `quote`: the text being commented on. The bridge uses this to infer a text range anchor.
+- `targetType`: optional target kind such as `'text'`, `'chart'`, `'kpi'`, `'table'`, or `'section'`.
+- `label`: optional human-readable target label.
+- `body` or `content`: the comment text.
+- `author`: optional `{ id, name, role }`.
+- `anchor`: optional full DocView anchor. If omitted, `vizual-test.html` infers it from section metadata and selected text.
+
+`submitDocViewThreads(ref, threadIds?)` returns the submitted thread list. Omit `threadIds` to submit every open thread in that DocView. `getDocViewReviewState(ref?)` returns `{ artifact, sections, threads, revisionProposals, events }`; a rendered section can produce multiple DOM targets, so do not count `[data-section-id]` nodes as the number of top-level document sections.
 
 Do not directly overwrite the DocView artifact in response to a submitted annotation. The correct loop is: read submitted threads → create a revision proposal → let the user apply it in the panel, or call `applyDocViewRevision()` only when the user/host asked for automatic application.
 
@@ -328,7 +355,7 @@ Expected host events include `threadCreated`, `threadsSubmitted`, `revisionPropo
 For Agent-driven revision loops, DocView is an SDK:
 
 - The Agent/host must obtain `controllerRef` from the page/app.
-- In `validation/vizual-test.html`, use `getDocViewReviewState()`, `createDocViewRevision()`, and `applyDocViewRevision()`; the page bridge owns `controllerRef`.
+- In `validation/vizual-test.html`, use `createDocViewThread()` for host-side simulated comments, then `getDocViewReviewState()`, `createDocViewRevision()`, and `applyDocViewRevision()`; the page bridge owns `controllerRef`.
 - When `threadsSubmitted` fires, the Agent should return a `RevisionProposal`, not directly overwrite the document.
 - Then call `controller.createRevisionProposal({ fromThreadIds, summary, patches, author, risk })`.
 - Apply with `controller.applyRevision(proposalId)` or reject with `controller.rejectRevision(proposalId)`.
@@ -473,6 +500,8 @@ Tabular data supports `csv` and `xlsx`:
 await window.exportArtifact(artifact.id, { format: 'csv', filename: 'data' });
 await window.exportArtifact(artifact.id, { format: 'xlsx', filename: 'data', sheetName: '明细' });
 ```
+
+In `vizual-test.html`, `exportArtifact(ref, options)` exports the artifact resolved by `ref` (artifact id, message id, or `'last'`), not the whole chat page. PNG/PDF use the rendered DOM surface for that artifact; CSV/XLSX use the first tabular dataset in the artifact unless explicit rows/columns are provided by the host. Re-exporting an artifact after it has been modified or expanded can change PDF size because the rendered DOM is different.
 
 Lower-level APIs are also available: `Vizual.exportToPNG`, `exportToPDF`, `exportDataToCSV`, `exportDataToXLSX`, and `downloadExport`. DocView export should target `[data-docview-viewport]` when the host wants document-only output without the annotation sidebar.
 

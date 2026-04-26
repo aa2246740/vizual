@@ -147,6 +147,36 @@ describe('DocView Review SDK controller', () => {
     expect(controller!.getThreads()[0].status).toBe('open')
   })
 
+  it('infers a stable anchor when host-side agents omit anchor metadata', () => {
+    let controller: DocViewReviewController | null = null
+    const events: DocViewReviewActionEvent[] = []
+    render(
+      <DocView
+        showPanel={false}
+        sections={[
+          { id: 'next', type: 'markdown', content: '下一步行动：监控用户内容反馈 NPS。' },
+        ]}
+        controllerRef={(value) => { controller = value }}
+        onReviewAction={(event) => events.push(event)}
+      />,
+    )
+
+    act(() => {
+      controller!.createThread({
+        sectionId: 'next',
+        selectedText: '下一步行动',
+        body: '写详细一点',
+      })
+    })
+
+    const thread = controller!.getThreads()[0]
+    expect(thread.anchor.sectionIndex).toBe(0)
+    expect(thread.anchor.sectionId).toBe('next')
+    expect(thread.anchor.targetType).toBe('markdown')
+    expect(thread.anchor.textRange).toMatchObject({ start: 0, end: 5, selectedText: '下一步行动' })
+    expect(events[0].type).toBe('threadCreated')
+  })
+
   it('allows explicitly resubmitting an orphaned thread for a new revision pass', () => {
     let controller: DocViewReviewController | null = null
     const events: DocViewReviewActionEvent[] = []

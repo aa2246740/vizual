@@ -47,10 +47,23 @@
 - `window.updateInteractiveVizInMsg(ref, patch, options?)`
 - `window.getInteractiveVizState(ref?)`
 - `window.renderDocViewInMsg(id, config)`
+- `window.createDocViewThread(ref, input)`
+- `window.submitDocViewThreads(ref, threadIds?)`
+- `window.getDocViewReviewState(ref?)`
+- `window.createDocViewRevision(ref, input)`
+- `window.applyDocViewRevision(ref, proposalId?)`
 - `window.getVizualConversationState()`
 - `window.getVizualDebugState()`
 - `window.getLastArtifact()`
 - `window.exportArtifact(ref, options)`
+
+关键语义：
+
+- `getInteractiveVizState(ref?)` 返回 `{ artifact, state, lastPreviewSpec, renderCount }`；控件值在 `state.controls`，多个 interactive artifact 必须互相隔离。
+- `createDocViewThread(ref, input)` 可用 `{ sectionId, selectedText, body }` 创建文本批注；也可加 `targetType` / `label` 创建图表、KPI、表格或整段批注。`anchor` 可省略，宿主会从 section 信息推断。
+- `submitDocViewThreads(ref, threadIds?)` 省略 `threadIds` 时提交该 DocView 的所有 open threads。
+- `getDocViewReviewState(ref?)` 返回的 `sections` 是顶层文档 sections；不要用 DOM 里 `[data-section-id]` 的数量判断 section 数，因为 KPI、图表、表格会展开成多个可批注目标。
+- `exportArtifact(ref, options)` 导出的是指定 artifact 的渲染面，不是整页聊天记录。
 
 不要依赖 `.message`、`.bubble` 这类脆弱选择器。需要检查 DOM 时，优先使用稳定属性：`data-message-row`、`data-ai-msg`、`data-user-msg`、`data-viz-container`、`data-artifact-id`。
 

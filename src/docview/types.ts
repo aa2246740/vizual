@@ -186,7 +186,20 @@ export type DocViewReviewActionEvent =
   | { type: 'snapshotSaved'; snapshot: unknown }
 
 export interface CreateThreadInput {
-  anchor: AnnotationAnchor
+  /**
+   * Stable review anchor. Hosts should pass this when they have precise
+   * selection metadata. It is optional so agent SDK callers can create a
+   * thread from sectionId/sectionIndex + selectedText and let DocView infer a
+   * safe anchor.
+   */
+  anchor?: AnnotationAnchor
+  /** Convenience target fields for agent SDK callers that do not have a full anchor. */
+  sectionId?: string
+  sectionIndex?: number
+  targetType?: AnnotationAnchor['targetType']
+  label?: string
+  targetText?: string
+  selectedText?: string
   body: string
   color?: AnnotationColor
   author?: ReviewActor

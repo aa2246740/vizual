@@ -149,7 +149,8 @@ export function applyTheme(container: HTMLElement, themeName: string): boolean {
   container.classList.add(`rk-theme-${theme.name}`)
 
   // Inject CSS variables as inline styles
-  const styleId = 'rk-theme-variables'
+  const safeThemeId = theme.name.replace(/[^a-zA-Z0-9_-]/g, '-')
+  const styleId = `rk-theme-variables-${safeThemeId}`
   let styleEl = document.getElementById(styleId)
 
   if (!styleEl) {
@@ -186,7 +187,7 @@ ${cssRules}
 
   // 通知所有 ECharts 图表实例重建 option（主题色已变）
   if (typeof document !== 'undefined') {
-    document.dispatchEvent(new CustomEvent('vizual-theme-change', { detail: { themeName } }))
+    document.dispatchEvent(new CustomEvent('vizual-theme-change', { detail: { themeName, target: container } }))
   }
   return true
 }

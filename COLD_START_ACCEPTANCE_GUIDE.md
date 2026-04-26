@@ -111,10 +111,22 @@
 - window.updateInteractiveVizInMsg(ref, patch, options?)
 - window.getInteractiveVizState(ref?)
 - window.renderDocViewInMsg(id, config)
+- window.createDocViewThread(ref, input)
+- window.submitDocViewThreads(ref, threadIds?)
+- window.getDocViewReviewState(ref?)
+- window.createDocViewRevision(ref, input)
+- window.applyDocViewRevision(ref, proposalId?)
 - window.getVizualConversationState()
 - window.getVizualDebugState()
 - window.getLastArtifact()
 - window.exportArtifact(ref, options)
+
+关键语义：
+- `getInteractiveVizState(ref?)` 返回 `{ artifact, state, lastPreviewSpec, renderCount }`；当前控件值在 `state.controls`，多个实时组件必须互相隔离。
+- `createDocViewThread(ref, input)` 的最小文本批注参数是 `{ sectionId, selectedText, body }`。图表、KPI、表格或整段批注可补充 `targetType` / `label`。`anchor` 可省略，宿主会从 section 信息推断。
+- `submitDocViewThreads(ref, threadIds?)` 省略 `threadIds` 时提交该 DocView 的所有 open threads。
+- `getDocViewReviewState(ref?)` 的 `sections` 才是顶层 DocView sections；不要用 DOM 中 `[data-section-id]` 的数量判断 section 数，因为 KPI、图表、表格会展开成多个可批注目标。
+- `exportArtifact(ref, options)` 导出指定 artifact 的渲染面，不导出整页聊天记录。
 
 不要依赖 .message 这种脆弱选择器。优先使用 getVizualConversationState() 和 getVizualDebugState()。
 如果必须看 DOM，使用稳定属性：data-message-row、data-ai-msg、data-user-msg、data-viz-container、data-artifact-id。

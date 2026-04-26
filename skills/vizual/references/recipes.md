@@ -282,7 +282,7 @@ Example component plan for the prompt "score this AI answer":
 
 Use DocView when the user needs comments, highlights, revision loop, version history, or a reviewable document artifact. Do not use it just because the user asks for a report, dashboard, summary, or export; those should normally be host text plus GridLayout/charts/tables and artifact export APIs.
 
-In `validation/vizual-test.html`, render reviewable documents through `renderDocViewInMsg()` so the page exposes `getDocViewReviewState()` and `createDocViewRevision()` for the Agent revision loop. The JSON below is the document spec shape; the bridge call should pass the `sections` array or the spec.
+In `validation/vizual-test.html`, render reviewable documents through `renderDocViewInMsg()` so the page exposes `createDocViewThread()`, `getDocViewReviewState()`, `createDocViewRevision()`, and `applyDocViewRevision()` for the Agent revision loop. The JSON below is the document spec shape; the bridge call should pass the `sections` array or the spec.
 
 ```json
 {

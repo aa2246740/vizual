@@ -56,6 +56,14 @@ const artifact = window.renderDocViewInMsg(id, {
 });
 
 // After the user submits annotations:
+// In automated QA / host simulation, create and submit a thread through the bridge:
+window.createDocViewThread?.(artifact.id, {
+  sectionId: 'exec-summary',
+  selectedText: 'Updated summary text',
+  body: 'Make this more specific',
+});
+window.submitDocViewThreads?.(artifact.id);
+
 const state = window.getDocViewReviewState(artifact.id);
 const submitted = state.threads.filter(t => t.status === 'submitted');
 window.createDocViewRevision(artifact.id, {
@@ -66,6 +74,30 @@ window.createDocViewRevision(artifact.id, {
   ],
 });
 ```
+
+Bridge API details:
+
+```ts
+createDocViewThread(ref, {
+  sectionId?: string;
+  sectionIndex?: number;
+  selectedText?: string;
+  targetText?: string;
+  quote?: string;
+  targetType?: 'text' | 'chart' | 'kpi' | 'table' | 'section' | string;
+  label?: string;
+  body?: string;
+  content?: string;
+  author?: { id?: string; name?: string; role?: string };
+  anchor?: DocViewAnchor;
+})
+```
+
+- Use `sectionId` plus `selectedText` for text/markdown comments. The bridge infers the full anchor when `anchor` is omitted.
+- Use `targetType` and `label` for chart/KPI/table/section-level comments where no exact text range exists.
+- `submitDocViewThreads(ref, threadIds?)` submits every open thread when `threadIds` is omitted.
+- `getDocViewReviewState(ref?)` returns `{ artifact, sections, threads, revisionProposals, events }`.
+- A section can render many DOM nodes with the same `data-section-id` (for metrics, chart series, rows, cells, etc.). Count `state.sections`, not DOM nodes, when checking document section count.
 
 Do not overwrite the DocView directly after a user comment. The loop is: user annotates → user submits → Agent creates a revision proposal → user/host applies or rejects.
 

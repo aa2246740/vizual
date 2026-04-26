@@ -163,6 +163,7 @@
         <tr><td><code>window.getVizualDebugState()</code></td><td>读取 pending message、artifact registry、DocView session 和最近渲染记录</td><td>object</td></tr>
         <tr><td><code>window.renderDocViewInMsg(id, config)</code></td><td>渲染带审阅 bridge 的 DocView；用于可批注报告、长文共建、修订循环</td><td>VizualArtifact | null</td></tr>
         <tr><td><code>window.getDocViewReviewState(ref?)</code></td><td>读取 DocView sections、threads、revisionProposals、review events</td><td>object | null</td></tr>
+        <tr><td><code>window.createDocViewThread(ref, input)</code></td><td>创建 DocView 批注线程；可传完整 anchor，也可用 sectionId/sectionIndex + selectedText 让宿主补全 anchor</td><td>AnnotationThread | null</td></tr>
         <tr><td><code>window.createDocViewRevision(ref, input)</code></td><td>Agent 根据已提交批注创建修订提案；用户可在面板点击应用</td><td>RevisionProposal | null</td></tr>
         <tr><td><code>window.applyDocViewRevision(ref, proposalId)</code></td><td>应用修订提案，更新 DocView sections 和 artifact</td><td>RevisionProposal | null</td></tr>
       </table>
@@ -633,6 +634,38 @@ setInterval(async () => {
       try { return cloneState(value); } catch (_) { return null; }
     }
 
+    function safeCssIdent(value) {
+      return String(value || 'scope').replace(/[^a-zA-Z0-9_-]/g, '-');
+    }
+
+    function createScopedVizualProxy(scopeEl, scopeId) {
+      const base = window.Vizual;
+      const themeBaseName = 'vizual-interactive-' + safeCssIdent(scopeId);
+      return {
+        ...base,
+        loadDesignMd(markdown, options = {}) {
+          const theme = base.loadDesignMd(markdown, {
+            ...options,
+            name: options.name || themeBaseName,
+            apply: false,
+          });
+          if (options.apply !== false) {
+            base.applyTheme(scopeEl, theme.name);
+          }
+          return theme;
+        },
+        setGlobalTheme(themeName) {
+          return base.applyTheme(scopeEl, themeName);
+        },
+        applyTheme(containerOrThemeName, maybeThemeName) {
+          if (typeof containerOrThemeName === 'string') {
+            return base.applyTheme(scopeEl, containerOrThemeName);
+          }
+          return base.applyTheme(containerOrThemeName || scopeEl, maybeThemeName);
+        },
+      };
+    }
+
     function summarizeSpec(spec) {
       const elements = spec?.elements || {};
       return {
@@ -813,6 +846,38 @@ setInterval(async () => {
       const vizWrap = document.getElementById(session.messageId + '-viz');
       if (vizWrap) installArtifactToolbar(session.messageId, updated, vizWrap);
       return updated;
+    }
+
+    function inferDocViewThreadAnchor(session, input = {}) {
+      const raw = input.anchor || {};
+      const sections = session?.sections || [];
+      const sectionIndex = Number.isInteger(raw.sectionIndex)
+        ? raw.sectionIndex
+        : Number.isInteger(input.sectionIndex)
+          ? input.sectionIndex
+          : input.sectionId
+            ? sections.findIndex(section => section?.id === input.sectionId)
+            : 0;
+      const safeIndex = sectionIndex >= 0 && sectionIndex < sections.length ? sectionIndex : 0;
+      const section = sections[safeIndex] || {};
+      const selectedText = raw.textRange?.selectedText || input.selectedText || input.targetText || input.text || '';
+      const content = typeof section.content === 'string' ? section.content : '';
+      const start = selectedText ? content.indexOf(selectedText) : -1;
+      const textRange = raw.textRange || (selectedText
+        ? {
+            start: start >= 0 ? start : 0,
+            end: start >= 0 ? start + selectedText.length : selectedText.length,
+            selectedText,
+          }
+        : undefined);
+      return {
+        ...raw,
+        sectionIndex: safeIndex,
+        sectionId: raw.sectionId || input.sectionId || section.id || ('section-' + safeIndex),
+        targetType: raw.targetType || input.targetType || section.type || 'text',
+        label: raw.label || input.label || selectedText || section.title || content.slice(0, 80) || 'DocView section',
+        textRange,
+      };
     }
 
     function extractRowsFromArtifact(artifact) {
@@ -1193,6 +1258,31 @@ setInterval(async () => {
       return snapshotDocViewSession(resolveDocViewSession(ref));
     };
 
+    window.createDocViewThread = function(ref, input = {}) {
+      const session = resolveDocViewSession(ref);
+      if (!session?.controller) {
+        console.warn('[createDocViewThread] 找不到 DocView controller:', ref);
+        return null;
+      }
+      try {
+        const thread = session.controller.createThread({
+          ...input,
+          anchor: inferDocViewThreadAnchor(session, input),
+          body: input.body || input.comment || input.note || '',
+        });
+        refreshDocViewSessionState(session);
+        return safeSnapshot(thread);
+      } catch (err) {
+        console.error('[createDocViewThread] 创建批注失败:', err);
+        recordDocViewReviewEvent(session, {
+          type: 'threadCreateError',
+          error: err?.message || String(err),
+          input: safeSnapshot(input),
+        });
+        return null;
+      }
+    };
+
     window.submitDocViewThreads = function(ref, threadIds) {
       const session = resolveDocViewSession(ref);
       if (!session?.controller) return [];
@@ -1438,6 +1528,7 @@ setInterval(async () => {
       let previewTimer = 0;
       let renderCount = 0;
       let interactiveArtifact = null;
+      let scopedVizual = null;
       const renderRecord = recordVizRender('interactive', id, {
         status: 'mounted',
         bubbleWidth: bubble.dataset.vizBubbleWidth || null,
@@ -1453,11 +1544,12 @@ setInterval(async () => {
       });
 
       const applyTheme = () => {
+        if (!scopedVizual) scopedVizual = createScopedVizualProxy(shell, id);
         if (typeof config.designMd === 'string' && config.designMd.trim()) {
-          window.Vizual.loadDesignMd(config.designMd, { apply: true });
+          scopedVizual.loadDesignMd(config.designMd, { apply: true });
         }
         if (typeof config.applyTheme === 'function') {
-          config.applyTheme(state, window.Vizual);
+          config.applyTheme(state, scopedVizual);
         }
       };
 

@@ -86,7 +86,15 @@ export function createEChartsBridge(
 
     // 主题切换时用最新 tc() 色值重建 option 并刷新图表
     useEffect(() => {
-      const handler = () => {
+      const handler = (event: Event) => {
+        const target = (event as CustomEvent<{ target?: EventTarget | null }>).detail?.target
+        if (
+          target instanceof HTMLElement &&
+          containerRef.current &&
+          !target.contains(containerRef.current)
+        ) {
+          return
+        }
         if (!chartRef.current) return
         const newOption = buildOption(chartType, props, buildFallbackOption)
         chartRef.current.setOption(newOption, true)
