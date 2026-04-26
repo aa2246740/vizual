@@ -37,6 +37,7 @@
 - 不要自己寻找、抢占或改造远程调试端口。
 - 不要启动 headless 浏览器。
 - 不要新开一个用户看不到的 Playwright Chromium。
+- 不要运行 `playwright install`、`npx playwright install`、`playwright install chromium` 或任何会下载浏览器的命令。
 - 不要把测试改成“自己写 Python/Playwright 脚本跑完”。
 - 不要告诉用户“不用输入，我自动测”。这个页面的核心就是测 Agent 能否监听和响应用户输入。
 - 如果用户说“我想看着你测”，被测 Agent 应该等待用户在页面里输入，并说明“我会监听这个页面并响应你的输入”。
@@ -74,6 +75,7 @@
 - 优先使用 Chrome DevTools MCP 连接当前页面；如果 MCP 暴露了多个 tab，只选择 URL 为 http://127.0.0.1:8793/validation/vizual-test.html... 的 tab。
 - 只测试主页面： http://127.0.0.1:8793/validation/vizual-test.html?cold-start-claude=<timestamp>
 - 你必须连接用户正在看的同一个可见 Chrome 页面。不要启动 headless 浏览器，不要启动新的 Playwright Chromium。
+- 不要运行 `playwright install` 或任何下载 Chromium 的命令；测试只允许连接现有页面。
 - 如果你无法通过 MCP 看到这个页面，直接告诉用户“我看不到已打开的 vizual-test.html，请你确认 DevTools MCP 连接的是这个 Chrome”，然后等待。不要自己执行 open/kill/curl/json/new 等浏览器管理命令。
 - 这个测试是“监听用户输入并响应”，不是“自己写脚本自动跑完”。用户会在页面聊天框输入测试内容，你要读取页面 pending message 并在同一个页面里回复。
 - 除非用户明确要求，不要测试 eval-full-31.html。
@@ -483,6 +485,7 @@ Agent 应该通过宿主 API 检查状态，而不是脆弱地抓 DOM 文本。
 - 不要生成第二条线全为 0 的 ComboChart。
 - 不要把空白 Mermaid / Heatmap / Calendar / Scatter / Histogram 当成 PASS。
 - 不要启动 headless / 不可见浏览器。
+- 不要安装或下载 Playwright Chromium。
 - 不要把测试改成纯脚本自动化。
 - 不要跳去 `eval-full-31.html` 当主线测试。
 
