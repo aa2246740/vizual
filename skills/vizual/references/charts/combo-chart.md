@@ -13,10 +13,11 @@ Mixed bar + line chart with dual Y axes.
 | x | string | no | X axis field |
 | y | string \| string[] | yes | Y axis field(s). First field = bar series, rest = line series |
 | data | object[] | yes | data array |
+| series | `{ type: "bar" \| "line", y: string }[]` | no | Explicit bar/line mapping when `y` alone is ambiguous |
 | theme | `"light"` \| `"dark"` | no | color theme |
 | height | number | no | chart height in pixels |
 
-**Important:** Do NOT use `series`. Use `y` as an array — the first field renders as bar, all subsequent fields render as line.
+Use `y` as an array for the common case: the first field renders as bar, all subsequent fields render as line. Use `series` only when you need explicit bar/line mapping.
 
 ## Example
 

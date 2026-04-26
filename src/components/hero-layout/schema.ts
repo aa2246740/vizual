@@ -12,4 +12,4 @@ export const HeroLayoutSchema = z.object({
   cta: z.string().optional(),
 })
 
-export type HeroLayoutProps = z.infer<typeof HeroLayoutSchema>
+export type HeroLayoutProps = z.input<typeof HeroLayoutSchema>

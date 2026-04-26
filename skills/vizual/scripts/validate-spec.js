@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * AI RenderKit Spec Validator
+ * Vizual Spec Validator
  *
  * Validates a JSON spec against the 31-component catalog + 3 layout components.
  * Usage:
@@ -16,7 +16,7 @@ const path = require('path')
 // Component type → props type literal mapping
 // Matches the 31 registered components in src/catalog.ts
 const COMPONENT_TYPES = {
-  // Charts (19) — mviz bridge
+  // Charts (19)
   BarChart: 'bar',
   LineChart: 'line',
   AreaChart: 'area',
@@ -36,7 +36,7 @@ const COMPONENT_TYPES = {
   DumbbellChart: 'dumbbell',
   MermaidDiagram: 'mermaid',
   RadarChart: 'radar',
-  // UI (1) — mviz bridge
+  // UI (1)
   DataTable: 'table',
   // Business components (6)
   Timeline: 'timeline',

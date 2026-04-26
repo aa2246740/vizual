@@ -1,67 +1,34 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import * as echarts from 'echarts'
 import { chartColors, tc } from './theme-colors'
 import { useAnnotationContext } from '../docview/annotation-context'
 import type { AnnotationTarget, ChartDataPoint } from '../docview/types'
 
-// Static imports from mviz — bundled by esbuild, works in browser
-import {
-  buildBarOptions,
-  buildLineOptions,
-  buildPieOptions,
-  buildScatterOptions,
-  buildAreaOptions,
-  buildSparklineOptions,
-  buildHistogramOptions,
-  buildHeatmapOptions,
-  buildBubbleOptions,
-  buildCalendarOptions,
-  buildFunnelOptions,
-  buildSankeyOptions,
-  buildComboOptions,
-  buildWaterfallOptions,
-  buildXmrOptions,
-  buildDumbbellOptions,
-} from 'mviz/charts/index'
-
-// NOTE: buildBoxplotOptions excluded — mviz's boxplot builder has a bug where
-// series[0].data is always empty. BoxplotChart uses its fallback builder instead.
-
 type ChartProps = Record<string, unknown>
 
-/**
- * Map chartType to mviz build function.
- * Key = the chartType string used in createEChartsBridge('bar', ...)
- * Value = the statically imported mviz function.
- */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const mvizBuilders: Record<string, (props: any) => any> = {
-  bar: buildBarOptions,
-  line: buildLineOptions,
-  pie: buildPieOptions,
-  scatter: buildScatterOptions,
-  area: buildAreaOptions,
-  sparkline: buildSparklineOptions,
-  histogram: buildHistogramOptions,
-  heatmap: buildHeatmapOptions,
-  bubble: buildBubbleOptions,
-  // boxplot: skipped — mviz builder produces empty series data
-  calendar: buildCalendarOptions,
-  funnel: buildFunnelOptions,
-  sankey: buildSankeyOptions,
-  combo: buildComboOptions,
-  // waterfall: use custom fallback — mviz builder doesn't produce proper floating bars
-  // waterfall: buildWaterfallOptions,
-  xmr: buildXmrOptions,
-  dumbbell: buildDumbbellOptions,
+function stableStringify(value: unknown): string {
+  const seen = new WeakSet<object>()
+  return JSON.stringify(value, (_key, val) => {
+    if (!val || typeof val !== 'object') return val
+    if (seen.has(val)) return '[Circular]'
+    seen.add(val)
+    if (Array.isArray(val)) return val
+    return Object.keys(val as Record<string, unknown>)
+      .sort()
+      .reduce<Record<string, unknown>>((acc, key) => {
+        acc[key] = (val as Record<string, unknown>)[key]
+        return acc
+      }, {})
+  }) ?? ''
 }
 
 /**
  * Generic ECharts bridge factory.
  *
- * Uses mviz's build*Options function (statically imported) to generate
- * ECharts options from chart props. Falls back to the provided fallback
- * builder if mviz doesn't support the chart type or throws.
+ * Uses Vizual-owned option builders from each chart component. Keeping the
+ * option construction in this package gives us predictable AI-facing
+ * contracts, no external chart-builder runtime dependency, and no generated
+ * JavaScript formatter hydration surface.
  *
  * Chart lifecycle:
  * - Effect 1 (mount): init ECharts + ResizeObserver
@@ -72,8 +39,6 @@ export function createEChartsBridge(
   chartType: string,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   buildFallbackOption: (props: any) => Record<string, unknown>,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  mapToMviz?: (props: any) => any,
 ) {
   function BridgeComponent({ props }: { props: ChartProps }) {
     const containerRef = useRef<HTMLDivElement>(null)
@@ -84,8 +49,15 @@ export function createEChartsBridge(
     // 批注上下文 — 在 DocView 内时有值，独立渲染时为 null
     const annotationCtx = useAnnotationContext()
 
-    // Build option synchronously from props (mviz is statically bundled)
-    const option = buildOption(chartType, props, buildFallbackOption, mapToMviz)
+    // Keep the expensive ECharts option stable across annotation popup state
+    // changes. Parent DocView renders can recreate props objects even when the
+    // chart data has not changed; rebuilding then calling setOption replays
+    // ECharts animations.
+    const propsKey = stableStringify(props)
+    const option = useMemo(
+      () => buildOption(chartType, props, buildFallbackOption),
+      [propsKey],
+    )
 
     // Init chart on mount, dispose on unmount
     useEffect(() => {
@@ -114,14 +86,22 @@ export function createEChartsBridge(
 
     // 主题切换时用最新 tc() 色值重建 option 并刷新图表
     useEffect(() => {
-      const handler = () => {
+      const handler = (event: Event) => {
+        const target = (event as CustomEvent<{ target?: EventTarget | null }>).detail?.target
+        if (
+          target instanceof HTMLElement &&
+          containerRef.current &&
+          !target.contains(containerRef.current)
+        ) {
+          return
+        }
         if (!chartRef.current) return
-        const newOption = buildOption(chartType, props, buildFallbackOption, mapToMviz)
+        const newOption = buildOption(chartType, props, buildFallbackOption)
         chartRef.current.setOption(newOption, true)
       }
       document.addEventListener('vizual-theme-change', handler)
       return () => document.removeEventListener('vizual-theme-change', handler)
-    }, [props])
+    }, [propsKey])
 
     // 注册 ECharts 点击事件 — 数据点钻取批注
     useEffect(() => {
@@ -147,7 +127,7 @@ export function createEChartsBridge(
             targetId,
             chartDataPoint: dp,
           }
-          annotationCtx.onTargetClick(target, containerRef.current!)
+          annotationCtx.onTargetClick?.(target, containerRef.current!)
         }
       }
       chart.on('click', handler)
@@ -164,7 +144,8 @@ export function createEChartsBridge(
         a.target?.targetType === 'chart' &&
         a.target?.sectionIndex === annotationCtx.sectionIndex &&
         a.target?.chartDataPoint &&
-        a.status !== 'orphaned'
+        a.status !== 'orphaned' &&
+        a.status !== 'resolved'
       )
       for (const ann of chartAnns) {
         const dp = ann.target!.chartDataPoint!
@@ -199,6 +180,10 @@ export function createEChartsBridge(
         ref={containerRef}
         style={{
           width: '100%',
+          maxWidth: '100%',
+          minWidth: 0,
+          margin: '0 auto',
+          display: 'block',
           height,
           ...(annotationCtx ? { cursor: 'pointer' } : {}),
         }}
@@ -216,121 +201,21 @@ export function createEChartsBridge(
 }
 
 /**
- * Identifiers that must never appear in a hydrated mviz formatter.
- *
- * mviz builds `_js_` strings by concatenating caller-supplied values
- * (e.g. `spec.currency.symbol`, `spec.locale`) into plain JS source. When
- * a schema prop reaches mviz unsanitized, an attacker-controlled string
- * can break out of the surrounding single-quoted literal and inject
- * arbitrary code, which then executes via `new Function(...)`.
- *
- * mviz's legitimate formatter output only references a tiny identifier
- * set (Math, Array.isArray, toFixed, toLocaleString,
- * minimumFractionDigits, maximumFractionDigits, etc.), so a conservative
- * denylist covers all realistic exploitation vectors without breaking
- * existing charts.
- */
-const FORBIDDEN_JS_IDENTIFIERS = [
-  'eval', 'Function', 'constructor', 'prototype', '__proto__',
-  'import', 'require', 'fetch', 'XMLHttpRequest', 'WebSocket', 'Worker', 'SharedWorker',
-  'globalThis', 'window', 'document', 'self', 'top', 'parent', 'frames',
-  'location', 'history', 'navigator',
-  'setTimeout', 'setInterval', 'setImmediate', 'queueMicrotask', 'postMessage',
-  'alert', 'prompt', 'confirm', 'open', 'close',
-  'localStorage', 'sessionStorage', 'indexedDB', 'cookie',
-  'WebAssembly', 'atob', 'btoa', 'crypto',
-]
-const FORBIDDEN_JS_PATTERN = new RegExp(
-  '\\b(?:' + FORBIDDEN_JS_IDENTIFIERS.join('|') + ')\\b',
-)
-const MAX_JS_LENGTH = 4096
-const FUNCTION_PREFIX = /^\s*function\s*\(/
-
-/**
- * Validate that a `_js_` payload looks like a trusted mviz formatter
- * before compiling it. Returns false for any string that could plausibly
- * be an injection rather than mviz's own output.
- */
-export function isSafeMvizJs(src: string): boolean {
-  if (src.length > MAX_JS_LENGTH) return false
-  if (!FUNCTION_PREFIX.test(src)) return false
-  // mviz never emits template literals or comments; reject them as
-  // obfuscation channels for the denylist below.
-  if (src.indexOf('`') !== -1) return false
-  if (src.indexOf('//') !== -1) return false
-  if (src.indexOf('/*') !== -1) return false
-  if (FORBIDDEN_JS_PATTERN.test(src)) return false
-  return true
-}
-
-/**
- * Recursively convert mviz's `_js_` pseudo-functions to real JS functions.
- *
- * mviz serializes functions as `{ "_js_": "function(x){...}" }` objects.
- * ECharts needs actual callable functions for formatters, renderItems, etc.
- * This walks the option tree and compiles every `_js_` value into a Function,
- * gated by `isSafeMvizJs` to prevent RCE when attacker-controlled props
- * (e.g. `currency.symbol`) get interpolated into mviz's string-built code.
- * Rejected payloads resolve to `undefined`, which lets ECharts fall back to
- * its default formatter/renderItem rather than rendering broken output.
- */
-export function hydrateJsFunctions(obj: unknown): unknown {
-  if (obj && typeof obj === 'object' && !Array.isArray(obj)) {
-    const rec = obj as Record<string, unknown>
-    if (typeof rec._js_ === 'string') {
-      const src = rec._js_
-      if (!isSafeMvizJs(src)) {
-        console.warn('[vizual] rejected unsafe _js_ payload from mviz; using default formatter')
-        return undefined
-      }
-      try {
-        // eslint-disable-next-line @typescript-eslint/no-implied-eval, no-new-func
-        return new Function('return (' + src + ')')()
-      } catch {
-        return undefined
-      }
-    }
-    const result: Record<string, unknown> = {}
-    for (const key of Object.keys(rec)) {
-      result[key] = hydrateJsFunctions(rec[key])
-    }
-    return result
-  }
-  if (Array.isArray(obj)) {
-    return obj.map(hydrateJsFunctions)
-  }
-  return obj
-}
-
-/**
- * Build ECharts option using mviz (primary) or fallback (safety net).
+ * Build ECharts option using the chart component's local option builder.
  * Returns a valid option object synchronously.
  */
 function buildOption(
   chartType: string,
   props: ChartProps,
   fallback: (props: ChartProps) => Record<string, unknown>,
-  mapToMviz?: (props: ChartProps) => ChartProps,
 ): Record<string, unknown> {
   let option: Record<string, unknown>
 
-  const builder = mvizBuilders[chartType]
-  if (builder) {
-    try {
-      const mvizProps = mapToMviz ? mapToMviz(props) : props
-      const rawOption = builder(mvizProps)
-      option = hydrateJsFunctions(rawOption) as Record<string, unknown>
-    } catch (e) {
-      console.warn(`[vizual] mviz builder for "${chartType}" failed, using fallback:`, e)
-      option = fallback(props)
-    }
-  } else {
-    try {
-      option = fallback(props)
-    } catch (e) {
-      console.error(`[vizual] Fallback builder for "${chartType}" also failed:`, e)
-      return { title: { text: `Error: ${(e as Error).message}` } }
-    }
+  try {
+    option = fallback(props)
+  } catch (e) {
+    console.error(`[vizual] option builder for "${chartType}" failed:`, e)
+    return { title: { text: `Error: ${(e as Error).message}` } }
   }
 
   // Inject theme chart palette — all charts follow DESIGN.md / theme colors
@@ -338,7 +223,7 @@ function buildOption(
   if (palette.length > 0) {
     option.color = palette
     // Override series-level hardcoded colors with palette colors
-    // Only override when mviz builder set an explicit color, or for types where
+    // Only override when a builder set an explicit color, or for types where
     // ECharts defaults to white (#fff) which would be invisible on light themes.
     // Don't add itemStyle.color to pie/funnel etc. — they need per-data-point color cycling.
     const whiteDefaultTypes = new Set(['boxplot', 'candlestick'])
@@ -365,9 +250,11 @@ function buildOption(
     }
   }
 
-  // Override mviz hardcoded text/axis/tooltip/splitLine colors with theme colors
+  // Normalize text/axis/tooltip/splitLine colors with theme colors
   const textColor = tc('--rk-text-secondary')
+  const primaryTextColor = tc('--rk-text-primary') || textColor
   const bgColor = tc('--rk-bg-secondary')
+  const cellBgColor = tc('--rk-bg-tertiary') || bgColor
   const borderColor = tc('--rk-border-subtle')
 
   // Axis labels
@@ -400,6 +287,71 @@ function buildOption(
       tooltip.borderColor = borderColor || bgColor
       const ts = tooltip.textStyle as Record<string, unknown> | undefined
       if (ts) ts.color = textColor
+    }
+  }
+
+  if ((chartType === 'heatmap' || chartType === 'calendar') && cellBgColor) {
+    const visualMaps = (Array.isArray(option.visualMap)
+      ? option.visualMap
+      : option.visualMap ? [option.visualMap] : []) as Record<string, unknown>[]
+    const firstChartColor = palette[0] || tc('--rk-accent') || primaryTextColor
+    const secondChartColor = palette[1] || firstChartColor
+    for (const visualMap of visualMaps) {
+      if (!visualMap || typeof visualMap !== 'object') continue
+      visualMap.inRange = {
+        ...((visualMap.inRange as Record<string, unknown> | undefined) ?? {}),
+        color: chartType === 'calendar'
+          ? [cellBgColor, firstChartColor, secondChartColor]
+          : [cellBgColor, firstChartColor],
+      }
+    }
+  }
+
+  if (chartType === 'calendar') {
+    const calendars = (Array.isArray(option.calendar)
+      ? option.calendar
+      : option.calendar ? [option.calendar] : []) as Record<string, unknown>[]
+    for (const calendar of calendars) {
+      if (!calendar || typeof calendar !== 'object') continue
+      const itemStyle = (calendar.itemStyle && typeof calendar.itemStyle === 'object')
+        ? calendar.itemStyle as Record<string, unknown>
+        : {}
+      itemStyle.color = cellBgColor
+      if (borderColor) itemStyle.borderColor = borderColor
+      calendar.itemStyle = itemStyle
+
+      const splitLine = (calendar.splitLine && typeof calendar.splitLine === 'object')
+        ? calendar.splitLine as Record<string, unknown>
+        : {}
+      const lineStyle = (splitLine.lineStyle && typeof splitLine.lineStyle === 'object')
+        ? splitLine.lineStyle as Record<string, unknown>
+        : {}
+      if (borderColor) lineStyle.color = borderColor
+      splitLine.lineStyle = lineStyle
+      calendar.splitLine = splitLine
+
+      for (const labelKey of ['dayLabel', 'monthLabel', 'yearLabel']) {
+        const label = (calendar[labelKey] && typeof calendar[labelKey] === 'object')
+          ? calendar[labelKey] as Record<string, unknown>
+          : {}
+        if (textColor) label.color = textColor
+        calendar[labelKey] = label
+      }
+    }
+  }
+
+  if (chartType === 'heatmap') {
+    const series = option.series as Record<string, unknown>[] | undefined
+    if (Array.isArray(series)) {
+      for (const s of series) {
+        if (!s || typeof s !== 'object' || s.type !== 'heatmap') continue
+        const label = (s.label && typeof s.label === 'object') ? s.label as Record<string, unknown> : {}
+        if (primaryTextColor) label.color = primaryTextColor
+        s.label = label
+        const itemStyle = (s.itemStyle && typeof s.itemStyle === 'object') ? s.itemStyle as Record<string, unknown> : {}
+        if (borderColor) itemStyle.borderColor = borderColor
+        s.itemStyle = itemStyle
+      }
     }
   }
 

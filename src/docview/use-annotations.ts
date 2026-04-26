@@ -19,7 +19,7 @@ export interface UseAnnotationsReturn {
   /** Current annotations list */
   annotations: Annotation[]
   /** Add a new annotation */
-  addAnnotation: (text: string, note: string, color: AnnotationColor) => Annotation
+  addAnnotation: (text: string, note: string, color: AnnotationColor, init?: Partial<Annotation>) => Annotation
   /** Update an existing annotation */
   updateAnnotation: (id: string, updates: Partial<Pick<Annotation, 'note' | 'color' | 'status' | 'target'>>) => void
   /** Delete an annotation */
@@ -57,16 +57,17 @@ export function useAnnotations(options: UseAnnotationsOptions = {}): UseAnnotati
     options.onAnnotationsChange?.(next)
   }, [options.annotations, options.onAnnotationsChange])
 
-  const addAnnotation = useCallback((text: string, note: string, color: AnnotationColor): Annotation => {
+  const addAnnotation = useCallback((text: string, note: string, color: AnnotationColor, init: Partial<Annotation> = {}): Annotation => {
     const now = new Date().toISOString()
     const annotation: Annotation = {
-      id: generateId(),
+      id: init.id || generateId(),
       text,
       note,
       color,
       status: 'draft',
       createdAt: now,
       updatedAt: now,
+      ...init,
     }
     emitChange([...latestRef.current, annotation])
     return annotation

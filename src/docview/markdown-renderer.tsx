@@ -10,10 +10,12 @@ import React from 'react'
 import { marked } from 'marked'
 import DOMPurify from 'dompurify'
 import { tcss } from '../core/theme-colors'
+import { getSectionId } from './review-sdk'
 
 /** Section 类型定义，与 DocViewSchema 中的 Section 保持一致 */
 type SectionLike = {
   type: string
+  id?: string
   content: string
   data?: unknown
   layout?: string
@@ -23,7 +25,7 @@ type SectionLike = {
 marked.setOptions({ breaks: true, gfm: true })
 
 /** DOMPurify 白名单配置 */
-const PURIFY_CONFIG: DOMPurify.Config = {
+const PURIFY_CONFIG = {
   ALLOWED_TAGS: [
     'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
     'p', 'br', 'hr',
@@ -37,7 +39,7 @@ const PURIFY_CONFIG: DOMPurify.Config = {
   ALLOWED_ATTR: ['href', 'target', 'rel', 'src', 'alt', 'colspan', 'rowspan'],
   FORBID_TAGS: ['script', 'iframe', 'object', 'embed', 'style', 'form', 'input', 'button'],
   ADD_ATTR: ['target'],
-}
+} satisfies Parameters<typeof DOMPurify.sanitize>[1]
 
 /**
  * 构建 scoped CSS 样式字符串
@@ -92,13 +94,19 @@ export function renderMarkdown(section: SectionLike, index: number): React.React
   const rawHtml = marked.parse(section.content) as string
 
   // 2. HTML → 安全 HTML（白名单过滤）
-  const cleanHtml = DOMPurify.sanitize(rawHtml, PURIFY_CONFIG)
+  const cleanHtml = String(DOMPurify.sanitize(rawHtml, PURIFY_CONFIG))
 
   // 3. 构建 scoped 样式
   const scopedCss = buildScopedStyles()
 
   return (
-    <div key={`markdown-${index}`}>
+    <div
+      key={`markdown-${index}`}
+      data-docview-target={`markdown-${section.id || index}`}
+      data-section-index={index}
+      data-section-id={getSectionId(section, index)}
+      data-target-type="markdown"
+    >
       <style dangerouslySetInnerHTML={{ __html: scopedCss }} />
       <div
         data-docview-markdown

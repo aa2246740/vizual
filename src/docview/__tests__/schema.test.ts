@@ -6,11 +6,12 @@ describe('DocViewSchema', () => {
     const spec = {
       type: 'doc_view',
       sections: [
-        { type: 'text', content: 'Hello', aiContext: 'Greeting section' },
+        { id: 'intro', type: 'text', content: 'Hello', aiContext: 'Greeting section' },
       ],
     }
     const result = DocViewSchema.safeParse(spec)
     expect(result.success).toBe(true)
+    if (result.success) expect(result.data.sections[0].id).toBe('intro')
   })
 
   it('accepts sections with layout field', () => {

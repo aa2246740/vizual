@@ -2,6 +2,8 @@ import { z } from 'zod'
 
 /** Schema for a single document section */
 const SectionSchema = z.object({
+  /** Stable section identifier for review anchors and revision patches */
+  id: z.string().optional(),
   /** Section type determines rendering behavior */
   type: z.enum(['text', 'heading', 'chart', 'kpi', 'table', 'callout', 'component', 'markdown', 'freeform']),
   /** Text content for text/heading/callout sections, markdown source for markdown, raw HTML for freeform */

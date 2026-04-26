@@ -1,3 +1,4 @@
+import React from 'react'
 import type { GanttChartProps } from './schema'
 import { tcss, tc } from '../../core/theme-colors'
 import { useAnnotationContext } from '../../docview/annotation-context'
@@ -36,7 +37,7 @@ export function GanttChart({ props }: { props: GanttChartProps }) {
           },
           style: { cursor: 'pointer' as const },
         } : {}
-        return <div key={task.id} style={{display:'flex',alignItems:'center',height:32,marginBottom:2}} {...taskAnnotationProps}>
+        return <div key={task.id ?? task.name ?? i} style={{display:'flex',alignItems:'center',height:32,marginBottom:2}} {...taskAnnotationProps}>
           <div style={{width:120,flexShrink:0,fontSize:tcss('--rk-text-sm'),color:tcss('--rk-text-secondary'),overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',paddingRight:8}}>{task.name}</div>
           <div style={{flex:1,position:'relative',height:20,background:tcss('--rk-bg-primary'),borderRadius:tcss('--rk-radius-sm')}}>
             <div style={{position:'absolute',left:left+'%',width:Math.max(width,1)+'%',height:'100%',background:task.color??barColors[i%barColors.length],borderRadius:tcss('--rk-radius-sm'),opacity:0.8}} />

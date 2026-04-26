@@ -2,29 +2,29 @@ import { defineCatalog } from '@json-render/core'
 import { schema } from '@json-render/react'
 import { z } from 'zod'
 
-// Chart schemas (mviz bridge)
-import { BarChartSchema } from './mviz-bridge/bar-chart/schema'
-import { AreaChartSchema } from './mviz-bridge/area/schema'
-import { LineChartSchema } from './mviz-bridge/line/schema'
-import { PieChartSchema } from './mviz-bridge/pie/schema'
-import { ScatterChartSchema } from './mviz-bridge/scatter/schema'
-import { BubbleChartSchema } from './mviz-bridge/bubble/schema'
-import { BoxplotChartSchema } from './mviz-bridge/boxplot/schema'
-import { HistogramChartSchema } from './mviz-bridge/histogram/schema'
-import { WaterfallChartSchema } from './mviz-bridge/waterfall/schema'
-import { XmrChartSchema } from './mviz-bridge/xmr/schema'
-import { SankeyChartSchema } from './mviz-bridge/sankey/schema'
-import { FunnelChartSchema } from './mviz-bridge/funnel/schema'
-import { HeatmapChartSchema } from './mviz-bridge/heatmap/schema'
-import { CalendarChartSchema } from './mviz-bridge/calendar/schema'
-import { SparklineChartSchema } from './mviz-bridge/sparkline/schema'
-import { ComboChartSchema } from './mviz-bridge/combo/schema'
-import { DumbbellChartSchema } from './mviz-bridge/dumbbell/schema'
-import { RadarChartSchema } from './mviz-bridge/radar/schema'
-import { MermaidSchema } from './mviz-bridge/mermaid/schema'
+// Chart schemas
+import { BarChartSchema } from './charts/bar-chart/schema'
+import { AreaChartSchema } from './charts/area/schema'
+import { LineChartSchema } from './charts/line/schema'
+import { PieChartSchema } from './charts/pie/schema'
+import { ScatterChartSchema } from './charts/scatter/schema'
+import { BubbleChartSchema } from './charts/bubble/schema'
+import { BoxplotChartSchema } from './charts/boxplot/schema'
+import { HistogramChartSchema } from './charts/histogram/schema'
+import { WaterfallChartSchema } from './charts/waterfall/schema'
+import { XmrChartSchema } from './charts/xmr/schema'
+import { SankeyChartSchema } from './charts/sankey/schema'
+import { FunnelChartSchema } from './charts/funnel/schema'
+import { HeatmapChartSchema } from './charts/heatmap/schema'
+import { CalendarChartSchema } from './charts/calendar/schema'
+import { SparklineChartSchema } from './charts/sparkline/schema'
+import { ComboChartSchema } from './charts/combo/schema'
+import { DumbbellChartSchema } from './charts/dumbbell/schema'
+import { RadarChartSchema } from './charts/radar/schema'
+import { MermaidSchema } from './charts/mermaid/schema'
 
-// UI component schemas (mviz bridge) — only DataTable retained
-import { DataTableSchema } from './mviz-bridge/table/schema'
+// UI component schemas
+import { DataTableSchema } from './charts/table/schema'
 
 // Custom business component schemas
 import { TimelineSchema } from './components/timeline/schema'
@@ -46,14 +46,14 @@ import { SplitLayoutSchema } from './components/split-layout/schema'
 import { HeroLayoutSchema } from './components/hero-layout/schema'
 
 /**
- * AI RenderKit catalog — 31 components registered as json-render visualization catalog
- * (InteractivePlayground removed — use HTML pages with native controls for interactive parameter exploration)
+ * Vizual catalog — 31 components registered as json-render visualization catalog
+ * Use host bridges such as renderInteractiveVizInMsg for live parameter exploration.
  * (15 components removed — AI uses freeform HTML via DocView instead)
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const renderKitCatalog = defineCatalog(schema, {
   components: {
-    // Charts (mviz bridge) — 19
+    // Charts — 19
     BarChart: {
       props: BarChartSchema as any,
       description: 'Bar chart with grouped, stacked, and horizontal variants.',
@@ -131,7 +131,7 @@ export const renderKitCatalog = defineCatalog(schema, {
       description: 'Mermaid diagram for flowcharts, sequences, and more.',
     },
 
-    // UI components (mviz bridge) — 1
+    // UI components — 1
     DataTable: {
       props: DataTableSchema as any,
       description: 'Data table with column definitions and formatting.',
@@ -203,7 +203,7 @@ export const renderKitCatalog = defineCatalog(schema, {
         text: z.string(),
         note: z.string(),
       }) as any,
-      description: 'Request AI revision for a specific annotation. Host app wires this to its AI API with the annotation context.',
+      description: 'Legacy compatibility event for requesting AI revision for a single annotation. New hosts should prefer DocView onReviewAction/controllerRef.',
     },
     batchSubmit: {
       params: z.object({
@@ -214,7 +214,7 @@ export const renderKitCatalog = defineCatalog(schema, {
           color: z.string(),
         })),
       }) as any,
-      description: 'Batch submit multiple annotations for AI revision. Used by DocView revision loop to send all draft annotations at once.',
+      description: 'Legacy compatibility event for batch annotation submission. New hosts should prefer DocView threadsSubmitted review events and RevisionProposal patches.',
     },
   },
 })

@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { tc, tcss, chartColors, resetColors, updateActiveColors } from '../theme-colors'
-import { registerTheme, setGlobalTheme, getTheme } from '../../themes'
+import { registerTheme, setGlobalTheme, getTheme, applyTheme } from '../../themes'
 
 describe('theme-colors — tc() / tcss() 单元测试', () => {
 
@@ -150,6 +150,35 @@ describe('theme-colors — tc() / tcss() 单元测试', () => {
 
       const after = tcss('--rk-accent')
       expect(after).toBe('var(--rk-accent)')
+    })
+
+    it('不同容器应用不同主题时保留各自的 CSS 变量规则', () => {
+      if (typeof document === 'undefined') return
+
+      registerTheme('scoped-theme-a', {
+        name: 'scoped-theme-a',
+        displayName: 'Scoped A',
+        mode: 'dark',
+        cssVariables: { '--rk-accent': '#ff0000' },
+      })
+      registerTheme('scoped-theme-b', {
+        name: 'scoped-theme-b',
+        displayName: 'Scoped B',
+        mode: 'dark',
+        cssVariables: { '--rk-accent': '#00ff00' },
+      })
+
+      const a = document.createElement('div')
+      const b = document.createElement('div')
+      document.body.append(a, b)
+
+      applyTheme(a, 'scoped-theme-a')
+      applyTheme(b, 'scoped-theme-b')
+
+      expect(a.classList.contains('rk-theme-scoped-theme-a')).toBe(true)
+      expect(b.classList.contains('rk-theme-scoped-theme-b')).toBe(true)
+      expect(document.getElementById('rk-theme-variables-scoped-theme-a')?.textContent).toContain('#ff0000')
+      expect(document.getElementById('rk-theme-variables-scoped-theme-b')?.textContent).toContain('#00ff00')
     })
   })
 

@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Vizual AI 对话</title>
+  <link rel="icon" href="data:,">
   <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
   <script src="https://unpkg.com/echarts@5.5.0/dist/echarts.min.js"></script>
@@ -35,7 +36,7 @@
 
     /* 消息区 */
     .main { flex: 1; overflow-y: auto; padding: 24px 20px; }
-    .messages { max-width: 780px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
+    .messages { width: 100%; max-width: min(1180px, calc(100vw - 40px)); margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
 
     /* 消息行 */
     .msg-row { display: flex; gap: 10px; animation: fadeIn 0.25s ease; }
@@ -43,16 +44,41 @@
     @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
 
     /* 气泡 */
-    .bubble { max-width: 85%; padding: 12px 16px; border-radius: 14px; font-size: 14px; line-height: 1.6; white-space: pre-wrap; word-break: break-word; }
+    .bubble { max-width: min(85%, 760px); padding: 12px 16px; border-radius: 14px; font-size: 14px; line-height: 1.6; white-space: pre-wrap; word-break: break-word; }
     .bubble.user { background: var(--accent); color: #fff; border-bottom-right-radius: 4px; }
-    .bubble.ai { background: var(--bg-bubble); border: 1px solid var(--border); border-bottom-left-radius: 4px; }
+    .bubble.ai { background: var(--rk-bg-secondary, var(--bg-bubble)); border: 1px solid var(--rk-border-subtle, var(--border)); border-bottom-left-radius: 4px; }
 
-    /* 气泡内有图表时撑满宽度 */
-    .bubble.ai.has-viz { max-width: 100%; padding: 14px 16px; }
+    /* 气泡内有图表时由 AI/宿主选择宽度档位，避免所有图表固定成一个尺寸 */
+    .bubble.ai.has-viz {
+      width: min(var(--viz-bubble-width, 980px), 100%);
+      min-width: min(var(--viz-bubble-min, 320px), 100%);
+      max-width: 100%;
+      padding: 14px 16px;
+    }
+    .bubble.ai.bubble-compact { --viz-bubble-width: 520px; }
+    .bubble.ai.bubble-normal { --viz-bubble-width: 760px; }
+    .bubble.ai.bubble-wide { --viz-bubble-width: 980px; }
+    .bubble.ai.bubble-full { --viz-bubble-width: 1180px; }
 
     /* Viz 容器 — 在气泡内部 */
-    .viz-wrap { margin-top: 12px; background: var(--bg-viz); border: 1px solid var(--border); border-radius: 10px; padding: 14px; min-height: 200px; min-width: 400px; position: relative; }
-    .viz-wrap .viz-error { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: var(--error); font-size: 13px; }
+    .viz-wrap { margin-top: 12px; background: var(--rk-bg-primary, var(--bg-viz)); border: 1px solid var(--rk-border-subtle, var(--border)); border-radius: 10px; padding: 14px; min-height: 200px; width: 100%; min-width: 0; overflow-x: auto; position: relative; }
+    .viz-wrap .viz-error { margin: 0; min-height: 160px; display: flex; align-items: center; justify-content: center; color: #fecaca; border: 1px solid rgba(239,68,68,0.55); border-radius: 8px; background: rgba(127,29,29,0.38); padding: 14px; font-size: 13px; text-align: center; white-space: pre-wrap; }
+    .artifact-toolbar { position: absolute; top: 8px; right: 8px; display: flex; gap: 6px; z-index: 4; padding: 4px; border: 1px solid var(--rk-border-subtle, var(--border)); border-radius: 8px; background: color-mix(in srgb, var(--rk-bg-secondary, var(--bg-bubble)) 86%, transparent); box-shadow: 0 8px 24px rgba(0,0,0,0.18); }
+    .artifact-toolbar button { border: 1px solid var(--rk-border-subtle, var(--border)); border-radius: 6px; background: var(--rk-bg-tertiary, rgba(255,255,255,0.06)); color: var(--rk-text-primary, var(--text)); font-size: 11px; line-height: 1; padding: 6px 7px; cursor: pointer; }
+    .artifact-toolbar button:hover { border-color: var(--rk-accent, var(--accent)); }
+    .interactive-wrap { display: grid; grid-template-columns: minmax(220px, 0.36fr) minmax(280px, 1fr); gap: 12px; align-items: stretch; min-width: 0; }
+    .interactive-controls, .interactive-preview { min-width: 0; border: 1px solid var(--rk-border-subtle, var(--border)); border-radius: 8px; background: var(--rk-bg-secondary, rgba(15,17,23,0.55)); padding: 12px; }
+    .interactive-controls { overflow: auto; }
+    .interactive-preview { min-height: 260px; position: relative; }
+    .interactive-preview-root { min-height: 260px; min-width: 0; }
+    .interactive-error { margin-top: 8px; padding: 8px 10px; border: 1px solid rgba(239,68,68,0.45); border-radius: 8px; color: #fecaca; background: rgba(239,68,68,0.12); font-size: 12px; display: none; }
+    .docview-bridge-root { min-height: 520px; min-width: 0; width: 100%; }
+    @media (max-width: 720px) {
+      .main { padding: 16px 12px; }
+      .messages { max-width: calc(100vw - 24px); }
+      .bubble.ai.has-viz { width: 100%; min-width: 0; }
+      .interactive-wrap { grid-template-columns: 1fr; }
+    }
 
     /* 流式光标 */
     .cursor { display: inline-block; width: 2px; height: 1em; background: var(--accent); animation: blink 1s infinite; vertical-align: text-bottom; margin-left: 2px; }
@@ -60,10 +86,10 @@
 
     /* 底部输入 */
     .footer { padding: 14px 20px; border-top: 1px solid var(--border); }
-    .input-row { max-width: 780px; margin: 0 auto; display: flex; gap: 10px; }
-    input { flex: 1; padding: 12px 16px; border: 1px solid var(--border); border-radius: 10px; background: var(--bg-bubble); color: var(--text); font-size: 14px; transition: border-color 0.15s; }
-    input:focus { outline: none; border-color: var(--accent); }
-    input::placeholder { color: var(--text-muted); }
+    .input-row { max-width: 780px; margin: 0 auto; display: flex; gap: 10px; align-items: flex-end; }
+    textarea { flex: 1; min-height: 44px; max-height: 180px; padding: 12px 16px; border: 1px solid var(--border); border-radius: 10px; background: var(--bg-bubble); color: var(--text); font-size: 14px; line-height: 1.45; transition: border-color 0.15s; resize: vertical; font-family: inherit; }
+    textarea:focus { outline: none; border-color: var(--accent); }
+    textarea::placeholder { color: var(--text-muted); }
     .send-btn { padding: 12px 20px; background: var(--accent); border: none; border-radius: 10px; color: #fff; font-size: 14px; font-weight: 500; cursor: pointer; transition: background 0.15s; }
     .send-btn:hover { background: var(--accent-hover); }
 
@@ -104,7 +130,7 @@
 
   <div class="footer">
     <div class="input-row">
-      <input id="input" placeholder="说点什么..." autofocus>
+      <textarea id="input" placeholder="说点什么..." rows="1" autofocus></textarea>
       <button class="send-btn" onclick="send()">发送</button>
     </div>
   </div>
@@ -114,28 +140,186 @@
       <button class="close-btn" onclick="document.getElementById('guide').classList.remove('open')">&times;</button>
       <h2>Agent 对接指南</h2>
       <p>这个聊天页面暴露了一套 <code>window</code> API，任何能控制浏览器的 AI Agent 都能对接。核心流程：<b>读用户消息 → 生成 JSON Spec → 渲染到气泡</b>。</p>
+      <p><b>能力要求：</b>Agent 必须能在页面上下文执行 JavaScript（Chrome DevTools MCP <code>evaluate_script</code>、Playwright <code>page.evaluate</code>、CDP 等）。如果只能点击和输入，它只能发送用户消息，不能调用 <code>renderVizInMsg()</code> 完成渲染。</p>
 
       <h3>Bridge API（页面暴露的全局函数）</h3>
       <table>
         <tr><th>API</th><th>说明</th><th>返回</th></tr>
-        <tr><td><code>window._pendingMsg</code></td><td>用户发送的最新消息（读完不会自动清，Agent 需置 null）</td><td>string | null</td></tr>
+        <tr><td><code>window._pendingMsg</code></td><td>用户发送的最新原始消息（保留换行；读完不会自动清）</td><td>string | null</td></tr>
+        <tr><td><code>window.getPendingMessage()</code></td><td>读取带 id / rawText / createdAt 的待处理消息；优先用它，不要从 DOM 反读用户输入</td><td>object | null</td></tr>
+        <tr><td><code>window.markPendingHandled()</code></td><td>标记当前待处理消息已处理，并写入 <code>__lastHandledMessage</code></td><td>void</td></tr>
         <tr><td><code>window.createAiMsg()</code></td><td>创建 AI 消息气泡（带流式光标），返回消息 ID</td><td>string (id)</td></tr>
         <tr><td><code>window.streamText(id, text)</code></td><td>往 AI 气泡追加文字</td><td>void</td></tr>
         <tr><td><code>window.finishText(id)</code></td><td>结束流式输出（移除光标）</td><td>void</td></tr>
-        <tr><td><code>window.renderVizInMsg(id, spec)</code></td><td>渲染 Vizual JSON Spec 到气泡</td><td>boolean</td></tr>
+        <tr><td><code>window.renderVizInMsg(id, spec, options?)</code></td><td>渲染静态 Vizual JSON Spec 到气泡；兼容旧写法，内部会保存可编辑 artifact</td><td>boolean</td></tr>
+        <tr><td><code>window.renderArtifactInMsg(id, artifact, options?)</code></td><td>渲染完整 VizualArtifact；用于历史恢复、主题、版本、targetMap</td><td>VizualArtifact | null</td></tr>
+        <tr><td><code>window.getLastArtifact()</code></td><td>读取最近一次渲染的 artifact，包含 spec、targetMap、versions、exports</td><td>VizualArtifact | null</td></tr>
+        <tr><td><code>window.updateArtifactInMsg(ref, patches, options?)</code></td><td>用 Vizual typed patches 修改 artifact 并渲染到新的 AI 气泡；仅预览/调试时传 <code>{ mode: 'replace' }</code> 原地替换。兼容常见 JSON Patch，但 Agent 应优先使用 typed patches。</td><td>VizualArtifact | null</td></tr>
+        <tr><td><code>window.exportArtifact(ref, options?)</code></td><td>导出当前 artifact 并记录 export 元数据；<code>options.format</code> 支持 png/pdf/csv/xlsx</td><td>Promise&lt;ExportRecord | null&gt;</td></tr>
+        <tr><td><code>window.renderInteractiveVizInMsg(id, config)</code></td><td>渲染 FormBuilder 控件 + 实时预览；Agent 作为宿主提供 <code>makeSpec(state)</code></td><td>boolean</td></tr>
+        <tr><td><code>window.updateInteractiveVizInMsg(ref, patch, options?)</code></td><td>以稳定 API 更新实时预览 state；自动化测试不要模拟 React DOM 输入事件</td><td>object | null</td></tr>
+        <tr><td><code>window.getInteractiveVizState(ref?)</code></td><td>读取实时预览 state、artifact、lastPreviewSpec 和 renderCount</td><td>object | null</td></tr>
+        <tr><td><code>window.getVizualConversationState()</code></td><td>读取稳定的消息、artifact、控件和渲染历史状态；自动化测试不要猜 DOM class</td><td>object</td></tr>
+        <tr><td><code>window.getVizualDebugState()</code></td><td>读取 pending message、artifact registry、DocView session 和最近渲染记录</td><td>object</td></tr>
+        <tr><td><code>window.renderDocViewInMsg(id, config)</code></td><td>渲染带审阅 bridge 的 DocView；用于可批注报告、长文共建、修订循环</td><td>VizualArtifact | null</td></tr>
+        <tr><td><code>window.getDocViewReviewState(ref?)</code></td><td>读取 DocView sections、threads、revisionProposals、review events</td><td>object | null</td></tr>
+        <tr><td><code>window.createDocViewThread(ref, input)</code></td><td>创建 DocView 批注线程；可传完整 anchor，也可用 sectionId/sectionIndex + selectedText 让宿主补全 anchor</td><td>AnnotationThread | null</td></tr>
+        <tr><td><code>window.createDocViewRevision(ref, input)</code></td><td>Agent 根据已提交批注创建修订提案；用户可在面板点击应用</td><td>RevisionProposal | null</td></tr>
+        <tr><td><code>window.applyDocViewRevision(ref, proposalId)</code></td><td>应用修订提案，更新 DocView sections 和 artifact</td><td>RevisionProposal | null</td></tr>
       </table>
+      <p><code>window.getVizualConversationState()</code>、<code>window.__lastVizualRender</code>、<code>window.__renderHistory</code>、<code>window.__vizualArtifacts</code> 会记录最后一次静态/交互渲染的 spec、targetMap、版本和导出信息，便于 QA 检查 Agent 是否真的使用了用户数据。</p>
+      <p><code>bubbleWidth</code> 可以省略，页面会按组件类型自动推断。KPI/迷你图偏窄，普通图表偏宽，Grid/Split/DocView/Sankey/Radar/FormBuilder/DataTable 默认 full。</p>
       <pre>// 完整流程
-const id = window.createAiMsg();         // 1. 创建气泡
-window.streamText(id, '正在生成图表...');  // 2. 流式文字
-window.finishText(id);                    // 3. 结束文字
-window.renderVizInMsg(id, spec);          // 4. 渲染图表
-window._pendingMsg = null;                // 5. 清除已读消息</pre>
+const pending = window.getPendingMessage(); // 1. 读取原始输入（保留换行）
+const id = window.createAiMsg();            // 2. 创建气泡
+window.streamText(id, '正在生成图表...');     // 3. 流式文字
+window.finishText(id);                       // 4. 结束文字
+window.renderVizInMsg(id, spec);             // 5. 渲染图表（自动推断气泡宽度）
+window.markPendingHandled();                 // 6. 清除已读消息</pre>
+
+      <h3>历史追问与修改</h3>
+      <p>用户后续说“这张图改成折线图，只看华东区，再导出成 PDF/图片/表格”时，不要重新猜测上一张图。先读 artifact，再用 Vizual typed patch 修改目标组件。默认会生成新的 AI 气泡，保留历史消息；只有临时预览才用 <code>{ mode: 'replace' }</code> 原地替换。</p>
+      <pre>const artifact = window.getLastArtifact();
+const updated = window.updateArtifactInMsg(artifact.id, [
+  { type: 'changeChartType', targetId: 'element:chart', chartType: 'LineChart' },
+  { type: 'filterData', targetId: 'element:chart', field: 'region', values: '华东' },
+  { type: 'limitData', targetId: 'element:chart', limit: 8 },
+], { answerText: '已按华东区改成折线图。' });
+const exportRecord = await window.exportArtifact(updated.id, { format: 'pdf', filename: 'east-china-chart' });
+const tableRecord = await window.exportArtifact(updated.id, { format: 'xlsx', filename: 'east-china-data' });</pre>
+
+      <h3>实时 adjust-preview 场景</h3>
+      <p>实时可调图表不是纯 JSON spec。Agent 必须作为宿主调用 <code>renderInteractiveVizInMsg()</code>，用 FormBuilder 绑定 <code>/controls</code>，再由 <code>makeSpec(state)</code> 生成右侧预览图表。</p>
+      <p>控件必须按当前图表能力联动：例如横向/堆叠只属于柱状图，切换到折线图或组合图时要用 <code>dependsOn</code> / <code>showWhen</code> 隐藏，并且在 <code>makeSpec(state)</code> 里不要传入非法 props。</p>
+      <pre>const id = window.createAiMsg();
+window.streamText(id, '可以直接调参数查看结果。');
+window.finishText(id);
+
+window.renderInteractiveVizInMsg(id, {
+  initialState: {
+    controls: {
+      chartType: 'bar',
+      points: 8,
+      orientation: 'vertical',
+      stacked: false,
+      smooth: false,
+      secondaryMetric: 'growth',
+      brandColor: '#ff6b35',
+    },
+  },
+  bubbleWidth: 'full',
+  designMd: 'Primary: #ff6b35\nBackground: #0f1117',
+  controlsSpec: {
+    root: 'controls',
+    elements: {
+      controls: {
+        type: 'FormBuilder',
+        props: {
+          type: 'form_builder',
+          value: { $bindState: '/controls' },
+          fields: [
+            {
+              name: 'chartType',
+              label: '图表类型',
+              type: 'select',
+              options: [
+                { label: '柱状图', value: 'bar' },
+                { label: '折线图', value: 'line' },
+                { label: '组合图', value: 'combo' },
+              ],
+            },
+            { name: 'points', label: '数据点', type: 'slider', min: 3, max: 14 },
+            {
+              name: 'orientation',
+              label: '柱状方向',
+              type: 'select',
+              options: [
+                { label: '纵向', value: 'vertical' },
+                { label: '横向', value: 'horizontal' },
+              ],
+              dependsOn: 'chartType',
+              showWhen: 'bar',
+            },
+            { name: 'stacked', label: '堆叠柱状图', type: 'switch', dependsOn: 'chartType', showWhen: 'bar' },
+            { name: 'smooth', label: '平滑折线', type: 'switch', dependsOn: 'chartType', showWhen: 'line' },
+            {
+              name: 'secondaryMetric',
+              label: '组合图折线指标',
+              type: 'select',
+              options: [
+                { label: '增长率', value: 'growth' },
+                { label: 'ARPPU', value: 'arppu' },
+              ],
+              dependsOn: 'chartType',
+              showWhen: 'combo',
+            },
+            { name: 'brandColor', label: '品牌色', type: 'color' },
+          ],
+        },
+        children: [],
+      },
+    },
+  },
+  applyTheme: (state, Vizual) => {
+    Vizual.loadDesignMd('Primary: ' + state.controls.brandColor, { apply: true });
+  },
+  makeSpec: (state) => {
+    const points = Number(state.controls.points || 8);
+    const data = Array.from({ length: points }, (_, i) => ({
+      day: 'D' + (i + 1),
+      value: 20 + i * 5,
+      growth: 8 + i * 1.8,
+      arppu: 4.5 + i * 0.35,
+    }));
+    const chartType = state.controls.chartType;
+    const chart =
+      chartType === 'line'
+        ? { type: 'LineChart', props: { type: 'line', title: '实时预览', x: 'day', y: 'value', data, smooth: !!state.controls.smooth }, children: [] }
+        : chartType === 'combo'
+          ? { type: 'ComboChart', props: { type: 'combo', title: '实时预览', x: 'day', y: ['value', state.controls.secondaryMetric || 'growth'], data }, children: [] }
+          : { type: 'BarChart', props: { type: 'bar', title: '实时预览', x: 'day', y: 'value', data, stacked: !!state.controls.stacked, horizontal: state.controls.orientation === 'horizontal' }, children: [] };
+    return {
+      root: 'chart',
+      elements: {
+        chart: {
+          ...chart,
+        },
+      },
+    };
+  },
+});</pre>
+
+      <h3>DocView 批注循环</h3>
+      <p>只有“需要用户批注、提交、Agent 修订、再应用”的报告才用 DocView。普通 dashboard 不要用 DocView。</p>
+      <pre>const id = window.createAiMsg();
+window.streamText(id, '我生成了一份可批注报告。');
+window.finishText(id);
+const artifact = window.renderDocViewInMsg(id, {
+  sections: [
+    { id: 'title', type: 'heading', content: '经营分析报告', level: 1 },
+    { id: 'summary', type: 'text', content: '收入下滑主要来自活跃用户下降。' },
+  ],
+  showPanel: true,
+});
+
+// 用户提交批注后，Agent 读取待处理线程
+const state = window.getDocViewReviewState(artifact.id);
+const submitted = state.threads.filter(t => t.status === 'submitted');
+
+// Agent 创建修订提案
+window.createDocViewRevision(artifact.id, {
+  fromThreadIds: submitted.map(t => t.id),
+  summary: '补充收入下滑原因',
+  patches: [
+    { op: 'updateSection', sectionId: 'summary', updates: { content: '收入下滑主要来自活跃用户下降，同时高价值用户留存推高 ARPPU。' } },
+  ],
+});</pre>
 
       <h3>Claude Code（Chrome DevTools MCP）</h3>
       <p>安装 <code>chrome-devtools-mcp</code>，Claude Code 自动获得 <code>mcp__chrome-devtools__evaluate_script</code> 工具：</p>
       <pre>// 监听用户输入
 const msg = await mcp__chrome-devtools__evaluate_script({
-  function: '() => window._pendingMsg'
+  function: '() => window.getPendingMessage()'
 });
 
 // 回复
@@ -146,7 +330,9 @@ await mcp__chrome-devtools__evaluate_script({
     'window.finishText(id);\n' +
     'const resp = await fetch("/validation/my-spec.json");\n' +
     'const spec = await resp.json();\n' +
-    'return window.renderVizInMsg(id, spec);\n' +
+    'const ok = window.renderVizInMsg(id, spec);\n' +
+    'window.markPendingHandled();\n' +
+    'return ok;\n' +
   '}'
 });</pre>
 
@@ -158,8 +344,9 @@ const browser = await chromium.launch({ headless: false });
 const page = await browser.newPage();
 await page.goto('http://localhost:8765/validation/vizual-test.html');
 
-// 等用户输入 — 轮询 _pendingMsg
-const msg = await page.evaluate(() => window._pendingMsg);
+// 等用户输入 — 轮询 getPendingMessage()
+const pending = await page.evaluate(() => window.getPendingMessage());
+const msg = pending?.rawText || pending?.text;
 
 // 回复
 await page.evaluate((spec) => {
@@ -167,22 +354,24 @@ await page.evaluate((spec) => {
   window.streamText(id, '这是回复文字');
   window.finishText(id);
   window.renderVizInMsg(id, spec);
+  window.markPendingHandled();
 }, mySpec);</pre>
 
       <h3>纯 HTTP 轮询（无浏览器控制）</h3>
       <p>如果 Agent 完全无法控制浏览器，可以让页面自己轮询一个后端：</p>
       <pre>// 在页面 script 里加一个自动轮询
 setInterval(async () => {
-  if (window._pendingMsg) {
+  const pending = window.getPendingMessage();
+  if (pending) {
     const resp = await fetch('http://localhost:3000/chat', {
       method: 'POST',
-      body: JSON.stringify({ message: window._pendingMsg }),
+      body: JSON.stringify({ message: pending.rawText || pending.text }),
     });
     const { spec } = await resp.json();
     const id = window.createAiMsg();
     window.finishText(id);
     window.renderVizInMsg(id, spec);
-    window._pendingMsg = null;
+    window.markPendingHandled();
   }
 }, 2000);</pre>
     </div>
@@ -192,9 +381,34 @@ setInterval(async () => {
     // ============================================================
     //  状态
     // ============================================================
-    window._pendingMsg = null;   // MCP 轮询读取用户最新消息
+    window._pendingMsg = null;       // MCP 轮询读取用户最新原始消息
+    window._pendingMsgMeta = null;   // 带 id / createdAt / rawText 的待处理消息
+    window.__lastUserRawMessage = null;
+    window.__lastHandledMessage = null;
+    window.__userMessageLog = [];
+    window.__lastVizualRender = null;
+    window.__renderHistory = [];
+    window._interactiveViz = {};     // 实时控件-预览控制器，按消息 ID 存储
+    window._docViewRoots = {};       // DocView 专用 React root，按消息 ID 存储
+    window._docViewSessions = {};    // DocView 审阅 session，按 artifact ID 存储
+    window.__messageDocViews = {};   // ai message id -> docview artifact id
+    window.__lastDocViewSessionId = null;
+    window.__lastDocViewEvent = null;
+    window.__vizualArtifacts = {};   // artifactId -> VizualArtifact
+    window.__messageArtifacts = {};  // ai message id -> artifactId
+    window.__messageArtifactSnapshots = {}; // ai message id -> immutable artifact snapshot
+    window.__artifactMessages = {};  // artifactId -> ai message id
+    window.__artifactHistory = [];
+    window.__lastArtifact = null;
+    const BUBBLE_WIDTH_CLASS = {
+      compact: 'bubble-compact',
+      normal: 'bubble-normal',
+      wide: 'bubble-wide',
+      full: 'bubble-full',
+    };
     let vizualReady = false;
     let msgSeq = 0;
+    let userMsgSeq = 0;
 
     function setStatus(ok, text) {
       document.getElementById('statusDot').className = 'status-dot' + (ok ? '' : ' error');
@@ -206,24 +420,57 @@ setInterval(async () => {
     // ============================================================
     function send() {
       const input = document.getElementById('input');
-      const text = input.value.trim();
+      const rawText = input.value;
+      const text = rawText.trim();
       if (!text) return;
       input.value = '';
-      appendUserBubble(text);
+      input.style.height = '';
+      const message = {
+        id: 'user-' + (++userMsgSeq),
+        text,
+        rawText,
+        createdAt: new Date().toISOString(),
+      };
+      appendUserBubble(text, message.id);
       window._pendingMsg = text;
+      window._pendingMsgMeta = message;
+      window.__lastUserRawMessage = rawText;
+      window.__userMessageLog.push(message);
+      if (window.__userMessageLog.length > 50) window.__userMessageLog.shift();
       scrollBottom();
     }
     document.getElementById('input').addEventListener('keydown', e => {
       if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
     });
+    document.getElementById('input').addEventListener('input', e => {
+      const el = e.currentTarget;
+      el.style.height = 'auto';
+      el.style.height = Math.min(el.scrollHeight, 180) + 'px';
+    });
 
     // ============================================================
     //  用户气泡
     // ============================================================
-    function appendUserBubble(text) {
+    function appendUserBubble(text, id) {
       const row = document.createElement('div');
-      row.className = 'msg-row user';
-      row.innerHTML = '<div class="bubble user">' + esc(text) + '</div>';
+      row.className = 'msg-row user message user-message';
+      if (id) {
+        row.id = id + '-row';
+        row.dataset.messageRow = 'true';
+        row.dataset.messageId = id;
+        row.dataset.messageRole = 'user';
+        row.dataset.userMsg = 'true';
+      }
+      const bubble = document.createElement('div');
+      bubble.className = 'bubble user';
+      if (id) {
+        bubble.id = id + '-bubble';
+        bubble.dataset.messageId = id;
+        bubble.dataset.messageRole = 'user';
+        bubble.dataset.bubble = 'true';
+      }
+      bubble.textContent = text;
+      row.appendChild(bubble);
       document.getElementById('messages').appendChild(row);
     }
 
@@ -238,6 +485,23 @@ setInterval(async () => {
     //  MCP Bridge API — Claude 通过这些函数控制聊天
     // ============================================================
 
+    window.getPendingMessage = function() {
+      if (window._pendingMsgMeta) return { ...window._pendingMsgMeta };
+      if (!window._pendingMsg) return null;
+      return {
+        id: null,
+        text: window._pendingMsg,
+        rawText: window._pendingMsg,
+        createdAt: null,
+      };
+    };
+
+    window.markPendingHandled = function() {
+      window.__lastHandledMessage = window.getPendingMessage();
+      window._pendingMsg = null;
+      window._pendingMsgMeta = null;
+    };
+
     /**
      * 创建 AI 消息气泡（带流式光标）。
      * 气泡内部同时预留了 viz 容器（初始隐藏）。
@@ -246,16 +510,25 @@ setInterval(async () => {
     window.createAiMsg = function() {
       const id = 'msg-' + (++msgSeq);
       const row = document.createElement('div');
-      row.className = 'msg-row';
+      row.className = 'msg-row message ai-message';
+      row.id = id + '-row';
+      row.dataset.messageRow = 'true';
+      row.dataset.messageId = id;
+      row.dataset.messageRole = 'ai';
+      row.dataset.aiMsg = 'true';
 
       // 单个气泡，内含文字区 + viz 容器
       const bubble = document.createElement('div');
       bubble.className = 'bubble ai';
       bubble.id = id + '-bubble';
+      bubble.dataset.messageId = id;
+      bubble.dataset.messageRole = 'ai';
+      bubble.dataset.bubble = 'true';
 
       // 文字区
       const textEl = document.createElement('div');
       textEl.id = id + '-text';
+      textEl.dataset.messageText = 'true';
       textEl.innerHTML = '<span class="cursor"></span>';
       bubble.appendChild(textEl);
 
@@ -263,6 +536,8 @@ setInterval(async () => {
       const vizWrap = document.createElement('div');
       vizWrap.id = id + '-viz';
       vizWrap.className = 'viz-wrap';
+      vizWrap.dataset.messageId = id;
+      vizWrap.dataset.vizContainer = 'true';
       vizWrap.style.display = 'none';
       bubble.appendChild(vizWrap);
 
@@ -296,58 +571,1218 @@ setInterval(async () => {
       if (cursor) cursor.remove();
     };
 
-    /**
-     * 渲染 Vizual 组件到消息气泡内部。
-     * spec 格式: { root: 'main', elements: { main: { type: 'KpiDashboard', props: { metrics: [...] } } } }
-     */
-    window.renderVizInMsg = function(id, spec) {
+    function cloneState(value) {
+      if (value == null) return {};
+      if (typeof structuredClone === 'function') {
+        try { return structuredClone(value); } catch (_) {}
+      }
+      return JSON.parse(JSON.stringify(value));
+    }
+
+    function decodePointerSegment(segment) {
+      return segment.replace(/~1/g, '/').replace(/~0/g, '~');
+    }
+
+    function setByPointer(target, path, value) {
+      if (!path || path === '/') return value;
+      const parts = path.replace(/^\//, '').split('/').map(decodePointerSegment);
+      let current = target;
+      for (let i = 0; i < parts.length - 1; i++) {
+        const key = parts[i];
+        if (typeof current[key] !== 'object' || current[key] === null) current[key] = {};
+        current = current[key];
+      }
+      current[parts[parts.length - 1]] = value;
+      return target;
+    }
+
+    function applyStateChanges(state, changes) {
+      if (!Array.isArray(changes)) return state;
+      for (const change of changes) {
+        if (!change || typeof change.path !== 'string') continue;
+        state = setByPointer(state, change.path, change.value);
+      }
+      return state;
+    }
+
+    function isPlainObject(value) {
+      return !!value && typeof value === 'object' && !Array.isArray(value);
+    }
+
+    function mergeStatePatch(base, patch) {
+      if (!isPlainObject(patch)) return base;
+      const next = isPlainObject(base) ? base : {};
+      for (const [key, value] of Object.entries(patch)) {
+        if (isPlainObject(value) && isPlainObject(next[key])) {
+          next[key] = mergeStatePatch({ ...next[key] }, value);
+        } else {
+          next[key] = cloneState(value);
+        }
+      }
+      return next;
+    }
+
+    function showVizError(container, err) {
+      container.querySelectorAll('.viz-error').forEach(el => el.remove());
+      const errEl = document.createElement('div');
+      errEl.className = 'viz-error';
+      errEl.textContent = '渲染失败\n' + (err?.message || err);
+      container.appendChild(errEl);
+    }
+
+    function safeSnapshot(value) {
+      try { return cloneState(value); } catch (_) { return null; }
+    }
+
+    function safeCssIdent(value) {
+      return String(value || 'scope').replace(/[^a-zA-Z0-9_-]/g, '-');
+    }
+
+    function createScopedVizualProxy(scopeEl, scopeId) {
+      const base = window.Vizual;
+      const themeBaseName = 'vizual-interactive-' + safeCssIdent(scopeId);
+      return {
+        ...base,
+        loadDesignMd(markdown, options = {}) {
+          const theme = base.loadDesignMd(markdown, {
+            ...options,
+            name: options.name || themeBaseName,
+            apply: false,
+          });
+          if (options.apply !== false) {
+            base.applyTheme(scopeEl, theme.name);
+          }
+          return theme;
+        },
+        setGlobalTheme(themeName) {
+          return base.applyTheme(scopeEl, themeName);
+        },
+        applyTheme(containerOrThemeName, maybeThemeName) {
+          if (typeof containerOrThemeName === 'string') {
+            return base.applyTheme(scopeEl, containerOrThemeName);
+          }
+          return base.applyTheme(containerOrThemeName || scopeEl, maybeThemeName);
+        },
+      };
+    }
+
+    function summarizeSpec(spec) {
+      const elements = spec?.elements || {};
+      return {
+        root: spec?.root || null,
+        elementCount: Object.keys(elements).length,
+        elementTypes: Object.fromEntries(
+          Object.entries(elements).map(([key, element]) => [key, element?.type || null])
+        ),
+      };
+    }
+
+    function recordVizRender(kind, id, details) {
+      const record = {
+        kind,
+        id,
+        at: new Date().toISOString(),
+        pendingMessage: window.getPendingMessage(),
+        ...details,
+      };
+      window.__lastVizualRender = record;
+      window.__renderHistory.push(record);
+      if (window.__renderHistory.length > 50) window.__renderHistory.shift();
+      return record;
+    }
+
+    function recordArtifactEvent(kind, artifact, details) {
+      const event = {
+        kind,
+        artifactId: artifact?.id || null,
+        at: new Date().toISOString(),
+        ...details,
+      };
+      window.__artifactHistory.push(event);
+      if (window.__artifactHistory.length > 100) window.__artifactHistory.shift();
+      return event;
+    }
+
+    function tagArtifactDom(id, artifact) {
+      if (!id || !artifact?.id) return;
+      const row = document.getElementById(id + '-row');
+      const bubble = document.getElementById(id + '-bubble');
+      const vizWrap = document.getElementById(id + '-viz');
+      for (const el of [row, bubble, vizWrap]) {
+        if (!el) continue;
+        el.dataset.artifactId = artifact.id;
+        el.dataset.vizualArtifactId = artifact.id;
+        el.dataset.artifactStatus = artifact.status || '';
+      }
+      if (vizWrap) {
+        vizWrap.dataset.vizualArtifact = 'true';
+        vizWrap.dataset.artifactKind = artifact.kind || 'vizual';
+      }
+    }
+
+    function rememberArtifact(id, artifact) {
+      if (!artifact || !artifact.id) return artifact;
+      window.__vizualArtifacts[artifact.id] = artifact;
+      if (id) {
+        window.__messageArtifacts[id] = artifact.id;
+        window.__messageArtifactSnapshots[id] = safeSnapshot(artifact);
+        window.__artifactMessages[artifact.id] = id;
+        tagArtifactDom(id, artifact);
+      }
+      window.__lastArtifact = artifact;
+      recordArtifactEvent('stored', artifact, {
+        messageId: id,
+        status: artifact.status || null,
+        targetCount: Array.isArray(artifact.targetMap) ? artifact.targetMap.length : 0,
+      });
+      return artifact;
+    }
+
+    function getArtifactByRef(ref) {
+      if (!ref || ref === 'last') return window.__lastArtifact || null;
+      if (window.__vizualArtifacts[ref]) return window.__vizualArtifacts[ref];
+      if (window.__messageArtifactSnapshots[ref]) return safeSnapshot(window.__messageArtifactSnapshots[ref]);
+      const artifactId = window.__messageArtifacts[ref];
+      if (artifactId) return window.__vizualArtifacts[artifactId] || null;
+      return null;
+    }
+
+    function getMessageIdForArtifactRef(ref, artifact) {
+      if (ref && window.__messageArtifacts[ref]) return ref;
+      if (artifact?.id && window.__artifactMessages[artifact.id]) return window.__artifactMessages[artifact.id];
+      return null;
+    }
+
+    function findDocViewElementInSpec(spec) {
+      const elements = spec?.elements || {};
+      for (const [elementId, element] of Object.entries(elements)) {
+        if (element?.type === 'DocView') return { elementId, element };
+      }
+      return null;
+    }
+
+    function hasDocViewElement(value) {
+      const spec = value?.spec || value;
+      return !!findDocViewElementInSpec(spec);
+    }
+
+    function destroyDocViewSessionByMessage(id) {
+      const artifactId = window.__messageDocViews[id];
+      const session = artifactId ? window._docViewSessions[artifactId] : null;
+      if (window._docViewRoots[id]) {
+        try { window._docViewRoots[id].unmount(); } catch (_) {}
+        delete window._docViewRoots[id];
+      }
+      if (session) {
+        session.destroyedAt = new Date().toISOString();
+        delete window._docViewSessions[artifactId];
+      }
+      delete window.__messageDocViews[id];
+      if (window.__lastDocViewSessionId === artifactId) window.__lastDocViewSessionId = null;
+    }
+
+    function resolveDocViewSession(ref) {
+      if (!ref || ref === 'last') {
+        return window.__lastDocViewSessionId ? window._docViewSessions[window.__lastDocViewSessionId] || null : null;
+      }
+      if (window._docViewSessions[ref]) return window._docViewSessions[ref];
+      if (window.__messageDocViews[ref]) return window._docViewSessions[window.__messageDocViews[ref]] || null;
+      if (ref && typeof ref === 'object' && ref.id && window._docViewSessions[ref.id]) return window._docViewSessions[ref.id];
+      const artifact = getArtifactByRef(ref);
+      return artifact?.id ? window._docViewSessions[artifact.id] || null : null;
+    }
+
+    function refreshDocViewSessionState(session) {
+      if (!session) return null;
+      if (session.controller) {
+        session.threads = safeSnapshot(session.controller.getThreads?.() || []);
+        session.revisionProposals = safeSnapshot(session.controller.getRevisionProposals?.() || []);
+        session.annotations = safeSnapshot(session.controller.getAnnotations?.() || []);
+      }
+      return session;
+    }
+
+    function snapshotDocViewSession(session) {
+      if (!session) return null;
+      refreshDocViewSessionState(session);
+      return {
+        id: session.id,
+        artifactId: session.artifactId,
+        messageId: session.messageId,
+        sections: safeSnapshot(session.sections),
+        threads: safeSnapshot(session.threads || []),
+        revisionProposals: safeSnapshot(session.revisionProposals || []),
+        annotations: safeSnapshot(session.annotations || []),
+        events: safeSnapshot(session.events || []),
+        lastEvent: safeSnapshot(session.lastEvent || null),
+        artifact: session.artifact ? safeSnapshot(session.artifact) : null,
+      };
+    }
+
+    function recordDocViewReviewEvent(session, event) {
+      const eventRecord = {
+        at: new Date().toISOString(),
+        ...safeSnapshot(event),
+      };
+      session.lastEvent = eventRecord;
+      session.events.push(eventRecord);
+      if (session.events.length > 100) session.events.shift();
+      window.__lastDocViewEvent = eventRecord;
+      refreshDocViewSessionState(session);
+      return eventRecord;
+    }
+
+    function syncDocViewSessionArtifact(session, nextSections, reason) {
+      session.sections = safeSnapshot(nextSections || []);
+      const updated = window.Vizual.updateArtifact(session.artifact, {
+        type: 'updateElementProps',
+        elementId: session.elementId,
+        props: { sections: session.sections },
+        reason: reason || 'DocView sections changed',
+      });
+      session.artifact = updated;
+      session.artifactId = updated.id;
+      rememberArtifact(session.messageId, updated);
+      const vizWrap = document.getElementById(session.messageId + '-viz');
+      if (vizWrap) installArtifactToolbar(session.messageId, updated, vizWrap);
+      return updated;
+    }
+
+    function inferDocViewThreadAnchor(session, input = {}) {
+      const raw = input.anchor || {};
+      const sections = session?.sections || [];
+      const sectionIndex = Number.isInteger(raw.sectionIndex)
+        ? raw.sectionIndex
+        : Number.isInteger(input.sectionIndex)
+          ? input.sectionIndex
+          : input.sectionId
+            ? sections.findIndex(section => section?.id === input.sectionId)
+            : 0;
+      const safeIndex = sectionIndex >= 0 && sectionIndex < sections.length ? sectionIndex : 0;
+      const section = sections[safeIndex] || {};
+      const selectedText = raw.textRange?.selectedText || input.selectedText || input.targetText || input.text || '';
+      const content = typeof section.content === 'string' ? section.content : '';
+      const start = selectedText ? content.indexOf(selectedText) : -1;
+      const textRange = raw.textRange || (selectedText
+        ? {
+            start: start >= 0 ? start : 0,
+            end: start >= 0 ? start + selectedText.length : selectedText.length,
+            selectedText,
+          }
+        : undefined);
+      return {
+        ...raw,
+        sectionIndex: safeIndex,
+        sectionId: raw.sectionId || input.sectionId || section.id || ('section-' + safeIndex),
+        targetType: raw.targetType || input.targetType || section.type || 'text',
+        label: raw.label || input.label || selectedText || section.title || content.slice(0, 80) || 'DocView section',
+        textRange,
+      };
+    }
+
+    function extractRowsFromArtifact(artifact) {
+      const elements = Object.values(artifact?.spec?.elements || {});
+      for (const element of elements) {
+        const data = element?.props?.data;
+        if (Array.isArray(data) && data.every(row => row && typeof row === 'object' && !Array.isArray(row))) {
+          return data;
+        }
+      }
+      return Array.isArray(artifact?.data) ? artifact.data : [];
+    }
+
+    function resolveExportElement(vizWrap) {
+      if (!vizWrap) return null;
+      const interactivePreview = vizWrap.querySelector('.interactive-preview-root');
+      if (interactivePreview instanceof HTMLElement) return interactivePreview;
+      const contentChildren = Array.from(vizWrap.children).filter(child =>
+        child instanceof HTMLElement &&
+        !child.classList.contains('artifact-toolbar') &&
+        !child.classList.contains('viz-error') &&
+        child.dataset.vizualExportIgnore !== 'true'
+      );
+      return contentChildren.length === 1 && contentChildren[0] instanceof HTMLElement
+        ? contentChildren[0]
+        : vizWrap;
+    }
+
+    function clearBubbleWidth(bubble) {
+      for (const className of Object.values(BUBBLE_WIDTH_CLASS)) {
+        bubble.classList.remove(className);
+      }
+    }
+
+    function inferBubbleWidthFromSpec(spec) {
+      const elements = Object.values(spec?.elements || {});
+      const types = new Set(elements.map(el => el?.type).filter(Boolean));
+
+      if (
+        types.has('DocView') ||
+        types.has('GridLayout') ||
+        types.has('SplitLayout') ||
+        types.has('SankeyChart') ||
+        types.has('RadarChart') ||
+        types.has('ComboChart') ||
+        types.has('FormBuilder') ||
+        types.has('DataTable')
+      ) {
+        return 'full';
+      }
+
+      if (
+        types.has('BarChart') ||
+        types.has('LineChart') ||
+        types.has('AreaChart') ||
+        types.has('HeatmapChart') ||
+        types.has('CalendarChart')
+      ) {
+        return 'wide';
+      }
+
+      if (types.has('KpiDashboard') || types.has('SparklineChart')) {
+        return 'normal';
+      }
+
+      return 'wide';
+    }
+
+    function applyBubbleWidth(bubble, requestedWidth, fallbackWidth) {
+      const width = BUBBLE_WIDTH_CLASS[requestedWidth] ? requestedWidth : fallbackWidth;
+      clearBubbleWidth(bubble);
+      bubble.classList.add(BUBBLE_WIDTH_CLASS[width] || BUBBLE_WIDTH_CLASS.wide);
+      bubble.dataset.vizBubbleWidth = width;
+    }
+
+    function ensureVizualReady(id, vizWrap, bubble) {
+      if (window.Vizual && window.Vizual.renderSpec) return true;
+      const errEl = document.createElement('div');
+      errEl.className = 'viz-error';
+      errEl.textContent = 'Vizual 尚未加载完成，请稍后重试';
+      vizWrap.appendChild(errEl);
+      vizWrap.style.display = 'block';
+      bubble.classList.add('has-viz');
+      console.error('[Vizual bridge] Vizual 未就绪:', id);
+      return false;
+    }
+
+    function downloadBlob(blob, filename) {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 2000);
+    }
+
+    function installArtifactToolbar(id, artifact, vizWrap) {
+      vizWrap.querySelectorAll('.artifact-toolbar').forEach(el => el.remove());
+      if (!artifact?.id) return;
+      const toolbar = document.createElement('div');
+      toolbar.className = 'artifact-toolbar';
+      toolbar.setAttribute('data-vizual-export-ignore', 'true');
+      toolbar.setAttribute('aria-label', '导出');
+      const formats = [
+        ['png', 'PNG'],
+        ['pdf', 'PDF'],
+        ['csv', 'CSV'],
+        ['xlsx', 'XLSX'],
+      ];
+      for (const [format, label] of formats) {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.textContent = label;
+        button.title = '导出 ' + label;
+        button.addEventListener('click', async (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          button.disabled = true;
+          try {
+            await window.exportArtifact(artifact.id, {
+              format,
+              filename: artifact.id,
+              download: true,
+            });
+          } finally {
+            button.disabled = false;
+          }
+        });
+        toolbar.appendChild(button);
+      }
+      vizWrap.appendChild(toolbar);
+    }
+
+    function renderArtifactInMessage(id, artifactLike, options, kind) {
       const vizWrap = document.getElementById(id + '-viz');
       const bubble = document.getElementById(id + '-bubble');
       if (!vizWrap || !bubble) {
-        console.warn('[renderVizInMsg] 找不到元素:', id);
-        return false;
+        console.warn('[renderArtifactInMsg] 找不到元素:', id);
+        return null;
       }
 
-      // 检查 Vizual 是否就绪
-      if (!window.Vizual || !window.Vizual.renderSpec) {
-        const errEl = document.createElement('div');
-        errEl.className = 'viz-error';
-        errEl.textContent = 'Vizual 尚未加载完成，请稍后重试';
-        vizWrap.appendChild(errEl);
+      if (!ensureVizualReady(id, vizWrap, bubble)) return null;
+      window._interactiveViz[id]?.destroy?.();
+      delete window._interactiveViz[id];
+      destroyDocViewSessionByMessage(id);
+
+      let artifact;
+      try {
+        const source = {
+          messageId: id,
+          prompt: window.getPendingMessage()?.rawText || window.getPendingMessage()?.text || undefined,
+        };
+        artifact = window.Vizual.normalizeArtifact(artifactLike, {
+          source: { ...source, ...(options?.source || {}) },
+          theme: options?.theme,
+          metadata: options?.metadata,
+        });
+      } catch (err) {
+        console.error('[renderArtifactInMsg] artifact 解析失败:', err);
         vizWrap.style.display = 'block';
         bubble.classList.add('has-viz');
-        console.error('[renderVizInMsg] Vizual 未就绪');
-        return false;
+        applyBubbleWidth(bubble, options?.bubbleWidth || 'wide', 'wide');
+        showVizError(vizWrap, err);
+        return null;
       }
 
       // 显示 viz 容器，气泡撑满宽
       vizWrap.style.display = 'block';
       bubble.classList.add('has-viz');
+      applyBubbleWidth(bubble, options?.bubbleWidth || inferBubbleWidthFromSpec(artifact.spec), 'wide');
 
       try {
-        const root = window.Vizual.renderSpec(spec, vizWrap);
-        console.log('[renderVizInMsg] 渲染成功:', spec?.root ? Object.keys(spec.elements || {}).join(', ') : 'no root');
+        const renderOptions = { ...(options || {}) };
+        delete renderOptions.bubbleWidth;
+        delete renderOptions.source;
+        delete renderOptions.theme;
+        delete renderOptions.metadata;
+        const result = window.Vizual.renderArtifact(artifact, vizWrap, renderOptions);
+        artifact = rememberArtifact(id, result.artifact);
+        installArtifactToolbar(id, artifact, vizWrap);
+        setTimeout(() => installArtifactToolbar(id, artifact, vizWrap), 0);
+        recordVizRender(kind || 'artifact', id, {
+          status: 'success',
+          artifactId: artifact.id,
+          bubbleWidth: bubble.dataset.vizBubbleWidth || null,
+          spec: safeSnapshot(artifact.spec),
+          specSummary: summarizeSpec(artifact.spec),
+          targetMap: safeSnapshot(artifact.targetMap),
+          options: safeSnapshot(renderOptions),
+        });
+        console.log('[renderArtifactInMsg] 渲染成功:', artifact.id, artifact.spec?.root ? Object.keys(artifact.spec.elements || {}).join(', ') : 'no root');
         scrollBottom();
-        return true;
+        return artifact;
       } catch (err) {
-        console.error('[renderVizInMsg] 渲染失败:', err);
-        const errEl = document.createElement('div');
-        errEl.className = 'viz-error';
-        errEl.textContent = '渲染失败: ' + (err.message || err);
-        vizWrap.appendChild(errEl);
+        console.error('[renderArtifactInMsg] 渲染失败:', err);
+        const failedArtifact = err?.artifact || window.Vizual.markArtifactError(artifact, err);
+        rememberArtifact(id, failedArtifact);
+        installArtifactToolbar(id, failedArtifact, vizWrap);
+        recordVizRender(kind || 'artifact', id, {
+          status: 'error',
+          artifactId: failedArtifact.id,
+          error: err?.message || String(err),
+          bubbleWidth: bubble.dataset.vizBubbleWidth || null,
+          spec: safeSnapshot(failedArtifact.spec),
+          specSummary: summarizeSpec(failedArtifact.spec),
+          targetMap: safeSnapshot(failedArtifact.targetMap),
+        });
+        showVizError(vizWrap, err);
+        return null;
+      }
+    }
+
+    /**
+     * 渲染带审阅 bridge 的 DocView。
+     * 这是 DocView 在聊天宿主里的正式接入口：批注、提交、Agent 修订提案、应用修订都会写回 session 和 artifact。
+     */
+    window.renderDocViewInMsg = function(id, config = {}) {
+      const vizWrap = document.getElementById(id + '-viz');
+      const bubble = document.getElementById(id + '-bubble');
+      if (!vizWrap || !bubble) {
+        console.warn('[renderDocViewInMsg] 找不到元素:', id);
+        return null;
+      }
+      if (!ensureVizualReady(id, vizWrap, bubble)) return null;
+
+      window._interactiveViz[id]?.destroy?.();
+      delete window._interactiveViz[id];
+      destroyDocViewSessionByMessage(id);
+      window.Vizual.unmountSpec?.(vizWrap);
+
+      const inputConfig = window.Vizual.isVizualSpec?.(config) || window.Vizual.isVizualArtifact?.(config)
+        ? { spec: config }
+        : (config || {});
+      const docSpec = inputConfig.spec || inputConfig.artifact || {
+        root: 'doc',
+        elements: {
+          doc: {
+            type: 'DocView',
+            props: {
+              sections: inputConfig.sections || [],
+              showPanel: inputConfig.showPanel ?? true,
+              panelPosition: inputConfig.panelPosition || 'right',
+            },
+          },
+        },
+      };
+
+      let artifact;
+      try {
+        artifact = window.Vizual.normalizeArtifact(docSpec, {
+          kind: 'docview',
+          source: {
+            messageId: id,
+            prompt: window.getPendingMessage()?.rawText || window.getPendingMessage()?.text || undefined,
+            ...(inputConfig.source || {}),
+          },
+          theme: inputConfig.theme,
+          metadata: {
+            bridge: 'renderDocViewInMsg',
+            ...(inputConfig.metadata || {}),
+          },
+        });
+      } catch (err) {
+        console.error('[renderDocViewInMsg] artifact 解析失败:', err);
+        vizWrap.style.display = 'block';
+        bubble.classList.add('has-viz');
+        applyBubbleWidth(bubble, inputConfig.bubbleWidth || 'full', 'full');
+        showVizError(vizWrap, err);
+        return null;
+      }
+
+      const docView = findDocViewElementInSpec(artifact.spec);
+      if (!docView) {
+        vizWrap.style.display = 'block';
+        bubble.classList.add('has-viz');
+        applyBubbleWidth(bubble, inputConfig.bubbleWidth || 'full', 'full');
+        showVizError(vizWrap, new Error('renderDocViewInMsg requires a DocView spec or sections array'));
+        return null;
+      }
+
+      const baseProps = docView.element.props || {};
+      const initialSections = safeSnapshot(inputConfig.sections || baseProps.sections || []);
+      const session = {
+        id: artifact.id,
+        artifactId: artifact.id,
+        messageId: id,
+        elementId: docView.elementId,
+        artifact,
+        sections: initialSections,
+        threads: [],
+        revisionProposals: [],
+        annotations: [],
+        events: [],
+        lastEvent: null,
+        controller: null,
+        mountedAt: new Date().toISOString(),
+      };
+      window._docViewSessions[artifact.id] = session;
+      window.__messageDocViews[id] = artifact.id;
+      window.__lastDocViewSessionId = artifact.id;
+
+      const textEl = document.getElementById(id + '-text');
+      if (textEl && typeof inputConfig.answerText === 'string') {
+        textEl.textContent = inputConfig.answerText;
+        window.finishText(id);
+      }
+
+      const docRoot = document.createElement('div');
+      docRoot.className = 'docview-bridge-root';
+      vizWrap.replaceChildren(docRoot);
+      vizWrap.style.display = 'block';
+      bubble.classList.add('has-viz');
+      applyBubbleWidth(bubble, inputConfig.bubbleWidth || 'full', 'full');
+
+      const onReviewAction = (event) => {
+        recordDocViewReviewEvent(session, event);
+        if (typeof inputConfig.onReviewAction === 'function') {
+          inputConfig.onReviewAction(event, snapshotDocViewSession(session));
+        }
+      };
+      const onSectionsChange = (nextSections) => {
+        syncDocViewSessionArtifact(session, nextSections, 'DocView revision applied');
+        if (typeof inputConfig.onSectionsChange === 'function') {
+          inputConfig.onSectionsChange(nextSections, snapshotDocViewSession(session));
+        }
+      };
+      const controllerRef = (controller) => {
+        session.controller = controller;
+        refreshDocViewSessionState(session);
+        if (typeof inputConfig.controllerRef === 'function') inputConfig.controllerRef(controller);
+      };
+
+      try {
+        const root = window.Vizual.ReactDOMClient.createRoot(docRoot);
+        window._docViewRoots[id] = root;
+        const docViewNode = window.Vizual.React.createElement(window.Vizual.DocView, {
+          ...baseProps,
+          sections: initialSections,
+          showPanel: inputConfig.showPanel ?? baseProps.showPanel ?? true,
+          panelPosition: inputConfig.panelPosition || baseProps.panelPosition || 'right',
+          onReviewAction,
+          onSectionsChange,
+          controllerRef,
+          onAction: inputConfig.onAction || baseProps.onAction,
+        });
+        const flushSync = window.Vizual.ReactDOM?.flushSync || window.ReactDOM?.flushSync;
+        if (typeof flushSync === 'function') {
+          flushSync(() => root.render(docViewNode));
+        } else {
+          root.render(docViewNode);
+        }
+        artifact = rememberArtifact(id, artifact);
+        session.artifact = artifact;
+        installArtifactToolbar(id, artifact, vizWrap);
+        recordVizRender('docview', id, {
+          status: 'success',
+          artifactId: artifact.id,
+          bubbleWidth: bubble.dataset.vizBubbleWidth || null,
+          spec: safeSnapshot(artifact.spec),
+          specSummary: summarizeSpec(artifact.spec),
+          targetMap: safeSnapshot(artifact.targetMap),
+        });
+        scrollBottom();
+        return safeSnapshot(artifact);
+      } catch (err) {
+        console.error('[renderDocViewInMsg] 渲染失败:', err);
+        recordVizRender('docview', id, {
+          status: 'error',
+          artifactId: artifact.id,
+          error: err?.message || String(err),
+          bubbleWidth: bubble.dataset.vizBubbleWidth || null,
+          spec: safeSnapshot(artifact.spec),
+          specSummary: summarizeSpec(artifact.spec),
+          targetMap: safeSnapshot(artifact.targetMap),
+        });
+        showVizError(vizWrap, err);
+        return null;
+      }
+    };
+
+    window.getDocViewReviewState = function(ref) {
+      return snapshotDocViewSession(resolveDocViewSession(ref));
+    };
+
+    window.createDocViewThread = function(ref, input = {}) {
+      const session = resolveDocViewSession(ref);
+      if (!session?.controller) {
+        console.warn('[createDocViewThread] 找不到 DocView controller:', ref);
+        return null;
+      }
+      try {
+        const thread = session.controller.createThread({
+          ...input,
+          anchor: inferDocViewThreadAnchor(session, input),
+          body: input.body || input.comment || input.note || '',
+        });
+        refreshDocViewSessionState(session);
+        return safeSnapshot(thread);
+      } catch (err) {
+        console.error('[createDocViewThread] 创建批注失败:', err);
+        recordDocViewReviewEvent(session, {
+          type: 'threadCreateError',
+          error: err?.message || String(err),
+          input: safeSnapshot(input),
+        });
+        return null;
+      }
+    };
+
+    window.submitDocViewThreads = function(ref, threadIds) {
+      const session = resolveDocViewSession(ref);
+      if (!session?.controller) return [];
+      const submitted = session.controller.submitThreads(threadIds);
+      refreshDocViewSessionState(session);
+      return safeSnapshot(submitted);
+    };
+
+    window.createDocViewRevision = function(ref, input) {
+      const session = resolveDocViewSession(ref);
+      if (!session?.controller || !input) return null;
+      const proposal = session.controller.createRevisionProposal(input);
+      refreshDocViewSessionState(session);
+      return safeSnapshot(proposal);
+    };
+
+    window.applyDocViewRevision = function(ref, proposalId) {
+      const session = resolveDocViewSession(ref);
+      if (!session?.controller) return null;
+      const idToApply = proposalId || session.revisionProposals?.find(p => p.status === 'proposed' || p.status === 'accepted')?.id;
+      if (!idToApply) return null;
+      const proposal = session.controller.applyRevision(idToApply);
+      refreshDocViewSessionState(session);
+      return safeSnapshot(proposal);
+    };
+
+    window.deleteDocViewThread = function(ref, threadId) {
+      const session = resolveDocViewSession(ref);
+      if (!session?.controller || !threadId) return null;
+      const thread = session.controller.deleteThread(threadId);
+      refreshDocViewSessionState(session);
+      return safeSnapshot(thread);
+    };
+
+    /**
+     * 渲染 Vizual Artifact 到消息气泡内部。
+     * artifact 可以是 raw spec，也可以是 normalizeArtifact() 产物。
+     */
+    window.renderArtifactInMsg = function(id, artifactLike, options) {
+      if (options?.docViewBridge !== false && hasDocViewElement(artifactLike)) {
+        return window.renderDocViewInMsg(id, { artifact: artifactLike, ...(options || {}) });
+      }
+      return renderArtifactInMessage(id, artifactLike, options, 'artifact');
+    };
+
+    /**
+     * 渲染 Vizual 组件到消息气泡内部。
+     * spec 格式: { root: 'main', elements: { main: { type: 'KpiDashboard', props: { metrics: [...] } } } }
+     * 兼容旧 Agent：返回 boolean，同时内部会保存可追踪 artifact。
+     */
+    window.renderVizInMsg = function(id, spec, options) {
+      if (options?.docViewBridge !== false && hasDocViewElement(spec)) {
+        return !!window.renderDocViewInMsg(id, { spec, ...(options || {}) });
+      }
+      return !!renderArtifactInMessage(id, spec, options, 'static');
+    };
+
+    window.getArtifact = function(ref) {
+      const artifact = getArtifactByRef(ref || 'last');
+      return artifact ? safeSnapshot(artifact) : null;
+    };
+
+    window.getLastArtifact = function() {
+      return window.getArtifact('last');
+    };
+
+    window.listArtifacts = function() {
+      return Object.values(window.__vizualArtifacts || {}).map(artifact => safeSnapshot(artifact));
+    };
+
+    window.updateArtifactInMsg = function(ref, patchOrPatches, options) {
+      if (!window.Vizual?.updateArtifact) {
+        console.warn('[updateArtifactInMsg] Vizual 尚未加载完成');
+        return null;
+      }
+      const artifact = getArtifactByRef(ref || 'last');
+      if (!artifact) {
+        console.warn('[updateArtifactInMsg] 找不到 artifact:', ref);
+        return null;
+      }
+      const messageId = getMessageIdForArtifactRef(ref, artifact);
+      if (!messageId) {
+        console.warn('[updateArtifactInMsg] 找不到 artifact 对应的消息:', ref);
+        return null;
+      }
+      try {
+        const updated = window.Vizual.updateArtifact(artifact, patchOrPatches);
+        const mode = options?.mode || options?.renderMode;
+        const replaceExisting = options?.replace === true || options?.replaceExisting === true || mode === 'replace' || mode === 'in-place';
+        const sourceMessageId = messageId;
+        const targetMessageId = options?.targetMessageId || options?.messageId || (replaceExisting ? sourceMessageId : window.createAiMsg());
+        if (!replaceExisting && typeof options?.answerText === 'string') {
+          window.streamText(targetMessageId, options.answerText);
+          window.finishText(targetMessageId);
+        }
+        const renderOptions = { ...(options || {}) };
+        delete renderOptions.mode;
+        delete renderOptions.renderMode;
+        delete renderOptions.replace;
+        delete renderOptions.replaceExisting;
+        delete renderOptions.targetMessageId;
+        delete renderOptions.messageId;
+        delete renderOptions.answerText;
+        recordArtifactEvent('updated', updated, {
+          messageId: targetMessageId,
+          sourceMessageId,
+          renderMode: replaceExisting ? 'replace' : 'new-message',
+          patch: safeSnapshot(patchOrPatches),
+        });
+        return renderArtifactInMessage(targetMessageId, updated, renderOptions, replaceExisting ? 'update' : 'update-new-message');
+      } catch (err) {
+        console.error('[updateArtifactInMsg] 更新失败:', err);
+        recordArtifactEvent('update-error', artifact, {
+          messageId,
+          patch: safeSnapshot(patchOrPatches),
+          error: err?.message || String(err),
+        });
+        return null;
+      }
+    };
+
+    window.exportArtifact = async function(ref, options) {
+      const artifact = getArtifactByRef(ref || 'last');
+      if (!artifact) {
+        console.warn('[exportArtifact] 找不到 artifact:', ref);
+        return null;
+      }
+      const format = options?.format || 'png';
+      const messageId = getMessageIdForArtifactRef(ref, artifact);
+      const vizWrap = messageId ? document.getElementById(messageId + '-viz') : null;
+      const exportEl = resolveExportElement(vizWrap);
+      if (!window.Vizual?.createExportRecord) {
+        console.warn('[exportArtifact] Vizual export API 尚未加载:', ref);
+        return null;
+      }
+      try {
+        let blob;
+        if (format === 'csv' || format === 'xlsx') {
+          blob = await window.Vizual.exportData(extractRowsFromArtifact(artifact), format, {
+            filename: options?.filename || artifact.id,
+            columns: options?.columns,
+            sheetName: options?.sheetName,
+          });
+        } else {
+          if (!exportEl || !window.Vizual?.exportElement) {
+            console.warn('[exportArtifact] 找不到可导出的 DOM:', ref);
+            return null;
+          }
+          blob = await window.Vizual.exportElement(exportEl, format, options);
+        }
+        const url = URL.createObjectURL(blob);
+        const filename = options?.filename || artifact.id;
+        const extension = format === 'jpeg' ? 'jpg' : format;
+        if (options?.download) {
+          downloadBlob(blob, `${filename}.${extension}`);
+        }
+        const record = window.Vizual.createExportRecord(artifact, {
+          format,
+          url,
+          filename,
+          status: 'success',
+          width: exportEl?.offsetWidth,
+          height: exportEl?.offsetHeight,
+          meta: { size: blob.size, type: blob.type },
+        });
+        const updated = window.Vizual.updateArtifact(artifact, {
+          type: 'addExportRecord',
+          export: record,
+        });
+        rememberArtifact(messageId, updated);
+        if (messageId && vizWrap) installArtifactToolbar(messageId, updated, vizWrap);
+        recordArtifactEvent('exported', updated, { messageId, export: safeSnapshot(record) });
+        return safeSnapshot(record);
+      } catch (err) {
+        const record = window.Vizual.createExportRecord(artifact, {
+          format,
+          filename: options?.filename || artifact.id,
+          status: 'error',
+          error: err?.message || String(err),
+        });
+        const updated = window.Vizual.updateArtifact(artifact, {
+          type: 'addExportRecord',
+          export: record,
+        });
+        rememberArtifact(messageId, updated);
+        if (messageId && vizWrap) installArtifactToolbar(messageId, updated, vizWrap);
+        recordArtifactEvent('export-error', updated, { messageId, export: safeSnapshot(record) });
+        return safeSnapshot(record);
+      }
+    };
+
+    /**
+     * 渲染实时可调 Vizual：左侧 FormBuilder 控件，右侧预览。
+     * Agent 必须提供 controlsSpec + makeSpec(state)。这不是纯 JSON spec。
+     */
+    window.renderInteractiveVizInMsg = function(id, config) {
+      const vizWrap = document.getElementById(id + '-viz');
+      const bubble = document.getElementById(id + '-bubble');
+      if (!vizWrap || !bubble) {
+        console.warn('[renderInteractiveVizInMsg] 找不到元素:', id);
         return false;
       }
+      if (!ensureVizualReady(id, vizWrap, bubble)) return false;
+      if (!config || typeof config.makeSpec !== 'function' || !config.controlsSpec) {
+        console.warn('[renderInteractiveVizInMsg] config 需要 controlsSpec 和 makeSpec(state)');
+        return false;
+      }
+
+      window._interactiveViz[id]?.destroy?.();
+      delete window._interactiveViz[id];
+      destroyDocViewSessionByMessage(id);
+      window.Vizual.unmountSpec?.(vizWrap);
+
+      const textEl = document.getElementById(id + '-text');
+      if (textEl && typeof config.answerText === 'string') {
+        textEl.textContent = config.answerText;
+        window.finishText(id);
+      }
+
+      const shell = document.createElement('div');
+      shell.className = 'interactive-wrap';
+
+      const controlsEl = document.createElement('div');
+      controlsEl.className = 'interactive-controls';
+
+      const previewShell = document.createElement('div');
+      previewShell.className = 'interactive-preview';
+      const previewEl = document.createElement('div');
+      previewEl.className = 'interactive-preview-root';
+      const errorEl = document.createElement('div');
+      errorEl.className = 'interactive-error';
+      previewShell.appendChild(previewEl);
+      previewShell.appendChild(errorEl);
+
+      shell.appendChild(controlsEl);
+      shell.appendChild(previewShell);
+      vizWrap.replaceChildren(shell);
+      vizWrap.style.display = 'block';
+      bubble.classList.add('has-viz');
+      applyBubbleWidth(bubble, config.bubbleWidth || 'full', 'full');
+
+      let state = cloneState(config.initialState || {});
+      let previewTimer = 0;
+      let renderCount = 0;
+      let interactiveArtifact = null;
+      let scopedVizual = null;
+      const renderRecord = recordVizRender('interactive', id, {
+        status: 'mounted',
+        bubbleWidth: bubble.dataset.vizBubbleWidth || null,
+        initialState: safeSnapshot(state),
+        controlsSpec: safeSnapshot(config.controlsSpec),
+        controlsSummary: summarizeSpec(config.controlsSpec),
+        hasDesignMd: typeof config.designMd === 'string' && !!config.designMd.trim(),
+        hasApplyTheme: typeof config.applyTheme === 'function',
+        hasMakeSpec: typeof config.makeSpec === 'function',
+        lastPreviewSpec: null,
+        lastPreviewSummary: null,
+        renderCount: 0,
+      });
+
+      const applyTheme = () => {
+        if (!scopedVizual) scopedVizual = createScopedVizualProxy(shell, id);
+        if (typeof config.designMd === 'string' && config.designMd.trim()) {
+          scopedVizual.loadDesignMd(config.designMd, { apply: true });
+        }
+        if (typeof config.applyTheme === 'function') {
+          config.applyTheme(state, scopedVizual);
+        }
+      };
+
+      const renderPreview = () => {
+        previewTimer = 0;
+        try {
+          applyTheme();
+          errorEl.style.display = 'none';
+          errorEl.textContent = '';
+          const spec = config.makeSpec(state);
+          window.Vizual.renderSpec(spec, previewEl);
+          renderCount += 1;
+          if (!interactiveArtifact) {
+            interactiveArtifact = window.Vizual.normalizeArtifact({
+              kind: 'interactive',
+              status: 'rendered',
+              spec,
+              state,
+              theme: typeof config.designMd === 'string' ? { designMd: config.designMd } : undefined,
+              source: {
+                messageId: id,
+                prompt: window.getPendingMessage()?.rawText || window.getPendingMessage()?.text || undefined,
+              },
+              metadata: {
+                controlsSpec: safeSnapshot(config.controlsSpec),
+                bridge: 'renderInteractiveVizInMsg',
+              },
+            });
+          } else {
+            interactiveArtifact.spec = safeSnapshot(spec);
+            interactiveArtifact.state = safeSnapshot(state);
+            interactiveArtifact.targetMap = window.Vizual.extractTargetMap(spec);
+            interactiveArtifact.status = 'rendered';
+            interactiveArtifact.updatedAt = new Date().toISOString();
+          }
+          rememberArtifact(id, interactiveArtifact);
+          installArtifactToolbar(id, interactiveArtifact, vizWrap);
+          renderRecord.status = 'success';
+          renderRecord.artifactId = interactiveArtifact.id;
+          renderRecord.state = safeSnapshot(state);
+          renderRecord.lastPreviewSpec = safeSnapshot(spec);
+          renderRecord.lastPreviewSummary = summarizeSpec(spec);
+          renderRecord.targetMap = safeSnapshot(interactiveArtifact.targetMap);
+          renderRecord.renderCount = renderCount;
+          renderRecord.updatedAt = new Date().toISOString();
+          scrollBottom();
+        } catch (err) {
+          console.error('[renderInteractiveVizInMsg] 预览渲染失败:', err);
+          renderRecord.status = 'preview-error';
+          renderRecord.error = err?.message || String(err);
+          renderRecord.state = safeSnapshot(state);
+          renderRecord.updatedAt = new Date().toISOString();
+          errorEl.textContent = '预览渲染失败: ' + (err?.message || err);
+          errorEl.style.display = 'block';
+        }
+      };
+
+      const schedulePreview = () => {
+        if (previewTimer) clearTimeout(previewTimer);
+        previewTimer = setTimeout(renderPreview, 0);
+      };
+
+      const onStateChange = (changes) => {
+        state = applyStateChanges(cloneState(state), changes);
+        schedulePreview();
+      };
+
+      const renderControls = () => window.Vizual.renderSpec(config.controlsSpec, controlsEl, {
+        initialState: state,
+        onStateChange,
+      });
+
+      const getSnapshot = () => ({
+        id,
+        state: safeSnapshot(state),
+        artifact: safeSnapshot(interactiveArtifact),
+        renderCount,
+        pending: !!previewTimer,
+        lastPreviewSpec: safeSnapshot(renderRecord.lastPreviewSpec),
+        lastPreviewSummary: safeSnapshot(renderRecord.lastPreviewSummary),
+        status: renderRecord.status,
+        error: renderRecord.error || null,
+      });
+
+      const updateState = (patch, options = {}) => {
+        if (Array.isArray(patch)) {
+          state = applyStateChanges(cloneState(state), patch);
+        } else if (options.replace === true) {
+          state = cloneState(patch || {});
+        } else {
+          state = mergeStatePatch(cloneState(state), patch || {});
+        }
+        renderControls();
+        if (options.immediate === true || options.render === 'sync') {
+          if (previewTimer) clearTimeout(previewTimer);
+          renderPreview();
+        } else {
+          schedulePreview();
+        }
+        return getSnapshot();
+      };
+
+      try {
+        applyTheme();
+        renderControls();
+        renderPreview();
+      } catch (err) {
+        console.error('[renderInteractiveVizInMsg] 渲染失败:', err);
+        renderRecord.status = 'error';
+        renderRecord.error = err?.message || String(err);
+        renderRecord.updatedAt = new Date().toISOString();
+        errorEl.textContent = '渲染失败: ' + (err?.message || err);
+        errorEl.style.display = 'block';
+        return false;
+      }
+
+      window._interactiveViz[id] = {
+        getState: () => cloneState(state),
+        getArtifact: () => safeSnapshot(interactiveArtifact),
+        getSnapshot,
+        updateState,
+        rerender: renderPreview,
+        getRenderCount: () => renderCount,
+        destroy: () => {
+          if (previewTimer) clearTimeout(previewTimer);
+          window.Vizual.unmountSpec?.(controlsEl);
+          window.Vizual.unmountSpec?.(previewEl);
+        },
+      };
+
+      return true;
+    };
+
+    function resolveInteractiveVizSession(ref) {
+      const sessions = window._interactiveViz || {};
+      if (ref && ref !== 'last') {
+        if (sessions[ref]) return { id: ref, session: sessions[ref] };
+        const artifact = getArtifactByRef(ref);
+        const messageId = artifact?.source?.messageId || getMessageIdForArtifactRef(ref, artifact);
+        if (messageId && sessions[messageId]) return { id: messageId, session: sessions[messageId] };
+      }
+      const lastRecord = [...window.__renderHistory].reverse().find(record =>
+        record.kind === 'interactive' && record.id && sessions[record.id]
+      );
+      if (lastRecord) return { id: lastRecord.id, session: sessions[lastRecord.id] };
+      const ids = Object.keys(sessions);
+      const id = ids[ids.length - 1];
+      return id ? { id, session: sessions[id] } : null;
+    }
+
+    window.getInteractiveVizState = function(ref = 'last') {
+      const resolved = resolveInteractiveVizSession(ref);
+      return resolved?.session?.getSnapshot?.() || null;
+    };
+
+    window.updateInteractiveVizInMsg = function(ref = 'last', patch = {}, options = {}) {
+      const resolved = resolveInteractiveVizSession(ref);
+      if (!resolved?.session?.updateState) {
+        console.warn('[updateInteractiveVizInMsg] 找不到实时预览:', ref);
+        return null;
+      }
+      return resolved.session.updateState(patch, options);
     };
 
     /**
      * 获取所有消息（用于上下文）。
      */
+    window.getVizualConversationState = function() {
+      return {
+        messages: Array.from(document.querySelectorAll('[data-message-row="true"]')).map(row => {
+          const id = row.dataset.messageId || null;
+          const role = row.dataset.messageRole || (row.classList.contains('user') ? 'user' : 'ai');
+          const textEl = id ? document.getElementById(id + '-text') : null;
+          const bubble = id ? document.getElementById(id + '-bubble') : row.querySelector('.bubble');
+          const vizWrap = id ? document.getElementById(id + '-viz') : row.querySelector('[data-viz-container="true"], .viz-wrap');
+          return {
+            id,
+            role,
+            text: (textEl?.textContent || bubble?.textContent || row.textContent || '').trim(),
+            artifactId: row.dataset.artifactId || vizWrap?.dataset.artifactId || null,
+            hasViz: !!(vizWrap && vizWrap.style.display !== 'none'),
+            hasCanvas: !!row.querySelector('canvas'),
+            hasSvg: !!row.querySelector('svg'),
+            controls: {
+              inputs: row.querySelectorAll('input').length,
+              selects: row.querySelectorAll('select').length,
+              buttons: row.querySelectorAll('button').length,
+            },
+          };
+        }),
+        artifacts: window.listArtifacts(),
+        lastArtifact: window.getLastArtifact(),
+        renderHistory: window.__renderHistory.slice(),
+      };
+    };
+
     window.getMsgs = function() {
       return Array.from(document.querySelectorAll('.bubble')).map(b => ({
         role: b.classList.contains('user') ? 'user' : 'ai',
-        text: b.querySelector('#' + b.id.replace('-bubble', '-text'))?.textContent
+        text: (b.id ? document.getElementById(b.id.replace('-bubble', '-text'))?.textContent : '')
               || b.textContent
       })).filter(m => m.text.trim());
+    };
+
+    window.getVizualDebugState = function() {
+      return {
+        pending: window.getPendingMessage(),
+        lastUserRawMessage: window.__lastUserRawMessage,
+        lastHandledMessage: window.__lastHandledMessage,
+        userMessageLog: window.__userMessageLog.slice(),
+        lastVizualRender: window.__lastVizualRender,
+        renderHistory: window.__renderHistory.slice(),
+        interactiveIds: Object.keys(window._interactiveViz || {}),
+        interactiveSessions: Object.fromEntries(
+          Object.entries(window._interactiveViz || {}).map(([id, session]) => [id, session.getSnapshot?.() || null])
+        ),
+        docViewSessionIds: Object.keys(window._docViewSessions || {}),
+        lastDocViewSession: window.getDocViewReviewState?.('last') || null,
+        lastDocViewEvent: safeSnapshot(window.__lastDocViewEvent || null),
+        conversation: window.getVizualConversationState(),
+        lastArtifact: window.__lastArtifact ? safeSnapshot(window.__lastArtifact) : null,
+        artifacts: Object.values(window.__vizualArtifacts || {}).map(artifact => safeSnapshot(artifact)),
+        messageArtifacts: { ...(window.__messageArtifacts || {}) },
+        messageArtifactSnapshots: safeSnapshot(window.__messageArtifactSnapshots || {}),
+        artifactMessages: { ...(window.__artifactMessages || {}) },
+        artifactHistory: window.__artifactHistory.slice(),
+      };
     };
 
     // ============================================================

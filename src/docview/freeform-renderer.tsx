@@ -14,17 +14,19 @@
 import React from 'react'
 import DOMPurify from 'dompurify'
 import { tcss, tc } from '../core/theme-colors'
+import { getSectionId } from './review-sdk'
 
 /** Section 类型定义，与 DocViewSchema 中的 Section 保持一致 */
 type SectionLike = {
   type: string
+  id?: string
   content: string
   data?: unknown
   layout?: string
 }
 
 /** DOMPurify 白名单配置 — 允许 style（AI 设计需要），禁止 class 和事件属性 */
-const PURIFY_CONFIG: DOMPurify.Config = {
+const PURIFY_CONFIG = {
   ALLOWED_TAGS: [
     // Markdown 核心标签
     'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
@@ -47,14 +49,14 @@ const PURIFY_CONFIG: DOMPurify.Config = {
     // style 允许通过 — AI 自由设计依赖内联 CSS
     'style',
     // 自定义数据属性 — 用于 annotation targeting
-    'data-docview-target', 'data-section-index', 'data-target-type',
+    'data-docview-target', 'data-section-index', 'data-section-id', 'data-target-type',
     'data-section', 'data-card',
   ],
   // 只禁止 class（样式冲突风险）和事件处理器（安全），style 不再禁止
   FORBID_ATTR: ['class', 'onclick', 'onerror', 'onload'],
   FORBID_TAGS: ['script', 'iframe', 'object', 'embed', 'style', 'form', 'input', 'button'],
   ADD_ATTR: ['target'],
-}
+} satisfies Parameters<typeof DOMPurify.sanitize>[1]
 
 /** 语义元素选择器 — 这些元素会自动获得批注定位属性 */
 const SEMANTIC_SELECTORS = [
@@ -126,7 +128,7 @@ function escapeRegExp(s: string): string {
  * @param sectionIndex - section 在数组中的索引
  * @returns 注入属性后的 HTML 字符串
  */
-function injectAnnotationTargets(html: string, sectionIndex: number): string {
+function injectAnnotationTargets(html: string, sectionIndex: number, sectionId: string, targetPrefix: string): string {
   // SSR / 非浏览器环境跳过注入，直接返回
   if (typeof document === 'undefined') return html
 
@@ -137,8 +139,9 @@ function injectAnnotationTargets(html: string, sectionIndex: number): string {
   if (semanticElements.length === 0) return html
 
   semanticElements.forEach((el, i) => {
-    el.setAttribute('data-docview-target', `freeform-${sectionIndex}-${i}`)
+    el.setAttribute('data-docview-target', `freeform-${targetPrefix}-${i}`)
     el.setAttribute('data-section-index', String(sectionIndex))
+    el.setAttribute('data-section-id', sectionId)
     el.setAttribute('data-target-type', 'freeform')
   })
 
@@ -153,18 +156,21 @@ function injectAnnotationTargets(html: string, sectionIndex: number): string {
  * @returns ReactNode
  */
 export function renderFreeform(section: SectionLike, index: number): React.ReactNode {
+  const sectionId = getSectionId(section, index)
+  const targetPrefix = section.id || String(index)
   // Step 1: DOMPurify 净化（允许 style，禁止 class/事件）
-  const cleanHtml = DOMPurify.sanitize(section.content, PURIFY_CONFIG)
+  const cleanHtml = String(DOMPurify.sanitize(section.content, PURIFY_CONFIG))
   // Step 2: 扫描语义元素，注入批注定位属性
-  const annotatedHtml = injectAnnotationTargets(cleanHtml, index)
+  const annotatedHtml = injectAnnotationTargets(cleanHtml, index, sectionId, targetPrefix)
   // Step 3: 将硬编码的主题色值替换为 CSS 变量引用，确保主题一致性
   const themedHtml = replaceThemeColors(annotatedHtml)
 
   return (
     <div
       key={`freeform-${index}`}
-      data-docview-target={`freeform-${index}`}
+      data-docview-target={`freeform-${section.id || index}`}
       data-section-index={index}
+      data-section-id={sectionId}
       data-target-type="freeform"
       style={{
         color: tcss('--rk-text-primary'),

@@ -56,6 +56,7 @@ export function AnnotatableWrapper({
     <div
       data-docview-target={resolvedTargetId}
       data-section-index={ctx.sectionIndex}
+      data-section-id={ctx.sectionId}
       data-target-type={targetType}
       onClick={handleClick}
       style={{

@@ -1,211 +1,169 @@
-<!-- GSD:project-start source:PROJECT.md -->
-## Project
+# CLAUDE.md — Vizual vNext 开发上下文
 
-**AI RenderKit**
+## 项目定义
 
-json-render 生态中最全的 AI 数据可视化 Catalog。将 mviz 的 20 种图表组件与 RenderKit 自研的业务组件（看板、甘特图、组织架构等）、布局组件、交互输入组件、DocView 文档批注组件统一封装为 32 个 React 组件 + Zod Schema，接入 json-render 平台。AI 输出 JSON → json-render 自动渲染为交互式可视化组件。
+Vizual 是面向 AI Agent 产品的视觉运行时。Agent 输出 Vizual spec/artifact，宿主前端自动渲染为可交互、可追问、可导出、可批注的视觉结果。
 
-面向三类用户：AI 用户（Claude/ChatGPT 对话中看到图表）、开发者（调用 render(json) 获得组件）、AI Agent（输出符合 Schema 的 JSON 自动渲染）。
+核心目标：
 
-**Core Value:** AI 说出结构化 JSON → 自动渲染为可交互的可视化组件，直接嵌入对话流或应用中。
+- 让 Agent 回复不再只有纯文本 / Markdown，而是能稳定输出图表、Dashboard、表格、报表和可调 UI。
+- 让宿主保存 `VizualArtifact`，支持历史对话继续追问修改。
+- 让 DocView 支持用户批注、提交、Agent revision proposal、用户/宿主 apply 的共建循环。
+- 让 Design.md 主题系统为 Agent 输出提供统一换肤能力。
 
-### Constraints
+当前公开能力：
 
-- **依赖**: React 18+, Zod v3.25+, ECharts 5.x, mviz 1.6.4+, json-render 0.17+
-- **包体积**: ECharts 按需加载，目标 gzip 后 < 300KB（不含 ECharts CDN）
-- **浏览器**: Chrome 90+, Firefox 90+, Safari 15+
-- **json-render 稳定性**: v0.17.0 API 稳定，版本锁定 ^0.17.0
-<!-- GSD:project-end -->
+- 31 个注册组件：
+  - 19 charts：BarChart, LineChart, AreaChart, PieChart, ScatterChart, BubbleChart, BoxplotChart, HistogramChart, WaterfallChart, XmrChart, SankeyChart, FunnelChart, HeatmapChart, CalendarChart, SparklineChart, ComboChart, DumbbellChart, RadarChart, MermaidDiagram
+  - 1 DataTable
+  - 6 business：KpiDashboard, Kanban, GanttChart, OrgChart, Timeline, AuditLog
+  - 1 FormBuilder
+  - 1 DocView
+  - 3 layout：GridLayout, SplitLayout, HeroLayout
+- Native ECharts option builders are internal to Vizual. Do not add an external chart-builder runtime back.
+- vNext host/runtime：artifact targetMap、版本、patch、导出、interactive bridge、DocView review bridge。
 
-<!-- GSD:stack-start source:research/STACK.md -->
-## Technology Stack
+## 技术栈
 
-## Core Stack
-| Layer | Technology | Version | Rationale |
-|-------|-----------|---------|-----------|
-| UI Framework | React | 18+ | json-render requires React; most widely adopted |
-| Schema Validation | Zod | v3.25+ | json-render 0.17 uses Zod; schema-first validation |
-| Chart Engine | ECharts | 5.5+ | mviz uses ECharts; 50+ chart types; rich interaction |
-| Chart Bridge | mviz | 1.6.4 | Provides buildBarOptions() etc.; don't rewrite |
-| Platform | json-render | 0.17.0 | defineCatalog + defineRegistry + Renderer pattern |
-| Build Tool | esbuild | 0.28+ | Already in use; fast bundling |
-| Testing | Vitest | 4.x | Already in use; 469 tests passing |
-| Language | TypeScript | 6.x | Already in use |
-## What NOT to Use
-| Technology | Why Not |
-|-----------|---------|
-| Chart.js | Replaced by ECharts via mviz; no reason to keep dual chart engines |
-| Rollup | esbuild already working; rollup config was broken |
-| Zod v3 old API | json-render uses modern Zod; avoid outdated v3-only patterns |
-| AntV G2 | CDN unstable; would add second chart engine for no benefit |
-| Vega-Lite | Overkill for our use case; ECharts already covers everything |
-## Dependency Strategy
-### Required Dependencies
-### Peer Dependencies
-### Remove These
-## ECharts Bundle Size Strategy
-- **Full bundle**: ~800KB (unacceptable)
-- **Minimal bundle** (bar, line, pie, scatter): ~250KB
-- **Strategy**: Use ECharts CDN in browser (like mviz does) or tree-shake with `echarts/charts` imports
-- **mviz approach**: Loads ECharts from CDN (`cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js`) in generated HTML
-- **Our approach**: Same CDN strategy for browser; for npm package, re-export ECharts as peer dependency
-## json-render Integration Pattern
-## Confidence Levels
-| Decision | Confidence | Risk |
-|----------|-----------|------|
-| React 18+ | 95% | json-render requires it |
-| Zod v3.25+ | 90% | json-render 0.17 uses Zod for schema validation |
-| ECharts 5.5+ | 95% | mviz uses it; industry standard |
-| mviz as dependency | 80% | Internal API not officially documented; may break on major update |
-| json-render 0.17 | 85% | Stable API; version locked via ^0.17.0 |
-<!-- GSD:stack-end -->
+| Layer | Technology |
+| --- | --- |
+| UI | React >= 18 |
+| Schema | Zod ^3.25 |
+| Charts | ECharts ^5.6 |
+| Rendering | json-render ^0.17 |
+| Build | esbuild + TypeScript |
+| Tests | Vitest + jsdom |
+| Export | html2canvas, jsPDF, JSZip |
+| Markdown / diagrams | marked, mermaid |
 
-<!-- GSD:conventions-start source:CONVENTIONS.md -->
-## Conventions
+旧的外部图表适配器、外部实时交互方案和已移除的交互组件都不是当前运行时的一部分。不要在新文档、skill 或示例中重新引入它们。
 
-### 组件开发规范（必须遵守）
+## 关键目录
 
-所有 vizual 组件，无论是现有还是未来新增的，**必须**遵守以下规则：
-
-#### 1. 颜色：使用 tcss() 和 tc()，禁止硬编码
-
-```tsx
-// ❌ 错误 — 硬编码颜色
-<div style={{ background: '#111', color: '#e5e5e5', border: '1px solid #2a2a2a' }}>
-
-// ✅ 正确 — React inline styles 用 tcss()（返回 var() 引用，主题切换时自动响应）
-import { tcss, tc } from '../../core/theme-colors'
-<div style={{ background: tcss('--rk-bg-primary'), color: tcss('--rk-text-primary'), border: `1px solid ${tcss('--rk-border-subtle')}` }}>
-
-// ✅ 正确 — ECharts options 必须用 tc()（返回解析后的具体色值，ECharts 不理解 CSS 变量）
-const option = { color: chartColors(), textStyle: { color: tc('--rk-text-primary') } }
+```text
+src/charts/                 19 个 ECharts 图表组件
+src/components/             业务组件和布局组件
+src/inputs/form-builder/    FormBuilder
+src/docview/                DocView、批注、review controller、revision loop
+src/core/                   artifact、host runtime、export、ECharts wrapper
+src/themes/                 Design.md parser、theme mapper、theme registry
+skills/vizual/              Agent 使用的主 skill 和组件 references
+validation/vizual-test.html 冷启动 Agent 主验收页
+validation/eval-full-31.html 31 组件视觉回归页
 ```
 
-**tcss() vs tc() 规则：**
-- **React inline style** → 用 `tcss()`（返回 `var(--rk-xxx)`，CSS 引擎在 paint 时解析，主题切换自动生效）
-- **ECharts option** → 用 `tc()`（返回具体色值如 `#e2e8f0`，ECharts 不支持 CSS 变量）
-- **模块级常量** → 用 `tcss()` 安全（返回 var() 引用，不冻结具体值）
-- **JS 逻辑中需要比较颜色值** → 用 `tc()`
+## 组件开发规范
 
-**导入路径**：
-- `src/components/xxx/component.tsx` → `import { tcss, tc } from '../../core/theme-colors'`
-- `src/mviz-bridge/xxx/component.tsx` → `import { tcss, tc } from '../../core/theme-colors'`
-- `src/inputs/xxx/component.tsx` → `import { tcss, tc } from '../../core/theme-colors'`
-- `src/docview/xxx.tsx` → `import { tcss, tc } from '../core/theme-colors'`
+### 颜色系统
 
-#### 2. 可用主题变量完整列表
+- React/CSS 样式使用 `tcss('--rk-*')`，让浏览器在主题变化时重新解析 CSS var。
+- ECharts option 使用 `tc('--rk-*')`，因为 ECharts 不理解 CSS var。
+- 图表颜色优先用 `chartColors()`。
+- 用户可选颜色、批注色、数据驱动色可以保留为数据值。
 
-| 变量 | 语义 | 默认值 |
-|------|------|--------|
-| `--rk-bg-primary` | 主背景 | #0f1117 |
-| `--rk-bg-secondary` | 卡片/次背景 | #1e293b |
-| `--rk-bg-tertiary` | 输入框/悬停背景 | #252836 |
-| `--rk-text-primary` | 主文字 | #e2e8f0 |
-| `--rk-text-secondary` | 次要文字 | #94a3b8 |
-| `--rk-text-tertiary` | 提示/禁用文字 | #64748b |
-| `--rk-border` | 边框 | #1e293b |
-| `--rk-border-subtle` | 微弱边框 | #2d3148 |
-| `--rk-accent` | 强调色/品牌色 | #667eea |
-| `--rk-accent-hover` | 强调色悬停 | #7c8ff5 |
-| `--rk-accent-muted` | 强调色背景 | rgba(102,126,234,0.15) |
-| `--rk-success` | 成功色 | #10b981 |
-| `--rk-success-muted` | 成功色背景 | rgba(16,185,129,0.15) |
-| `--rk-warning` | 警告色 | #f59e0b |
-| `--rk-warning-muted` | 警告色背景 | rgba(245,158,11,0.15) |
-| `--rk-error` | 错误色 | #ef4444 |
-| `--rk-error-muted` | 错误色背景 | rgba(239,68,68,0.15) |
-| `--rk-font-sans` | 正文字体 | -apple-system, ... |
-| `--rk-font-mono` | 等宽字体 | SF Mono, ... |
-| `--rk-radius-sm` | 小圆角 | 4px |
-| `--rk-radius-md` | 中圆角 | 8px |
-| `--rk-radius-lg` | 大圆角 | 10px |
-| `--rk-shadow` | 阴影 | 0 4px 12px rgba(0,0,0,0.3) |
-| `--rk-chart-1` ~ `--rk-chart-6` | 图表调色板 | 6色 |
-
-#### 3. 哪些颜色可以不使用 tc()
-
-- **数据驱动颜色**：图表 series 颜色（由 ECharts/mviz 生成的 option）、表格中按数据值变化的颜色
-- **用户可选择颜色**：批注高亮色 (#fbbf24 等)、颜色选择器的默认值
-- **白/黑对比色**：在主题色背景上的白/黑文字（如深色按钮上的 `#fff`）可以用 `tc('--rk-text-primary')`
-
-#### 4. 新增组件的文件结构
-
-```
-src/components/new-widget/
-├── schema.ts          # Zod Schema + 类型导出
-├── component.tsx      # React 组件（必须 import { tc }）
-└── index.ts           # 重导出
-```
-
-#### 5. 组件注册三步
-
-1. **catalog.ts** — 注册 Schema：`BarChartSchema,`
-2. **registry.tsx** — 映射 type → 组件：`BarChart,`
-3. **index.ts** — 导出：`export { BarChart, BarChartSchema } from './mviz-bridge/bar-chart'`
-
-#### 6. DESIGN.md 主题系统
-
-用户通过 `loadDesignMd(markdown)` 加载主题后，所有用 `tc()` 的组件自动换肤，无需组件感知主题存在。
+常用导入：
 
 ```ts
-import { loadDesignMd } from 'vizual'
-loadDesignMd(designMdContent, { apply: true })
+import { tc, tcss, chartColors } from '../../core/theme-colors'
 ```
 
-**新增组件时**：只要用 `tc()` 取色，就自动支持 DESIGN.md 主题。不需要做任何额外工作。
-<!-- GSD:conventions-end -->
+DocView 内部从 `../core/theme-colors` 导入。
 
-<!-- GSD:architecture-start source:ARCHITECTURE.md -->
-## Architecture
+### 新组件结构
 
-```
-DESIGN.md (markdown)
-    │ parseDesignMd()
-    ▼
-DesignTokens { colors, typography, spacing, radius }
-    │ mapDesignTokensToTheme()
-    ▼
-Theme { name, cssVariables: { '--rk-*': '...' } }
-    │ registerTheme() + applyTheme()
-    ▼
-CSS variables injected → tc('--rk-bg-primary') → '#0b0b0b'
-    │
-    ▼  所有组件通过 tc() 读取主题色，自动换肤
+```text
+src/components/new-widget/
+├── schema.ts
+├── component.tsx
+└── index.ts
 ```
 
-**关键文件：**
-- `src/themes/design-md-parser.ts` — DESIGN.md 解析器
-- `src/themes/design-md-mapper.ts` — token → --rk-* 映射
-- `src/themes/index.ts` — 主题注册表 + loadDesignMd() API
-- `src/themes/default-dark.ts` — 默认暗色主题
-- `src/core/theme-colors.ts` — tc() 颜色访问器 + chartColors()
+注册三处：
 
-**数据流：**
-1. 用户调用 `loadDesignMd(markdown, { apply: true })`
-2. 解析 markdown → 提取颜色/字体/间距 token
-3. 语义匹配 → 映射到 --rk-* CSS 变量（缺失的回退 default-dark）
-4. 注入 CSS 变量到 DOM
-5. 所有组件的 `tc()` 调用自动获取新颜色
-<!-- GSD:architecture-end -->
+1. `src/catalog.ts`：注册 Zod schema。
+2. `src/registry.tsx`：注册 React component。
+3. `src/index.ts`：导出组件、schema、类型。
 
-<!-- GSD:workflow-start source:GSD defaults -->
-## GSD Workflow Enforcement
+同时更新：
 
-Before using Edit, Write, or other file-changing tools, start work through a GSD command so planning artifacts and execution context stay in sync.
+- `docs/COMPONENTS.md`
+- `skills/vizual/SKILL.md`
+- 对应 `skills/vizual/references/...`
+- `validation/eval-full-31.html` / `validation/specs-31.js`，如果是公开组件。
 
-Use these entry points:
-- `/gsd:quick` for small fixes, doc updates, and ad-hoc tasks
-- `/gsd:debug` for investigation and bug fixing
-- `/gsd:execute-phase` for planned phase work
+## Agent Runtime 规则
 
-Do not make direct repo edits outside a GSD workflow unless the user explicitly asks to bypass it.
-<!-- GSD:workflow-end -->
+- 一次性展示可以直接渲染 JSON spec。
+- 需要历史恢复、追问修改、导出、批注或状态审计时，必须保存 `VizualArtifact`。
+- follow-up 修改应使用 typed patches，例如 `changeChartType`、`filterData`、`limitData`、`updateElementProps`、`replaceSpec`。
+- 不要猜 JSON path；优先用 artifact `targetMap` 的 `targetId`。
+- 真实聊天历史中，追问改图默认生成新的 AI 气泡，不覆盖旧气泡。
 
+## Interactive 规则
 
+实时可调不是纯 JSON spec。
 
-<!-- GSD:profile-start -->
-## Developer Profile
+在 `vizual-test.html` 中使用：
 
-> Profile not yet configured. Run `/gsd:profile-user` to generate your developer profile.
-> This section is managed by `generate-claude-profile` -- do not edit manually.
-<!-- GSD:profile-end -->
+```js
+window.renderInteractiveVizInMsg(id, {
+  initialState,
+  controlsSpec,
+  makeSpec: (state) => spec,
+  designMd,
+  applyTheme: (state, Vizual) => {},
+})
+```
+
+要求：
+
+- FormBuilder 用 `value: { "$bindState": "/controls" }`。
+- 只暴露当前图表真正支持的控件；例如 `horizontal` / `stacked` 只给 BarChart。
+- 多个 interactive artifact 必须隔离 state 和 theme scope。
+
+## DocView 规则
+
+DocView 只用于需要批注、审阅、修订、版本历史或“共建文档”的场景。
+
+普通分析报告、dashboard、导出报表默认用宿主文本 + GridLayout/charts/tables，不要因为用户说“报告”就使用 DocView。
+
+Agent-driven loop：
+
+1. 宿主渲染 DocView 并拿到 `controllerRef`。
+2. 用户创建批注 thread。
+3. 用户提交 thread。
+4. Agent 读取 submitted threads 和 section context。
+5. Agent 生成 `RevisionProposal`。
+6. 宿主/用户 apply 或 reject。
+7. `onSectionsChange` 持久化新 sections。
+
+在 `vizual-test.html` 中使用：
+
+- `renderDocViewInMsg`
+- `createDocViewThread`
+- `submitDocViewThreads`
+- `getDocViewReviewState`
+- `createDocViewRevision`
+- `applyDocViewRevision`
+
+## 测试要求
+
+常规提交前至少跑：
+
+```bash
+npm test
+npm run typecheck
+npm run build
+```
+
+UI / runtime 改动还要检查：
+
+- `validation/eval-full-31.html`：31 组件是否视觉可用。
+- `validation/vizual-test.html`：冷启动 Agent 主链路。
+- DocView 改动：批注 → 提交 → revision proposal → apply → resolved。
+- interactive 改动：多个实时组件并存时 state/theme 互不影响。
+
+冷启动盲测文档：
+
+- `COLD_START_BLIND_TEST.md`：给被测 Agent。
+- `COLD_START_ACCEPTANCE_GUIDE.md`：给测试主持人，不给被测 Agent。

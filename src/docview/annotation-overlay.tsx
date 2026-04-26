@@ -33,9 +33,14 @@ export interface AnnotationOverlayProps {
 export function AnnotationOverlay({ children, annotations, onHighlightClick, containerRef }: AnnotationOverlayProps) {
   const contentRef = useRef<HTMLSpanElement>(null)
 
-  // Filter to active (non-orphaned) text annotations for highlighting
+  // Filter to active text annotations for highlighting. Resolved/orphaned
+  // anchors are history, not active markup on the current document.
   const activeAnnotations = useMemo(() =>
-    annotations.filter(a => a.status !== 'orphaned' && !a.target),
+    annotations.filter(a =>
+      a.status !== 'orphaned' &&
+      a.status !== 'resolved' &&
+      (a.anchor?.textRange || a.target?.textRange || !a.target)
+    ),
     [annotations]
   )
 
@@ -68,6 +73,18 @@ export function AnnotationOverlay({ children, annotations, onHighlightClick, con
     const highlightCss = `background:${highlightBg};border-bottom:2px solid ${highlightBorder};color:#000;cursor:pointer;padding:1px 2px;border-radius:2px;transition:background 0.15s;`
 
     for (const ann of activeAnnotations) {
+      const anchor = ann.anchor || ann.target
+      const textRange = anchor?.textRange
+      if (textRange) {
+        const sectionSelector = anchor.sectionId
+          ? `[data-section-id="${anchor.sectionId}"]`
+          : `[data-section-index="${anchor.sectionIndex}"]`
+        const sectionEl = el.querySelector(sectionSelector) as HTMLElement | null
+        if (sectionEl && wrapTextRange(sectionEl, textRange.start, textRange.end, ann, highlightCss, handleClick)) {
+          continue
+        }
+      }
+
       const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT)
       while (walker.nextNode()) {
         const textNode = walker.currentNode as Text
@@ -104,6 +121,51 @@ export function AnnotationOverlay({ children, annotations, onHighlightClick, con
   )
 }
 
+function findTextPosition(root: HTMLElement, offset: number): { node: Text; offset: number } | null {
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT)
+  let current = 0
+  while (walker.nextNode()) {
+    const node = walker.currentNode as Text
+    const length = node.textContent?.length || 0
+    if (offset <= current + length) {
+      return { node, offset: Math.max(0, offset - current) }
+    }
+    current += length
+  }
+  return null
+}
+
+function wrapTextRange(
+  root: HTMLElement,
+  start: number,
+  end: number,
+  ann: Annotation,
+  cssText: string,
+  handleClick: (ann: Annotation) => void,
+): boolean {
+  if (start < 0 || end <= start) return false
+  const startPos = findTextPosition(root, start)
+  const endPos = findTextPosition(root, end)
+  if (!startPos || !endPos) return false
+
+  try {
+    const range = document.createRange()
+    range.setStart(startPos.node, startPos.offset)
+    range.setEnd(endPos.node, endPos.offset)
+    if (!range.toString()) return false
+
+    const mark = document.createElement('mark')
+    mark.style.cssText = cssText
+    mark.setAttribute('data-annotation-highlight', ann.id)
+    mark.addEventListener('click', () => handleClick(ann))
+    mark.appendChild(range.extractContents())
+    range.insertNode(mark)
+    return true
+  } catch {
+    return false
+  }
+}
+
 /**
  * Applies visual indicators to component targets (chart, kpi, table) that have annotations.
  * Scans the container for elements with data-section-index and data-target-type attributes
@@ -122,7 +184,7 @@ function TargetHighlighter({
     if (!container) return
 
     // Find all target annotations (non-text)
-    const targetAnns = annotations.filter(a => a.target)
+    const targetAnns = annotations.filter(a => a.target && a.status !== 'resolved' && a.status !== 'orphaned')
 
     /**
      * Apply or remove outlines on component targets based on current annotations.
@@ -142,12 +204,14 @@ function TargetHighlighter({
 
       // Apply highlights for each target annotation
       for (const ann of targetAnns) {
-        if (!ann.target || ann.status === 'orphaned') continue
+        if (!ann.target || ann.target.textRange) continue
         // Skip chart data point annotations — handled by ECharts dispatchAction in ChartSection
         if (ann.target.chartDataPoint) continue
         // Use targetId for precise element matching (e.g., "kpi-3-1" not all kpi-3)
         const selector = ann.target.targetId
           ? `[data-docview-target="${ann.target.targetId}"]`
+          : ann.target.sectionId
+            ? `[data-section-id="${ann.target.sectionId}"][data-target-type="${ann.target.targetType}"]`
           : `[data-section-index="${ann.target.sectionIndex}"][data-target-type="${ann.target.targetType}"]`
         const elements = container.querySelectorAll(selector)
         elements.forEach(el => {

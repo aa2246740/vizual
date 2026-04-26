@@ -312,11 +312,11 @@ function parseSpacingSection(content: string): SpacingToken {
       /(?:space|sp)[- ]?(\d+)\s*[:\s]\s*([\d.]+)\s*(px|rem)/i
     )
     if (match) {
-      result.scale[`space-${match[1]}`] = match[2] + match[3]
+      result.scale![`space-${match[1]}`] = match[2] + match[3]
     }
   }
 
-  if (Object.keys(result.scale).length === 0) delete result.scale
+  if (Object.keys(result.scale ?? {}).length === 0) delete result.scale
 
   return result
 }
@@ -338,7 +338,7 @@ function parseRadiusSection(content: string): RadiusToken {
       if (name === 'small') name = 'sm'
       if (name === 'medium') name = 'md'
       if (name === 'large') name = 'lg'
-      result.scale[name] = match[2] + match[3]
+      result.scale![name] = match[2] + match[3]
     }
 
     // 表格行
@@ -351,12 +351,12 @@ function parseRadiusSection(content: string): RadiusToken {
       if (name === 'medium') name = 'md'
       if (name === 'large') name = 'lg'
       const unit = tableMatch[3] || 'px'
-      result.scale[name] = tableMatch[2] + unit
+      result.scale![name] = tableMatch[2] + unit
     }
   }
 
   // 如果没提取到 scale，尝试从整个 section 找所有带 px 的数字
-  if (Object.keys(result.scale).length === 0) {
+  if (Object.keys(result.scale ?? {}).length === 0) {
     const allRadius = content.match(/(?:radius|rounded)[^:]*?:\s*([\d.]+)\s*(px|rem)/gi)
     if (allRadius) {
       allRadius.forEach((r, i) => {
@@ -371,7 +371,7 @@ function parseRadiusSection(content: string): RadiusToken {
     }
   }
 
-  if (Object.keys(result.scale).length === 0) delete result.scale
+  if (Object.keys(result.scale ?? {}).length === 0) delete result.scale
 
   return result
 }

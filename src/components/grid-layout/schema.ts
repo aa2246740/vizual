@@ -6,4 +6,4 @@ export const GridLayoutSchema = z.object({
   columnWidths: z.array(z.string()).optional(),
 })
 
-export type GridLayoutProps = z.infer<typeof GridLayoutSchema>
+export type GridLayoutProps = z.input<typeof GridLayoutSchema>

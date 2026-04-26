@@ -1,0 +1,70 @@
+import type { DumbbellChartProps } from './schema'
+import { createEChartsBridge } from '../../core/echarts-bridge-factory'
+
+/**
+ * Resolve low/high fields from props.
+ * Supports: explicit low/high, or y as [low, high] array field names.
+ */
+function resolveFields(props: DumbbellChartProps) {
+  const data = Array.isArray(props.data) ? props.data : []
+  const categoryField = props.x ?? 'name'
+  let lowField = props.low
+  let highField = props.high
+  // When y is an array like ["s2023","s2024"], use first as low, second as high
+  if (!lowField && !highField && Array.isArray(props.y)) {
+    lowField = props.y[0]
+    highField = props.y[1]
+  }
+  const first = (data[0] as Record<string, unknown>) ?? {}
+  // Auto-detect from data if still not set
+  if (!lowField || !highField) {
+    const numericKeys = Object.keys(first).filter(k => typeof first[k] === 'number' && k !== categoryField)
+    lowField ??= numericKeys[0] ?? 'low'
+    highField ??= numericKeys[1] ?? numericKeys[0] ?? 'high'
+  }
+  return { data, categoryField, lowField, highField }
+}
+
+export function buildDumbbellFallback(props: DumbbellChartProps): Record<string, unknown> {
+  const { data, categoryField, lowField, highField } = resolveFields(props)
+  const categories = data.map((d: Record<string, unknown>) => String(d[categoryField] ?? ''))
+  return {
+    title: props.title ? { text: props.title } : undefined,
+    tooltip: { trigger: 'axis' },
+    xAxis: { type: 'category', data: categories },
+    yAxis: { type: 'value' },
+    series: [{
+      type: 'custom',
+      renderItem: (_params: unknown, api: any) => {
+        const idx = api.value(0)
+        const low = api.coord([idx, api.value(1)])
+        const high = api.coord([idx, api.value(2)])
+        if (!low || !high) return {}
+        const lineColor = api.visual('color')
+        return {
+          type: 'group',
+          children: [
+            {
+              type: 'rect',
+              shape: {
+                x: low[0] - 2.5,
+                y: Math.min(low[1], high[1]),
+                width: 5,
+                height: Math.max(Math.abs(high[1] - low[1]), 6),
+              },
+              style: { fill: lineColor, opacity: 0.85 },
+            },
+            { type: 'circle', shape: { cx: low[0], cy: low[1], r: 4 }, style: { fill: lineColor } },
+            { type: 'circle', shape: { cx: high[0], cy: high[1], r: 4 }, style: { fill: lineColor } },
+          ],
+        }
+      },
+      data: data.map((d: Record<string, unknown>, i: number) => [
+        i, Number(d[lowField]) || 0, Number(d[highField]) || 0,
+      ]),
+      encode: { x: 0, y: [1, 2] },
+    }],
+  }
+}
+
+export const DumbbellChart = createEChartsBridge('dumbbell', buildDumbbellFallback)

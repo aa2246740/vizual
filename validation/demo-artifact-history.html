@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vizual Artifact History Demo</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --panel: #171b24;
+      --panel-2: #1f2937;
+      --border: #2d3148;
+      --text: #e5e7eb;
+      --muted: #94a3b8;
+      --accent: #22c55e;
+      --danger: #ef4444;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+    }
+    header {
+      padding: 16px 24px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+    h1 {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 650;
+    }
+    main {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 360px;
+      gap: 16px;
+      padding: 16px;
+      max-width: 1280px;
+      margin: 0 auto;
+    }
+    .surface, .side {
+      border: 1px solid var(--border);
+      background: var(--panel);
+      border-radius: 10px;
+      min-width: 0;
+    }
+    .surface {
+      padding: 14px;
+    }
+    #renderTarget {
+      min-height: 420px;
+      background: #0d1017;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px;
+    }
+    .side {
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .buttons {
+      display: grid;
+      gap: 8px;
+    }
+    button {
+      border: 1px solid var(--border);
+      background: var(--panel-2);
+      color: var(--text);
+      border-radius: 8px;
+      padding: 9px 12px;
+      font: inherit;
+      cursor: pointer;
+      text-align: left;
+    }
+    button:hover {
+      border-color: var(--accent);
+    }
+    .status {
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .status.ok { color: var(--accent); }
+    .status.err { color: var(--danger); }
+    pre {
+      margin: 0;
+      padding: 10px;
+      border-radius: 8px;
+      background: #0b0e14;
+      border: 1px solid var(--border);
+      color: #cbd5e1;
+      overflow: auto;
+      min-height: 260px;
+      font-size: 11px;
+      line-height: 1.45;
+    }
+    @media (max-width: 860px) {
+      main { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Vizual Artifact History Demo</h1>
+    <div id="status" class="status">加载中...</div>
+  </header>
+  <main>
+    <section class="surface">
+      <div id="renderTarget"></div>
+    </section>
+    <aside class="side">
+      <div class="buttons">
+        <button onclick="resetArtifact()">重置为历史保存的柱状图</button>
+        <button onclick="changeToLine()">把这张图改成折线图</button>
+        <button onclick="filterEast()">只看华东区</button>
+        <button onclick="makeLessDense()">让图表更疏一点</button>
+        <button onclick="exportPng()">导出 PNG 并记录 metadata</button>
+        <button onclick="exportPdf()">导出 PDF 并记录 metadata</button>
+        <button onclick="exportXlsx()">导出 XLSX 并记录 metadata</button>
+        <button onclick="exportCsv()">导出 CSV 并记录 metadata</button>
+      </div>
+      <div class="status" id="actionStatus">等待操作</div>
+      <pre id="debug"></pre>
+    </aside>
+  </main>
+
+  <script src="../dist/vizual.standalone.js"></script>
+  <script>
+    const initialSpec = {
+      root: 'chart',
+      elements: {
+        chart: {
+          type: 'BarChart',
+          props: {
+            type: 'bar',
+            title: '区域收入趋势',
+            x: 'day',
+            y: 'revenue',
+            data: [
+              { day: 'D1', region: '华东', revenue: 120 },
+              { day: 'D2', region: '华北', revenue: 88 },
+              { day: 'D3', region: '华东', revenue: 136 },
+              { day: 'D4', region: '华南', revenue: 92 },
+              { day: 'D5', region: '华东', revenue: 148 },
+              { day: 'D6', region: '华北', revenue: 97 },
+              { day: 'D7', region: '华东', revenue: 155 },
+              { day: 'D8', region: '华南', revenue: 108 },
+              { day: 'D9', region: '华东', revenue: 162 },
+              { day: 'D10', region: '华北', revenue: 104 },
+              { day: 'D11', region: '华东', revenue: 174 },
+              { day: 'D12', region: '华南', revenue: 116 },
+            ],
+          },
+          children: [],
+        },
+      },
+    };
+
+    let savedHistoryArtifact = null;
+    let currentArtifact = null;
+
+    function setStatus(text, ok = true) {
+      const el = document.getElementById('status');
+      el.textContent = text;
+      el.className = ok ? 'status ok' : 'status err';
+    }
+
+    function setAction(text, ok = true) {
+      const el = document.getElementById('actionStatus');
+      el.textContent = text;
+      el.className = ok ? 'status ok' : 'status err';
+    }
+
+    function updateDebug() {
+      document.getElementById('debug').textContent = JSON.stringify({
+        artifactId: currentArtifact?.id,
+        status: currentArtifact?.status,
+        kind: currentArtifact?.kind,
+        targetMap: currentArtifact?.targetMap,
+        versions: currentArtifact?.versions?.map(v => ({
+          id: v.id,
+          reason: v.reason,
+          createdAt: v.createdAt,
+          rootType: v.spec?.elements?.chart?.type,
+        })),
+        exports: currentArtifact?.exports,
+        specSummary: currentArtifact ? window.Vizual.summarizeSpec(currentArtifact.spec) : null,
+      }, null, 2);
+    }
+
+    function mountArtifact(artifactLike) {
+      const result = window.Vizual.renderArtifact(artifactLike, document.getElementById('renderTarget'));
+      currentArtifact = result.artifact;
+      savedHistoryArtifact = savedHistoryArtifact || window.Vizual.cloneJson(currentArtifact);
+      updateDebug();
+      return currentArtifact;
+    }
+
+    function resetArtifact() {
+      currentArtifact = window.Vizual.cloneJson(savedHistoryArtifact);
+      mountArtifact(currentArtifact);
+      setAction('已从保存的历史 artifact 恢复');
+    }
+
+    function changeToLine() {
+      currentArtifact = window.Vizual.updateArtifact(currentArtifact, {
+        type: 'changeChartType',
+        targetId: 'element:chart',
+        chartType: 'LineChart',
+        reason: '用户要求改成折线图',
+      });
+      mountArtifact(currentArtifact);
+      setAction('已改成折线图，并保留上一版');
+    }
+
+    function filterEast() {
+      currentArtifact = window.Vizual.updateArtifact(currentArtifact, {
+        type: 'filterData',
+        targetId: 'element:chart',
+        field: 'region',
+        values: '华东',
+        reason: '用户要求只看华东区',
+      });
+      mountArtifact(currentArtifact);
+      setAction('已筛选华东区');
+    }
+
+    function makeLessDense() {
+      currentArtifact = window.Vizual.updateArtifact(currentArtifact, {
+        type: 'limitData',
+        targetId: 'element:chart',
+        limit: 6,
+        reason: '用户要求图表更疏',
+      });
+      mountArtifact(currentArtifact);
+      setAction('已限制为 6 个数据点');
+    }
+
+    function firstRows() {
+      return currentArtifact.spec.elements.chart.props.data || [];
+    }
+
+    async function recordExport(format, blob, filename) {
+      const target = document.getElementById('renderTarget');
+      const record = window.Vizual.createExportRecord(currentArtifact, {
+        format,
+        status: 'success',
+        filename,
+        width: target.offsetWidth,
+        height: target.offsetHeight,
+        meta: { size: blob.size, type: blob.type },
+      });
+      currentArtifact = window.Vizual.updateArtifact(currentArtifact, {
+        type: 'addExportRecord',
+        export: record,
+        reason: '用户导出 ' + format.toUpperCase(),
+      });
+      updateDebug();
+      setAction(format.toUpperCase() + ' 导出成功，metadata 已写入 artifact');
+    }
+
+    async function exportPng() {
+      try {
+        const target = document.getElementById('renderTarget');
+        const blob = await window.Vizual.exportToPNG(target, { filename: currentArtifact.id });
+        await recordExport('png', blob, currentArtifact.id);
+      } catch (err) {
+        setAction('导出失败: ' + (err.message || err), false);
+      }
+    }
+
+    async function exportPdf() {
+      try {
+        const blob = await window.Vizual.exportToPDF(document.getElementById('renderTarget'), { filename: currentArtifact.id });
+        await recordExport('pdf', blob, currentArtifact.id);
+      } catch (err) {
+        setAction('PDF 导出失败: ' + (err.message || err), false);
+      }
+    }
+
+    async function exportXlsx() {
+      try {
+        const blob = await window.Vizual.exportDataToXLSX(firstRows(), { sheetName: '区域收入趋势' });
+        await recordExport('xlsx', blob, currentArtifact.id);
+      } catch (err) {
+        setAction('XLSX 导出失败: ' + (err.message || err), false);
+      }
+    }
+
+    async function exportCsv() {
+      try {
+        const blob = window.Vizual.exportDataToCSV(firstRows());
+        await recordExport('csv', blob, currentArtifact.id);
+      } catch (err) {
+        setAction('CSV 导出失败: ' + (err.message || err), false);
+      }
+    }
+
+    if (window.Vizual?.renderArtifact) {
+      window.Vizual.loadDesignMd('Primary: #22c55e\nBackground: #0f1117', { apply: true });
+      mountArtifact({
+        spec: initialSpec,
+        source: { messageId: 'history-msg-1', prompt: '显示区域收入趋势' },
+        theme: { designMd: 'Primary: #22c55e\nBackground: #0f1117' },
+        metadata: { demo: 'artifact-history' },
+      });
+      setStatus('Vizual 就绪');
+    } else {
+      setStatus('Vizual 加载失败', false);
+    }
+  </script>
+</body>
+</html>

@@ -1,15 +1,17 @@
+import type React from 'react'
+import type { CSSProperties } from 'react'
 import type { TimelineProps } from './schema'
 import { tcss, tc } from '../../core/theme-colors'
 import { useAnnotationContext } from '../../docview/annotation-context'
 
-const styles = {
+const styles: Record<string, CSSProperties> = {
   container: {
-    position: 'relative' as const,
+    position: 'relative',
     paddingLeft: 24,
     fontFamily: tcss('--rk-font-sans'),
   },
   line: {
-    position: 'absolute' as const,
+    position: 'absolute',
     left: 7,
     top: 8,
     bottom: 8,
@@ -17,12 +19,12 @@ const styles = {
     background: tcss('--rk-border'),
   },
   event: {
-    position: 'relative' as const,
+    position: 'relative',
     paddingBottom: 20,
     paddingLeft: 20,
   },
   dot: {
-    position: 'absolute' as const,
+    position: 'absolute',
     left: -20,
     top: 6,
     width: 10,
@@ -38,7 +40,7 @@ const styles = {
   },
   title: {
     fontSize:tcss('--rk-text-md'),
-    fontWeight:tcss('--rk-weight-semibold') as const,
+    fontWeight:tcss('--rk-weight-semibold'),
     color: tcss('--rk-text-primary'),
     marginBottom: 2,
   },

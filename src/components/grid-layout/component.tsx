@@ -8,6 +8,7 @@ import type { GridLayoutProps } from './schema'
  */
 export function GridLayout({ props, children }: { props: GridLayoutProps; children?: React.ReactNode }) {
   const { columns = 2, gap = 12, columnWidths } = props
+  const childArray = React.Children.toArray(children)
   const templateColumns = columnWidths?.length
     ? columnWidths.join(' ')
     : `repeat(${columns}, 1fr)`
@@ -18,7 +19,7 @@ export function GridLayout({ props, children }: { props: GridLayoutProps; childr
       gridTemplateColumns: templateColumns,
       gap,
     }}>
-      {children}
+      {childArray}
     </div>
   )
 }

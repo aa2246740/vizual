@@ -1,1 +1,0 @@
-{"root":"c18","elements":{"c18":{"type":"RadarChart","props":{"type":"radar","title":"系统评估","indicators":[{"name":"性能","max":100},{"name":"安全","max":100},{"name":"易用性","max":100},{"name":"可扩展性","max":100},{"name":"成本效益","max":100}],"series":[{"name":"当前","values":[85,70,90,65,80]}]},"children":[]}}}

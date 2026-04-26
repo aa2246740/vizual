@@ -1,5 +1,5 @@
 /**
- * Generate all mviz UI component bridge files
+ * Generate Vizual UI component files
  * Run: npx tsx scripts/gen-ui-bridges.ts
  */
 import { writeFileSync } from 'fs'
@@ -169,14 +169,14 @@ const components = [
 for (const comp of components) {
   const { dir, type, component, desc, schema, render } = comp
 
-  writeFileSync(`src/mviz-bridge/${dir}/schema.ts`, `import { z } from 'zod'
+  writeFileSync(`src/charts/${dir}/schema.ts`, `import { z } from 'zod'
 
 export const ${component}Schema = ${schema}
 
 export type ${component}Props = z.infer<typeof ${component}Schema>
 `)
 
-  writeFileSync(`src/mviz-bridge/${dir}/component.tsx`, `import type { ${component}Props } from './schema'
+  writeFileSync(`src/charts/${dir}/component.tsx`, `import type { ${component}Props } from './schema'
 
 /**
  * ${desc}
@@ -186,7 +186,7 @@ export function ${component}(props: ${component}Props) {
 }
 `)
 
-  writeFileSync(`src/mviz-bridge/${dir}/index.ts`, `export { ${component} } from './component'
+  writeFileSync(`src/charts/${dir}/index.ts`, `export { ${component} } from './component'
 export { ${component}Schema } from './schema'
 export type { ${component}Props } from './schema'
 `)

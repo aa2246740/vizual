@@ -81,7 +81,7 @@
 - SankeyChart: type = `"sankey"`，有 nodes/links 或 x/y/data
 - RadarChart: type = `"radar"`，有 indicators/series
 - DumbbellChart: type = `"dumbbell"`，有 low/high
-- ComboChart: type = `"combo"`，有 series 数组
+- ComboChart: type = `"combo"`，有 `x`、`y` 数组和 `data`；如果必须显式指定柱/线映射，可用 `series: [{ type: "bar"|"line", y }]`
 - MermaidDiagram 未测试 → 单独 Test 7
 
 ---
@@ -143,7 +143,7 @@
 
 ---
 
-## Test 11: InteractivePlayground（LiveKit）
+## Test 11: 实时可调图表（Vizual host bridge）
 
 **用户指令：**
 > 做一个交互式柱状图演示，用户可以：
@@ -153,10 +153,12 @@
 > - 用颜色选择器改变柱子颜色
 
 **验证点：**
-- InteractivePlayground: type = `"interactive_playground"`
-- component 字段格式正确：`{ type: "BarChart", props: {...} }`
-- controls 用 `name` + `targetProp`（不是 key 或 wrappedSpec）
-- 包含 slider、toggle、select、color 四种控件
+- 必须调用 `renderInteractiveVizInMsg(id, config)`，不是返回纯 JSON spec
+- `controlsSpec` 使用 FormBuilder，且 `props.value = { "$bindState": "/controls" }`
+- `initialState.controls` 包含数据点数量、堆叠开关、配色选择、品牌色
+- `config.bubbleWidth` 可以选择 `wide` 或 `full`，不要让宿主气泡固定死
+- `makeSpec(state)` 根据 controls 生成 BarChart；拖动 slider 后数据点数量变化
+- `applyTheme(state, Vizual)` 或 `designMd` 用于品牌色，不要把 chart `theme` 当作品牌色注入
 
 ---
 
@@ -178,9 +180,13 @@
 - DocView: type = `"doc_view"`
 - sections 至少包含：heading、text、callout、kpi、chart、table、markdown、freeform
 - showPanel = true
-- chart section 有 componentType
+- revisable document sections should include stable `id` fields for important targets
+- chart section 使用 `data.chartType`；只有 component section 才使用 `data.componentType`
 - markdown section 的 content 是 markdown 源码
 - freeform section 的 content 是 HTML 字符串
+- 在 `vizual-test.html` 里必须用 `renderDocViewInMsg(id, { sections, showPanel: true })`，不要只用普通 `renderVizInMsg()` 做静态文档
+- 如果用户提交批注，Agent 必须通过 `getDocViewReviewState()` 读取 submitted threads，再调用 `createDocViewRevision()` 返回修订提案；不能直接覆盖老 DocView
+- 只有用户/宿主明确要求自动应用时才调用 `applyDocViewRevision()`；否则让用户在面板里点“应用”
 
 ---
 
@@ -206,7 +212,7 @@
 
 ---
 
-## Test 14: 三合一联动（Parser + LiveKit + Vizual）
+## Test 14: Design.md + 实时联动（Vizual host bridge）
 
 **用户指令：**
 > 品牌色是 #1DB954，做一个实时可调的图表，用户能：
@@ -216,13 +222,66 @@
 > - 改品牌色
 
 **验证点：**
-- 正确组合 parseDesignMd + InteractivePlayground + 主题切换
-- controls 的 targetProp 映射正确
-- 主题切换时知道重新渲染
+- 必须调用 `renderInteractiveVizInMsg(id, config)`，并提供 `designMd` 或在 `applyTheme` 里调用 `Vizual.loadDesignMd()`
+- FormBuilder 绑定 `/controls`，包含数据量、图表类型、暗色/亮色、品牌色控件
+- `makeSpec(state)` 根据图表类型返回 BarChart / LineChart / AreaChart 之一
+- 图表专属控件必须联动显示：例如 `horizontal` 只属于 BarChart，不能在 LineChart / AreaChart / ComboChart 模式下显示或传入
+- 如果支持 ComboChart，必须用 `y` 数组；不能把 BarChart 的横向/堆叠选项传给 ComboChart
+- `config.bubbleWidth` 应用 `full`，让控制区和预览区有足够空间
+- 品牌色变化通过 `applyTheme(state, Vizual)` 重新 `loadDesignMd()`，不是写 `theme: "#1DB954"`
+- 暗色/亮色可以用 `Vizual.toggleMode()` / `setGlobalTheme()` / 重新加载 DESIGN.md 变体，切换后要重新渲染预览
 
 ---
 
-## Test 15: 已删除组件陷阱
+## Test 15: 脏输入数据提取 — 不能换成示例数据
+
+**用户指令：**
+> 我从表格里复制了一段数据，格式有点乱，你帮我分析并可视化：
+> ```
+> day   new_user active_user paying_user revenue ai_ratio churn_user
+> 1     120      300         45          900     0.10     20
+> 2     150      320         50          1000    0.12     25
+> 3     180      350         55          1150    0.15     30
+> 4     200      370         60          1300    0.18     28
+> 5     220      400         65          1500    0.20     35
+> 6     250      420         70          1650    0.25     40
+> 7     300      450         80          1900    0.30     45
+> 8     280      430         78          1850    0.38     60
+> ```
+> 看看增长、收入和流失之间的关系。
+
+**验证点：**
+- Agent 必须从原始输入提取真实数据，不能回答“未提供原始数据”
+- 不能使用 placeholder/example/demo 数据
+- 回复文字要说明识别到的行数/字段，例如“解析到 8 行”
+- Vizual spec 的 chart/table data 使用用户给出的真实行，至少一个组件 data 长度为 8
+- 推荐使用 GridLayout + KPI/ComboChart/LineChart/DataTable，而不是 DocView
+- 如果解析不完整，应渲染可信行的 DataTable 并说明不确定字段，而不是编造完整数据
+
+---
+
+## Test 16: 历史图表追问 — 必须 patch artifact
+
+**前置状态：**
+`vizual-test.html` 已经渲染过一张区域收入柱状图，`window.getLastArtifact()` 可以读到最近的 artifact，targetMap 至少包含 `element:chart`。
+
+**用户指令：**
+> 这张图改成折线图，只看华东区，然后让它疏一点，导出图片。
+
+**验证点：**
+- Agent 先调用 `window.getLastArtifact()`，不能从聊天 DOM 或记忆里重建上一张图
+- Agent 从 `artifact.targetMap` 找目标，例如 `element:chart`
+- Agent 调用 `window.updateArtifactInMsg(artifact.id, patches, { answerText })`，默认生成新的 AI 气泡；不能直接覆盖旧气泡。必须使用 Vizual typed patches（不是 `{ op, path, value }` JSON Patch）。patch 至少包含：
+  - `changeChartType` → `LineChart`
+  - `filterData` → field/value 对应华东区
+  - `limitData` 或等价的 `replaceElement` 降低密度
+- Agent 调用 `window.exportArtifact(updated.id, { format: 'png' | 'pdf' | 'csv' | 'xlsx', filename })` 触发导出 metadata
+- 更新后的 artifact 保留 `versions`，不是覆盖掉历史
+- 如果用户要求表格，应使用 `csv` 或 `xlsx`；演示文稿导出暂不在当前内置范围
+
+---
+
+## Test 17: 已删除组件陷阱
 
 **用户指令：**
 > 做一个大数字展示组件显示 "$2.4M"，加一个趋势标签。
@@ -248,4 +307,4 @@
 | ⚠️ MINOR | 基本正确但有小瑕疵（如缺可选字段、数据不够真实） |
 | ❌ FAIL | 组件名错误、props 结构错误、使用了已删除组件 |
 
-**通过标准：** 15 个测试全部 ✅ 或 ⚠️，0 个 ❌
+**通过标准：** 17 个测试全部 ✅ 或 ⚠️，0 个 ❌

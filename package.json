@@ -1,7 +1,7 @@
 {
   "name": "vizual",
   "version": "1.1.0",
-  "description": "Vizual — AI speaks JSON, Vizual makes it visual. 32 interactive visualization components for json-render: charts, dashboards, kanban, gantt, input forms, layouts & more.",
+  "description": "Vizual — AI Agent visual runtime for JSON specs, editable artifacts, charts, dashboards, live controls, DocView review loops, and export.",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
@@ -19,11 +19,13 @@
   "scripts": {
     "test": "vitest run",
     "test:watch": "vitest",
-    "build": "node build.js && node build.js --standalone",
+    "build": "node build.js && npm run build:types && node build.js --standalone",
     "build:esm": "esbuild src/index.ts --bundle --format=esm --outfile=dist/index.mjs --target=es2020 --external:react --external:react-dom --external:echarts",
     "build:cjs": "esbuild src/index.ts --bundle --format=cjs --outfile=dist/index.js --target=es2020 --external:react --external:react-dom --external:echarts",
+    "build:types": "tsc -p tsconfig.build.json --emitDeclarationOnly",
     "build:standalone": "node build.js --standalone",
-    "prepublishOnly": "npm test && npm run build"
+    "typecheck": "tsc -p tsconfig.build.json --noEmit",
+    "prepublishOnly": "npm test && npm run typecheck && npm run build"
   },
   "keywords": [
     "vizual",
@@ -33,7 +35,6 @@
     "dashboard",
     "render",
     "json-render",
-    "mviz",
     "echarts",
     "react",
     "catalog",
@@ -55,10 +56,10 @@
     "dompurify": "^3.4.0",
     "echarts": "^5.6.0",
     "html2canvas": "^1.4.1",
+    "jspdf": "^4.2.1",
+    "jszip": "^3.10.1",
     "marked": "^15.0.12",
     "mermaid": "^11.14.0",
-    "mviz": "^1.6.4",
-    "react-highlight-words": "^0.20.0",
     "zod": "^3.25.0"
   },
   "devDependencies": {
@@ -72,10 +73,15 @@
     "echarts": "^5.6.0",
     "esbuild": "^0.28.0",
     "jsdom": "^29.0.2",
-    "mviz": "^1.6.4",
     "react": "^19.2.5",
     "react-dom": "^19.2.5",
     "typescript": "^6.0.2",
     "vitest": "^4.1.4"
+  },
+  "overrides": {
+    "postcss": "^8.5.10",
+    "mermaid": {
+      "uuid": "14.0.0"
+    }
   }
 }

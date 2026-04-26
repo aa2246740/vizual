@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react'
+import React, { useRef, useEffect, useMemo } from 'react'
 import * as echarts from 'echarts'
 import type { AnnotationTarget, Annotation, ChartDataPoint } from './types'
 import { tcss, tc } from '../core/theme-colors'
@@ -6,6 +6,7 @@ import { renderMarkdown } from './markdown-renderer'
 import { renderFreeform } from './freeform-renderer'
 import { wrapWithLayout } from './layout-wrappers'
 import { AnnotationContext } from './annotation-context'
+import { getSectionId } from './review-sdk'
 import { registry } from '../registry'
 
 /** Props for the SectionRenderer component */
@@ -13,6 +14,7 @@ export interface SectionRendererProps {
   /** Sections array from DocViewSchema */
   sections: Array<{
     type: string
+    id?: string
     content: string
     data?: unknown
     level?: number
@@ -40,6 +42,26 @@ const variantColors: Record<string, string> = {
 /** Heading font sizes by level (h1=32px down to h6=14px) */
 const headingSizes = [32, 24, 20, 18, 16, 14]
 
+function stableStringify(value: unknown): string {
+  const seen = new WeakSet<object>()
+  return JSON.stringify(value, (_key, val) => {
+    if (!val || typeof val !== 'object') return val
+    if (seen.has(val)) return '[Circular]'
+    seen.add(val)
+    if (Array.isArray(val)) return val
+    return Object.keys(val as Record<string, unknown>)
+      .sort()
+      .reduce<Record<string, unknown>>((acc, key) => {
+        acc[key] = (val as Record<string, unknown>)[key]
+        return acc
+      }, {})
+  }) ?? ''
+}
+
+function targetSuffix(section: SectionRendererProps['sections'][number], index: number): string {
+  return typeof section.id === 'string' && section.id.trim() ? section.id : String(index)
+}
+
 /**
  * SectionRenderer — Converts a DocViewSchema sections array into React elements.
  *
@@ -52,7 +74,7 @@ const headingSizes = [32, 24, 20, 18, 16, 14]
  * - callout: Colored callout box based on variant
  * - component: Clickable component placeholder
  *
- * Non-text sections (chart, kpi, table, callout, component) are annotated with
+ * Sections are annotated with
  * data-docview-target, data-section-index, and data-target-type attributes to
  * support multi-granularity annotation targeting.
  */
@@ -69,8 +91,26 @@ export function SectionRenderer({ sections, onTargetClick, annotations }: Sectio
   ) => {
     e.stopPropagation()
     const element = e.currentTarget as HTMLElement
+    const section = sections[sectionIndex]
     const targetId = element.getAttribute('data-docview-target') || undefined
-    onTargetClick?.({ sectionIndex, targetType, label, targetId }, element)
+    const tableCell = targetType === 'table' && element.hasAttribute('data-row-index')
+      ? {
+          rowIndex: parseInt(element.getAttribute('data-row-index') || '0', 10),
+          columnIndex: parseInt(element.getAttribute('data-column-index') || '0', 10),
+          rowKey: element.getAttribute('data-row-key') || undefined,
+          columnKey: element.getAttribute('data-column-key') || undefined,
+          value: element.getAttribute('data-cell-value') || undefined,
+        }
+      : undefined
+    onTargetClick?.({
+      sectionIndex,
+      sectionId: getSectionId(section, sectionIndex),
+      targetType,
+      label,
+      targetId,
+      targetPath: targetId ? `[data-docview-target="${targetId}"]` : undefined,
+      tableCell,
+    }, element)
   }
 
   return (
@@ -116,9 +156,14 @@ export function SectionRenderer({ sections, onTargetClick, annotations }: Sectio
 
 /** Render a text section as a styled paragraph */
 function renderText(section: SectionRendererProps['sections'][number], _index: number): React.ReactNode {
+  const suffix = targetSuffix(section, _index)
   return (
     <p
       key={`text-${_index}`}
+      data-docview-target={`text-${suffix}`}
+      data-section-index={_index}
+      data-section-id={getSectionId(section, _index)}
+      data-target-type="text"
       style={{
         color: tcss('--rk-text-primary'),
         fontSize:tcss('--rk-text-md'),
@@ -137,10 +182,15 @@ function renderHeading(section: SectionRendererProps['sections'][number], _index
   const level = section.level ?? 2
   const size = headingSizes[Math.min(level, 6) - 1]
   const Tag = `h${Math.min(level, 6)}` as keyof React.JSX.IntrinsicElements
+  const suffix = targetSuffix(section, _index)
 
   return (
     <Tag
       key={`heading-${_index}`}
+      data-docview-target={`heading-${suffix}`}
+      data-section-index={_index}
+      data-section-id={getSectionId(section, _index)}
+      data-target-type="heading"
       style={{
         color: tcss('--rk-text-primary'),
         fontSize: size,
@@ -176,19 +226,32 @@ function ChartSection({
   const chartRef = useRef<HTMLDivElement>(null)
   const chartInstanceRef = useRef<echarts.ECharts | null>(null)
   const dataPointClickedRef = useRef(false)
+  const onTargetClickRef = useRef(onTargetClick)
+  const indexRef = useRef(index)
+  const titleRef = useRef(section.title || '图表')
   const rawData = section.data as Record<string, unknown> | undefined
-  // Normalize chart data: support both ECharts format and mviz format
+  const registryChart = resolveRegistryChartData(rawData, section.title)
+  // Normalize chart data: support both ECharts format and Vizual field-mapped format
   const data = normalizeChartData(rawData)
+  const dataKey = stableStringify(data)
+  const chartOptions = useMemo(
+    () => data ? buildChartOptions(section.title || '图表', data) : null,
+    [dataKey, section.title],
+  )
   const hasChartData = !!(data?.series && Array.isArray(data.series) && ((data.series as Record<string, unknown>[])?.[0] as Record<string, unknown>)?.data != null)
 
-  // Initialize ECharts instance and register data point click handler
+  useEffect(() => {
+    onTargetClickRef.current = onTargetClick
+    indexRef.current = index
+    titleRef.current = section.title || '图表'
+  }, [onTargetClick, index, section.title])
+
+  // Initialize ECharts once. Popup/annotation state updates must not dispose
+  // and recreate the chart, otherwise ECharts replays its entry animation.
   useEffect(() => {
     if (!hasChartData || !chartRef.current) return
-
     const chart = echarts.init(chartRef.current, 'dark')
     chartInstanceRef.current = chart
-    const options = buildChartOptions(section.title || '图表', data!)
-    chart.setOption(options)
 
     // Register ECharts click event for data point drill-down
     chart.on('click', (params: any) => {
@@ -200,15 +263,17 @@ function ChartSection({
           name: params.name || '',
           value: params.value ?? '',
         }
-        const targetId = `chart-${index}-${params.seriesIndex}-${params.dataIndex}`
-        const chartTitle = section.title || '图表'
+        const targetId = `chart-${targetSuffix(section, indexRef.current)}-${params.seriesIndex}-${params.dataIndex}`
+        const chartTitle = titleRef.current
         const label = `${chartTitle} › ${dp.name}: ${dp.value}`
         const containerEl = chartRef.current?.closest('[data-docview-target]') as HTMLElement
-        onTargetClick?.({
-          sectionIndex: index,
+        onTargetClickRef.current?.({
+          sectionIndex: indexRef.current,
+          sectionId: getSectionId(section, indexRef.current),
           targetType: 'chart',
           label,
           targetId,
+          targetPath: `[data-docview-target="chart-${targetSuffix(section, indexRef.current)}"]`,
           chartDataPoint: dp,
         }, containerEl || chartRef.current!)
       }
@@ -222,7 +287,13 @@ function ChartSection({
       chart.dispose()
       chartInstanceRef.current = null
     }
-  }, [section, data, hasChartData, onTargetClick, index])
+  }, [hasChartData])
+
+  // Only update chart data/options when the chart spec itself changes.
+  useEffect(() => {
+    if (!chartInstanceRef.current || !chartOptions) return
+    chartInstanceRef.current.setOption(chartOptions, true)
+  }, [chartOptions])
 
   // Highlight annotated data points via ECharts dispatchAction
   useEffect(() => {
@@ -237,7 +308,8 @@ function ChartSection({
       a.target?.targetType === 'chart' &&
       a.target?.sectionIndex === index &&
       a.target?.chartDataPoint &&
-      a.status !== 'orphaned'
+      a.status !== 'orphaned' &&
+      a.status !== 'resolved'
     )
 
     for (const ann of chartAnns) {
@@ -250,10 +322,47 @@ function ChartSection({
     }
   }, [annotations, index])
 
+  if (registryChart) {
+    const Component = registry[registryChart.componentType] as React.ComponentType<any> | undefined
+    if (Component) {
+      const contextValue = {
+        sectionIndex: index,
+        sectionId: getSectionId(section, index),
+        componentType: registryChart.componentType,
+        title: section.title || (registryChart.props.title as string | undefined),
+        onTargetClick: (target: AnnotationTarget, element: HTMLElement) => {
+          const targetId = target.targetId || element.getAttribute('data-docview-target') || undefined
+          onTargetClick?.({
+            ...target,
+            sectionId: target.sectionId || getSectionId(section, index),
+            targetId,
+            targetPath: target.targetPath || (targetId ? `[data-docview-target="${targetId}"]` : undefined),
+          }, element)
+        },
+        annotations,
+      }
+
+      return (
+        <AnnotationContext.Provider key={`chart-ctx-${index}`} value={contextValue}>
+          <div
+            data-docview-target={`chart-${targetSuffix(section, index)}`}
+            data-section-index={index}
+            data-section-id={getSectionId(section, index)}
+            data-target-type="chart"
+            style={{ marginBottom: 16, position: 'relative' }}
+          >
+            <Component element={{ type: registryChart.componentType, props: registryChart.props, children: [] }} props={registryChart.props} children={[]} />
+          </div>
+        </AnnotationContext.Provider>
+      )
+    }
+  }
+
   return (
     <div
-      data-docview-target={`chart-${index}`}
+      data-docview-target={`chart-${targetSuffix(section, index)}`}
       data-section-index={index}
+      data-section-id={getSectionId(section, index)}
       data-target-type="chart"
       onClick={(e) => {
         // If a data point was clicked, ECharts handler already processed it
@@ -318,6 +427,7 @@ function renderKpi(
 ): React.ReactNode {
   /** Parse metrics from section data — expects { metrics: Array<{label, value, color?, change?}> } */
   const metrics = parseKpiMetrics(section.data)
+  const suffix = targetSuffix(section, index)
 
   if (metrics.length > 0) {
     return (
@@ -328,8 +438,9 @@ function renderKpi(
         {metrics.map((metric, mIdx) => (
           <div
             key={`kpi-${index}-${mIdx}`}
-            data-docview-target={`kpi-${index}-${mIdx}`}
+            data-docview-target={`kpi-${suffix}-${mIdx}`}
             data-section-index={index}
+            data-section-id={getSectionId(section, index)}
             data-target-type="kpi"
             onClick={(e) => handleClick(e, index, 'kpi', metric.label)}
             style={{
@@ -372,8 +483,9 @@ function renderKpi(
   return (
     <div
       key={`kpi-${index}`}
-      data-docview-target={`kpi-${index}`}
+      data-docview-target={`kpi-${suffix}`}
       data-section-index={index}
+      data-section-id={getSectionId(section, index)}
       data-target-type="kpi"
       onClick={(e) => handleClick(e, index, 'kpi', section.content || 'KPI')}
       style={{
@@ -402,6 +514,7 @@ function renderTable(
   handleClick: (e: React.MouseEvent, idx: number, type: AnnotationTarget['targetType'], label: string) => void,
 ): React.ReactNode {
   const tableData = parseTableData(section.data)
+  const suffix = targetSuffix(section, index)
 
   if (tableData) {
     const { columns, rows } = tableData
@@ -441,14 +554,24 @@ function renderTable(
             {rows.map((row, rIdx) => (
               <tr key={`tr-${rIdx}`}>
                 {(Array.isArray(row) ? row : columns.map((_, cIdx) => (row as Record<string, unknown>)[columns[cIdx]] ?? '')).map(
-                  (cell: unknown, cIdx: number) => (
+                  (cell: unknown, cIdx: number) => {
+                    const rowObj = !Array.isArray(row) && row && typeof row === 'object' ? row as Record<string, unknown> : undefined
+                    const rowKey = rowObj ? rowObj.id ?? rowObj.key ?? rowObj.name ?? rowObj[columns[0]] : undefined
+                    const columnKey = columns[cIdx]
+                    return (
                     <td
                       key={`td-${rIdx}-${cIdx}`}
-                      data-docview-target={`table-${index}-${rIdx}-${cIdx}`}
+                      data-docview-target={`table-${suffix}-${rIdx}-${cIdx}`}
                       data-section-index={index}
+                      data-section-id={getSectionId(section, index)}
                       data-target-type="table"
+                      data-row-index={rIdx}
+                      data-column-index={cIdx}
+                      data-row-key={rowKey == null ? undefined : String(rowKey)}
+                      data-column-key={columnKey}
+                      data-cell-value={String(cell)}
                       onClick={(e) =>
-                        handleClick(e, index, 'table', `Row ${rIdx + 1}, Col ${cIdx + 1}`)
+                        handleClick(e, index, 'table', `${columnKey}: ${String(cell)}`)
                       }
                       style={{
                         padding: '8px 14px',
@@ -463,7 +586,8 @@ function renderTable(
                     >
                       {String(cell)}
                     </td>
-                  ),
+                    )
+                  },
                 )}
               </tr>
             ))}
@@ -477,8 +601,9 @@ function renderTable(
   return (
     <div
       key={`table-${index}`}
-      data-docview-target={`table-${index}`}
+      data-docview-target={`table-${suffix}`}
       data-section-index={index}
+      data-section-id={getSectionId(section, index)}
       data-target-type="table"
       onClick={(e) => handleClick(e, index, 'table', section.title || 'Table')}
       style={{
@@ -505,12 +630,14 @@ function renderCallout(
   handleClick: (e: React.MouseEvent, idx: number, type: AnnotationTarget['targetType'], label: string) => void,
 ): React.ReactNode {
   const borderColor = variantColors[section.variant || 'neutral'] || tcss('--rk-text-secondary')
+  const suffix = targetSuffix(section, index)
 
   return (
     <div
       key={`callout-${index}`}
-      data-docview-target={`callout-${index}`}
+      data-docview-target={`callout-${suffix}`}
       data-section-index={index}
+      data-section-id={getSectionId(section, index)}
       data-target-type="callout"
       onClick={(e) => handleClick(e, index, 'callout', section.content.slice(0, 40) || 'Callout')}
       style={{
@@ -550,6 +677,7 @@ function renderComponent(
 ): React.ReactNode {
   const componentType = section.componentType
   const label = componentType || section.title || 'Component'
+  const suffix = targetSuffix(section, index)
 
   // 无 componentType → 占位符
   if (!componentType) {
@@ -557,7 +685,7 @@ function renderComponent(
   }
 
   // 从 registry 查找真实组件
-  const Component = registry[componentType]
+  const Component = registry[componentType] as React.ComponentType<any> | undefined
   if (!Component) {
     return renderComponentPlaceholder(`Unknown: ${componentType}`, index, handleClick)
   }
@@ -565,10 +693,17 @@ function renderComponent(
   // 构建 AnnotationContext value — 组件内部通过 useAnnotationContext() 消费
   const contextValue = {
     sectionIndex: index,
+    sectionId: getSectionId(section, index),
     componentType,
     title: section.title,
     onTargetClick: (target: AnnotationTarget, element: HTMLElement) => {
-      onTargetClickProp?.(target, element)
+      const targetId = target.targetId || element.getAttribute('data-docview-target') || undefined
+      onTargetClickProp?.({
+        ...target,
+        sectionId: target.sectionId || getSectionId(section, index),
+        targetId,
+        targetPath: target.targetPath || (targetId ? `[data-docview-target="${targetId}"]` : undefined),
+      }, element)
     },
     annotations,
   }
@@ -579,15 +714,16 @@ function renderComponent(
   return (
     <AnnotationContext.Provider key={`component-ctx-${index}`} value={contextValue}>
       <div
-        data-docview-target={`component-${index}`}
+        data-docview-target={`component-${suffix}`}
         data-section-index={index}
+        data-section-id={getSectionId(section, index)}
         data-target-type="component"
         style={{
           marginBottom: 16,
           position: 'relative',
         }}
       >
-        <Component props={componentProps} />
+        <Component element={{ type: componentType, props: componentProps, children: [] }} props={componentProps} children={[]} />
       </div>
     </AnnotationContext.Provider>
   )
@@ -604,6 +740,7 @@ function renderComponentPlaceholder(
       key={`component-${index}`}
       data-docview-target={`component-${index}`}
       data-section-index={index}
+      data-section-id={`section-${index}`}
       data-target-type="component"
       onClick={(e) => handleClick(e, index, 'component', label)}
       style={{
@@ -732,7 +869,7 @@ function parseTableData(
  * Normalize chart data to ECharts format.
  * Accepts:
  *   1) ECharts format: { xAxis?, yAxis?, series: [{type, data}] }  — returned as-is
- *   2) mviz format:    { type, x, y, data: [{xField, yField}] }   — converted to ECharts
+ *   2) field format:   { type, x, y, data: [{xField, yField}] }   — converted to ECharts
  */
 function normalizeChartData(data: Record<string, unknown> | undefined): Record<string, unknown> | undefined {
   if (!data || typeof data !== 'object') return data
@@ -740,7 +877,7 @@ function normalizeChartData(data: Record<string, unknown> | undefined): Record<s
   // Already ECharts format — has series array
   if (Array.isArray(data.series)) return data
 
-  // mviz format: { type, x, y, data: [...] }
+  // Field-mapped format: { type, x, y, data: [...] }
   const yIsString = typeof data.y === 'string'
   const yIsArray = Array.isArray(data.y) && (data.y as unknown[]).every(v => typeof v === 'string')
   if (typeof data.x === 'string' && (yIsString || yIsArray) && Array.isArray(data.data)) {
@@ -764,4 +901,73 @@ function normalizeChartData(data: Record<string, unknown> | undefined): Record<s
   }
 
   return data
+}
+
+const CHART_TYPE_TO_COMPONENT: Record<string, string> = {
+  bar: 'BarChart',
+  area: 'AreaChart',
+  line: 'LineChart',
+  pie: 'PieChart',
+  scatter: 'ScatterChart',
+  bubble: 'BubbleChart',
+  boxplot: 'BoxplotChart',
+  histogram: 'HistogramChart',
+  waterfall: 'WaterfallChart',
+  xmr: 'XmrChart',
+  sankey: 'SankeyChart',
+  funnel: 'FunnelChart',
+  heatmap: 'HeatmapChart',
+  calendar: 'CalendarChart',
+  sparkline: 'SparklineChart',
+  combo: 'ComboChart',
+  dumbbell: 'DumbbellChart',
+  radar: 'RadarChart',
+  mermaid: 'MermaidDiagram',
+}
+
+const CHART_COMPONENT_TO_TYPE: Record<string, string> = Object.fromEntries(
+  Object.entries(CHART_TYPE_TO_COMPONENT).map(([type, component]) => [component, type])
+)
+
+function normalizeChartComponentName(value: unknown): string | undefined {
+  if (typeof value !== 'string' || !value) return undefined
+  if (registry[value]) return value
+  return CHART_TYPE_TO_COMPONENT[value]
+}
+
+function resolveRegistryChartData(
+  data: Record<string, unknown> | undefined,
+  sectionTitle?: string,
+): { componentType: string; props: Record<string, unknown> } | null {
+  if (!data || typeof data !== 'object') return null
+
+  const rawType = data.chartType ?? data.componentType ?? data.type
+  const componentType = normalizeChartComponentName(rawType)
+  if (!componentType || !registry[componentType]) return null
+
+  const nestedProps = data.props && typeof data.props === 'object' && !Array.isArray(data.props)
+    ? data.props as Record<string, unknown>
+    : undefined
+
+  const {
+    chartType: _chartType,
+    componentType: _componentType,
+    props: _props,
+    children: _children,
+    ...rest
+  } = data
+
+  const props = {
+    ...(nestedProps ?? rest),
+  }
+
+  const literalType = CHART_COMPONENT_TO_TYPE[componentType]
+  if (literalType && props.type === undefined) {
+    props.type = literalType
+  }
+  if (sectionTitle && props.title === undefined) {
+    props.title = sectionTitle
+  }
+
+  return { componentType, props }
 }

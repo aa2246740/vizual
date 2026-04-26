@@ -12,6 +12,7 @@ Dynamic form with 18 field types, validation, and conditional visibility.
 | title | string | no | form title |
 | columns | number | no | layout columns (default 1) |
 | submitLabel | string | no | submit button text (default "Submit") |
+| value | object \| `{ "$bindState": string }` | no | full form data object; use `$bindState` for live controls |
 | fields | FormField[] | yes | array of field definitions |
 
 ## Supported field types (18)
@@ -49,7 +50,7 @@ Dynamic form with 18 field types, validation, and conditional visibility.
 | description | string | no | help text |
 | defaultValue | any | no | initial value |
 | dependsOn | string | no | name of another field this field depends on |
-| showWhen | { field: string, value: any } | no | show this field only when dependsOn field matches value |
+| showWhen | string \| number | no | show this field only when dependsOn field matches this value |
 
 ## Field-specific props
 
@@ -85,6 +86,71 @@ Dynamic form with 18 field types, validation, and conditional visibility.
 }
 ```
 
+## Realtime control binding
+
+For live adjust-preview workflows, FormBuilder is the control surface. Bind the whole form to a state path and let the host listen for state changes:
+
+```json
+{
+  "root": "controls",
+  "elements": {
+    "controls": {
+      "type": "FormBuilder",
+      "props": {
+        "type": "form_builder",
+        "title": "Chart controls",
+        "value": { "$bindState": "/controls" },
+        "fields": [
+          {
+            "name": "chartType",
+            "label": "Chart type",
+            "type": "select",
+            "options": [
+              { "label": "Bar", "value": "bar" },
+              { "label": "Line", "value": "line" },
+              { "label": "Combo", "value": "combo" }
+            ]
+          },
+          { "name": "points", "label": "Data points", "type": "slider", "min": 3, "max": 15 },
+          {
+            "name": "orientation",
+            "label": "Bar orientation",
+            "type": "select",
+            "options": [
+              { "label": "Vertical", "value": "vertical" },
+              { "label": "Horizontal", "value": "horizontal" }
+            ],
+            "dependsOn": "chartType",
+            "showWhen": "bar"
+          },
+          { "name": "stacked", "label": "Stack bars", "type": "switch", "dependsOn": "chartType", "showWhen": "bar" },
+          { "name": "smooth", "label": "Smooth line", "type": "switch", "dependsOn": "chartType", "showWhen": "line" },
+          {
+            "name": "secondaryMetric",
+            "label": "Combo line metric",
+            "type": "select",
+            "options": [
+              { "label": "Growth", "value": "growth" },
+              { "label": "ARPPU", "value": "arppu" }
+            ],
+            "dependsOn": "chartType",
+            "showWhen": "combo"
+          },
+          { "name": "brandColor", "label": "Brand color", "type": "color" }
+        ]
+      },
+      "children": []
+    }
+  }
+}
+```
+
+In `validation/vizual-test.html`, use this controls spec inside `renderInteractiveVizInMsg(id, { initialState, controlsSpec, makeSpec, designMd, applyTheme, bubbleWidth })`. The page bridge receives `onStateChange`, calls `makeSpec(state)`, and re-renders the preview. A pure JSON spec cannot wire a form to a separate chart by itself.
+
+Use conditional controls when a field only applies to one target component. For example, `orientation` and `stacked` are BarChart controls; hide them when `chartType` is `line` or `combo`, and also filter them out in host `makeSpec(state)`.
+
+`dependsOn` / `showWhen` only implements equality-based visibility. It does not dynamically rewrite option lists. For complex linked controls, use separate conditional fields or enforce the allowed values in the host bridge.
+
 ## Conditional visibility example
 
 ```json
@@ -105,7 +171,7 @@ Dynamic form with 18 field types, validation, and conditional visibility.
         "type": "text",
         "label": "Company Name",
         "dependsOn": "attendeeType",
-        "showWhen": { "field": "attendeeType", "value": "corporate" }
+        "showWhen": "corporate"
       }
     ]
   },

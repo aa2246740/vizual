@@ -1,4 +1,5 @@
 const esbuild = require('esbuild')
+const { rmSync } = require('fs')
 
 // build.js — vizual 构建配置
 // 三种产物：ESM（npm import）、CJS（npm require）、Standalone（全量打包，无外部依赖）
@@ -14,22 +15,17 @@ if (isStandalone) {
     outfile: 'dist/vizual.standalone.js',
     target: 'es2020',
     minify: false,
-    globalName: 'Vizual',
     logLevel: 'info',
     sourcemap: true,
-  }).then(async (result) => {
-    // esbuild IIFE 不自动返回，需要手动添加
-    const fs = require('fs')
-    let content = fs.readFileSync('dist/vizual.standalone.js', 'utf8')
-    // 在 })(); 之前添加 return {
-    content = content.replace('})();', 'return {\n  renderSpec,\n  React,\n  ReactDOM,\n  ReactDOMClient,\n  echarts,\n  registry,\n  DocView,\n  ...registry\n};})();')
-    fs.writeFileSync('dist/vizual.standalone.js', content)
+    define: { 'process.env.NODE_ENV': '"production"' },
+  }).then(() => {
     console.log('Built standalone successfully')
   }).catch(err => {
     console.error(err)
     process.exit(1)
   })
 } else {
+  rmSync('dist', { recursive: true, force: true })
   // 默认：同时构建 ESM + CJS（npm 包格式，React/ECharts 作为 peer dependency）
   Promise.all([
     esbuild.build({
