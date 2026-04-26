@@ -42,15 +42,27 @@
       padding: 16px;
     }
     #viz { min-height: 520px; }
-    .badge {
+    .status-badge {
       display: inline-flex;
       align-items: center;
       gap: 8px;
-      padding: 8px 12px;
-      border-radius: 999px;
-      background: var(--rk-accent-muted, rgba(200, 21, 45, .12));
-      color: var(--rk-accent, #c8152d);
+      min-width: 190px;
+      justify-content: center;
+      padding: 8px 14px;
+      border-radius: var(--rk-radius-md, 8px);
+      border: 1px solid var(--rk-border-subtle, #e5e7eb);
+      background: var(--rk-bg-secondary, #f8fafc);
+      color: var(--rk-text-primary, #111827);
       font-weight: 700;
+      white-space: nowrap;
+    }
+    .status-badge[data-status="pass"] {
+      border-color: var(--rk-accent, #c8152d);
+      color: var(--rk-accent, #c8152d);
+    }
+    .status-badge[data-status="fail"] {
+      border-color: var(--rk-error, #dc2626);
+      color: var(--rk-error, #dc2626);
     }
     .swatches {
       display: grid;
@@ -90,7 +102,7 @@
 <body>
   <header>
     <h1>DESIGN.md 主题导入验证</h1>
-    <div id="status" class="badge">加载中</div>
+    <div id="status" class="status-badge">加载中</div>
   </header>
   <main>
     <section class="panel">
