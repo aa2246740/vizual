@@ -212,6 +212,20 @@ export type {
   VizualArtifactStore,
 } from './core/host-runtime'
 export {
+  createAgentBridge,
+  VizualAgentBridge,
+} from './core/agent-bridge'
+export type {
+  AgentBridgeArtifactEvent,
+  AgentBridgeArtifactRef,
+  AgentBridgeRenderKind,
+  AgentBridgeRenderRecord,
+  AgentBridgeSnapshot,
+  CreateAgentBridgeOptions,
+  InteractiveSessionAdapter,
+  InteractiveSnapshot,
+} from './core/agent-bridge'
+export {
   downloadBlob,
   downloadExport,
   exportToPNG,

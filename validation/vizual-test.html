@@ -410,6 +410,29 @@ setInterval(async () => {
     let msgSeq = 0;
     let userMsgSeq = 0;
 
+    function getAgentBridge() {
+      if (!window.__vizualAgentBridge && window.Vizual?.createAgentBridge) {
+        window.__vizualAgentBridge = window.Vizual.createAgentBridge({
+          getPendingMessage: () => window.getPendingMessage?.() || null,
+        });
+      }
+      return window.__vizualAgentBridge || null;
+    }
+
+    function syncAgentBridgeLegacyState() {
+      const bridge = getAgentBridge();
+      if (!bridge?.snapshot) return;
+      const snapshot = bridge.snapshot();
+      window.__lastVizualRender = snapshot.lastVizualRender;
+      window.__renderHistory = snapshot.renderHistory;
+      window.__vizualArtifacts = snapshot.artifactsById;
+      window.__messageArtifacts = snapshot.messageArtifacts;
+      window.__messageArtifactSnapshots = snapshot.messageArtifactSnapshots;
+      window.__artifactMessages = snapshot.artifactMessages;
+      window.__artifactHistory = snapshot.artifactHistory;
+      window.__lastArtifact = snapshot.lastArtifact;
+    }
+
     function setStatus(ok, text) {
       document.getElementById('statusDot').className = 'status-dot' + (ok ? '' : ' error');
       document.getElementById('statusText').textContent = text;
@@ -678,6 +701,12 @@ setInterval(async () => {
     }
 
     function recordVizRender(kind, id, details) {
+      const bridge = getAgentBridge();
+      if (bridge?.recordRender) {
+        const record = bridge.recordRender(kind, id, details || {});
+        syncAgentBridgeLegacyState();
+        return record;
+      }
       const record = {
         kind,
         id,
@@ -692,6 +721,12 @@ setInterval(async () => {
     }
 
     function recordArtifactEvent(kind, artifact, details) {
+      const bridge = getAgentBridge();
+      if (bridge?.recordArtifactEvent) {
+        const event = bridge.recordArtifactEvent(kind, artifact, details || {});
+        syncAgentBridgeLegacyState();
+        return event;
+      }
       const event = {
         kind,
         artifactId: artifact?.id || null,
@@ -722,6 +757,13 @@ setInterval(async () => {
 
     function rememberArtifact(id, artifact) {
       if (!artifact || !artifact.id) return artifact;
+      const bridge = getAgentBridge();
+      if (bridge?.rememberArtifact) {
+        const saved = bridge.rememberArtifact(id, artifact);
+        tagArtifactDom(id, saved);
+        syncAgentBridgeLegacyState();
+        return saved;
+      }
       window.__vizualArtifacts[artifact.id] = artifact;
       if (id) {
         window.__messageArtifacts[id] = artifact.id;
@@ -739,6 +781,8 @@ setInterval(async () => {
     }
 
     function getArtifactByRef(ref) {
+      const bridge = getAgentBridge();
+      if (bridge?.getArtifact) return bridge.getArtifact(ref || 'last');
       if (!ref || ref === 'last') return window.__lastArtifact || null;
       if (window.__vizualArtifacts[ref]) return window.__vizualArtifacts[ref];
       if (window.__messageArtifactSnapshots[ref]) return safeSnapshot(window.__messageArtifactSnapshots[ref]);
@@ -748,6 +792,8 @@ setInterval(async () => {
     }
 
     function getMessageIdForArtifactRef(ref, artifact) {
+      const bridge = getAgentBridge();
+      if (bridge?.getMessageIdForArtifactRef) return bridge.getMessageIdForArtifactRef(ref, artifact);
       if (ref && window.__messageArtifacts[ref]) return ref;
       if (artifact?.id && window.__artifactMessages[artifact.id]) return window.__artifactMessages[artifact.id];
       return null;
@@ -954,7 +1000,10 @@ setInterval(async () => {
     }
 
     function ensureVizualReady(id, vizWrap, bubble) {
-      if (window.Vizual && window.Vizual.renderSpec) return true;
+      if (window.Vizual && window.Vizual.renderSpec) {
+        getAgentBridge();
+        return true;
+      }
       const errEl = document.createElement('div');
       errEl.className = 'viz-error';
       errEl.textContent = 'Vizual 尚未加载完成，请稍后重试';
@@ -1022,6 +1071,7 @@ setInterval(async () => {
       }
 
       if (!ensureVizualReady(id, vizWrap, bubble)) return null;
+      getAgentBridge()?.unregisterInteractiveSession?.(id);
       window._interactiveViz[id]?.destroy?.();
       delete window._interactiveViz[id];
       destroyDocViewSessionByMessage(id);
@@ -1686,11 +1736,15 @@ setInterval(async () => {
           window.Vizual.unmountSpec?.(previewEl);
         },
       };
+      getAgentBridge()?.registerInteractiveSession?.(id, window._interactiveViz[id]);
+      syncAgentBridgeLegacyState();
 
       return getSnapshot();
     };
 
     function resolveInteractiveVizSession(ref) {
+      const bridgeResolved = getAgentBridge()?.resolveInteractiveSession?.(ref || 'last');
+      if (bridgeResolved?.session) return bridgeResolved;
       const sessions = window._interactiveViz || {};
       if (ref && ref !== 'last') {
         if (sessions[ref]) return { id: ref, session: sessions[ref] };
@@ -1793,6 +1847,7 @@ setInterval(async () => {
       // 如果 script 标签已经加载好了
       if (window.Vizual && window.Vizual.renderSpec) {
         vizualReady = true;
+        getAgentBridge();
         setStatus(true, 'Vizual 就绪');
         return;
       }
@@ -1804,6 +1859,7 @@ setInterval(async () => {
           eval(code);
           if (window.Vizual && window.Vizual.renderSpec) {
             vizualReady = true;
+            getAgentBridge();
             setStatus(true, 'Vizual 就绪');
           } else {
             setStatus(false, 'Vizual 加载异常');

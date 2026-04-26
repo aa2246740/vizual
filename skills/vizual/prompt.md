@@ -69,9 +69,11 @@ const pending = window.getPendingMessage();
 const id = window.createAiMsg();
 window.streamText(id, '解析到数据，已生成可视化。');
 window.finishText(id);
-window.renderVizInMsg(id, spec);
+const artifact = window.renderVizInMsg(id, spec);
 window.markPendingHandled();
 ```
+
+`renderVizInMsg()` returns `VizualArtifact | null`; store `artifact.id` for follow-up edits/export. `renderInteractiveVizInMsg()` returns an interactive snapshot with `{ artifact, state, lastPreviewSpec, renderCount }`. `exportArtifact()` returns an `ExportRecord | null`; check `record.status === "success"` instead of assuming a browser download happened.
 
 For browser QA, do not guess chat DOM classes. Prefer `window.getVizualConversationState()` and `window.getVizualDebugState()`. If DOM inspection is needed, use stable attributes such as `[data-message-row="true"]`, `[data-ai-msg="true"]`, `[data-viz-container="true"]`, and `[data-artifact-id]`.
 
@@ -85,8 +87,9 @@ const updated = window.updateArtifactInMsg(artifact.id, [
   { type: 'filterData', targetId: target.id, field: 'region', values: '华东' },
   { type: 'limitData', targetId: target.id, limit: 8 },
 ], { answerText: '已生成新的修改版图表。' });
-await window.exportArtifact(updated.id, { format: 'pdf', filename: 'east-china-line' });
-await window.exportArtifact(updated.id, { format: 'xlsx', filename: 'east-china-data' });
+const pdf = await window.exportArtifact(updated.id, { format: 'pdf', filename: 'east-china-line' });
+const xlsx = await window.exportArtifact(updated.id, { format: 'xlsx', filename: 'east-china-data' });
+if (pdf?.status !== 'success' || xlsx?.status !== 'success') console.warn('Export failed', { pdf, xlsx });
 ```
 
 Follow-up edits create a new AI bubble by default. Pass `{ mode: 'replace' }` only for temporary in-place preview/debug.

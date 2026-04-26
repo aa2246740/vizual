@@ -39,6 +39,25 @@ cp -R skills/design-md-creator/ ~/.claude/skills/design-md-creator/
 - 实时可调场景下提供 FormBuilder state bridge
 - DocView 场景下接入 review controller 和 revision proposal loop
 
+## 正式 Agent Bridge 契约
+
+不要把测试页里的全局函数当成唯一实现来源。Vizual 提供 `createAgentBridge()` 作为宿主协议的状态层：它负责 artifact registry、messageId ↔ artifactId 绑定、render history、interactive snapshot 查找和导出/错误事件记录。聊天页面、SaaS 小窗、全屏 Agent 工作台都应该围绕这层状态模型接入。
+
+```ts
+import { createAgentBridge, normalizeArtifact } from 'vizual'
+
+const bridge = createAgentBridge({
+  getPendingMessage: () => currentPendingMessage,
+})
+
+const artifact = bridge.rememberArtifact(messageId, normalizeArtifact(spec))
+const same = bridge.getArtifact(artifact.id)
+const byMessage = bridge.getArtifact(messageId)
+bridge.recordRender('static', messageId, { status: 'success', artifactId: artifact.id })
+```
+
+`validation/vizual-test.html` 的 `renderVizInMsg()`、`renderInteractiveVizInMsg()`、`updateArtifactInMsg()`、`exportArtifact()` 是这套契约的 demo bridge。自有前端可以复用同样的状态模型，但 UI 可以完全不同。
+
 ## 渲染普通 spec
 
 ```tsx

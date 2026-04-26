@@ -49,6 +49,10 @@ import {
   createMemoryArtifactStore,
   VizualHostRuntime,
 } from './core/host-runtime'
+import {
+  createAgentBridge,
+  VizualAgentBridge,
+} from './core/agent-bridge'
 import type {
   CreateVizualArtifactInput,
   VizualArtifact,
@@ -299,6 +303,8 @@ const vizual = {
   createLocalStorageArtifactStore,
   createMemoryArtifactStore,
   VizualHostRuntime,
+  createAgentBridge,
+  VizualAgentBridge,
 
   // All components
   BarChart,
