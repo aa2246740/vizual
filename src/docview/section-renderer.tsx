@@ -402,6 +402,7 @@ function ChartSection({
 function buildChartOptions(title: string, data: Record<string, unknown>): Record<string, unknown> {
   const series = data.series as Array<Record<string, unknown>> | undefined
   const seriesType = series?.[0]?.type as string || 'bar'
+  const useShadowEmphasis = tc('--rk-shadow').trim() !== 'none'
 
   return {
     backgroundColor: 'transparent',
@@ -410,12 +411,27 @@ function buildChartOptions(title: string, data: Record<string, unknown>): Record
     grid: { left: 50, right: 20, top: 20, bottom: 30 },
     legend: seriesType === 'pie' ? { bottom: 0, textStyle: { color: tc('--rk-text-secondary'), fontSize:parseInt(tc('--rk-text-xs')) } } : undefined,
     ...data,
-    series: series?.map((s: Record<string, unknown>) => ({
-      ...s,
-      emphasis: {
-        itemStyle: { shadowBlur: 10, shadowOffsetX: 0, shadowColor: 'rgba(0,0,0,0.5)' },
-      },
-    })),
+    series: series?.map((s: Record<string, unknown>) => {
+      if (!useShadowEmphasis) return { ...s }
+      const emphasis = s.emphasis && typeof s.emphasis === 'object' && !Array.isArray(s.emphasis)
+        ? s.emphasis as Record<string, unknown>
+        : {}
+      const itemStyle = emphasis.itemStyle && typeof emphasis.itemStyle === 'object' && !Array.isArray(emphasis.itemStyle)
+        ? emphasis.itemStyle as Record<string, unknown>
+        : {}
+      return {
+        ...s,
+        emphasis: {
+          ...emphasis,
+          itemStyle: {
+            shadowBlur: 10,
+            shadowOffsetX: 0,
+            shadowColor: 'rgba(0,0,0,0.5)',
+            ...itemStyle,
+          },
+        },
+      }
+    }),
   }
 }
 

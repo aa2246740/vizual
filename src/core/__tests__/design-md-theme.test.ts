@@ -63,6 +63,9 @@ Everything else is black, paper white, and two grays.
 - \`0\` — every container, every image, every button, every input. The default.
 - \`1920px\` — only inside text spans that need to look like a full pill.
 - \`50%\` — only on round icon buttons and circular author avatars.
+
+## 6. Depth & Elevation
+WIRED's depth philosophy is flat by religion. There are no shadows and no box-shadow on story tiles, headers, modals, or cards.
 `
 
 describe('DESIGN.md theme loading', () => {
@@ -80,6 +83,8 @@ describe('DESIGN.md theme loading', () => {
     expect(theme.cssVariables['--rk-text-primary']).toBe('#000000')
     expect(theme.cssVariables['--rk-chart-1']).toBe('#c8152d')
     expect(theme.cssVariables['--rk-font-sans']).toContain('Founder Lanting Hei')
+    expect(theme.cssVariables['--rk-font-display']).toContain('Founder Lanting Hei')
+    expect(theme.cssVariables['--rk-font-body']).toContain('Founder Lanting Hei')
     expect(theme.cssVariables['--rk-font-sans']).toContain('Arial')
   })
 
@@ -100,8 +105,15 @@ describe('DESIGN.md theme loading', () => {
     expect(theme.cssVariables['--rk-border-subtle']).toBe('#e2e8f0')
     expect(theme.cssVariables['--rk-chart-1']).toBe('#057dbc')
     expect(theme.cssVariables['--rk-radius-md']).toBe('0px')
-    expect(theme.cssVariables['--rk-font-sans']).toContain('WiredDisplay')
+    expect(theme.cssVariables['--rk-font-display']).toContain('WiredDisplay')
+    expect(theme.cssVariables['--rk-font-display']).toContain('Georgia')
+    expect(theme.cssVariables['--rk-font-body']).toContain('BreveText')
+    expect(theme.cssVariables['--rk-font-body']).toContain('Georgia')
+    expect(theme.cssVariables['--rk-font-ui']).toContain('Apercu')
+    expect(theme.cssVariables['--rk-font-ui']).toContain('Helvetica')
+    expect(theme.cssVariables['--rk-font-mono']).toContain('WiredMono')
     expect(theme.cssVariables['--rk-font-sans']).toContain('Apercu')
+    expect(theme.cssVariables['--rk-shadow']).toBe('none')
     expect(theme._mappingReport?.roles.error).toBe(false)
   })
 })

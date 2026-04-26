@@ -26,7 +26,7 @@ export interface Theme {
 
 // DESIGN.md 支持
 export { parseDesignMd } from './design-md-parser'
-export type { DesignTokens, ColorToken, TypographyToken, SpacingToken, RadiusToken } from './design-md-parser'
+export type { DesignTokens, ColorToken, TypographyToken, SpacingToken, RadiusToken, EffectsToken } from './design-md-parser'
 export { mapDesignTokensToTheme, invertTheme } from './design-md-mapper'
 export type { ThemeMappingReport } from './design-md-mapper'
 
@@ -137,6 +137,8 @@ export function applyTheme(container: HTMLElement, themeName: string): boolean {
     console.warn(`[RenderKit] Theme "${themeName}" not found`)
     return false
   }
+  const fallbackBase = theme.mode === 'light' ? defaultLightTheme.cssVariables : defaultDarkTheme.cssVariables
+  const cssVariables = { ...fallbackBase, ...theme.cssVariables }
 
   // 移除所有已知的 theme class
   for (const cls of Array.from(container.classList)) {
@@ -160,7 +162,7 @@ export function applyTheme(container: HTMLElement, themeName: string): boolean {
   }
 
   // Build CSS variable rules for the container
-  const cssRules = Object.entries(theme.cssVariables)
+  const cssRules = Object.entries(cssVariables)
     .map(([key, value]) => {
       // Handle nested selectors
       if (key.includes(':')) {

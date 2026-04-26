@@ -38,6 +38,10 @@ export const defaultDarkTheme = {
     
     // Typography
     '--rk-font-sans': '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+    '--rk-font-ui': '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+    '--rk-font-body': '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+    '--rk-font-display': '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+    '--rk-font-serif': 'Georgia, "Times New Roman", serif',
     '--rk-font-mono': '"SF Mono", "Fira Code", Consolas, monospace',
     '--rk-text-xs': '11px',
     '--rk-text-sm': '12px',

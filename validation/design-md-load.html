@@ -11,7 +11,7 @@
       min-height: 100vh;
       background: var(--rk-bg-primary, #ffffff);
       color: var(--rk-text-primary, #111827);
-      font-family: var(--rk-font-sans, -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif);
+      font-family: var(--rk-font-body, var(--rk-font-sans, -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif));
     }
     header {
       position: sticky;
@@ -25,7 +25,12 @@
       background: var(--rk-bg-primary, #ffffff);
       border-bottom: 1px solid var(--rk-border-subtle, #e5e7eb);
     }
-    h1 { margin: 0; font-size: 20px; }
+    h1 {
+      margin: 0;
+      font-family: var(--rk-font-display, var(--rk-font-sans));
+      font-size: 22px;
+      letter-spacing: 0;
+    }
     main {
       display: grid;
       grid-template-columns: minmax(0, 1fr) 360px;
@@ -39,6 +44,7 @@
       background: var(--rk-bg-secondary, #f8fafc);
       border: 1px solid var(--rk-border-subtle, #e5e7eb);
       border-radius: var(--rk-radius-lg, 12px);
+      box-shadow: var(--rk-shadow, none);
       padding: 16px;
     }
     #viz { min-height: 520px; }
@@ -53,6 +59,7 @@
       border: 1px solid var(--rk-border-subtle, #e5e7eb);
       background: var(--rk-bg-secondary, #f8fafc);
       color: var(--rk-text-primary, #111827);
+      font-family: var(--rk-font-ui, var(--rk-font-sans));
       font-weight: 700;
       white-space: nowrap;
     }
@@ -82,6 +89,44 @@
       overflow: hidden;
     }
     .swatch strong { font-size: 13px; }
+    .font-demo {
+      display: grid;
+      gap: 10px;
+      margin: 16px 0;
+      padding: 12px;
+      border: 1px solid var(--rk-border-subtle, #e5e7eb);
+      border-radius: var(--rk-radius-md, 8px);
+      background: var(--rk-bg-primary, #ffffff);
+    }
+    .font-demo div {
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--rk-border-subtle, #e5e7eb);
+    }
+    .font-demo div:last-child { border-bottom: 0; padding-bottom: 0; }
+    .font-display {
+      font-family: var(--rk-font-display, var(--rk-font-sans));
+      font-size: 28px;
+      line-height: 1.05;
+      font-weight: 700;
+    }
+    .font-body {
+      font-family: var(--rk-font-body, var(--rk-font-sans));
+      font-size: 15px;
+      line-height: 1.45;
+    }
+    .font-ui {
+      font-family: var(--rk-font-ui, var(--rk-font-sans));
+      font-size: 14px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .4px;
+    }
+    .font-mono {
+      font-family: var(--rk-font-mono, monospace);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
     pre {
       margin: 0;
       padding: 12px;
@@ -90,6 +135,7 @@
       border-radius: var(--rk-radius-md, 8px);
       background: var(--rk-bg-tertiary, #f1f5f9);
       color: var(--rk-text-primary, #111827);
+      font-family: var(--rk-font-mono, "SF Mono", Consolas, monospace);
       font-size: 12px;
       line-height: 1.5;
       white-space: pre-wrap;
@@ -127,6 +173,12 @@
           <strong>Chart 1</strong>
           <span id="chart"></span>
         </div>
+      </div>
+      <div class="font-demo">
+        <div class="font-display" id="font-display-sample">Display headline sample</div>
+        <div class="font-body" id="font-body-sample">Body copy sample uses the document reading face or a practical fallback.</div>
+        <div class="font-ui" id="font-ui-sample">UI LABEL SAMPLE</div>
+        <div class="font-mono" id="font-mono-sample">mono kicker sample</div>
       </div>
       <pre id="debug"></pre>
     </aside>
@@ -195,6 +247,9 @@ Everything else is black, paper white, and two grays. Strictly square corners on
 - \`0\` — every container, every image, every button, every input. The default.
 - \`1920px\` — only inside text spans that need to look like a full pill.
 - \`50%\` — only on round icon buttons and circular author avatars.
+
+## 6. Depth & Elevation
+WIRED's depth philosophy is flat by religion. There are no shadows and no box-shadow on story tiles, headers, modals, or cards.
 `;
 
     const profiles = {
@@ -208,6 +263,7 @@ Everything else is black, paper white, and two grays. Strictly square corners on
           text: '#000000',
           chart1: '#c8152d',
           radiusMd: '8px',
+          fontDisplayIncludes: 'Founder Lanting Hei',
         },
         kpis: [
           { label: 'Accent', value: '#c8152d', trendValue: '+ applied', trend: 'up' },
@@ -225,6 +281,8 @@ Everything else is black, paper white, and two grays. Strictly square corners on
           text: '#000000',
           chart1: '#057dbc',
           radiusMd: '0px',
+          fontDisplayIncludes: 'Georgia',
+          shadow: 'none',
         },
         kpis: [
           { label: 'Accent', value: '#057dbc', trendValue: '+ link blue', trend: 'up' },
@@ -292,6 +350,7 @@ Everything else is black, paper white, and two grays. Strictly square corners on
               { token: '--rk-bg-primary', expected: profile.expected.background, actual: 'see panel' },
               { token: '--rk-text-primary', expected: profile.expected.text, actual: 'see panel' },
               { token: '--rk-radius-md', expected: profile.expected.radiusMd, actual: 'see panel' },
+              { token: '--rk-shadow', expected: profile.expected.shadow || 'theme default', actual: 'see panel' },
             ],
           },
           children: [],
@@ -317,6 +376,11 @@ Everything else is black, paper white, and two grays. Strictly square corners on
         chart1: cssVar('--rk-chart-1'),
         radiusMd: cssVar('--rk-radius-md'),
         font: cssVar('--rk-font-sans'),
+        fontDisplay: cssVar('--rk-font-display'),
+        fontBody: cssVar('--rk-font-body'),
+        fontUi: cssVar('--rk-font-ui'),
+        fontMono: cssVar('--rk-font-mono'),
+        shadow: cssVar('--rk-shadow'),
         report: theme._mappingReport,
       };
       document.getElementById('accent').textContent = result.accent;
@@ -330,7 +394,9 @@ Everything else is black, paper white, and two grays. Strictly square corners on
         && result.background.toLowerCase() === profile.expected.background
         && result.text.toLowerCase() === profile.expected.text
         && result.chart1.toLowerCase() === profile.expected.chart1
-        && result.radiusMd.toLowerCase() === profile.expected.radiusMd;
+        && result.radiusMd.toLowerCase() === profile.expected.radiusMd
+        && result.fontDisplay.includes(profile.expected.fontDisplayIncludes)
+        && (!profile.expected.shadow || result.shadow.toLowerCase() === profile.expected.shadow);
 
       document.getElementById('status').textContent = ok ? `PASS：${selectedProfile.toUpperCase()} 主题已应用` : 'FAIL：主题映射不完整';
       document.getElementById('status').dataset.status = ok ? 'pass' : 'fail';

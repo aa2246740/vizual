@@ -24,6 +24,8 @@ export interface ColorToken {
 export interface TypographyToken {
   /** 字体族 */
   fontFamily?: string
+  /** 角色字体族，如 display/body/ui/mono。用于 DESIGN.md 里多字体体系 */
+  fontFamilies?: Record<string, string>
   /** 字号表 { semanticName: '16px' } */
   sizes?: Record<string, string>
   /** 字重表 { semanticName: '700' } */
@@ -44,11 +46,17 @@ export interface RadiusToken {
   scale?: Record<string, string>
 }
 
+export interface EffectsToken {
+  /** 通用阴影 token。'none' 表示严格平面化 */
+  shadow?: string
+}
+
 export interface DesignTokens {
   colors: ColorToken[]
   typography: TypographyToken
   spacing: SpacingToken
   radius: RadiusToken
+  effects: EffectsToken
   /** 原始 markdown（用于调试） */
   raw?: string
 }
@@ -367,21 +375,72 @@ function parseTypographySection(content: string): TypographyToken {
   const addFont = (font: string) => {
     if (!fontCandidates.includes(font)) fontCandidates.push(font)
   }
+  const fontFamilies: Record<string, string> = {}
+  const quoteFont = (font: string) => /\s/.test(font) ? `"${font}"` : font
+  const setFontRole = (role: string, stack: string) => {
+    if (!fontFamilies[role]) fontFamilies[role] = stack
+  }
+  const stackForFont = (font: string, line: string): string => {
+    const normalized = font.replace(/\s+/g, '').toLowerCase()
+    if (normalized.includes('wireddisplay')) return '"WiredDisplay", Georgia, "Times New Roman", serif'
+    if (normalized.includes('brevetext')) return '"BreveText", Georgia, "Times New Roman", serif'
+    if (normalized.includes('apercu')) return '"Apercu", Inter, Helvetica, Arial, sans-serif'
+    if (normalized.includes('wiredmono') || normalized.includes('mono')) return '"WiredMono", "SF Mono", Monaco, "Courier New", monospace'
+    if (normalized.includes('inter')) return 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'
+    if (normalized.includes('founderlantinghei') || font.includes('方正兰亭黑')) {
+      return '"Founder Lanting Hei", "方正兰亭黑", Arial, Heiti, sans-serif'
+    }
+    if (normalized.includes('arial')) return 'Arial, Helvetica, sans-serif'
+    if (normalized.includes('heiti') || font.includes('黑体')) return 'Heiti, "黑体", Arial, sans-serif'
+    if (/serif|body|article|caption/i.test(line)) return `${quoteFont(font)}, Georgia, "Times New Roman", serif`
+    if (/mono|code|kicker|eyebrow|timestamp/i.test(line)) return `${quoteFont(font)}, "SF Mono", Monaco, "Courier New", monospace`
+    return `${quoteFont(font)}, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`
+  }
+  const classifyFontRole = (font: string, line: string): string[] => {
+    const normalized = font.replace(/\s+/g, '').toLowerCase()
+    const lower = line.toLowerCase()
+    if (normalized.includes('wireddisplay') || lower.includes('display') || lower.includes('headline') || lower.includes('feature title')) return ['display']
+    if (normalized.includes('brevetext') || lower.includes('body') || lower.includes('article') || lower.includes('deck') || lower.includes('caption') || lower.includes('reading')) return ['body', 'serif']
+    if (normalized.includes('apercu') || lower.includes('ui') || lower.includes('button') || lower.includes('navigation') || lower.includes('label')) return ['ui', 'sans']
+    if (normalized.includes('wiredmono') || lower.includes('mono') || lower.includes('kicker') || lower.includes('eyebrow') || lower.includes('timestamp') || lower.includes('all caps')) return ['mono']
+    if (normalized.includes('inter')) return ['ui', 'sans']
+    return ['sans']
+  }
+
   if (/Founder\s+Lanting\s+Hei/i.test(content)) addFont('"Founder Lanting Hei"')
   if (/方正兰亭黑/.test(content)) addFont('"方正兰亭黑"')
   if (/\bArial\b/i.test(content)) addFont('Arial')
   if (/Heiti|黑体/.test(content)) addFont('Heiti')
+  if (fontCandidates.length > 0) {
+    const stack = '"Founder Lanting Hei", "方正兰亭黑", Arial, Heiti, sans-serif'
+    setFontRole('display', stack)
+    setFontRole('body', stack)
+    setFontRole('ui', stack)
+    setFontRole('sans', stack)
+  }
   for (const line of lines) {
     const fontLine = line.match(/^\s*[-*]\s+\*\*([^*]+)\*\*.*(?:font|serif|sans|mono|fallback|custom|system|ui|body|headline|display)/i)
     if (fontLine) {
       const font = fontLine[1].trim()
       if (font && font.length < 40 && !/role|principle|note/i.test(font)) {
-        addFont(/\s/.test(font) ? `"${font}"` : font)
+        addFont(quoteFont(font))
+        const stack = stackForFont(font, line)
+        for (const role of classifyFontRole(font, line)) {
+          setFontRole(role, stack)
+        }
       }
     }
   }
+  if (Object.keys(fontFamilies).length > 0) {
+    const firstStack = Object.values(fontFamilies)[0]
+    if (!fontFamilies.display) fontFamilies.display = fontFamilies.sans || fontFamilies.ui || fontFamilies.body || firstStack
+    if (!fontFamilies.body) fontFamilies.body = fontFamilies.sans || fontFamilies.ui || fontFamilies.display || firstStack
+    if (!fontFamilies.ui) fontFamilies.ui = fontFamilies.sans || fontFamilies.body || fontFamilies.display || firstStack
+    if (!fontFamilies.sans) fontFamilies.sans = fontFamilies.ui
+    result.fontFamilies = fontFamilies
+  }
   if (fontCandidates.length > 0) {
-    result.fontFamily = [...fontCandidates, 'sans-serif'].join(', ')
+    result.fontFamily = result.fontFamilies?.ui || result.fontFamilies?.body || result.fontFamilies?.display || [...fontCandidates, 'sans-serif'].join(', ')
   }
 
   // 提取 font-family
@@ -553,6 +612,34 @@ function parseRadiusSection(content: string): RadiusToken {
   return result
 }
 
+// ─── Effects / Elevation 解析 ──────────────────────────────
+
+function parseEffectsSection(content: string): EffectsToken {
+  const result: EffectsToken = {}
+
+  const noShadowPatterns = [
+    /\b(?:no|zero)\s+(?:box[- ]?)?shadows?\b/i,
+    /box-shadow[^.\n]*(?:none|0\s+0\s+0\s+transparent)/i,
+    /shadow\s+token[^.\n]*(?:none|transparent)/i,
+    /flat\s+by\s+religion/i,
+    /strip\s+every\s+`?box-shadow`?/i,
+  ]
+
+  if (noShadowPatterns.some(pattern => pattern.test(content))) {
+    result.shadow = 'none'
+    return result
+  }
+
+  const explicitShadow = content.match(
+    /(?:shadow|box-shadow|elevation)[^:\n]*[:：]\s*(`?)(none|(?:\d+px\s+){1,4}rgba?\([^)]+\)|0\s+0\s+0\s+transparent)\1/i
+  )
+  if (explicitShadow) {
+    result.shadow = explicitShadow[2]
+  }
+
+  return result
+}
+
 // ─── 主解析函数 ──────────────────────────────────────────
 
 /**
@@ -577,6 +664,8 @@ export function parseDesignMd(markdown: string): DesignTokens {
     typography: {},
     spacing: {},
     radius: {},
+    effects: {},
+    raw: markdown,
   }
 
   // Colors — 可能出现在 Overview 或专门的 Colors section
@@ -626,6 +715,18 @@ export function parseDesignMd(markdown: string): DesignTokens {
     tokens.radius = parseRadiusSection(radiusSection.content)
   }
 
+  // Effects / Elevation
+  const effectsSections = sections.filter(s =>
+    sectionMatches(s.heading, ['effect', 'elevation', 'shadow', 'depth', '层级', '阴影'])
+  )
+  if (effectsSections.length > 0) {
+    tokens.effects = parseEffectsSection(effectsSections.map(s => s.content).join('\n'))
+  }
+  const globalEffects = parseEffectsSection(markdown)
+  if (!tokens.effects.shadow && globalEffects.shadow) {
+    tokens.effects.shadow = globalEffects.shadow
+  }
+
   // Fallback：无标题 section 也尝试提取 typography/spacing/radius
   const noHeadingSection = sections.find(s => !s.heading)
   if (noHeadingSection) {
@@ -638,9 +739,10 @@ export function parseDesignMd(markdown: string): DesignTokens {
     if (Object.keys(tokens.radius).length === 0 || !tokens.radius.scale) {
       tokens.radius = parseRadiusSection(noHeadingSection.content)
     }
+    if (Object.keys(tokens.effects).length === 0) {
+      tokens.effects = parseEffectsSection(noHeadingSection.content)
+    }
   }
-
-  // Elevation → 阴影（暂不提取，可以后加）
 
   return tokens
 }

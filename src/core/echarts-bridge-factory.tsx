@@ -256,6 +256,22 @@ function buildOption(
   const bgColor = tc('--rk-bg-secondary')
   const cellBgColor = tc('--rk-bg-tertiary') || bgColor
   const borderColor = tc('--rk-border-subtle')
+  const displayFont = tc('--rk-font-display') || tc('--rk-font-sans')
+  const uiFont = tc('--rk-font-ui') || tc('--rk-font-sans')
+
+  if (option.title && typeof option.title === 'object') {
+    const title = option.title as Record<string, unknown>
+    const textStyle = (title.textStyle && typeof title.textStyle === 'object')
+      ? title.textStyle as Record<string, unknown>
+      : {}
+    if (primaryTextColor) textStyle.color = primaryTextColor
+    if (displayFont) textStyle.fontFamily = displayFont
+    title.textStyle = textStyle
+  }
+  option.textStyle = {
+    ...((option.textStyle as Record<string, unknown> | undefined) ?? {}),
+    ...(uiFont ? { fontFamily: uiFont } : {}),
+  }
 
   // Axis labels
   // Axis labels, splitLines, axisLines
@@ -269,8 +285,9 @@ function buildOption(
         : {}
       if (textColor) {
         label.color = textColor
-        axis.axisLabel = label
       }
+      if (uiFont) label.fontFamily = uiFont
+      axis.axisLabel = label
       const splitLine = axis.splitLine as Record<string, unknown> | undefined
       if (splitLine && borderColor) {
         const lineStyle = splitLine.lineStyle as Record<string, unknown> | undefined
@@ -290,8 +307,12 @@ function buildOption(
     if (tooltip) {
       tooltip.backgroundColor = bgColor
       tooltip.borderColor = borderColor || bgColor
-      const ts = tooltip.textStyle as Record<string, unknown> | undefined
-      if (ts) ts.color = textColor
+      const ts = (tooltip.textStyle && typeof tooltip.textStyle === 'object')
+        ? tooltip.textStyle as Record<string, unknown>
+        : {}
+      ts.color = textColor
+      if (uiFont) ts.fontFamily = uiFont
+      tooltip.textStyle = ts
     }
   }
 
@@ -340,6 +361,7 @@ function buildOption(
           ? calendar[labelKey] as Record<string, unknown>
           : {}
         if (textColor) label.color = textColor
+        if (uiFont) label.fontFamily = uiFont
         calendar[labelKey] = label
       }
     }
@@ -352,6 +374,7 @@ function buildOption(
         if (!s || typeof s !== 'object' || s.type !== 'heatmap') continue
         const label = (s.label && typeof s.label === 'object') ? s.label as Record<string, unknown> : {}
         if (primaryTextColor) label.color = primaryTextColor
+        if (uiFont) label.fontFamily = uiFont
         s.label = label
         const itemStyle = (s.itemStyle && typeof s.itemStyle === 'object') ? s.itemStyle as Record<string, unknown> : {}
         if (borderColor) itemStyle.borderColor = borderColor
@@ -361,11 +384,17 @@ function buildOption(
   }
 
   // Legend text
-  const legends = option.legend as Record<string, unknown>[] | undefined
-  if (legends && Array.isArray(legends) && textColor) {
+  const legends = (Array.isArray(option.legend)
+    ? option.legend
+    : option.legend ? [option.legend] : []) as Record<string, unknown>[]
+  if (legends.length > 0 && textColor) {
     for (const leg of legends) {
-      const ts = leg.textStyle as Record<string, unknown> | undefined
-      if (ts) ts.color = textColor
+      const ts = (leg.textStyle && typeof leg.textStyle === 'object')
+        ? leg.textStyle as Record<string, unknown>
+        : {}
+      ts.color = textColor
+      if (uiFont) ts.fontFamily = uiFont
+      leg.textStyle = ts
     }
   }
 

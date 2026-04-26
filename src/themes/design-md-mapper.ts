@@ -540,9 +540,44 @@ export function mapDesignTokensToTheme(
   }
 
   // 4. 映射字体
+  if (tokens.typography?.fontFamilies) {
+    const fontFamilies = tokens.typography.fontFamilies
+    const roleMap: Record<string, string> = {
+      display: '--rk-font-display',
+      body: '--rk-font-body',
+      serif: '--rk-font-serif',
+      ui: '--rk-font-ui',
+      sans: '--rk-font-sans',
+      mono: '--rk-font-mono',
+    }
+    for (const [role, value] of Object.entries(fontFamilies)) {
+      const varName = roleMap[role]
+      if (varName && value && !mapped.has(varName)) {
+        mapped.set(varName, value)
+      }
+    }
+    if (!mapped.has('--rk-font-sans') && (fontFamilies.ui || fontFamilies.sans)) {
+      mapped.set('--rk-font-sans', fontFamilies.ui || fontFamilies.sans!)
+    }
+    if (!mapped.has('--rk-font-body') && (fontFamilies.body || fontFamilies.sans || fontFamilies.ui)) {
+      mapped.set('--rk-font-body', fontFamilies.body || fontFamilies.sans || fontFamilies.ui!)
+    }
+    if (!mapped.has('--rk-font-display') && (fontFamilies.display || fontFamilies.body || fontFamilies.sans)) {
+      mapped.set('--rk-font-display', fontFamilies.display || fontFamilies.body || fontFamilies.sans!)
+    }
+  }
   if (tokens.typography?.fontFamily) {
     if (!mapped.has('--rk-font-sans')) {
       mapped.set('--rk-font-sans', tokens.typography.fontFamily)
+    }
+    if (!mapped.has('--rk-font-ui')) {
+      mapped.set('--rk-font-ui', tokens.typography.fontFamily)
+    }
+    if (!mapped.has('--rk-font-body')) {
+      mapped.set('--rk-font-body', tokens.typography.fontFamily)
+    }
+    if (!mapped.has('--rk-font-display')) {
+      mapped.set('--rk-font-display', tokens.typography.fontFamily)
     }
   }
 
@@ -624,6 +659,11 @@ export function mapDesignTokensToTheme(
         }
       }
     }
+  }
+
+  // 5c. 映射效果 / 层级。Design.md 里明确要求无阴影时，要覆盖默认主题阴影。
+  if (tokens.effects?.shadow && !mapped.has('--rk-shadow')) {
+    mapped.set('--rk-shadow', tokens.effects.shadow)
   }
 
   // 6. 用对应模式的默认主题填充缺失变量
