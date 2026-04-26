@@ -21,10 +21,9 @@
 本地静态服务：
 
 - 冷启动主测试页：`http://127.0.0.1:8793/validation/vizual-test.html`
-- 组件回归参考页：`http://127.0.0.1:8793/validation/eval-full-31.html`
-- DocView 独立兜底页：`http://127.0.0.1:8793/validation/demo-docview.html`
+- 主题与全组件回归页：`http://127.0.0.1:8793/validation/design-md-load.html`
 
-冷启动验收的主线只测 `vizual-test.html`。`eval-full-31.html` 是开发者维护组件库时使用的回归页，不是冷启动 Agent 的主要任务；除非用户明确要求，否则被测 Agent 不要跳去跑 31 组件页。
+冷启动验收的主线只测 `vizual-test.html`。`design-md-load.html` 是维护者测试 DESIGN.md 主题和全组件视觉回归的页面，不是冷启动 Agent 的主要任务；除非用户明确要求，否则被测 Agent 不要跳去跑组件矩阵页。
 
 推荐由测试主持人预先准备好浏览器：
 
@@ -53,7 +52,7 @@
 - 不要把测试改成用户看不到的 Python/Playwright headless 脚本。
 - 不要绕过聊天框直接调用所有 API 跑完；每轮都要先在页面聊天框形成一条用户消息，再由 Agent 读取 pending message 并响应。
 - 如果用户说“我想看着你测”，被测 Agent 应该在同一个可见页面里逐轮输入测试消息并响应，让用户能看见过程。
-- 不要把 `eval-full-31.html` 当成冷启动主任务。
+- 不要把 `design-md-load.html` 当成冷启动主任务。
 
 如果 Chrome DevTools MCP 没有列出 `vizual-test.html`，被测 Agent 应该停止并告诉测试主持人：“我现在看不到你打开的 `vizual-test.html`，请你确认页面已经打开并且 DevTools MCP 已连接到这个 Chrome。”不要自行重启浏览器或换端口。
 
@@ -90,7 +89,7 @@
 - 不要运行 `playwright install` 或任何下载 Chromium 的命令；测试只允许连接现有页面。
 - 如果你无法通过 MCP 看到这个页面，直接告诉用户“我看不到已打开的 vizual-test.html，请你确认 DevTools MCP 连接的是这个 Chrome”，然后等待。不要自己执行 open/kill/curl/json/new 等浏览器管理命令。
 - 这个测试是“可见页面自驱动盲测”，不是 headless 自动化。你要自己在页面聊天框输入每轮测试内容，发送后读取页面 pending message，并在同一个页面里回复。
-- 除非用户明确要求，不要测试 eval-full-31.html。
+- 除非用户明确要求，不要测试 `design-md-load.html`。
 
 你的任务：
 1. 假装自己是嵌入在 SaaS / Chatbot 产品里的业务 Agent，Vizual 是你的可视化运行时。
@@ -465,7 +464,7 @@ Prompt B：
 - 被测 Agent 没有离开 `vizual-test.html`。
 - 所有结果都出现在用户正在看的同一个聊天页面。
 - 每个结果都是真实渲染的 Vizual UI，不是 raw JSON。
-- 需要截图或人工可见证据，但不需要跳到 `eval-full-31.html`。
+- 需要截图或人工可见证据，但不需要跳到 `design-md-load.html`。
 - 没有 console error。
 
 建议覆盖这些曾经出过问题的组件和图形语义：
@@ -484,7 +483,7 @@ Prompt B：
 3. 被测 Agent 用 Vizual bridge 在同一个可见页面回复。
 4. 用户肉眼确认结果；Agent 记录截图或 debug state。
 
-`eval-full-31.html` 可以由维护者另行打开做组件库回归，但它不属于冷启动 Agent 的主线验收。
+`design-md-load.html` 可以由维护者另行打开做主题和组件库回归，但它不属于冷启动 Agent 的主线验收。
 
 ### S12. 宿主 API 稳定性
 
@@ -513,7 +512,7 @@ Agent 应该通过宿主 API 检查状态，而不是脆弱地抓 DOM 文本。
 - 不要启动 headless / 不可见浏览器。
 - 不要安装或下载 Playwright Chromium。
 - 不要把测试改成纯脚本自动化。
-- 不要跳去 `eval-full-31.html` 当主线测试。
+- 不要跳去 `design-md-load.html` 当主线测试。
 
 ## 最终 QA 报告格式
 

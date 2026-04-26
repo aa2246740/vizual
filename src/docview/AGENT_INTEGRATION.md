@@ -180,7 +180,7 @@ open → submitted → proposed → resolved
 
 ### 模式 A: Browser/Local Agent Bridge
 
-适合 `validation/demo-docview.html`、Codex/Claude Code、Playwright、Chrome DevTools 等场景。Agent 在页面上下文拿到 controller，然后按事件驱动工作。
+适合 `validation/vizual-test.html`、Codex/Claude Code、Playwright、Chrome DevTools 等场景。Agent 在页面上下文拿到 controller，然后按事件驱动工作。
 
 ```js
 let controller = null

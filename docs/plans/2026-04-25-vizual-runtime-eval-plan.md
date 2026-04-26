@@ -110,14 +110,10 @@ Each test should be runnable by a host developer and understandable by a cold-st
 
 ## Required Demo Pages
 
-The validation directory should eventually contain:
+The validation directory should keep two browser entry points:
 
-- `eval-full-31.html`: all components render.
-- `vizual-test.html`: chatbot message renderer and interactive bridge.
-- `demo-docview.html`: DocView Review SDK loop.
-- `demo-artifact-history.html`: historical recovery, target update, and PNG/PDF/CSV/XLSX export metadata.
-- `cold-start-eval.html`: automated runtime contract smoke test for host runtime, artifact patching, targetMap, and data export.
-- `demo-design-md.html`: theme tests.
+- `design-md-load.html`: DESIGN.md theme switching, all component visual matrix, and liveControl theme tuning.
+- `vizual-test.html`: chatbot message renderer, liveControl bridge, artifact history/update/export, and DocView review loop.
 
 ## Stop Rule
 
