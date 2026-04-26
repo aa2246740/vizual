@@ -14,11 +14,11 @@
 
 冷启动验收的主线只测 `vizual-test.html`。`eval-full-31.html` 是开发者维护组件库时使用的回归页，不是冷启动 Agent 的主要任务；除非用户明确要求，否则被测 Agent 不要跳去跑 31 组件页。
 
-优先使用已有浏览器：
+推荐由测试主持人预先准备好浏览器：
 
 - Chrome DevTools Protocol：`http://127.0.0.1:9224`
 
-冷启动 Agent 必须使用用户能看到的同一个浏览器页面。优先连接已有 Chrome/CDP。除非这个端口不可用，否则不要下载、启动或切换到新的 Playwright Chrome。
+冷启动 Agent 必须使用用户能看到的同一个浏览器页面。测试主持人负责启动服务、打开 Chrome、打开 `vizual-test.html`，以及确保 Chrome DevTools MCP 能看到这个页面。被测 Agent 不负责启动、重启、杀掉或切换 Chrome，也不负责下载 Playwright 浏览器。
 
 ## 测试模式：可见页面监听
 
@@ -33,12 +33,16 @@
 
 禁止行为：
 
+- 不要执行 `open -a "Google Chrome"`、`pkill Chrome`、`kill Chrome`、`curl /json/new` 之类的浏览器管理动作。
+- 不要自己寻找、抢占或改造远程调试端口。
 - 不要启动 headless 浏览器。
 - 不要新开一个用户看不到的 Playwright Chromium。
 - 不要把测试改成“自己写 Python/Playwright 脚本跑完”。
 - 不要告诉用户“不用输入，我自动测”。这个页面的核心就是测 Agent 能否监听和响应用户输入。
 - 如果用户说“我想看着你测”，被测 Agent 应该等待用户在页面里输入，并说明“我会监听这个页面并响应你的输入”。
 - 不要把 `eval-full-31.html` 当成冷启动主任务。
+
+如果 Chrome DevTools MCP 没有列出 `vizual-test.html`，被测 Agent 应该停止并告诉测试主持人：“我现在看不到你打开的 `vizual-test.html`，请你确认页面已经打开并且 DevTools MCP 已连接到这个 Chrome。”不要自行重启浏览器或换端口。
 
 ## 被测 Agent 约束
 
@@ -48,7 +52,7 @@
    - `~/.claude/skills/vizual/SKILL.md`
    - `~/.claude/skills/vizual/references/` 下按需引用的组件文档
 2. 不能读取 Vizual 仓库源码、validation HTML 源码、历史 QA 报告、git history，或本轮实现对话。
-3. 必须像真实宿主 Agent 一样操作浏览器页面，可使用 Chrome DevTools、Playwright over CDP，或等价的 `evaluate_script` 能力。
+3. 必须像真实宿主 Agent 一样操作已经打开的浏览器页面，可使用 Chrome DevTools MCP 或等价的 `evaluate_script` 能力。
 4. 不能只把 JSON 粘到聊天框里就算成功；页面上必须出现真实渲染后的 Vizual UI。
 5. 页面提供 bridge API 时，必须优先使用页面 bridge API。
 6. 必须保留聊天历史。追问改图默认生成新的 AI 气泡，不能原地篡改老气泡；除非明确是临时预览/调试。
@@ -66,9 +70,11 @@
 - 第一步先读 ~/.claude/skills/vizual/SKILL.md。
 - 只在需要时读取 ~/.claude/skills/vizual/references/ 下被 SKILL.md 指向的组件参考文件。
 - 不要读取 Vizual 仓库源码、validation HTML 源码、git history、历史 QA 报告，或任何实现对话。
-- 优先使用 Chrome DevTools MCP，或连接已有浏览器/CDP： http://127.0.0.1:9224。
+- 测试主持人已经打开了可见页面。你只负责连接和监听，不负责启动 Chrome、重启 Chrome、杀 Chrome、打开新浏览器或切换调试端口。
+- 优先使用 Chrome DevTools MCP 连接当前页面；如果 MCP 暴露了多个 tab，只选择 URL 为 http://127.0.0.1:8793/validation/vizual-test.html... 的 tab。
 - 只测试主页面： http://127.0.0.1:8793/validation/vizual-test.html?cold-start-claude=<timestamp>
 - 你必须连接用户正在看的同一个可见 Chrome 页面。不要启动 headless 浏览器，不要启动新的 Playwright Chromium。
+- 如果你无法通过 MCP 看到这个页面，直接告诉用户“我看不到已打开的 vizual-test.html，请你确认 DevTools MCP 连接的是这个 Chrome”，然后等待。不要自己执行 open/kill/curl/json/new 等浏览器管理命令。
 - 这个测试是“监听用户输入并响应”，不是“自己写脚本自动跑完”。用户会在页面聊天框输入测试内容，你要读取页面 pending message 并在同一个页面里回复。
 - 除非用户明确要求，不要测试 eval-full-31.html。
 
