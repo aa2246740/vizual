@@ -1,6 +1,6 @@
 # AI 集成指南 — Vizual
 
-Vizual 是给 AI Agent 产品接入的视觉运行时。Agent 不只返回 Markdown，而是返回 Vizual spec/artifact；宿主前端把它渲染成图表、Dashboard、表格、实时可调面板、可导出报表或可批注文档。
+Vizual 是给 AI Agent 产品接入的视觉运行时。Agent 不只返回 Markdown，而是返回 Vizual spec/artifact；宿主前端把它渲染成图表、Dashboard、表格、liveControl 面板、可导出报表或可批注文档。
 
 ## 适用场景
 
@@ -36,12 +36,12 @@ cp -R skills/design-md-creator/ ~/.claude/skills/design-md-creator/
 - 保存 `VizualArtifact` 到聊天记录或业务存储
 - 后续追问时基于 artifact targetMap 做 patch
 - 导出 PNG/PDF/CSV/XLSX
-- 实时可调场景下提供 FormBuilder state bridge
+- liveControl 场景下提供 FormBuilder state bridge
 - DocView 场景下接入 review controller 和 revision proposal loop
 
 ## 正式 Agent Bridge 契约
 
-不要把测试页里的全局函数当成唯一实现来源。Vizual 提供 `createAgentBridge()` 作为宿主协议的状态层：它负责 artifact registry、messageId ↔ artifactId 绑定、render history、interactive snapshot 查找和导出/错误事件记录。聊天页面、SaaS 小窗、全屏 Agent 工作台都应该围绕这层状态模型接入。
+不要把测试页里的全局函数当成唯一实现来源。Vizual 提供 `createAgentBridge()` 作为宿主协议的状态层：它负责 artifact registry、messageId ↔ artifactId 绑定、render history、liveControl snapshot 查找和导出/错误事件记录。聊天页面、SaaS 小窗、全屏 Agent 工作台都应该围绕这层状态模型接入。
 
 ```tsx
 import { createAgentBridge, normalizeArtifact } from 'vizual'
@@ -56,7 +56,7 @@ const byMessage = bridge.getArtifact(messageId)
 bridge.recordRender('static', messageId, { status: 'success', artifactId: artifact.id })
 ```
 
-`validation/vizual-test.html` 的 `renderVizInMsg()`、`renderInteractiveVizInMsg()`、`updateArtifactInMsg()`、`exportArtifact()` 是这套契约的 demo bridge。自有前端可以复用同样的状态模型，但 UI 可以完全不同。
+`validation/vizual-test.html` 的 `renderVizInMsg()`、`renderLiveControlInMsg()`、`updateArtifactInMsg()`、`exportArtifact()` 是这套契约的 demo bridge。自有前端可以复用同样的状态模型，但 UI 可以完全不同。`renderInteractiveVizInMsg()` 仍是兼容旧脚本的别名。
 
 ## 渲染普通 spec
 
@@ -109,9 +109,9 @@ const updated = await runtime.updateArtifact(artifact.id, [
 - follow-up 修改默认生成新的 AI 气泡，旧气泡作为历史保留。
 - `mode: 'replace'` 只适合临时预览，不适合真实聊天历史。
 
-## 实时可调图表
+## liveControl 图表
 
-实时可调不是纯 JSON spec。宿主需要提供 bridge：左侧 FormBuilder 控件绑定 state，右侧由 `makeSpec(state)` 重新渲染预览。
+liveControl 不是纯 JSON spec。宿主需要提供 bridge：左侧 FormBuilder 控件绑定 state，右侧由 `makeSpec(state)` 重新渲染预览。
 
 自有 React 宿主推荐用 `VizualRenderer` 加 `getVizualStateValue()`。注意：当 FormBuilder 绑定 `value: { "$bindState": "/controls" }` 时，`onStateChange` 返回的是 `/controls` 整个对象，不是顶层 controls 字段的增量。不要把这个 change 直接浅合并进 controls 本身。
 
@@ -134,7 +134,7 @@ const [controls, setControls] = useState({ chartType: 'bar', points: 8, brandCol
 `validation/vizual-test.html` 的参考 API：
 
 ```js
-const snapshot = window.renderInteractiveVizInMsg(id, {
+const snapshot = window.renderLiveControlInMsg(id, {
   answerText: '可以实时调整图表类型、数据点和品牌色。',
   initialState: {
     controls: { chartType: 'bar', points: 8, brandColor: '#ff6b35' },
@@ -178,7 +178,7 @@ const snapshot = window.renderInteractiveVizInMsg(id, {
 })
 ```
 
-返回值是实时预览 snapshot：`{ artifact, state, lastPreviewSpec, renderCount }`。多个 interactive artifact 必须隔离 state 和 theme scope。不要让图 1 的颜色选择器影响图 2。后续测试或导出优先使用 `snapshot.artifact.id`，不要只用 `'last'`。
+返回值是 liveControl snapshot：`{ artifact, state, lastPreviewSpec, renderCount }`。多个 liveControl artifact 必须隔离 state 和 theme scope。不要让图 1 的颜色选择器影响图 2。后续测试或导出优先使用 `snapshot.artifact.id`，不要只用 `'last'`。
 
 ## DocView 批注修订循环
 
@@ -263,7 +263,7 @@ await downloadBlob(xlsx, 'data.xlsx')
 - 乱格式数据解析并渲染 Dashboard
 - 历史追问改图，新气泡保留旧历史
 - 实时调参和品牌色变更
-- 多个 interactive artifact 隔离
+- 多个 liveControl artifact 隔离
 - ComboChart、Scatter、Histogram、Calendar、Dumbbell、Mermaid 等复杂图
 - DocView 批注、提交、修订 proposal、apply、resolved
 - 普通 dashboard 和 DocView 导出

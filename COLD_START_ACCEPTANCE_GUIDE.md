@@ -117,9 +117,9 @@
 - window.renderVizInMsg(id, spec, options?)
 - window.renderArtifactInMsg(id, artifact, options?)
 - window.updateArtifactInMsg(ref, patches, options?)
-- window.renderInteractiveVizInMsg(id, config)
-- window.updateInteractiveVizInMsg(ref, patch, options?)
-- window.getInteractiveVizState(ref?)
+- window.renderLiveControlInMsg(id, config)
+- window.updateLiveControlInMsg(ref, patch, options?)
+- window.getLiveControlState(ref?)
 - window.renderDocViewInMsg(id, config)
 - window.createDocViewThread(ref, input)
 - window.submitDocViewThreads(ref, threadIds?)
@@ -133,8 +133,8 @@
 
 关键语义：
 - `renderVizInMsg(id, spec, options?)` 返回 `VizualArtifact | null`；后续修改/导出优先使用返回的 `artifact.id`。如果旧宿主只返回 `true`，再回退到 `getLastArtifact()`。
-- `renderInteractiveVizInMsg(id, config)` 返回实时预览 snapshot，形如 `{ artifact, state, lastPreviewSpec, renderCount }`；不要只当 boolean 用。
-- `getInteractiveVizState(ref?)` 返回 `{ artifact, state, lastPreviewSpec, renderCount }`；当前控件值在 `state.controls`，多个实时组件必须互相隔离。
+- `renderLiveControlInMsg(id, config)` 返回 liveControl snapshot，形如 `{ artifact, state, lastPreviewSpec, renderCount }`；不要只当 boolean 用。旧别名：`renderInteractiveVizInMsg()`。
+- `getLiveControlState(ref?)` 返回 `{ artifact, state, lastPreviewSpec, renderCount }`；当前控件值在 `state.controls`，多个 liveControl 必须互相隔离。
 - `createDocViewThread(ref, input)` 的最小文本批注参数是 `{ sectionId, selectedText, body }`。图表、KPI、表格或整段批注可补充 `targetType` / `label`。`anchor` 可省略，宿主会从 section 信息推断。
 - `submitDocViewThreads(ref, threadIds?)` 省略 `threadIds` 时提交该 DocView 的所有 open threads。
 - `getDocViewReviewState(ref?)` 的 `sections` 才是顶层 DocView sections；不要用 DOM 中 `[data-section-id]` 的数量判断 section 数，因为 KPI、图表、表格会展开成多个可批注目标。
@@ -156,7 +156,7 @@
 - `window.Vizual` 存在。
 - `window.renderVizInMsg` 存在。
 - `window.updateArtifactInMsg` 存在。
-- `window.renderInteractiveVizInMsg` 存在。
+- `window.renderLiveControlInMsg` 存在。
 - `window.getVizualConversationState` 存在。
 - `window.getVizualDebugState` 存在。
 
@@ -167,7 +167,7 @@
   vizual: !!window.Vizual,
   renderVizInMsg: typeof window.renderVizInMsg,
   updateArtifactInMsg: typeof window.updateArtifactInMsg,
-  renderInteractiveVizInMsg: typeof window.renderInteractiveVizInMsg,
+  renderLiveControlInMsg: typeof window.renderLiveControlInMsg,
   getVizualConversationState: typeof window.getVizualConversationState,
   getVizualDebugState: typeof window.getVizualDebugState,
 });
@@ -318,7 +318,7 @@ D10 revenue=16600 paying=245
 
 期望行为：
 
-- 使用 `renderInteractiveVizInMsg(id, config)`。
+- 使用 `renderLiveControlInMsg(id, config)`。
 - FormBuilder 使用 `value: { "$bindState": "/controls" }`。
 - 使用 `makeSpec(state)` 重新生成右侧预览。
 - 对不兼容控件做条件显示、禁用或清晰处理。
@@ -333,16 +333,16 @@ D10 revenue=16600 paying=245
 - 平滑折线只影响折线图/组合图。
 - 堆叠模式只影响柱状图。
 - 品牌色变化能更新图表主题/颜色。
-- `getInteractiveVizState()` 能看到当前 controls 和 `lastPreviewSpec`。
+- `getLiveControlState()` 能看到当前 controls 和 `lastPreviewSpec`。
 
 稳定的程序化测试：
 
 ```js
-const state0 = window.getInteractiveVizState('last');
-window.updateInteractiveVizInMsg('last', {
+const state0 = window.getLiveControlState('last');
+window.updateLiveControlInMsg('last', {
   controls: { points: 9, chartType: 'line', smooth: true, brandColor: '#123456' }
 }, { immediate: true });
-const state1 = window.getInteractiveVizState('last');
+const state1 = window.getLiveControlState('last');
 ({
   controls: state1.state.controls,
   previewType: state1.lastPreviewSpec?.elements?.chart?.type || state1.lastPreviewSpec?.type,
@@ -359,7 +359,7 @@ const state1 = window.getInteractiveVizState('last');
 
 期望行为：
 
-- 使用 `Vizual.loadDesignMd()` 或 interactive `applyTheme`。
+- 使用 `Vizual.loadDesignMd()` 或 liveControl `applyTheme`。
 - 不能把 chart `theme` 当成品牌色注入机制。
 - `theme: "dark"` / `theme: "light"` 只表示预设明暗主题。
 
@@ -367,7 +367,7 @@ const state1 = window.getInteractiveVizState('last');
 
 - 初始品牌色可见。
 - 改 color picker 后图表颜色可见变化。
-- debug state 或 interactive state 能体现当前品牌色。
+- debug state 或 liveControl state 能体现当前品牌色。
 
 ### S7. DocView 只能用于可批注文档
 

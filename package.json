@@ -1,7 +1,7 @@
 {
   "name": "vizual",
   "version": "1.1.0",
-  "description": "Vizual — AI Agent visual runtime for JSON specs, editable artifacts, charts, dashboards, live controls, DocView review loops, and export.",
+  "description": "Vizual — AI Agent visual runtime for JSON specs, editable artifacts, charts, dashboards, liveControl, DocView review loops, and export.",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
   "types": "dist/index.d.ts",

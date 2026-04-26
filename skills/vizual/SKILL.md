@@ -102,7 +102,7 @@ For charts inside DocView, read `references/doc/docview.md`: use `chart` section
 
 **Split View** — `SplitLayout` with a chart on one side and a `DataTable` on the other. Good for comparing visual and tabular representations of the same data.
 
-**Interactive Explorer** — In `validation/vizual-test.html`, use the host bridge `renderInteractiveVizInMsg(id, config)`: FormBuilder controls on the left, live Vizual preview on the right, and `makeSpec(state)` to regenerate the chart. Use `bubbleWidth` (`compact`, `normal`, `wide`, `full`) to choose the visual bubble size. This is host JavaScript, not pure JSON. Do NOT use InteractivePlayground — it has been removed.
+**liveControl** — In `validation/vizual-test.html`, use the host bridge `renderLiveControlInMsg(id, config)`: FormBuilder controls on the left, live Vizual preview on the right, and `makeSpec(state)` to regenerate the chart. Use `bubbleWidth` (`compact`, `normal`, `wide`, `full`) to choose the visual bubble size. This is host JavaScript, not pure JSON. Do NOT use InteractivePlayground — it has been removed. `renderInteractiveVizInMsg()` is only a legacy alias.
 
 **Standalone Chart** — A single chart component at the root. No layout wrapper needed.
 
@@ -117,7 +117,7 @@ Use the smallest runtime shape that satisfies the task:
 | One static chart/dashboard/table | JSON spec + `renderVizInMsg(id, spec)` | Fast, compatible, page wraps it into an artifact automatically |
 | Historical recovery or follow-up edits | `VizualArtifact` + `renderArtifactInMsg(id, artifact)` or `updateArtifactInMsg(ref, patch)` | Preserves `id`, `targetMap`, `versions`, `theme`, `exports`; follow-ups render as a new AI bubble by default |
 | "Change this chart to line / filter region / make it less dense" | Read `getLastArtifact()` then call `updateArtifactInMsg()` | Do not regenerate from memory; patch the saved artifact and keep the old bubble as history |
-| Live adjustable preview | `renderInteractiveVizInMsg(id, config)` | Requires host JavaScript, FormBuilder state, and `makeSpec(state)` |
+| liveControl adjustable preview | `renderLiveControlInMsg(id, config)` | Requires host JavaScript, FormBuilder state, and `makeSpec(state)` |
 | DocView review loop | `renderDocViewInMsg(id, config)` in `vizual-test.html`, or DocView UI + review controller in a custom host | User annotates, Agent reads submitted threads, returns revision proposal, user applies/rejects |
 
 Artifact patch examples:
@@ -143,7 +143,7 @@ Vizual specs are JSON artifacts. A host page must render them. When the host is 
 
 When you are asked to build or integrate a custom React host, import `VizualRenderer` / `VizualArtifactView` from `vizual` and render specs/artifacts through those components. Do **not** hand-roll `StateProvider + Renderer` from `@json-render/react`; that misses required providers in current json-render and can crash at runtime. Use `createAgentBridge()` for artifact/message state, and `VizualRenderer` for the actual React render surface.
 
-The bridge functions are backed by Vizual's formal Agent bridge state model (`Vizual.createAgentBridge()` / `createAgentBridge()` in package imports). That SDK owns artifact ids, message-to-artifact mapping, render history, and interactive snapshot lookup. Treat the return values below as the source of truth; don't infer state from DOM bubbles.
+The bridge functions are backed by Vizual's formal Agent bridge state model (`Vizual.createAgentBridge()` / `createAgentBridge()` in package imports). That SDK owns artifact ids, message-to-artifact mapping, render history, and liveControl snapshot lookup. Treat the return values below as the source of truth; don't infer state from DOM bubbles.
 
 Required bridge flow for agents with browser script execution (`evaluate_script`, Playwright `page.evaluate`, Chrome DevTools Protocol, etc.):
 
@@ -169,8 +169,8 @@ Bridge return values in `vizual-test.html`:
 | `renderVizInMsg(id, spec, options?)` | `VizualArtifact | null` | Store `artifact.id` for follow-up edits/export. Old truthy checks still work. |
 | `renderArtifactInMsg(id, artifact, options?)` | `VizualArtifact | null` | Use when restoring or rendering a known artifact. |
 | `updateArtifactInMsg(ref, patches, options?)` | `VizualArtifact | null` | Default creates a new AI bubble; export/edit the returned artifact. |
-| `renderInteractiveVizInMsg(id, config)` | `InteractiveSnapshot | null` | Use `snapshot.artifact.id`, `snapshot.state.controls`, and `snapshot.lastPreviewSpec`. |
-| `getInteractiveVizState(ref?)` | `InteractiveSnapshot | null` | Pass a message id or artifact id when multiple live widgets exist. |
+| `renderLiveControlInMsg(id, config)` | `LiveControlSnapshot | null` | Use `snapshot.artifact.id`, `snapshot.state.controls`, and `snapshot.lastPreviewSpec`. Legacy alias: `renderInteractiveVizInMsg()`. |
+| `getLiveControlState(ref?)` | `LiveControlSnapshot | null` | Pass a message id or artifact id when multiple liveControl widgets exist. Legacy alias: `getInteractiveVizState()`. |
 | `renderDocViewInMsg(id, config)` | `VizualArtifact | null` | Use returned `artifact.id` for DocView thread/revision APIs. |
 | `exportArtifact(ref, options)` | `Promise<ExportRecord | null>` | Check `record.status`; success includes `url`, `filename`, `meta.size/type`, `width`, and `height`; errors return `status: "error"` plus `error`. |
 
@@ -198,13 +198,13 @@ Built-in export formats are `png`, `pdf`, `csv`, and `xlsx`. PNG/PDF export the 
 
 For static charts, omit `bubbleWidth` unless you have a reason to override. The page infers `normal` for KPI/sparkline, `wide` for ordinary charts, and `full` for layouts, DocView, Sankey, Radar, FormBuilder, and tables. Pass `{ bubbleWidth: 'compact' | 'normal' | 'wide' | 'full' }` only when the user asks for a specific density.
 
-For real-time adjust-preview tasks in `vizual-test.html`, call the interactive bridge instead of returning a pure spec:
+For liveControl tasks in `vizual-test.html`, call the liveControl bridge instead of returning a pure spec:
 
 ```js
 const id = window.createAiMsg();
 window.streamText(id, answerText);
 window.finishText(id);
-window.renderInteractiveVizInMsg(id, {
+window.renderLiveControlInMsg(id, {
   bubbleWidth: 'full',
   initialState: {
     controls: {
@@ -286,27 +286,27 @@ window.renderInteractiveVizInMsg(id, {
 
 For a custom React host, use `VizualRenderer` and `getVizualStateValue(changes, '/controls', prevControls)` when FormBuilder binds the whole form to `/controls`. Do not shallow-merge `/controls` changes into the controls object itself; that creates nested stale state and the preview will not update correctly. If you keep a larger runtime object, keep it shaped as `{ controls }` and use `applyVizualStateChanges(runtimeState, changes)`.
 
-For interactive controls, expose only options that make sense for the current component. `horizontal` and `stacked` are BarChart options; do not show or pass them to LineChart or ComboChart. Use FormBuilder `dependsOn` / `showWhen` for visibility and still normalize in `makeSpec(state)` so invalid props never reach the chart.
+For liveControl controls, expose only options that make sense for the current component. `horizontal` and `stacked` are BarChart options; do not show or pass them to LineChart or ComboChart. Use FormBuilder `dependsOn` / `showWhen` for visibility and still normalize in `makeSpec(state)` so invalid props never reach the chart.
 
-For automated QA of an interactive preview, prefer the stable host APIs instead of simulating React DOM input events:
+For automated QA of a liveControl preview, prefer the stable host APIs instead of simulating React DOM input events:
 
 ```js
-window.updateInteractiveVizInMsg(id, { controls: { points: 12 } }, { immediate: true });
-window.updateInteractiveVizInMsg(id, { controls: { chartType: 'line', brandColor: '#123456' } }, { immediate: true });
-const state = window.getInteractiveVizState(id);
+window.updateLiveControlInMsg(id, { controls: { points: 12 } }, { immediate: true });
+window.updateLiveControlInMsg(id, { controls: { chartType: 'line', brandColor: '#123456' } }, { immediate: true });
+const state = window.getLiveControlState(id);
 const spec = state.lastPreviewSpec;
 ```
 
-`getInteractiveVizState(ref?)` details:
+`getLiveControlState(ref?)` details:
 
-- Pass the artifact id or message id when you want one interactive widget. Pass `'last'` or omit `ref` only for quick debugging of the most recent widget.
+- Pass the artifact id or message id when you want one liveControl widget. Pass `'last'` or omit `ref` only for quick debugging of the most recent widget.
 - The returned object is `{ id, artifact, state, renderCount, pending, lastPreviewSpec, lastPreviewSummary, status, error }`.
 - Current control values live under `state.controls`; the current rendered chart spec lives under `lastPreviewSpec`.
-- Multiple interactive widgets are isolated. Do not reuse one widget's `state.controls` or `applyTheme` callback for another widget.
+- Multiple liveControl widgets are isolated. Do not reuse one widget's `state.controls` or `applyTheme` callback for another widget.
 
 Use real UI interactions only when testing the browser UX itself. If you must drive native inputs from JavaScript, use the DOM prototype value setter before dispatching `input` / `change`; simple `el.value = ...` can be ignored by React's value tracker.
 
-If an agent can only click and type in the browser but cannot execute JavaScript in the page, it cannot complete `vizual-test.html` rendering or live interactivity by itself. In that case, provide a static spec plus explanation, or use a host bridge, Playwright/CDP, or an auto-poll backend that calls `renderVizInMsg()` / `renderInteractiveVizInMsg()`.
+If an agent can only click and type in the browser but cannot execute JavaScript in the page, it cannot complete `vizual-test.html` rendering or liveControl by itself. In that case, provide a static spec plus explanation, or use a host bridge, Playwright/CDP, or an auto-poll backend that calls `renderVizInMsg()` / `renderLiveControlInMsg()`.
 
 For ordinary data-analysis prompts in `vizual-test.html`, answer in host message text and render a `GridLayout`/chart/dashboard spec. Do not choose DocView unless the user explicitly asks for annotation, comments, review, revision, or a reviewable document artifact.
 
@@ -414,7 +414,7 @@ If unsure between DocView and GridLayout, choose `GridLayout` and put the writte
 
 **The user wants a board, timeline, org chart, or activity log** → Kanban, GanttChart, Timeline, OrgChart, AuditLog respectively.
 
-**The user wants to adjust parameters interactively** → In `vizual-test.html`, call `renderInteractiveVizInMsg()` with a FormBuilder `value: { "$bindState": "/controls" }`, `initialState.controls`, `bubbleWidth`, and `makeSpec(state)`. Outside that test page, the host application must provide the same state-change bridge. If one control changes the target component, use conditional controls and generate only props that belong to that component. If you cannot execute page JavaScript, generate a static spec and clearly say live interactivity needs a host bridge.
+**The user wants a liveControl / wants to adjust parameters interactively** → In `vizual-test.html`, call `renderLiveControlInMsg()` with a FormBuilder `value: { "$bindState": "/controls" }`, `initialState.controls`, `bubbleWidth`, and `makeSpec(state)`. Outside that test page, the host application must provide the same state-change bridge. If one control changes the target component, use conditional controls and generate only props that belong to that component. If you cannot execute page JavaScript, generate a static spec and clearly say liveControl needs a host bridge.
 
 **REMOVED: InteractivePlayground** — Do NOT generate specs with `type: "InteractivePlayground"` or `type: "interactive_playground"`. This component no longer exists.
 
@@ -442,7 +442,7 @@ These are the most common mistakes. Avoiding them is more important than memoriz
 
 7. **Don't expose incompatible interactive controls.** If a FormBuilder control switches chart type, make dependent controls conditional. BarChart-only options such as `horizontal` and `stacked` must not appear for LineChart or ComboChart, and `makeSpec(state)` must not pass those props to the wrong component.
 
-8. **Don't treat `theme` as brand-color injection.** Chart `theme: "dark"` / `"light"` only selects a preset mode. For custom brand colors, the host must call `Vizual.loadDesignMd(markdown, { apply: true })`, or `renderInteractiveVizInMsg()` must provide `designMd` / `applyTheme`. Don't try to bypass the theme system with inline styles.
+8. **Don't treat `theme` as brand-color injection.** Chart `theme: "dark"` / `"light"` only selects a preset mode. For custom brand colors, the host must call `Vizual.loadDesignMd(markdown, { apply: true })`, or `renderLiveControlInMsg()` must provide `designMd` / `applyTheme`. Don't try to bypass the theme system with inline styles.
 
 ## Output Format
 
@@ -506,7 +506,7 @@ Placeholder data is acceptable only when the user asks for an example/demo or gi
 
 ## Theme
 
-Default is dark. For light mode, set `theme: "light"` on chart components. This prop is not a brand palette. For full brand customization, the host app calls `Vizual.loadDesignMd(markdown, { apply: true })` before rendering, or the `vizual-test.html` interactive bridge uses `designMd` / `applyTheme`. Brand colors are outside the pure JSON spec.
+Default is dark. For light mode, set `theme: "light"` on chart components. This prop is not a brand palette. For full brand customization, the host app calls `Vizual.loadDesignMd(markdown, { apply: true })` before rendering, or the `vizual-test.html` liveControl bridge uses `designMd` / `applyTheme`. Brand colors are outside the pure JSON spec.
 
 ## Export
 

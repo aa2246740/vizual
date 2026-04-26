@@ -73,7 +73,7 @@ const artifact = window.renderVizInMsg(id, spec);
 window.markPendingHandled();
 ```
 
-`renderVizInMsg()` returns `VizualArtifact | null`; store `artifact.id` for follow-up edits/export. `renderInteractiveVizInMsg()` returns an interactive snapshot with `{ artifact, state, lastPreviewSpec, renderCount }`. `exportArtifact()` returns an `ExportRecord | null`; check `record.status === "success"` instead of assuming a browser download happened.
+`renderVizInMsg()` returns `VizualArtifact | null`; store `artifact.id` for follow-up edits/export. `renderLiveControlInMsg()` returns a liveControl snapshot with `{ artifact, state, lastPreviewSpec, renderCount }`; `renderInteractiveVizInMsg()` is only a legacy alias. `exportArtifact()` returns an `ExportRecord | null`; check `record.status === "success"` instead of assuming a browser download happened.
 
 For a custom React host, render specs with `VizualRenderer` and artifacts with `VizualArtifactView` from `vizual`. Do not use bare `StateProvider + Renderer` from `@json-render/react`; that leaves out required providers in current json-render. Keep `createAgentBridge()` for message/artifact state and use `VizualRenderer` for the React surface.
 
@@ -97,9 +97,9 @@ if (pdf?.status !== 'success' || xlsx?.status !== 'success') console.warn('Expor
 Follow-up edits create a new AI bubble by default. Pass `{ mode: 'replace' }` only for temporary in-place preview/debug.
 Do not use RFC-style JSON Patch (`{ op, path, value }`) in normal agent work; typed patches are target-map aware and safer.
 
-For live parameter tuning, use `renderInteractiveVizInMsg(id, config)` with FormBuilder bound to `/controls` and `makeSpec(state)`. This is host JavaScript, not pure JSON. In a custom React host, render FormBuilder through `VizualRenderer` and update controls with `getVizualStateValue(changes, '/controls', prevControls)`. Do not shallow-merge `/controls` changes into the controls object itself.
+For liveControl parameter tuning, use `renderLiveControlInMsg(id, config)` with FormBuilder bound to `/controls` and `makeSpec(state)`. This is host JavaScript, not pure JSON. In a custom React host, render FormBuilder through `VizualRenderer` and update controls with `getVizualStateValue(changes, '/controls', prevControls)`. Do not shallow-merge `/controls` changes into the controls object itself.
 
-For automated QA of live previews, use `updateInteractiveVizInMsg(id, { controls: {...} }, { immediate: true })` and inspect `getInteractiveVizState(id).lastPreviewSpec`. Do not rely on brittle DOM selectors or plain `el.value = ...` event dispatch to prove React controls updated.
+For automated QA of liveControl previews, use `updateLiveControlInMsg(id, { controls: {...} }, { immediate: true })` and inspect `getLiveControlState(id).lastPreviewSpec`. Do not rely on brittle DOM selectors or plain `el.value = ...` event dispatch to prove React controls updated.
 
 ## DocView — Annotatable Documents Only
 

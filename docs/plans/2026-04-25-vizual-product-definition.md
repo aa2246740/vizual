@@ -69,7 +69,7 @@ The runtime exposes three layers:
 - `renderSpec(spec, container)` for low-level static rendering.
 - `renderArtifact(artifactOrSpec, container)` for durable outputs with `id`, `targetMap`, `versions`, `theme`, `state`, and `exports`.
 - `VizualHostRuntime` for platform integration with memory/localStorage/custom artifact stores.
-- Host bridges such as `renderVizInMsg`, `renderArtifactInMsg`, `updateArtifactInMsg`, `renderInteractiveVizInMsg`, and `exportArtifact` for agent chat surfaces.
+- Host bridges such as `renderVizInMsg`, `renderArtifactInMsg`, `updateArtifactInMsg`, `renderLiveControlInMsg`, and `exportArtifact` for agent chat surfaces.
 
 Artifact patches are the first editing primitive. They let an agent update an existing output without rebuilding it from memory:
 

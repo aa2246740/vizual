@@ -156,9 +156,9 @@
         <tr><td><code>window.getLastArtifact()</code></td><td>读取最近一次渲染的 artifact，包含 spec、targetMap、versions、exports</td><td>VizualArtifact | null</td></tr>
         <tr><td><code>window.updateArtifactInMsg(ref, patches, options?)</code></td><td>用 Vizual typed patches 修改 artifact 并渲染到新的 AI 气泡；仅预览/调试时传 <code>{ mode: 'replace' }</code> 原地替换。兼容常见 JSON Patch，但 Agent 应优先使用 typed patches。</td><td>VizualArtifact | null</td></tr>
         <tr><td><code>window.exportArtifact(ref, options?)</code></td><td>导出当前 artifact 并记录 export 元数据；<code>options.format</code> 支持 png/pdf/csv/xlsx；失败也会返回 <code>status: "error"</code> 记录</td><td>Promise&lt;ExportRecord | null&gt;</td></tr>
-        <tr><td><code>window.renderInteractiveVizInMsg(id, config)</code></td><td>渲染 FormBuilder 控件 + 实时预览；Agent 作为宿主提供 <code>makeSpec(state)</code></td><td>InteractiveSnapshot | null</td></tr>
-        <tr><td><code>window.updateInteractiveVizInMsg(ref, patch, options?)</code></td><td>以稳定 API 更新实时预览 state；自动化测试不要模拟 React DOM 输入事件</td><td>object | null</td></tr>
-        <tr><td><code>window.getInteractiveVizState(ref?)</code></td><td>读取实时预览 state、artifact、lastPreviewSpec 和 renderCount</td><td>object | null</td></tr>
+        <tr><td><code>window.renderLiveControlInMsg(id, config)</code></td><td>渲染 FormBuilder 控件 + 实时预览；Agent 作为宿主提供 <code>makeSpec(state)</code></td><td>LiveControlSnapshot | null</td></tr>
+        <tr><td><code>window.updateLiveControlInMsg(ref, patch, options?)</code></td><td>以稳定 API 更新 liveControl state；自动化测试不要模拟 React DOM 输入事件</td><td>object | null</td></tr>
+        <tr><td><code>window.getLiveControlState(ref?)</code></td><td>读取 liveControl state、artifact、lastPreviewSpec 和 renderCount</td><td>object | null</td></tr>
         <tr><td><code>window.getVizualConversationState()</code></td><td>读取稳定的消息、artifact、控件和渲染历史状态；自动化测试不要猜 DOM class</td><td>object</td></tr>
         <tr><td><code>window.getVizualDebugState()</code></td><td>读取 pending message、artifact registry、DocView session 和最近渲染记录</td><td>object</td></tr>
         <tr><td><code>window.renderDocViewInMsg(id, config)</code></td><td>渲染带审阅 bridge 的 DocView；用于可批注报告、长文共建、修订循环</td><td>VizualArtifact | null</td></tr>
@@ -188,14 +188,14 @@ const updated = window.updateArtifactInMsg(artifact.id, [
 const exportRecord = await window.exportArtifact(updated.id, { format: 'pdf', filename: 'east-china-chart' });
 const tableRecord = await window.exportArtifact(updated.id, { format: 'xlsx', filename: 'east-china-data' });</pre>
 
-      <h3>实时 adjust-preview 场景</h3>
-      <p>实时可调图表不是纯 JSON spec。Agent 必须作为宿主调用 <code>renderInteractiveVizInMsg()</code>，用 FormBuilder 绑定 <code>/controls</code>，再由 <code>makeSpec(state)</code> 生成右侧预览图表。</p>
+      <h3>liveControl 场景</h3>
+      <p>liveControl 不是纯 JSON spec。Agent 必须作为宿主调用 <code>renderLiveControlInMsg()</code>，用 FormBuilder 绑定 <code>/controls</code>，再由 <code>makeSpec(state)</code> 生成右侧预览图表。</p>
       <p>控件必须按当前图表能力联动：例如横向/堆叠只属于柱状图，切换到折线图或组合图时要用 <code>dependsOn</code> / <code>showWhen</code> 隐藏，并且在 <code>makeSpec(state)</code> 里不要传入非法 props。</p>
       <pre>const id = window.createAiMsg();
 window.streamText(id, '可以直接调参数查看结果。');
 window.finishText(id);
 
-window.renderInteractiveVizInMsg(id, {
+window.renderLiveControlInMsg(id, {
   initialState: {
     controls: {
       chartType: 'bar',
@@ -388,7 +388,8 @@ setInterval(async () => {
     window.__userMessageLog = [];
     window.__lastVizualRender = null;
     window.__renderHistory = [];
-    window._interactiveViz = {};     // 实时控件-预览控制器，按消息 ID 存储
+    window._liveControlViz = {};     // liveControl 控制器，按消息 ID 存储
+    window._interactiveViz = window._liveControlViz; // 兼容旧脚本
     window._docViewRoots = {};       // DocView 专用 React root，按消息 ID 存储
     window._docViewSessions = {};    // DocView 审阅 session，按 artifact ID 存储
     window.__messageDocViews = {};   // ai message id -> docview artifact id
@@ -1071,9 +1072,10 @@ setInterval(async () => {
       }
 
       if (!ensureVizualReady(id, vizWrap, bubble)) return null;
+      getAgentBridge()?.unregisterLiveControlSession?.(id);
       getAgentBridge()?.unregisterInteractiveSession?.(id);
-      window._interactiveViz[id]?.destroy?.();
-      delete window._interactiveViz[id];
+      window._liveControlViz[id]?.destroy?.();
+      delete window._liveControlViz[id];
       destroyDocViewSessionByMessage(id);
 
       let artifact;
@@ -1155,8 +1157,8 @@ setInterval(async () => {
       }
       if (!ensureVizualReady(id, vizWrap, bubble)) return null;
 
-      window._interactiveViz[id]?.destroy?.();
-      delete window._interactiveViz[id];
+      window._liveControlViz[id]?.destroy?.();
+      delete window._liveControlViz[id];
       destroyDocViewSessionByMessage(id);
       window.Vizual.unmountSpec?.(vizWrap);
 
@@ -1532,24 +1534,24 @@ setInterval(async () => {
     };
 
     /**
-     * 渲染实时可调 Vizual：左侧 FormBuilder 控件，右侧预览。
+     * 渲染 liveControl：左侧 FormBuilder 控件，右侧预览。
      * Agent 必须提供 controlsSpec + makeSpec(state)。这不是纯 JSON spec。
      */
-    window.renderInteractiveVizInMsg = function(id, config) {
+    window.renderLiveControlInMsg = function(id, config) {
       const vizWrap = document.getElementById(id + '-viz');
       const bubble = document.getElementById(id + '-bubble');
       if (!vizWrap || !bubble) {
-        console.warn('[renderInteractiveVizInMsg] 找不到元素:', id);
+        console.warn('[renderLiveControlInMsg] 找不到元素:', id);
         return null;
       }
       if (!ensureVizualReady(id, vizWrap, bubble)) return null;
       if (!config || typeof config.makeSpec !== 'function' || !config.controlsSpec) {
-        console.warn('[renderInteractiveVizInMsg] config 需要 controlsSpec 和 makeSpec(state)');
+        console.warn('[renderLiveControlInMsg] config 需要 controlsSpec 和 makeSpec(state)');
         return null;
       }
 
-      window._interactiveViz[id]?.destroy?.();
-      delete window._interactiveViz[id];
+      window._liveControlViz[id]?.destroy?.();
+      delete window._liveControlViz[id];
       destroyDocViewSessionByMessage(id);
       window.Vizual.unmountSpec?.(vizWrap);
 
@@ -1584,9 +1586,9 @@ setInterval(async () => {
       let state = cloneState(config.initialState || {});
       let previewTimer = 0;
       let renderCount = 0;
-      let interactiveArtifact = null;
+      let liveControlArtifact = null;
       let scopedVizual = null;
-      const renderRecord = recordVizRender('interactive', id, {
+      const renderRecord = recordVizRender('liveControl', id, {
         status: 'mounted',
         bubbleWidth: bubble.dataset.vizBubbleWidth || null,
         initialState: safeSnapshot(state),
@@ -1619,9 +1621,9 @@ setInterval(async () => {
           const spec = config.makeSpec(state);
           window.Vizual.renderSpec(spec, previewEl);
           renderCount += 1;
-          if (!interactiveArtifact) {
-            interactiveArtifact = window.Vizual.normalizeArtifact({
-              kind: 'interactive',
+          if (!liveControlArtifact) {
+            liveControlArtifact = window.Vizual.normalizeArtifact({
+              kind: 'liveControl',
               status: 'rendered',
               spec,
               state,
@@ -1632,29 +1634,29 @@ setInterval(async () => {
               },
               metadata: {
                 controlsSpec: safeSnapshot(config.controlsSpec),
-                bridge: 'renderInteractiveVizInMsg',
+                bridge: 'renderLiveControlInMsg',
               },
             });
           } else {
-            interactiveArtifact.spec = safeSnapshot(spec);
-            interactiveArtifact.state = safeSnapshot(state);
-            interactiveArtifact.targetMap = window.Vizual.extractTargetMap(spec);
-            interactiveArtifact.status = 'rendered';
-            interactiveArtifact.updatedAt = new Date().toISOString();
+            liveControlArtifact.spec = safeSnapshot(spec);
+            liveControlArtifact.state = safeSnapshot(state);
+            liveControlArtifact.targetMap = window.Vizual.extractTargetMap(spec);
+            liveControlArtifact.status = 'rendered';
+            liveControlArtifact.updatedAt = new Date().toISOString();
           }
-          rememberArtifact(id, interactiveArtifact);
-          installArtifactToolbar(id, interactiveArtifact, vizWrap);
+          rememberArtifact(id, liveControlArtifact);
+          installArtifactToolbar(id, liveControlArtifact, vizWrap);
           renderRecord.status = 'success';
-          renderRecord.artifactId = interactiveArtifact.id;
+          renderRecord.artifactId = liveControlArtifact.id;
           renderRecord.state = safeSnapshot(state);
           renderRecord.lastPreviewSpec = safeSnapshot(spec);
           renderRecord.lastPreviewSummary = summarizeSpec(spec);
-          renderRecord.targetMap = safeSnapshot(interactiveArtifact.targetMap);
+          renderRecord.targetMap = safeSnapshot(liveControlArtifact.targetMap);
           renderRecord.renderCount = renderCount;
           renderRecord.updatedAt = new Date().toISOString();
           scrollBottom();
         } catch (err) {
-          console.error('[renderInteractiveVizInMsg] 预览渲染失败:', err);
+          console.error('[renderLiveControlInMsg] 预览渲染失败:', err);
           renderRecord.status = 'preview-error';
           renderRecord.error = err?.message || String(err);
           renderRecord.state = safeSnapshot(state);
@@ -1682,7 +1684,7 @@ setInterval(async () => {
       const getSnapshot = () => ({
         id,
         state: safeSnapshot(state),
-        artifact: safeSnapshot(interactiveArtifact),
+        artifact: safeSnapshot(liveControlArtifact),
         renderCount,
         pending: !!previewTimer,
         lastPreviewSpec: safeSnapshot(renderRecord.lastPreviewSpec),
@@ -1714,7 +1716,7 @@ setInterval(async () => {
         renderControls();
         renderPreview();
       } catch (err) {
-        console.error('[renderInteractiveVizInMsg] 渲染失败:', err);
+        console.error('[renderLiveControlInMsg] 渲染失败:', err);
         renderRecord.status = 'error';
         renderRecord.error = err?.message || String(err);
         renderRecord.updatedAt = new Date().toISOString();
@@ -1723,9 +1725,9 @@ setInterval(async () => {
         return null;
       }
 
-      window._interactiveViz[id] = {
+      window._liveControlViz[id] = {
         getState: () => cloneState(state),
-        getArtifact: () => safeSnapshot(interactiveArtifact),
+        getArtifact: () => safeSnapshot(liveControlArtifact),
         getSnapshot,
         updateState,
         rerender: renderPreview,
@@ -1736,16 +1738,19 @@ setInterval(async () => {
           window.Vizual.unmountSpec?.(previewEl);
         },
       };
-      getAgentBridge()?.registerInteractiveSession?.(id, window._interactiveViz[id]);
+      getAgentBridge()?.registerLiveControlSession?.(id, window._liveControlViz[id]);
+      getAgentBridge()?.registerInteractiveSession?.(id, window._liveControlViz[id]);
       syncAgentBridgeLegacyState();
 
       return getSnapshot();
     };
+    window.renderInteractiveVizInMsg = window.renderLiveControlInMsg;
 
-    function resolveInteractiveVizSession(ref) {
-      const bridgeResolved = getAgentBridge()?.resolveInteractiveSession?.(ref || 'last');
+    function resolveLiveControlSession(ref) {
+      const bridgeResolved = getAgentBridge()?.resolveLiveControlSession?.(ref || 'last')
+        || getAgentBridge()?.resolveInteractiveSession?.(ref || 'last');
       if (bridgeResolved?.session) return bridgeResolved;
-      const sessions = window._interactiveViz || {};
+      const sessions = window._liveControlViz || {};
       if (ref && ref !== 'last') {
         if (sessions[ref]) return { id: ref, session: sessions[ref] };
         const artifact = getArtifactByRef(ref);
@@ -1753,7 +1758,7 @@ setInterval(async () => {
         if (messageId && sessions[messageId]) return { id: messageId, session: sessions[messageId] };
       }
       const lastRecord = [...window.__renderHistory].reverse().find(record =>
-        record.kind === 'interactive' && record.id && sessions[record.id]
+        (record.kind === 'liveControl' || record.kind === 'interactive') && record.id && sessions[record.id]
       );
       if (lastRecord) return { id: lastRecord.id, session: sessions[lastRecord.id] };
       const ids = Object.keys(sessions);
@@ -1761,19 +1766,21 @@ setInterval(async () => {
       return id ? { id, session: sessions[id] } : null;
     }
 
-    window.getInteractiveVizState = function(ref = 'last') {
-      const resolved = resolveInteractiveVizSession(ref);
+    window.getLiveControlState = function(ref = 'last') {
+      const resolved = resolveLiveControlSession(ref);
       return resolved?.session?.getSnapshot?.() || null;
     };
+    window.getInteractiveVizState = window.getLiveControlState;
 
-    window.updateInteractiveVizInMsg = function(ref = 'last', patch = {}, options = {}) {
-      const resolved = resolveInteractiveVizSession(ref);
+    window.updateLiveControlInMsg = function(ref = 'last', patch = {}, options = {}) {
+      const resolved = resolveLiveControlSession(ref);
       if (!resolved?.session?.updateState) {
-        console.warn('[updateInteractiveVizInMsg] 找不到实时预览:', ref);
+        console.warn('[updateLiveControlInMsg] 找不到 liveControl:', ref);
         return null;
       }
       return resolved.session.updateState(patch, options);
     };
+    window.updateInteractiveVizInMsg = window.updateLiveControlInMsg;
 
     /**
      * 获取所有消息（用于上下文）。
@@ -1823,9 +1830,13 @@ setInterval(async () => {
         userMessageLog: window.__userMessageLog.slice(),
         lastVizualRender: window.__lastVizualRender,
         renderHistory: window.__renderHistory.slice(),
-        interactiveIds: Object.keys(window._interactiveViz || {}),
+        liveControlIds: Object.keys(window._liveControlViz || {}),
+        liveControlSessions: Object.fromEntries(
+          Object.entries(window._liveControlViz || {}).map(([id, session]) => [id, session.getSnapshot?.() || null])
+        ),
+        interactiveIds: Object.keys(window._liveControlViz || {}),
         interactiveSessions: Object.fromEntries(
-          Object.entries(window._interactiveViz || {}).map(([id, session]) => [id, session.getSnapshot?.() || null])
+          Object.entries(window._liveControlViz || {}).map(([id, session]) => [id, session.getSnapshot?.() || null])
         ),
         docViewSessionIds: Object.keys(window._docViewSessions || {}),
         lastDocViewSession: window.getDocViewReviewState?.('last') || null,

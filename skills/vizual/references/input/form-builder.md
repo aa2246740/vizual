@@ -12,7 +12,7 @@ Dynamic form with 18 field types, validation, and conditional visibility.
 | title | string | no | form title |
 | columns | number | no | layout columns (default 1) |
 | submitLabel | string | no | submit button text (default "Submit") |
-| value | object \| `{ "$bindState": string }` | no | full form data object; use `$bindState` for live controls |
+| value | object \| `{ "$bindState": string }` | no | full form data object; use `$bindState` for liveControl |
 | fields | FormField[] | yes | array of field definitions |
 
 ## Supported field types (18)
@@ -145,7 +145,7 @@ For live adjust-preview workflows, FormBuilder is the control surface. Bind the 
 }
 ```
 
-In `validation/vizual-test.html`, use this controls spec inside `renderInteractiveVizInMsg(id, { initialState, controlsSpec, makeSpec, designMd, applyTheme, bubbleWidth })`. The page bridge receives `onStateChange`, calls `makeSpec(state)`, and re-renders the preview. A pure JSON spec cannot wire a form to a separate chart by itself.
+In `validation/vizual-test.html`, use this controls spec inside `renderLiveControlInMsg(id, { initialState, controlsSpec, makeSpec, designMd, applyTheme, bubbleWidth })`. The page bridge receives `onStateChange`, calls `makeSpec(state)`, and re-renders the preview. A pure JSON spec cannot wire a form to a separate chart by itself. `renderInteractiveVizInMsg()` is only a legacy alias.
 
 For a custom React host, use `VizualRenderer` and extract the bound object by path:
 

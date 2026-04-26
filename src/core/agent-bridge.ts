@@ -13,6 +13,7 @@ export type AgentBridgeRenderKind =
   | 'artifact'
   | 'update'
   | 'update-new-message'
+  | 'liveControl'
   | 'interactive'
   | 'docview'
   | string
@@ -35,7 +36,7 @@ export type AgentBridgeArtifactEvent = {
   [key: string]: unknown
 }
 
-export type InteractiveSnapshot = {
+export type LiveControlSnapshot = {
   id: string
   state: Record<string, unknown>
   artifact: VizualArtifact | null
@@ -48,10 +49,14 @@ export type InteractiveSnapshot = {
   [key: string]: unknown
 }
 
-export type InteractiveSessionAdapter = {
-  getSnapshot(): InteractiveSnapshot | null
+export type InteractiveSnapshot = LiveControlSnapshot
+
+export type LiveControlSessionAdapter = {
+  getSnapshot(): LiveControlSnapshot | null
   getArtifact?: () => VizualArtifact | null
 }
+
+export type InteractiveSessionAdapter = LiveControlSessionAdapter
 
 export type AgentBridgeSnapshot = {
   lastVizualRender: AgentBridgeRenderRecord | null
@@ -63,6 +68,8 @@ export type AgentBridgeSnapshot = {
   artifactMessages: Record<string, string>
   artifactHistory: AgentBridgeArtifactEvent[]
   lastArtifact: VizualArtifact | null
+  liveControlIds: string[]
+  /** @deprecated use liveControlIds */
   interactiveIds: string[]
 }
 
@@ -80,7 +87,7 @@ export class VizualAgentBridge {
   private artifactMessages = new Map<string, string>()
   private artifactHistory: AgentBridgeArtifactEvent[] = []
   private renderHistory: AgentBridgeRenderRecord[] = []
-  private interactiveSessions = new Map<string, InteractiveSessionAdapter>()
+  private liveControlSessions = new Map<string, LiveControlSessionAdapter>()
   private lastArtifactId: string | null = null
   private maxRenderHistory: number
   private maxArtifactHistory: number
@@ -176,40 +183,60 @@ export class VizualAgentBridge {
     return cloneJson(event)
   }
 
+  registerLiveControlSession(id: string, session: LiveControlSessionAdapter) {
+    this.liveControlSessions.set(id, session)
+  }
+
+  /** @deprecated use registerLiveControlSession */
   registerInteractiveSession(id: string, session: InteractiveSessionAdapter) {
-    this.interactiveSessions.set(id, session)
+    this.registerLiveControlSession(id, session)
   }
 
+  unregisterLiveControlSession(id: string) {
+    this.liveControlSessions.delete(id)
+  }
+
+  /** @deprecated use unregisterLiveControlSession */
   unregisterInteractiveSession(id: string) {
-    this.interactiveSessions.delete(id)
+    this.unregisterLiveControlSession(id)
   }
 
-  resolveInteractiveSession(ref: AgentBridgeArtifactRef = 'last'): { id: string; session: InteractiveSessionAdapter } | null {
-    if (typeof ref === 'string' && ref !== 'last' && this.interactiveSessions.has(ref)) {
-      return { id: ref, session: this.interactiveSessions.get(ref)! }
+  resolveLiveControlSession(ref: AgentBridgeArtifactRef = 'last'): { id: string; session: LiveControlSessionAdapter } | null {
+    if (typeof ref === 'string' && ref !== 'last' && this.liveControlSessions.has(ref)) {
+      return { id: ref, session: this.liveControlSessions.get(ref)! }
     }
     const artifact = this.getArtifact(ref)
     const messageId = artifact?.source?.messageId || this.getMessageIdForArtifactRef(ref, artifact)
-    if (messageId && this.interactiveSessions.has(messageId)) {
-      return { id: messageId, session: this.interactiveSessions.get(messageId)! }
+    if (messageId && this.liveControlSessions.has(messageId)) {
+      return { id: messageId, session: this.liveControlSessions.get(messageId)! }
     }
     if (!ref || ref === 'last') {
       for (let i = this.renderHistory.length - 1; i >= 0; i -= 1) {
         const record = this.renderHistory[i]
-        if (record.kind === 'interactive' && this.interactiveSessions.has(record.id)) {
-          return { id: record.id, session: this.interactiveSessions.get(record.id)! }
+        if ((record.kind === 'liveControl' || record.kind === 'interactive') && this.liveControlSessions.has(record.id)) {
+          return { id: record.id, session: this.liveControlSessions.get(record.id)! }
         }
       }
-      const ids = Array.from(this.interactiveSessions.keys())
+      const ids = Array.from(this.liveControlSessions.keys())
       const id = ids[ids.length - 1]
-      return id ? { id, session: this.interactiveSessions.get(id)! } : null
+      return id ? { id, session: this.liveControlSessions.get(id)! } : null
     }
     return null
   }
 
-  getInteractiveSnapshot(ref: AgentBridgeArtifactRef = 'last'): InteractiveSnapshot | null {
-    const resolved = this.resolveInteractiveSession(ref)
+  /** @deprecated use resolveLiveControlSession */
+  resolveInteractiveSession(ref: AgentBridgeArtifactRef = 'last'): { id: string; session: InteractiveSessionAdapter } | null {
+    return this.resolveLiveControlSession(ref)
+  }
+
+  getLiveControlSnapshot(ref: AgentBridgeArtifactRef = 'last'): LiveControlSnapshot | null {
+    const resolved = this.resolveLiveControlSession(ref)
     return resolved?.session.getSnapshot?.() || null
+  }
+
+  /** @deprecated use getLiveControlSnapshot */
+  getInteractiveSnapshot(ref: AgentBridgeArtifactRef = 'last'): InteractiveSnapshot | null {
+    return this.getLiveControlSnapshot(ref)
   }
 
   snapshot(): AgentBridgeSnapshot {
@@ -228,7 +255,8 @@ export class VizualAgentBridge {
       artifactMessages: Object.fromEntries(this.artifactMessages),
       artifactHistory: this.artifactHistory.map(event => cloneJson(event)),
       lastArtifact: this.getLastArtifact(),
-      interactiveIds: Array.from(this.interactiveSessions.keys()),
+      liveControlIds: Array.from(this.liveControlSessions.keys()),
+      interactiveIds: Array.from(this.liveControlSessions.keys()),
     }
   }
 }

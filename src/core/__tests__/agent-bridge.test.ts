@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { createAgentBridge, type InteractiveSnapshot } from '../agent-bridge'
+import { createAgentBridge, type LiveControlSnapshot } from '../agent-bridge'
 import { normalizeArtifact, type VizualSpec } from '../artifact'
 
 const spec: VizualSpec = {
@@ -74,14 +74,14 @@ describe('VizualAgentBridge', () => {
     })
   })
 
-  it('resolves isolated interactive sessions by message id and artifact id', () => {
+  it('resolves isolated liveControl sessions by message id and artifact id', () => {
     const bridge = createAgentBridge()
     const artifactA = normalizeArtifact(spec, { source: { messageId: 'msg-a' } })
     const artifactB = normalizeArtifact(spec, { source: { messageId: 'msg-b' } })
     bridge.rememberArtifact('msg-a', artifactA)
     bridge.rememberArtifact('msg-b', artifactB)
 
-    const snapshotA: InteractiveSnapshot = {
+    const snapshotA: LiveControlSnapshot = {
       id: 'msg-a',
       state: { controls: { brandColor: '#111111' } },
       artifact: artifactA,
@@ -92,20 +92,47 @@ describe('VizualAgentBridge', () => {
       status: 'success',
       error: null,
     }
-    const snapshotB: InteractiveSnapshot = {
+    const snapshotB: LiveControlSnapshot = {
       ...snapshotA,
       id: 'msg-b',
       state: { controls: { brandColor: '#ff6b35' } },
       artifact: artifactB,
     }
 
-    bridge.registerInteractiveSession('msg-a', { getSnapshot: () => snapshotA })
-    bridge.registerInteractiveSession('msg-b', { getSnapshot: () => snapshotB })
-    bridge.recordRender('interactive', 'msg-a')
-    bridge.recordRender('interactive', 'msg-b')
+    bridge.registerLiveControlSession('msg-a', { getSnapshot: () => snapshotA })
+    bridge.registerLiveControlSession('msg-b', { getSnapshot: () => snapshotB })
+    bridge.recordRender('liveControl', 'msg-a')
+    bridge.recordRender('liveControl', 'msg-b')
 
-    expect(bridge.getInteractiveSnapshot('msg-a')?.state).toEqual(snapshotA.state)
-    expect(bridge.getInteractiveSnapshot(artifactB.id)?.state).toEqual(snapshotB.state)
+    expect(bridge.getLiveControlSnapshot('msg-a')?.state).toEqual(snapshotA.state)
+    expect(bridge.getLiveControlSnapshot(artifactB.id)?.state).toEqual(snapshotB.state)
+    expect(bridge.getLiveControlSnapshot('last')?.id).toBe('msg-b')
+    expect(bridge.snapshot().liveControlIds).toEqual(['msg-a', 'msg-b'])
     expect(bridge.getInteractiveSnapshot('last')?.id).toBe('msg-b')
+  })
+
+  it('keeps legacy interactive session aliases compatible', () => {
+    const bridge = createAgentBridge()
+    const artifact = normalizeArtifact(spec, { source: { messageId: 'msg-legacy' } })
+    bridge.rememberArtifact('msg-legacy', artifact)
+
+    const snapshot: LiveControlSnapshot = {
+      id: 'msg-legacy',
+      state: { controls: { chartType: 'bar' } },
+      artifact,
+      renderCount: 1,
+      pending: false,
+      lastPreviewSpec: spec,
+      lastPreviewSummary: { elementCount: 1 },
+      status: 'success',
+      error: null,
+    }
+
+    bridge.registerInteractiveSession('msg-legacy', { getSnapshot: () => snapshot })
+    bridge.recordRender('interactive', 'msg-legacy')
+
+    expect(bridge.getLiveControlSnapshot('last')?.id).toBe('msg-legacy')
+    expect(bridge.resolveInteractiveSession('msg-legacy')?.session.getSnapshot()).toEqual(snapshot)
+    expect(bridge.snapshot().interactiveIds).toEqual(['msg-legacy'])
   })
 })

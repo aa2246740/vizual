@@ -12,7 +12,7 @@ export type VizualSpec = {
   [key: string]: unknown
 }
 
-export type VizualArtifactKind = 'spec' | 'docview' | 'interactive'
+export type VizualArtifactKind = 'spec' | 'docview' | 'liveControl' | 'interactive'
 export type VizualArtifactStatus = 'draft' | 'rendered' | 'updated' | 'error' | 'exported'
 
 export type VizualArtifactSource = {

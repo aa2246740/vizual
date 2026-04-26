@@ -665,7 +665,7 @@
     <div class="section-card">
       <div class="section-header">
         <div>
-          <h2>实时调节器验证</h2>
+          <h2>liveControl 验证</h2>
           <p>使用 Vizual FormBuilder 绑定宿主 state；控件变化后实时重建 spec、重新渲染预览，并可通过颜色控件验证 Design.md 动态注入。</p>
         </div>
         <div class="section-summary" id="interactive-summary">等待渲染</div>
@@ -1027,7 +1027,7 @@ ${base}`;
             type: 'FormBuilder',
             props: {
               type: 'form_builder',
-              title: '实时调节器',
+              title: 'liveControl',
               submitLabel: '记录当前配置',
               value: { '$bindState': '/controls' },
               fields: [
@@ -1071,7 +1071,7 @@ ${base}`;
       const chartProps = chartType === 'ComboChart'
         ? {
             type: 'combo',
-            title: '实时联动：收入与基准',
+            title: 'liveControl：收入与基准',
             x: 'day',
             y: ['value', 'benchmark'],
             data,
@@ -1080,7 +1080,7 @@ ${base}`;
           }
         : {
             type: chartType === 'LineChart' ? 'line' : chartType === 'AreaChart' ? 'area' : 'bar',
-            title: `实时联动：${controls.points} 个数据点`,
+            title: `liveControl：${controls.points} 个数据点`,
             x: 'day',
             y: 'value',
             data,
@@ -1236,7 +1236,7 @@ ${base}`;
         interactiveRenderCount++;
         labelEl.textContent = `${controls.chartType} / ${controls.points} 点 / ${controls.multiplier}x / ${controls.stacked ? 'stacked' : 'normal'} / ${controls.showTable ? 'table on' : 'table off'} / ${controls.accent}`;
         countEl.textContent = `render: ${interactiveRenderCount}`;
-        summaryEl.textContent = 'PASS：实时联动已渲染';
+        summaryEl.textContent = 'PASS：liveControl 已渲染';
         summaryEl.dataset.status = 'pass';
       };
 

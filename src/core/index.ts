@@ -36,6 +36,8 @@ export type {
   CreateAgentBridgeOptions,
   InteractiveSessionAdapter,
   InteractiveSnapshot,
+  LiveControlSessionAdapter,
+  LiveControlSnapshot,
 } from './agent-bridge'
 export {
   applyVizualStateChanges,

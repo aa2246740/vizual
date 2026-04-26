@@ -47,7 +47,7 @@ import { HeroLayoutSchema } from './components/hero-layout/schema'
 
 /**
  * Vizual catalog — 31 components registered as json-render visualization catalog
- * Use host bridges such as renderInteractiveVizInMsg for live parameter exploration.
+ * Use host bridges such as renderLiveControlInMsg for liveControl parameter exploration.
  * (15 components removed — AI uses freeform HTML via DocView instead)
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

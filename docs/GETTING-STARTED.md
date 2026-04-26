@@ -158,7 +158,7 @@ import { executeAction } from 'vizual'
 executeAction('submitForm', { formId: 'myForm', data: { name: 'Alice' } })
 ```
 
-实时可调图表不是纯 JSON schema；宿主需要把 FormBuilder 的 `value: { "$bindState": "/controls" }` 绑定到 state，再由 `makeSpec(state)` 重新生成预览图表。`validation/vizual-test.html` 的 `renderInteractiveVizInMsg()` 是推荐参考实现。
+liveControl 不是纯 JSON schema；宿主需要把 FormBuilder 的 `value: { "$bindState": "/controls" }` 绑定到 state，再由 `makeSpec(state)` 重新生成预览图表。`validation/vizual-test.html` 的 `renderLiveControlInMsg()` 是推荐参考实现，`renderInteractiveVizInMsg()` 仅作为旧别名保留。
 
 自有 React 宿主可以这样接：
 

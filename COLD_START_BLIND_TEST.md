@@ -45,9 +45,9 @@
 - `window.renderVizInMsg(id, spec, options?)`
 - `window.renderArtifactInMsg(id, artifact, options?)`
 - `window.updateArtifactInMsg(ref, patches, options?)`
-- `window.renderInteractiveVizInMsg(id, config)`
-- `window.updateInteractiveVizInMsg(ref, patch, options?)`
-- `window.getInteractiveVizState(ref?)`
+- `window.renderLiveControlInMsg(id, config)`
+- `window.updateLiveControlInMsg(ref, patch, options?)`
+- `window.getLiveControlState(ref?)`
 - `window.renderDocViewInMsg(id, config)`
 - `window.createDocViewThread(ref, input)`
 - `window.submitDocViewThreads(ref, threadIds?)`
@@ -62,8 +62,8 @@
 关键语义：
 
 - `renderVizInMsg(id, spec, options?)` 返回 `VizualArtifact | null`；后续修改/导出优先使用返回的 `artifact.id`。如果旧宿主只返回 `true`，再回退到 `getLastArtifact()`。
-- `renderInteractiveVizInMsg(id, config)` 返回实时预览 snapshot，形如 `{ artifact, state, lastPreviewSpec, renderCount }`；不要只当 boolean 用。
-- `getInteractiveVizState(ref?)` 返回 `{ artifact, state, lastPreviewSpec, renderCount }`；控件值在 `state.controls`，多个 interactive artifact 必须互相隔离。
+- `renderLiveControlInMsg(id, config)` 返回 liveControl snapshot，形如 `{ artifact, state, lastPreviewSpec, renderCount }`；不要只当 boolean 用。旧别名：`renderInteractiveVizInMsg()`。
+- `getLiveControlState(ref?)` 返回 `{ artifact, state, lastPreviewSpec, renderCount }`；控件值在 `state.controls`，多个 liveControl artifact 必须互相隔离。
 - `createDocViewThread(ref, input)` 可用 `{ sectionId, selectedText, body }` 创建文本批注；也可加 `targetType` / `label` 创建图表、KPI、表格或整段批注。`anchor` 可省略，宿主会从 section 信息推断。
 - `submitDocViewThreads(ref, threadIds?)` 省略 `threadIds` 时提交该 DocView 的所有 open threads。
 - `getDocViewReviewState(ref?)` 返回的 `sections` 是顶层文档 sections；不要用 DOM 里 `[data-section-id]` 的数量判断 section 数，因为 KPI、图表、表格会展开成多个可批注目标。
@@ -103,7 +103,7 @@ D12 华东 165 1160 14600 145 72%
 把刚才的 dashboard 里主趋势图改成折线图，只看华东区，数据点少一点，然后导出 PDF 和 XLSX。
 ```
 
-### T3. 实时可调图表
+### T3. liveControl 图表
 
 ```text
 做一个可以实时调参的图表：我想用控件调数据点数量、图表类型、是否堆叠、主色。右侧要实时预览，改控件以后图表马上变化。
