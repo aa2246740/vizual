@@ -1215,7 +1215,7 @@ setInterval(async () => {
       try {
         const root = window.Vizual.ReactDOMClient.createRoot(docRoot);
         window._docViewRoots[id] = root;
-        root.render(window.Vizual.React.createElement(window.Vizual.DocView, {
+        const docViewNode = window.Vizual.React.createElement(window.Vizual.DocView, {
           ...baseProps,
           sections: initialSections,
           showPanel: inputConfig.showPanel ?? baseProps.showPanel ?? true,
@@ -1224,7 +1224,13 @@ setInterval(async () => {
           onSectionsChange,
           controllerRef,
           onAction: inputConfig.onAction || baseProps.onAction,
-        }));
+        });
+        const flushSync = window.Vizual.ReactDOM?.flushSync || window.ReactDOM?.flushSync;
+        if (typeof flushSync === 'function') {
+          flushSync(() => root.render(docViewNode));
+        } else {
+          root.render(docViewNode);
+        }
         artifact = rememberArtifact(id, artifact);
         session.artifact = artifact;
         installArtifactToolbar(id, artifact, vizWrap);
