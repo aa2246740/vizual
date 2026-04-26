@@ -1,5 +1,6 @@
 import type { SankeyChartProps } from './schema'
 import { createEChartsBridge } from '../../core/echarts-bridge-factory'
+import { tc } from '../../core/theme-colors'
 
 /**
  * Extract links and nodes from props.
@@ -42,6 +43,7 @@ function buildSankeyFallback(props: SankeyChartProps): Record<string, unknown> {
       type: 'sankey',
       layout: 'none',
       emphasis: { focus: 'adjacency' },
+      label: { color: tc('--rk-text-primary') },
       data: nodes.map((n) => ({ name: n.name })),
       links: links.map((l) => ({
         source: l.source, target: l.target, value: l.value,

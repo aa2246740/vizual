@@ -13,9 +13,9 @@ function inferCalendarRange(values: string[]): string | string[] {
   return minYear === maxYear ? String(minYear) : [String(minYear), String(maxYear)]
 }
 
-function buildCalendarFallback(props: CalendarChartProps): Record<string, unknown> {
-  const dateField = props.date ?? 'date'
-  const valueField = props.value ?? 'value'
+export function buildCalendarFallback(props: CalendarChartProps): Record<string, unknown> {
+  const dateField = props.dateField ?? props.date ?? 'date'
+  const valueField = props.valueField ?? props.value ?? 'value'
   const data = Array.isArray(props.data) ? props.data : []
   const calData = data.map((d: Record<string, unknown>) => [
     String(d[dateField] ?? ''),
@@ -28,9 +28,9 @@ function buildCalendarFallback(props: CalendarChartProps): Record<string, unknow
     tooltip: {},
     visualMap: { min: 0, max: maxVal, type: 'piecewise', orient: 'horizontal', left: 'center', top: props.title ? 36 : 8 },
     calendar: {
-      range: inferCalendarRange(calData.map(d => String(d[0]))),
+      range: props.range ?? inferCalendarRange(calData.map(d => String(d[0]))),
       top: props.title ? 80 : 46,
-      left: 36,
+      left: 64,
       right: 16,
       cellSize: ['auto', 16],
     },

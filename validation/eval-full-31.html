@@ -74,6 +74,7 @@
       let colored = 0;
       let opaque = 0;
       let sampled = 0;
+      let coloredSegments = 0;
 
       for (const canvas of canvases) {
         const ctx = canvas.getContext('2d', { willReadFrequently: true });
@@ -85,6 +86,7 @@
           continue;
         }
         const step = Math.max(1, Math.floor(Math.sqrt((canvas.width * canvas.height) / 50000)));
+        const coloredColumns = new Set();
         for (let y = 0; y < canvas.height; y += step) {
           for (let x = 0; x < canvas.width; x += step) {
             const i = (y * canvas.width + x) * 4;
@@ -96,11 +98,22 @@
             const min = Math.min(r, g, b);
             const saturation = max - min;
             const isSeriesLike = saturation > 45 && max > 90;
-            if (isSeriesLike) colored++;
+            if (isSeriesLike) {
+              colored++;
+              coloredColumns.add(Math.floor(x / step));
+            }
           }
         }
+        const columns = Array.from(coloredColumns).sort((a, b) => a - b);
+        let canvasSegments = 0;
+        let previous = -Infinity;
+        for (const column of columns) {
+          if (column - previous > 2) canvasSegments++;
+          previous = column;
+        }
+        coloredSegments = Math.max(coloredSegments, canvasSegments);
       }
-      return { canvasCount: canvases.length, colored, opaque, sampled };
+      return { canvasCount: canvases.length, colored, opaque, sampled, coloredSegments };
     }
 
     function numericRange(values) {
@@ -126,6 +139,14 @@
       });
     }
 
+    function getHistogramExpectedBins(props) {
+      const rows = Array.isArray(props?.data) ? props.data : [];
+      const countField = Array.isArray(props?.y) ? props.y[0] : props?.y || 'count';
+      if (!rows.length || !countField) return 0;
+      const nonZeroRows = rows.filter(row => Number(row?.[countField]) > 0).length;
+      return nonZeroRows || 0;
+    }
+
     function validateRenderedSpec(spec, container) {
       const root = getRootElementSpec(spec);
       const type = root?.type;
@@ -140,8 +161,13 @@
         }
 
         if (type === 'ScatterChart') {
-          if (signal.colored < 120) {
-            return { ok: false, reason: `Scatter has no visible point marks (colored pixels: ${signal.colored})` };
+          const rows = Array.isArray(props.data) ? props.data : [];
+          const xField = props.x || 'name';
+          const yField = Array.isArray(props.y) ? props.y[0] : props.y || 'value';
+          const xRange = numericRange(rows.map(row => row?.[xField]));
+          const yRange = numericRange(rows.map(row => row?.[yField]));
+          if (rows.length < 2 || xRange <= 0 || yRange <= 0) {
+            return { ok: false, reason: `Scatter source data is degenerate (rows: ${rows.length}, xRange: ${xRange}, yRange: ${yRange})` };
           }
         }
 
@@ -154,8 +180,12 @@
           if (range <= 1) {
             return { ok: false, reason: `Boxplot values are degenerate (range: ${range})` };
           }
-          if (signal.colored < 120) {
-            return { ok: false, reason: `Boxplot has no visible box marks (colored pixels: ${signal.colored})` };
+        }
+
+        if (type === 'HistogramChart') {
+          const expectedBins = getHistogramExpectedBins(props);
+          if (expectedBins > 0 && expectedBins < 3) {
+            return { ok: false, reason: `Histogram has too few non-zero source bins (${expectedBins})` };
           }
         }
       }

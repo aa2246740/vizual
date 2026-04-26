@@ -25,7 +25,7 @@ function resolveFields(props: DumbbellChartProps) {
   return { data, categoryField, lowField, highField }
 }
 
-function buildDumbbellFallback(props: DumbbellChartProps): Record<string, unknown> {
+export function buildDumbbellFallback(props: DumbbellChartProps): Record<string, unknown> {
   const { data, categoryField, lowField, highField } = resolveFields(props)
   const categories = data.map((d: Record<string, unknown>) => String(d[categoryField] ?? ''))
   return {
@@ -40,13 +40,22 @@ function buildDumbbellFallback(props: DumbbellChartProps): Record<string, unknow
         const low = api.coord([idx, api.value(1)])
         const high = api.coord([idx, api.value(2)])
         if (!low || !high) return {}
-        const height = 6
+        const lineColor = api.visual('color')
         return {
           type: 'group',
           children: [
-            { type: 'rect', shape: { x: low[0], y: low[1] - height / 2, width: high[0] - low[0], height }, style: { fill: api.visual('color'), opacity: 0.3 } },
-            { type: 'circle', shape: { cx: low[0], cy: low[1], r: 5 }, style: { fill: api.visual('color') } },
-            { type: 'circle', shape: { cx: high[0], cy: high[1], r: 5 }, style: { fill: api.visual('color') } },
+            {
+              type: 'rect',
+              shape: {
+                x: low[0] - 2.5,
+                y: Math.min(low[1], high[1]),
+                width: 5,
+                height: Math.max(Math.abs(high[1] - low[1]), 6),
+              },
+              style: { fill: lineColor, opacity: 0.85 },
+            },
+            { type: 'circle', shape: { cx: low[0], cy: low[1], r: 4 }, style: { fill: lineColor } },
+            { type: 'circle', shape: { cx: high[0], cy: high[1], r: 4 }, style: { fill: lineColor } },
           ],
         }
       },
