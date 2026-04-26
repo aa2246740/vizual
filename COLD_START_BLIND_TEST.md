@@ -1,5 +1,7 @@
 # Vizual 冷启动盲测任务书
 
+读者：被测 Agent。不要读取 `COLD_START_ACCEPTANCE_GUIDE.md`，不要读取 Vizual 仓库源码或 validation 页面源码。
+
 这份文档只给**被测 Agent** 使用。目标是验证：一个只读过 Vizual skill、没有项目上下文的 Agent，能否在 `vizual-test.html` 中独立完成真实对话式可视化工作。
 
 注意：这不是答案文档，也不是评分标准。你需要自己读 Vizual skill、自己判断组件和交互方式、自己操作页面、自己生成报告。

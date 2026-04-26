@@ -1,10 +1,20 @@
 # Vizual 冷启动验收指南
 
+读者：测试主持人、维护者、集成方 QA。不要把这份文档给被测 Agent。
+
 这份指南用于验证：一个**只读过 Vizual skill、没有项目上下文的 Agent**，能不能正确把 Vizual 当成宿主运行时来使用。
 
 被测 Agent 必须像真实 SaaS / Chatbot 里的业务 Agent 一样工作：读取用户输入，判断该用静态 spec、可编辑 artifact、实时交互 bridge，还是 DocView；把内容渲染到聊天页面；支持追问改图、实时调参、批注修订和导出。
 
 如果要做无人值守冷启动盲测，把 `COLD_START_BLIND_TEST.md` 给被测 Agent。那份文档只包含规则、输入任务和报告格式，不包含本指南里的通过标准和预期答案。被测 Agent 不应读取本指南。
+
+最短路径：
+
+1. `python3 -m http.server 8793`
+2. 打开 `http://127.0.0.1:8793/validation/vizual-test.html`
+3. 确认 Chrome DevTools MCP 或等价浏览器自动化能连接这个可见页面。
+4. 新建一个干净 Agent 会话，只给它 `COLD_START_BLIND_TEST.md`。
+5. 让 Agent 按盲测任务书完成 9 轮输入并输出 QA 报告。
 
 ## 测试环境
 

@@ -231,4 +231,17 @@ await downloadBlob(xlsx, 'data.xlsx')
 - DocView 批注、提交、修订 proposal、apply、resolved
 - 普通 dashboard 和 DocView 导出
 
-盲测任务书：`COLD_START_BLIND_TEST.md`。验收指南：`COLD_START_ACCEPTANCE_GUIDE.md`。
+文档分工：
+
+| 文件 | 给谁 | 说明 |
+| --- | --- | --- |
+| `COLD_START_BLIND_TEST.md` | 被测 Agent | 只包含任务和约束。Agent 需要自己读 skill、自己操作 `vizual-test.html`、自己写 QA 报告。 |
+| `COLD_START_ACCEPTANCE_GUIDE.md` | 测试主持人 / 维护者 | 包含验收标准和预期结果。不要给被测 Agent，否则测试会失真。 |
+
+最小执行流程：
+
+1. 安装 `skills/vizual/` 到被测 Agent 环境。
+2. 在仓库根目录运行 `python3 -m http.server 8793`。
+3. 打开 `http://127.0.0.1:8793/validation/vizual-test.html`，并让 Chrome DevTools MCP 或等价能力连接同一个可见页面。
+4. 开一个全新 Agent 会话，只给它 `COLD_START_BLIND_TEST.md`。
+5. Agent 必须在可见页面里输入测试消息、读取 `window.getPendingMessage()`、调用页面 bridge API，并提交 Markdown QA 报告。
