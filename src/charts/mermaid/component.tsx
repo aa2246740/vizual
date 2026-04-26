@@ -5,6 +5,33 @@ import { tcss, tc } from '../../core/theme-colors'
 import { useAnnotationContext } from '../../docview/annotation-context'
 import type { AnnotationTarget } from '../../docview/types'
 
+function sanitizeMermaidSvg(svg: string) {
+  if (typeof DOMParser !== 'undefined' && typeof XMLSerializer !== 'undefined') {
+    const doc = new DOMParser().parseFromString(svg, 'image/svg+xml')
+    if (!doc.querySelector('parsererror') && doc.documentElement?.tagName.toLowerCase() === 'svg') {
+      doc.querySelectorAll('script, foreignObject').forEach(node => node.remove())
+      const cleanElement = (element: Element) => {
+        for (const attr of Array.from(element.attributes)) {
+          const name = attr.name.toLowerCase()
+          const value = attr.value.trim().toLowerCase()
+          if (name.startsWith('on') || ((name === 'href' || name === 'xlink:href') && value.startsWith('javascript:'))) {
+            element.removeAttribute(attr.name)
+          }
+        }
+        Array.from(element.children).forEach(cleanElement)
+      }
+      cleanElement(doc.documentElement)
+      return new XMLSerializer().serializeToString(doc.documentElement)
+    }
+  }
+
+  return String(DOMPurify.sanitize(svg, {
+    USE_PROFILES: { svg: true, svgFilters: true },
+    FORBID_TAGS: ['foreignObject', 'script'],
+    FORBID_ATTR: ['onerror', 'onload', 'onclick'],
+  }))
+}
+
 /**
  * Mermaid diagram component — renders mermaid syntax via mermaid.js
  *
@@ -33,11 +60,7 @@ export function MermaidChart({ props }: { props: MermaidProps }) {
       const id = `mermaid-${Math.random().toString(36).slice(2, 9)}`
       try {
         const { svg } = await lib.render(id, code)
-        const cleanSvg = String(DOMPurify.sanitize(svg, {
-          USE_PROFILES: { svg: true, svgFilters: true },
-          FORBID_TAGS: ['foreignObject', 'script'],
-          FORBID_ATTR: ['onerror', 'onload', 'onclick'],
-        }))
+        const cleanSvg = sanitizeMermaidSvg(svg)
         if (!cancelled) { setHtml(cleanSvg); setError('') }
       } catch (e: any) {
         if (!cancelled) setError(e?.message ?? 'Render failed')

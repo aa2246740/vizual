@@ -86,6 +86,135 @@
       padding: 16px;
     }
     #viz { min-height: 520px; }
+    .validation-section {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 0 20px 28px;
+    }
+    .section-card {
+      background: var(--rk-bg-secondary, #f8fafc);
+      border: 1px solid var(--rk-border-subtle, #e5e7eb);
+      border-radius: var(--rk-radius-lg, 12px);
+      box-shadow: var(--rk-shadow, none);
+      padding: 16px;
+    }
+    .section-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 14px;
+    }
+    .section-header h2 {
+      margin: 0 0 6px;
+    }
+    .section-header p {
+      margin: 0;
+      color: var(--rk-text-secondary, #475569);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+    .section-summary {
+      flex: 0 0 auto;
+      min-width: 180px;
+      padding: 7px 12px;
+      border: 1px solid var(--rk-border-subtle, #e5e7eb);
+      border-radius: var(--rk-radius-md, 8px);
+      background: var(--rk-bg-primary, #ffffff);
+      color: var(--rk-text-secondary, #475569);
+      font-family: var(--rk-font-ui, var(--rk-font-sans));
+      font-size: 12px;
+      font-weight: 700;
+      text-align: center;
+      white-space: nowrap;
+    }
+    .section-summary[data-status="pass"] {
+      border-color: var(--rk-success, #16a34a);
+      color: var(--rk-success, #16a34a);
+    }
+    .section-summary[data-status="fail"] {
+      border-color: var(--rk-error, #dc2626);
+      color: var(--rk-error, #dc2626);
+    }
+    .interactive-grid {
+      display: grid;
+      grid-template-columns: minmax(280px, 360px) minmax(0, 1fr);
+      gap: 16px;
+      align-items: start;
+    }
+    .interactive-controls,
+    .interactive-preview {
+      min-width: 0;
+      border: 1px solid var(--rk-border-subtle, #e5e7eb);
+      border-radius: var(--rk-radius-md, 8px);
+      background: var(--rk-bg-primary, #ffffff);
+      padding: 14px;
+    }
+    .interactive-preview {
+      min-height: 420px;
+      overflow: auto;
+    }
+    .interactive-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+      color: var(--rk-text-secondary, #475569);
+      font-size: 12px;
+      font-family: var(--rk-font-ui, var(--rk-font-sans));
+    }
+    .component-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(520px, 1fr));
+      gap: 14px;
+    }
+    .component-card {
+      min-width: 0;
+      background: var(--rk-bg-primary, #ffffff);
+      border: 1px solid var(--rk-border-subtle, #e5e7eb);
+      border-radius: var(--rk-radius-md, 8px);
+      overflow: hidden;
+    }
+    .component-card.full {
+      grid-column: 1 / -1;
+    }
+    .component-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 9px 12px;
+      border-bottom: 1px solid var(--rk-border-subtle, #e5e7eb);
+    }
+    .component-card-header h3 {
+      margin: 0;
+      color: var(--rk-text-primary, #111827);
+      font-family: var(--rk-font-ui, var(--rk-font-sans));
+      font-size: 13px;
+      font-weight: 700;
+    }
+    .component-status {
+      flex: 0 0 auto;
+      color: var(--rk-text-tertiary, #64748b);
+      font-family: var(--rk-font-mono, monospace);
+      font-size: 11px;
+      white-space: nowrap;
+    }
+    .component-body {
+      min-height: 300px;
+      max-height: 520px;
+      overflow: auto;
+      padding: 12px;
+      background: var(--rk-bg-secondary, #f8fafc);
+    }
+    .component-body.error {
+      color: var(--rk-error, #dc2626);
+      background: var(--rk-error-muted, rgba(220, 38, 38, 0.1));
+      font-family: var(--rk-font-mono, monospace);
+      font-size: 12px;
+      white-space: pre-wrap;
+    }
     .status-badge {
       display: inline-flex;
       align-items: center;
@@ -180,6 +309,8 @@
     }
     @media (max-width: 900px) {
       main { grid-template-columns: 1fr; }
+      .interactive-grid { grid-template-columns: 1fr; }
+      .component-grid { grid-template-columns: 1fr; }
     }
     body[data-profile="wired"] {
       background: #ffffff;
@@ -309,6 +440,47 @@
       background: #ffffff;
       max-height: 320px;
     }
+    body[data-profile="wired"] .validation-section {
+      max-width: 1360px;
+      padding: 0 24px 28px;
+    }
+    body[data-profile="wired"] .section-card,
+    body[data-profile="wired"] .interactive-controls,
+    body[data-profile="wired"] .interactive-preview,
+    body[data-profile="wired"] .component-card {
+      background: #ffffff;
+      border: 1px solid #000000;
+      border-radius: 0;
+      box-shadow: none;
+    }
+    body[data-profile="wired"] .section-header {
+      padding-bottom: 12px;
+      border-bottom: 2px solid #000000;
+    }
+    body[data-profile="wired"] .section-header h2 {
+      padding: 0;
+      background: transparent;
+      color: #000000;
+    }
+    body[data-profile="wired"] .section-summary,
+    body[data-profile="wired"] .component-status {
+      border-radius: 0;
+      color: #000000;
+      font-family: var(--rk-font-mono, monospace);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+    body[data-profile="wired"] .component-card-header {
+      border-bottom: 1px solid #000000;
+    }
+    body[data-profile="wired"] .component-card-header h3 {
+      font-family: var(--rk-font-mono, monospace);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+    body[data-profile="wired"] .component-body {
+      background: #ffffff;
+    }
     body[data-profile="starbucks"] {
       background: var(--rk-bg-primary, #f2f0eb);
       color: var(--rk-text-primary, rgba(0, 0, 0, 0.87));
@@ -400,6 +572,34 @@
       text-transform: none;
       letter-spacing: 0;
     }
+    body[data-profile="starbucks"] .validation-section {
+      max-width: 1320px;
+      padding: 0 28px 32px;
+    }
+    body[data-profile="starbucks"] .section-card,
+    body[data-profile="starbucks"] .interactive-controls,
+    body[data-profile="starbucks"] .interactive-preview,
+    body[data-profile="starbucks"] .component-card {
+      border: 0;
+      border-radius: 12px;
+      box-shadow: var(--rk-shadow);
+      background: #ffffff;
+    }
+    body[data-profile="starbucks"] .section-summary {
+      border-color: #00754A;
+      border-radius: 50px;
+      color: #00754A;
+    }
+    body[data-profile="starbucks"] .component-card-header {
+      border-bottom-color: rgba(0,0,0,0.08);
+    }
+    body[data-profile="starbucks"] .component-card-header h3 {
+      color: #006241;
+      letter-spacing: -0.01em;
+    }
+    body[data-profile="starbucks"] .component-body {
+      background: #f2f0eb;
+    }
     @media (max-width: 900px) {
       body[data-profile="wired"] main {
         grid-template-columns: 1fr;
@@ -461,6 +661,42 @@
     </aside>
   </main>
 
+  <section class="validation-section">
+    <div class="section-card">
+      <div class="section-header">
+        <div>
+          <h2>实时调节器验证</h2>
+          <p>使用 Vizual FormBuilder 绑定宿主 state；控件变化后实时重建 spec、重新渲染预览，并可通过颜色控件验证 Design.md 动态注入。</p>
+        </div>
+        <div class="section-summary" id="interactive-summary">等待渲染</div>
+      </div>
+      <div class="interactive-grid">
+        <div class="interactive-controls" id="interactive-controls"></div>
+        <div class="interactive-preview">
+          <div class="interactive-meta">
+            <span id="interactive-state-label">state: pending</span>
+            <span id="interactive-render-count">render: 0</span>
+          </div>
+          <div id="interactive-preview"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="validation-section">
+    <div class="section-card">
+      <div class="section-header">
+        <div>
+          <h2>31 组件主题矩阵</h2>
+          <p>动态切换 Design.md 后重新渲染全部组件，用同一组 eval specs 验证所有 Vizual 内容是否跟随主题 token。</p>
+        </div>
+        <div class="section-summary" id="component-summary">等待渲染</div>
+      </div>
+      <div class="component-grid" id="component-grid"></div>
+    </div>
+  </section>
+
+  <script src="specs-31.js"></script>
   <script>
     const cmbDesignMd = `
 Design System: China Merchants Bank
@@ -699,6 +935,394 @@ Whisper-soft, layered over solid surfaces.
       };
     }
 
+    const ECHARTS_COMPONENTS = new Set([
+      'BarChart', 'LineChart', 'AreaChart', 'PieChart', 'ScatterChart', 'BubbleChart',
+      'BoxplotChart', 'HistogramChart', 'WaterfallChart', 'XmrChart', 'SankeyChart',
+      'FunnelChart', 'HeatmapChart', 'CalendarChart', 'ComboChart', 'DumbbellChart',
+      'RadarChart',
+    ]);
+    const COMPONENT_VALIDATE_DELAY = 520;
+    let galleryRunId = 0;
+    let interactiveRunId = 0;
+    let interactiveRenderCount = 0;
+    let interactiveState = {
+      controls: {
+        chartType: 'BarChart',
+        points: 6,
+        multiplier: 1,
+        showTable: true,
+        stacked: false,
+        accent: profiles[selectedProfile].expected.accent,
+      },
+    };
+
+    function cloneJson(value) {
+      return value == null ? value : JSON.parse(JSON.stringify(value));
+    }
+
+    function getPathValue(obj, path) {
+      const parts = String(path || '').split('/').filter(Boolean);
+      let cursor = obj;
+      for (const part of parts) {
+        if (!cursor || typeof cursor !== 'object') return undefined;
+        cursor = cursor[part];
+      }
+      return cursor;
+    }
+
+    function setPathValue(obj, path, value) {
+      const parts = String(path || '').split('/').filter(Boolean);
+      if (!parts.length) return value;
+      const next = Array.isArray(obj) ? [...obj] : { ...(obj || {}) };
+      let cursor = next;
+      for (let i = 0; i < parts.length - 1; i++) {
+        const part = parts[i];
+        const child = cursor[part];
+        cursor[part] = Array.isArray(child) ? [...child] : { ...(child || {}) };
+        cursor = cursor[part];
+      }
+      cursor[parts[parts.length - 1]] = value;
+      return next;
+    }
+
+    function applyStateChanges(state, changes) {
+      return (changes || []).reduce((next, change) => setPathValue(next, change.path, change.value), state);
+    }
+
+    function normalizeControls(profileName, controls = {}) {
+      const defaults = {
+        chartType: 'BarChart',
+        points: 6,
+        multiplier: 1,
+        showTable: true,
+        stacked: false,
+        accent: profiles[profileName].expected.accent,
+      };
+      return {
+        ...defaults,
+        ...controls,
+        points: Math.max(3, Math.min(12, Number(controls.points ?? defaults.points) || defaults.points)),
+        multiplier: Math.max(0.5, Math.min(3, Number(controls.multiplier ?? defaults.multiplier) || defaults.multiplier)),
+        showTable: !!(controls.showTable ?? defaults.showTable),
+        stacked: !!(controls.stacked ?? defaults.stacked),
+        accent: /^#[0-9a-f]{6}$/i.test(String(controls.accent || '')) ? String(controls.accent) : defaults.accent,
+      };
+    }
+
+    function makeRuntimeDesignMd(profileName, accent) {
+      const base = profiles[profileName].markdown;
+      return `
+# Runtime Design.md Override
+- **Primary Brand Color** (\`${accent}\`): Primary brand accent, CTA color, active state, and chart-1.
+- **Green Accent** (\`${accent}\`): Primary interactive accent and chart-1.
+
+${base}`;
+    }
+
+    function buildInteractiveControlsSpec() {
+      return {
+        root: 'controls',
+        elements: {
+          controls: {
+            type: 'FormBuilder',
+            props: {
+              type: 'form_builder',
+              title: '实时调节器',
+              submitLabel: '记录当前配置',
+              value: { '$bindState': '/controls' },
+              fields: [
+                {
+                  name: 'chartType',
+                  label: '图表类型',
+                  type: 'select',
+                  options: [
+                    { label: '柱状图', value: 'BarChart' },
+                    { label: '折线图', value: 'LineChart' },
+                    { label: '面积图', value: 'AreaChart' },
+                    { label: '组合图', value: 'ComboChart' },
+                  ],
+                },
+                { name: 'points', label: '数据点数量', type: 'slider', min: 3, max: 12, step: 1 },
+                { name: 'multiplier', label: '数值倍率', type: 'slider', min: 0.5, max: 3, step: 0.1 },
+                { name: 'stacked', label: '组合图堆叠', type: 'switch' },
+                { name: 'showTable', label: '显示明细表', type: 'switch' },
+                { name: 'accent', label: '运行时品牌色 Hex', type: 'text', placeholder: '#00754A' },
+              ],
+            },
+            children: [],
+          },
+        },
+      };
+    }
+
+    function buildInteractivePreviewSpec(state) {
+      const controls = normalizeControls(selectedProfile, state?.controls);
+      const baseRows = [
+        ['D1', 120, 86], ['D2', 148, 96], ['D3', 136, 108], ['D4', 172, 128],
+        ['D5', 210, 138], ['D6', 238, 150], ['D7', 224, 162], ['D8', 268, 178],
+        ['D9', 292, 190], ['D10', 280, 202], ['D11', 318, 214], ['D12', 344, 230],
+      ];
+      const data = baseRows.slice(0, controls.points).map(([day, value, benchmark]) => ({
+        day,
+        value: Math.round(Number(value) * controls.multiplier),
+        benchmark: Math.round(Number(benchmark) * controls.multiplier),
+      }));
+      const chartType = controls.chartType || 'BarChart';
+      const chartProps = chartType === 'ComboChart'
+        ? {
+            type: 'combo',
+            title: '实时联动：收入与基准',
+            x: 'day',
+            y: ['value', 'benchmark'],
+            data,
+            stacked: controls.stacked,
+            height: 320,
+          }
+        : {
+            type: chartType === 'LineChart' ? 'line' : chartType === 'AreaChart' ? 'area' : 'bar',
+            title: `实时联动：${controls.points} 个数据点`,
+            x: 'day',
+            y: 'value',
+            data,
+            height: 320,
+          };
+      const elements = {
+        layout: {
+          type: 'GridLayout',
+          props: { columns: controls.showTable ? 2 : 1, gap: 16 },
+          children: controls.showTable ? ['chart', 'table'] : ['chart'],
+        },
+        chart: {
+          type: chartType,
+          props: chartProps,
+          children: [],
+        },
+        table: {
+          type: 'DataTable',
+          props: {
+            type: 'table',
+            title: '当前预览数据',
+            columns: [
+              { key: 'day', label: '周期' },
+              { key: 'value', label: '当前值', align: 'right' },
+              { key: 'benchmark', label: '基准值', align: 'right' },
+            ],
+            data,
+          },
+          children: [],
+        },
+      };
+      return { root: 'layout', elements };
+    }
+
+    function getRootElementSpec(spec) {
+      return spec?.elements?.[spec.root] || null;
+    }
+
+    function numericRange(values) {
+      const nums = values.flat(Infinity).map(v => Number(v)).filter(Number.isFinite);
+      if (!nums.length) return 0;
+      return Math.max(...nums) - Math.min(...nums);
+    }
+
+    function getCanvasSignal(container) {
+      const canvases = Array.from(container.querySelectorAll('canvas'));
+      let colored = 0;
+      let opaque = 0;
+      for (const canvas of canvases) {
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+        if (!ctx || !canvas.width || !canvas.height) continue;
+        let image;
+        try {
+          image = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+        } catch (_e) {
+          continue;
+        }
+        const step = Math.max(1, Math.floor(Math.sqrt((canvas.width * canvas.height) / 50000)));
+        for (let y = 0; y < canvas.height; y += step) {
+          for (let x = 0; x < canvas.width; x += step) {
+            const i = (y * canvas.width + x) * 4;
+            const r = image[i], g = image[i + 1], b = image[i + 2], a = image[i + 3];
+            if (a < 20) continue;
+            opaque++;
+            if ((Math.max(r, g, b) - Math.min(r, g, b)) > 35 && Math.max(r, g, b) > 70) colored++;
+          }
+        }
+      }
+      return { canvasCount: canvases.length, colored, opaque };
+    }
+
+    function getBoxplotSpecValues(props) {
+      const rows = Array.isArray(props?.data) ? props.data : [];
+      return rows.flatMap(row => {
+        const five = ['min', 'q1', 'median', 'q3', 'max'].map(key => Number(row?.[key])).filter(Number.isFinite);
+        if (five.length === 5) return five;
+        if (Array.isArray(row?.value)) return row.value.map(Number).filter(Number.isFinite);
+        const valueField = Array.isArray(props?.y) ? props.y[0] : props?.y || 'value';
+        const raw = Number(row?.[valueField]);
+        return Number.isFinite(raw) ? [raw] : [];
+      });
+    }
+
+    function getHistogramExpectedBins(props) {
+      const rows = Array.isArray(props?.data) ? props.data : [];
+      const countField = Array.isArray(props?.y) ? props.y[0] : props?.y || 'count';
+      return rows.filter(row => Number(row?.[countField]) > 0).length;
+    }
+
+    function validateRenderedSpec(spec, container) {
+      const root = getRootElementSpec(spec);
+      const type = root?.type;
+      if (!type) return { ok: false, reason: 'Missing root element type' };
+
+      if (ECHARTS_COMPONENTS.has(type)) {
+        const signal = getCanvasSignal(container);
+        if (signal.canvasCount === 0) return { ok: false, reason: 'ECharts canvas not found' };
+        if (signal.opaque < 100) return { ok: false, reason: 'Canvas appears blank' };
+        const props = root.props || {};
+        if (Array.isArray(props.data) && props.data.length === 0) return { ok: false, reason: 'Chart data is empty' };
+
+        if (type === 'ScatterChart') {
+          const rows = Array.isArray(props.data) ? props.data : [];
+          const xRange = numericRange(rows.map(row => row?.[props.x || 'name']));
+          const yRange = numericRange(rows.map(row => row?.[Array.isArray(props.y) ? props.y[0] : props.y || 'value']));
+          if (rows.length < 2 || xRange <= 0 || yRange <= 0) {
+            return { ok: false, reason: `Scatter source data is degenerate (${rows.length}, ${xRange}, ${yRange})` };
+          }
+        }
+        if (type === 'BoxplotChart' && numericRange(getBoxplotSpecValues(props)) <= 1) {
+          return { ok: false, reason: 'Boxplot values are degenerate' };
+        }
+        if (type === 'HistogramChart' && getHistogramExpectedBins(props) < 3) {
+          return { ok: false, reason: 'Histogram has too few non-zero bins' };
+        }
+      }
+
+      if (type === 'MermaidDiagram' && !container.querySelector('svg')) {
+        return { ok: false, reason: 'Mermaid SVG not found' };
+      }
+      return { ok: true };
+    }
+
+    function renderInteractivePanel(profileName, options = {}) {
+      const controlsEl = document.getElementById('interactive-controls');
+      const previewEl = document.getElementById('interactive-preview');
+      const summaryEl = document.getElementById('interactive-summary');
+      const labelEl = document.getElementById('interactive-state-label');
+      const countEl = document.getElementById('interactive-render-count');
+      const runId = ++interactiveRunId;
+
+      if (options.resetAccent) {
+        interactiveState = {
+          controls: normalizeControls(profileName, {
+            ...interactiveState.controls,
+            accent: profiles[profileName].expected.accent,
+          }),
+        };
+      } else {
+        interactiveState = { controls: normalizeControls(profileName, interactiveState.controls) };
+      }
+
+      const renderPreview = () => {
+        if (runId !== interactiveRunId) return;
+        const controls = normalizeControls(profileName, interactiveState.controls);
+        interactiveState = { controls };
+        window.Vizual.loadDesignMd(makeRuntimeDesignMd(profileName, controls.accent), {
+          name: profileName + '-interactive-design-md',
+          apply: true,
+        });
+        const spec = buildInteractivePreviewSpec(interactiveState);
+        window.Vizual.renderSpec(spec, previewEl);
+        interactiveRenderCount++;
+        labelEl.textContent = `${controls.chartType} / ${controls.points} 点 / ${controls.multiplier}x / ${controls.stacked ? 'stacked' : 'normal'} / ${controls.showTable ? 'table on' : 'table off'} / ${controls.accent}`;
+        countEl.textContent = `render: ${interactiveRenderCount}`;
+        summaryEl.textContent = 'PASS：实时联动已渲染';
+        summaryEl.dataset.status = 'pass';
+      };
+
+      const onStateChange = (changes) => {
+        interactiveState = applyStateChanges(cloneJson(interactiveState), changes);
+        renderPreview();
+      };
+
+      window.Vizual.renderSpec(buildInteractiveControlsSpec(), controlsEl, {
+        initialState: cloneJson(interactiveState),
+        onStateChange,
+      });
+      renderPreview();
+    }
+
+    function renderComponentGallery(profileName) {
+      const grid = document.getElementById('component-grid');
+      const summary = document.getElementById('component-summary');
+      const runId = ++galleryRunId;
+      const specs = typeof SPECS !== 'undefined' ? SPECS : [];
+      grid.innerHTML = '';
+      summary.dataset.status = '';
+
+      if (!specs.length) {
+        summary.textContent = 'FAIL：specs-31.js 未加载';
+        summary.dataset.status = 'fail';
+        return;
+      }
+
+      let pass = 0;
+      let fail = 0;
+      let pending = specs.length;
+      const updateSummary = () => {
+        if (runId !== galleryRunId) return;
+        summary.textContent = pending
+          ? `${pass} PASS / ${fail} FAIL / ${pending} PENDING`
+          : `${pass} PASS / ${fail} FAIL`;
+        summary.dataset.status = pending ? '' : (fail ? 'fail' : 'pass');
+      };
+      updateSummary();
+
+      for (const entry of specs) {
+        const card = document.createElement('div');
+        card.className = 'component-card' + (entry.full ? ' full' : '');
+        card.innerHTML = `
+          <div class="component-card-header">
+            <h3>${entry.name}</h3>
+            <span class="component-status" id="component-status-${entry.id}">渲染中</span>
+          </div>
+          <div class="component-body" id="component-body-${entry.id}"></div>
+        `;
+        grid.appendChild(card);
+        const body = card.querySelector('.component-body');
+        const status = card.querySelector('.component-status');
+
+        try {
+          window.Vizual.renderSpec(entry.spec, body);
+          window.setTimeout(() => {
+            if (runId !== galleryRunId) return;
+            const validation = validateRenderedSpec(entry.spec, body);
+            pending--;
+            if (validation.ok) {
+              pass++;
+              status.textContent = 'PASS';
+              status.style.color = 'var(--rk-success, #16a34a)';
+            } else {
+              fail++;
+              status.textContent = 'FAIL';
+              status.style.color = 'var(--rk-error, #dc2626)';
+              body.classList.add('error');
+              body.insertAdjacentHTML('afterbegin', `<div>Visual validation failed: ${validation.reason}</div>`);
+            }
+            updateSummary();
+          }, COMPONENT_VALIDATE_DELAY);
+        } catch (error) {
+          pending--;
+          fail++;
+          status.textContent = 'FAIL';
+          status.style.color = 'var(--rk-error, #dc2626)';
+          body.classList.add('error');
+          body.textContent = error?.stack || error?.message || String(error);
+          updateSummary();
+        }
+      }
+    }
+
     function cssVar(name) {
       return getComputedStyle(document.body).getPropertyValue(name).trim();
     }
@@ -768,6 +1392,8 @@ Whisper-soft, layered over solid surfaces.
       document.getElementById('status').textContent = ok ? `PASS：${selectedProfile.toUpperCase()} 主题已应用` : 'FAIL：主题映射不完整';
       document.getElementById('status').dataset.status = ok ? 'pass' : 'fail';
       if (!ok) throw new Error('DESIGN.md theme mapping failed');
+      renderInteractivePanel(selectedProfile, { resetAccent: true });
+      renderComponentGallery(selectedProfile);
       if (options.updateUrl !== false) updateUrl(selectedProfile);
     }
 

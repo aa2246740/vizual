@@ -12,7 +12,7 @@ describe('MermaidChart', () => {
   it('uses strict security with SVG text labels so sanitization does not strip node labels', async () => {
     const initialize = vi.fn()
     const renderMermaid = vi.fn().mockResolvedValue({
-      svg: '<svg xmlns="http://www.w3.org/2000/svg"><text>用户下单</text></svg>',
+      svg: '<svg xmlns="http://www.w3.org/2000/svg"><text onclick="alert(1)">用户下单</text><script>alert(1)</script><foreignObject><div>bad</div></foreignObject></svg>',
     })
     ;(globalThis as typeof globalThis & { mermaid?: unknown }).mermaid = {
       initialize,
@@ -32,5 +32,9 @@ describe('MermaidChart', () => {
       htmlLabels: false,
     }))
     expect(await screen.findByText('用户下单')).toBeTruthy()
+    expect(document.querySelector('svg')).toBeTruthy()
+    expect(document.querySelector('script')).toBeFalsy()
+    expect(document.querySelector('foreignObject')).toBeFalsy()
+    expect(document.querySelector('text')?.getAttribute('onclick')).toBeFalsy()
   })
 })
