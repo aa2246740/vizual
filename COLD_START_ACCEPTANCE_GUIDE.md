@@ -1,68 +1,71 @@
-# Vizual vNext Cold-Start Acceptance Guide
+# Vizual vNext 冷启动验收指南
 
-This guide is for testing whether an Agent that only knows the Vizual skill can use Vizual correctly in a host page. The Agent must behave like a real application Agent: read user input, choose the right Vizual runtime shape, render into the chat page, support follow-up edits, support live controls, support annotations, and export artifacts.
+这份指南用于验证：一个**只读过 Vizual skill、没有项目上下文的 Agent**，能不能正确把 Vizual 当成宿主运行时来使用。
 
-## Environment
+被测 Agent 必须像真实 SaaS / Chatbot 里的业务 Agent 一样工作：读取用户输入，判断该用静态 spec、可编辑 artifact、实时交互 bridge，还是 DocView；把内容渲染到聊天页面；支持追问改图、实时调参、批注修订和导出。
 
-Static server:
+## 测试环境
 
-- Main chat test page: `http://127.0.0.1:8793/validation/vizual-test.html`
-- Full component regression: `http://127.0.0.1:8793/validation/eval-full-31.html`
-- DocView standalone fallback: `http://127.0.0.1:8793/validation/demo-docview.html`
+本地静态服务：
 
-Preferred browser target:
+- 主聊天测试页：`http://127.0.0.1:8793/validation/vizual-test.html`
+- 31 组件完整回归：`http://127.0.0.1:8793/validation/eval-full-31.html`
+- DocView 独立兜底页：`http://127.0.0.1:8793/validation/demo-docview.html`
 
-- Chrome DevTools Protocol: `http://127.0.0.1:9224`
+优先使用已有浏览器：
 
-The cold-start Agent should connect to the existing Chrome/CDP target when possible. Do not download or launch a separate Playwright browser unless the existing CDP target is unavailable.
+- Chrome DevTools Protocol：`http://127.0.0.1:9224`
 
-## Cold-Start Rules For The Test Agent
+冷启动 Agent 应优先连接已有 Chrome/CDP。除非这个端口不可用，否则不要下载或启动新的 Playwright Chrome。
 
-The Agent being tested must follow these constraints:
+## 被测 Agent 约束
 
-1. It may read the installed Vizual skill only:
+被测 Agent 必须遵守：
+
+1. 只能读取已安装的 Vizual skill：
    - `~/.claude/skills/vizual/SKILL.md`
-   - component references under `~/.claude/skills/vizual/references/`
-2. It must not read Vizual repo source code, validation HTML source, prior QA reports, git history, or this implementation conversation.
-3. It must interact with the browser page as a host Agent would, using Chrome DevTools, Playwright over CDP, or equivalent evaluate-script capability.
-4. It must not simply paste raw JSON into the chat and call that success. The page must show rendered Vizual UI.
-5. It must use page bridge APIs when the host page provides them.
-6. It must preserve chat history. Follow-up edits should render a new AI bubble unless explicitly doing temporary preview/debug.
-7. It must submit a QA report with evidence, including pass/fail, observed DOM/API state, console errors, and export results.
+   - `~/.claude/skills/vizual/references/` 下按需引用的组件文档
+2. 不能读取 Vizual 仓库源码、validation HTML 源码、历史 QA 报告、git history，或本轮实现对话。
+3. 必须像真实宿主 Agent 一样操作浏览器页面，可使用 Chrome DevTools、Playwright over CDP，或等价的 `evaluate_script` 能力。
+4. 不能只把 JSON 粘到聊天框里就算成功；页面上必须出现真实渲染后的 Vizual UI。
+5. 页面提供 bridge API 时，必须优先使用页面 bridge API。
+6. 必须保留聊天历史。追问改图默认生成新的 AI 气泡，不能原地篡改老气泡；除非明确是临时预览/调试。
+7. 必须提交 QA 报告，包含 PASS/FAIL、DOM/API 状态、控制台错误、导出结果、截图或等价视觉证据。
 
-## One-Shot Prompt To Give Claude Code
+## 给 Claude Code 的一次性测试 Prompt
 
-Paste this into a fresh Claude Code session:
+把下面这段粘到一个全新的 Claude Code 会话里：
 
 ```text
-You are a cold-start QA Agent for Vizual.
+你是 Vizual 的冷启动 QA Agent。
 
-Rules:
-- You have no prior context about Vizual except the installed skill.
-- First read ~/.claude/skills/vizual/SKILL.md.
-- Only read referenced files under ~/.claude/skills/vizual/references/ when needed.
-- Do not read the Vizual repo source, validation HTML source, git history, previous QA reports, or any implementation conversation.
-- Use Chrome DevTools MCP or Playwright connected to the existing browser/CDP target if available: http://127.0.0.1:9224.
-- Test this page: http://127.0.0.1:8793/validation/vizual-test.html?cold-start-claude=<timestamp>
-- Also test: http://127.0.0.1:8793/validation/eval-full-31.html?cold-start-claude=<timestamp>
+规则：
+- 你没有任何 Vizual 先验上下文，只能依赖已安装的 skill。
+- 第一步先读 ~/.claude/skills/vizual/SKILL.md。
+- 只在需要时读取 ~/.claude/skills/vizual/references/ 下被 SKILL.md 指向的组件参考文件。
+- 不要读取 Vizual 仓库源码、validation HTML 源码、git history、历史 QA 报告，或任何实现对话。
+- 优先使用 Chrome DevTools MCP，或连接已有浏览器/CDP： http://127.0.0.1:9224。
+- 测试主页面： http://127.0.0.1:8793/validation/vizual-test.html?cold-start-claude=<timestamp>
+- 同时测试 31 组件页面： http://127.0.0.1:8793/validation/eval-full-31.html?cold-start-claude=<timestamp>
 
-Your job:
-1. Behave like an Agent embedded in a SaaS/chat product that uses Vizual as its rendering runtime.
-2. Use the Vizual skill to decide when to render a static spec, an editable artifact, an interactive bridge, or DocView.
-3. Complete all scenarios in this acceptance guide.
-4. Do not mark a scenario PASS unless the page visibly renders the correct UI and the host debug APIs confirm the expected state.
-5. Write a Markdown report with:
-   - scenario id
-   - user prompt
-   - actions you took
-   - APIs used
-   - observed result
-   - pass/fail
-   - screenshots or DOM/debug evidence
+你的任务：
+1. 假装自己是嵌入在 SaaS / Chatbot 产品里的业务 Agent，Vizual 是你的可视化运行时。
+2. 根据 Vizual skill 判断何时使用静态 spec、可编辑 artifact、实时交互 bridge、DocView。
+3. 完成本验收指南里的所有场景。
+4. 不要只看 PASS 文案。只有页面上真实渲染正确 UI，并且宿主 debug API 状态合理时，才能判定 PASS。
+5. eval-full-31.html 必须逐个组件做视觉确认。只汇报 “31 PASS” 但没有截图或逐项视觉证据，视为测试不合格。
+6. 输出一份 Markdown QA 报告，包含：
+   - 场景 ID
+   - 用户输入
+   - 你的操作
+   - 使用的 API
+   - 观察结果
+   - PASS / FAIL
+   - 截图或 DOM/debug 证据
    - console errors
-   - export filenames/links where applicable
+   - 导出文件/链接记录
 
-Important host APIs:
+重要宿主 API：
 - window.getPendingMessage()
 - window.createAiMsg()
 - window.streamText(id, text)
@@ -79,26 +82,27 @@ Important host APIs:
 - window.getLastArtifact()
 - window.exportArtifact(ref, options)
 
-Do not rely on brittle selectors like .message. Prefer getVizualConversationState() and getVizualDebugState(). If DOM inspection is needed, use data-message-row, data-ai-msg, data-user-msg, data-viz-container, and data-artifact-id.
+不要依赖 .message 这种脆弱选择器。优先使用 getVizualConversationState() 和 getVizualDebugState()。
+如果必须看 DOM，使用稳定属性：data-message-row、data-ai-msg、data-user-msg、data-viz-container、data-artifact-id。
 ```
 
-## Required QA Scenarios
+## 必测场景
 
-### S0. Host Readiness
+### S0. 宿主页面就绪
 
-Open `vizual-test.html`.
+打开 `vizual-test.html`。
 
-Pass criteria:
+通过标准：
 
-- Page loads without console errors.
-- `window.Vizual` exists.
-- `window.renderVizInMsg` exists.
-- `window.updateArtifactInMsg` exists.
-- `window.renderInteractiveVizInMsg` exists.
-- `window.getVizualConversationState` exists.
-- `window.getVizualDebugState` exists.
+- 页面加载完成，没有 console error。
+- `window.Vizual` 存在。
+- `window.renderVizInMsg` 存在。
+- `window.updateArtifactInMsg` 存在。
+- `window.renderInteractiveVizInMsg` 存在。
+- `window.getVizualConversationState` 存在。
+- `window.getVizualDebugState` 存在。
 
-Useful check:
+可用检查：
 
 ```js
 ({
@@ -111,9 +115,9 @@ Useful check:
 });
 ```
 
-### S1. Messy User Input To Static Dashboard
+### S1. 乱格式输入生成静态 Dashboard
 
-User prompt:
+用户输入：
 
 ```text
 帮我把下面这段乱格式数据做成一个增长分析 dashboard，要有核心指标、趋势图、结构洞察和明细表。
@@ -135,81 +139,81 @@ D12 华东 165 1160 14600 145 72%
 注意：不要只复述数据，要指出可能的虚假相关、混杂变量、用户筛选效应。
 ```
 
-Expected Agent behavior:
+期望行为：
 
-- Read relevant references: `GridLayout`, `KpiDashboard`, `ComboChart`, `ScatterChart` or `LineChart`, `DataTable`.
-- Use `renderVizInMsg()` or `renderArtifactInMsg()` in a new AI bubble.
-- Include narrative text outside the visual bubble.
-- Do not choose DocView only because the word "dashboard" appears.
-- Do not output raw JSON as the final user-visible result.
+- 读取相关参考文档：`GridLayout`、`KpiDashboard`、`ComboChart`、`ScatterChart` 或 `LineChart`、`DataTable`。
+- 使用 `renderVizInMsg()` 或 `renderArtifactInMsg()` 在新的 AI 气泡里渲染。
+- 图表外应有文字解释。
+- 不要因为用户说了 dashboard / report 就默认使用 DocView。
+- 最终用户看到的不能只是 raw JSON。
 
-Pass criteria:
+通过标准：
 
-- New AI bubble appears.
-- Bubble contains rendered Vizual UI.
-- Dashboard has KPI cards, at least one trend/ComboChart, a relationship chart, and DataTable.
-- Analysis mentions:
-  - D5-D7 slope/turning-point behavior
-  - D7/D8 phase change
-  - AI ratio vs churn is correlation, not proven causation
-  - possible time trend confounder
-  - possible selection effect if ARPPU rises while active users fall
-- `getVizualConversationState()` shows at least one AI message with `hasViz: true`.
-- `getLastArtifact()` exists and has a target map or editable artifact state.
+- 出现新的 AI 气泡。
+- 气泡里有真实渲染的 Vizual UI。
+- Dashboard 至少包含 KPI、趋势图/组合图、关系图、明细表。
+- 分析文字提到：
+  - D5-D7 斜率变化或阶段性拐点
+  - D7/D8 前后的阶段变化
+  - AI 占比和 churn 同步上升不等于因果证明
+  - 存在时间趋势混杂变量风险
+  - 如果活跃用户下降但 ARPPU 上升，可能存在用户筛选效应
+- `getVizualConversationState()` 显示至少一个 AI message 的 `hasViz: true`。
+- `getLastArtifact()` 存在，并且有可编辑 artifact 状态或 target map。
 
-### S2. Historical Follow-Up Must Create New Bubble
+### S2. 历史追问必须生成新气泡
 
-After S1, send follow-up:
+在 S1 后继续输入：
 
 ```text
 把刚才的 dashboard 里主趋势图改成折线图，只看华东区，数据点少一点，然后导出 PDF 和 XLSX。
 ```
 
-Expected Agent behavior:
+期望行为：
 
-- Use `getLastArtifact()` rather than regenerating from memory.
-- Use `updateArtifactInMsg()` with typed patches such as `changeChartType`, `filterData`, `limitData`, or `updateElementProps`.
-- Generate a new AI bubble by default.
-- Export via `exportArtifact()`.
+- 使用 `getLastArtifact()`，不要凭记忆重造。
+- 使用 `updateArtifactInMsg()` 和 typed patches，例如 `changeChartType`、`filterData`、`limitData`、`updateElementProps`。
+- 默认生成新的 AI 气泡。
+- 使用 `exportArtifact()` 导出。
 
-Pass criteria:
+通过标准：
 
-- AI message count increases.
-- Old artifact/bubble remains visible and unchanged.
-- New bubble contains modified chart.
-- Chart is line-based or otherwise correctly reflects the requested line transformation.
-- Data is filtered to 华东.
-- Data points are reduced.
-- PDF and XLSX export complete and return usable links/records.
-- No `Invalid Vizual artifact` error appears.
+- AI message 数量增加。
+- 老 artifact / 老气泡仍可见，且没有被原地篡改。
+- 新气泡包含修改后的图。
+- 图表确实改成折线或等价的线图表达。
+- 数据被过滤到华东。
+- 数据点数量减少。
+- PDF 和 XLSX 导出完成，返回可用链接或记录。
+- 没有出现 `Invalid Vizual artifact`。
 
-Useful check:
+可用检查：
 
 ```js
 const before = window.getVizualConversationState();
-// perform follow-up flow
+// 执行追问改图流程
 const after = window.getVizualConversationState();
 after.messages.filter(m => m.role === 'ai').length > before.messages.filter(m => m.role === 'ai').length;
 ```
 
-### S3. Container Fit And Bubble Width
+### S3. 容器适配与气泡宽度
 
-Use the S1/S2 charts and inspect layout.
+检查 S1/S2 生成的图表布局。
 
-Pass criteria:
+通过标准：
 
-- Chart content is horizontally centered or fills the available visual area cleanly.
-- No obvious right-side dead padding caused by fixed width.
-- Bubble uses reasonable width:
-  - ordinary chart: wide
-  - full dashboard/layout/table/doc: full
-  - small KPI/sparkline: normal/compact if appropriate
-- `.viz-wrap` must not force every artifact into a fixed 400px minimum layout.
-- Sankey/Radar/FormBuilder are not clipped in normal desktop viewport.
+- 图表内容居中，或干净地填满可用视觉区域。
+- 不能有明显右侧空白、偏移、固定宽度造成的死 padding。
+- 气泡宽度合理：
+  - 普通图表：`wide`
+  - dashboard / layout / table / doc：`full`
+  - 小 KPI / sparkline：必要时可用 `normal` 或 `compact`
+- `.viz-wrap` 不能把所有 artifact 都锁死成固定 `400px` 最小宽度。
+- Sankey / Radar / FormBuilder 在普通桌面视口下不能被裁切。
 
-### S4. ComboChart Multi-Series Regression
+### S4. ComboChart 多序列回归
 
-User prompt:
+用户输入：
 
 ```text
 做一个收入与 ARPPU 的组合图：左轴 revenue，右轴 ARPPU，revenue 用柱状，ARPPU 用折线。不要让第二条线变成 0。
@@ -227,20 +231,20 @@ D9 revenue=18100 paying=285
 D10 revenue=16600 paying=245
 ```
 
-Expected calculation:
+计算规则：
 
 - `ARPPU = revenue / paying`
 
-Pass criteria:
+通过标准：
 
-- ComboChart renders.
-- Second series is not all zeros.
-- Tooltip/series values show ARPPU around 40-68, not 0.
-- Axis choice is sensible and readable.
+- ComboChart 渲染成功。
+- 第二条折线不是 0 直线。
+- tooltip 或 series 值显示 ARPPU 大约在 40-68，而不是 0。
+- 双轴选择合理、可读。
 
-### S5. Interactive Controls With Compatible Options
+### S5. 实时交互控件与兼容选项
 
-User prompt:
+用户输入：
 
 ```text
 做一个可以实时调参的图表：左边是控制面板，右边是预览。
@@ -254,26 +258,26 @@ User prompt:
 要求控件改动后右边立即变化。不要出现和当前图表类型不兼容的选项误导用户。
 ```
 
-Expected Agent behavior:
+期望行为：
 
-- Use `renderInteractiveVizInMsg(id, config)`.
-- Use FormBuilder with `value: { "$bindState": "/controls" }`.
-- Use `makeSpec(state)` to regenerate preview.
-- Use conditional visibility or disabled logic for incompatible controls.
-- Use `applyTheme` or `Vizual.loadDesignMd()` for brand color.
+- 使用 `renderInteractiveVizInMsg(id, config)`。
+- FormBuilder 使用 `value: { "$bindState": "/controls" }`。
+- 使用 `makeSpec(state)` 重新生成右侧预览。
+- 对不兼容控件做条件显示、禁用或清晰处理。
+- 品牌色用 `applyTheme` 或 `Vizual.loadDesignMd()`。
 
-Pass criteria:
+通过标准：
 
-- Left side controls render.
-- Right side preview renders.
-- Slider changes data point count.
-- Changing chart type changes preview component or chart config.
-- Smooth option only affects line/combo.
-- Stacked option only affects bar.
-- Brand color change updates the chart theme/color.
-- `getInteractiveVizState()` shows current controls and `lastPreviewSpec`.
+- 左侧控制面板出现。
+- 右侧预览图出现。
+- slider 改变数据点数量。
+- 图表类型切换会改变预览组件或图表配置。
+- 平滑折线只影响折线图/组合图。
+- 堆叠模式只影响柱状图。
+- 品牌色变化能更新图表主题/颜色。
+- `getInteractiveVizState()` 能看到当前 controls 和 `lastPreviewSpec`。
 
-Stable programmatic test:
+稳定的程序化测试：
 
 ```js
 const state0 = window.getInteractiveVizState('last');
@@ -287,209 +291,220 @@ const state1 = window.getInteractiveVizState('last');
 });
 ```
 
-### S6. Brand Color And Design.md Contract
+### S6. 品牌色与 Design.md 契约
 
-User prompt:
+用户输入：
 
 ```text
 把这个 dashboard 套成品牌视觉：主色 #FF6B35，深色背景，不要只改 theme 字段。之后让我可以用颜色选择器实时改主色。
 ```
 
-Expected Agent behavior:
+期望行为：
 
-- Use `Vizual.loadDesignMd()` or interactive `applyTheme`.
-- Do not misuse chart `theme` as brand color injection.
-- `theme: "dark"` / `theme: "light"` is only preset theme selection.
+- 使用 `Vizual.loadDesignMd()` 或 interactive `applyTheme`。
+- 不能把 chart `theme` 当成品牌色注入机制。
+- `theme: "dark"` / `theme: "light"` 只表示预设明暗主题。
 
-Pass criteria:
+通过标准：
 
-- Initial brand color is visible.
-- Changing color picker changes visible chart color.
-- Debug state shows interactive state or theme state reflects selected brand color.
+- 初始品牌色可见。
+- 改 color picker 后图表颜色可见变化。
+- debug state 或 interactive state 能体现当前品牌色。
 
-### S7. DocView Should Be Used Only For Reviewable Documents
+### S7. DocView 只能用于可批注文档
 
-Prompt A:
+Prompt A：
 
 ```text
 给我做一个普通的经营分析 dashboard。
 ```
 
-Pass criteria:
+通过标准：
 
-- Agent should not use DocView.
-- It should use normal chat text plus GridLayout/charts/tables.
+- 不应该使用 DocView。
+- 应使用普通聊天文字 + GridLayout / charts / tables。
 
-Prompt B:
+Prompt B：
 
 ```text
 把刚才的分析变成一份可以批注、可以让 AI 根据批注修订的报告。
 ```
 
-Pass criteria:
+通过标准：
 
-- Agent should now use DocView.
-- `showPanel: true`.
-- Important sections have stable ids.
-- Sections include heading/text/kpi/chart/table/markdown as appropriate.
-- It uses `renderDocViewInMsg()` if testing inside `vizual-test.html`.
+- 此时应该使用 DocView。
+- `showPanel: true`。
+- 重要 section 有稳定 `id`。
+- section 包含 heading / text / kpi / chart / table / markdown 等合适类型。
+- 在 `vizual-test.html` 里测试时，使用 `renderDocViewInMsg()`。
 
-### S8. DocView Annotation And Revision Loop
+### S8. DocView 批注与修订闭环
 
-In the DocView from S7, select this kind of paragraph:
+在 S7 的 DocView 中，选择类似下面的段落：
 
 ```text
 下一步行动：对 AI 占比 30% vs 40% 做为期 7 天的 A/B 对照实验；分群分析流失用户画像；监控用户内容反馈 NPS。
 ```
 
-Add annotation:
+添加批注：
 
 ```text
 写详细一点，给出负责人、优先级、验收指标。
 ```
 
-Expected Agent behavior:
+期望行为：
 
-- Annotation is submitted with section/target metadata.
-- It is not orphaned if the selected text belongs to a section.
-- Agent reads the submitted annotation thread.
-- Agent proposes or applies a revision.
-- Revision updates the DocView content.
+- 批注提交时带有 section / target metadata。
+- 如果选中文本属于某个 section，不能变成 orphaned / 孤立。
+- Agent 能读取已提交的批注线程。
+- Agent 能提出或应用修订。
+- 修订后 DocView 内容更新。
 
-Pass criteria:
+通过标准：
 
-- Annotation can be submitted.
-- It appears in the panel with selected text and target context.
-- Revision produces updated detailed text.
-- Old highlight/annotation marker does not pollute the revised content.
-- If render fails, error message has a visible background and actionable text.
+- 批注可以提交。
+- 批注面板里能看到选中文本和目标上下文。
+- 修订后文本变得更详细。
+- 旧高亮/旧批注标记不会污染新正文。
+- 如果渲染失败，错误提示要有明显背景和可操作说明。
 
-### S9. Export Surfaces
+### S9. 导出能力
 
-Test exports from a normal chart/dashboard and a DocView artifact.
+分别测试普通图表/dashboard artifact 和 DocView artifact 的导出。
 
-Required formats:
+要求格式：
 
 - PNG
 - PDF
 - CSV
 - XLSX
 
-Pass criteria:
+通过标准：
 
-- Exports return usable links or records.
-- PNG/PDF include the rendered visual surface.
-- PDF should not have large unexplained top/bottom white margins.
-- CSV/XLSX contain the underlying rows/columns when tabular data exists.
-- Exporting should not mutate the original artifact content.
+- 导出返回可用链接或记录。
+- PNG/PDF 包含渲染后的视觉内容。
+- PDF 不能有明显异常的大白边。
+- CSV/XLSX 在存在表格数据时包含正确 rows/columns。
+- 导出动作不能改变原 artifact 内容。
 
-### S10. Error Handling
+### S10. 错误处理
 
-Force an invalid artifact or invalid spec during QA, then observe UI.
+故意输入一个 invalid artifact 或 invalid spec，观察 UI。
 
-Pass criteria:
+通过标准：
 
-- Error is visible and has a clear background.
-- Error text says what failed.
-- Page does not crash.
-- Later valid renders still work.
+- 错误提示可见，并且有明显背景。
+- 错误文案说明失败原因。
+- 页面不能崩溃。
+- 后续再渲染合法内容仍然正常。
 
-### S11. Full 31-Component Regression
+### S11. 31 组件完整回归
 
-Open:
+打开：
 
 ```text
 http://127.0.0.1:8793/validation/eval-full-31.html?cold-start=<timestamp>
 ```
 
-Pass criteria:
+通过标准：
 
-- Header shows `31 PASS`, `0 FAIL`, `0 PENDING`.
-- MermaidDiagram is not blank.
-- HeatmapChart has meaningful non-zero color/value variation.
-- CalendarChart is visually compatible with dark UI and not an accidental white block.
-- ComboChart second series is not a zero line.
-- No console errors.
+- 顶部显示 `31 PASS`、`0 FAIL`、`0 PENDING`。
+- 不能只看顶部 PASS。必须逐个组件肉眼检查，并在报告里给截图或逐项视觉证据。
+- 每个组件至少有一个真实可见、语义合理的渲染结果。
+- 没有 console error。
 
-### S12. Host API Robustness
+重点检查这些曾经出过问题的组件：
 
-The Agent should inspect host state via APIs instead of fragile DOM scraping.
+- `ScatterChart`：必须看到散点，不能只有坐标轴。
+- `BoxplotChart`：必须看到 A/B/C 等多组箱线，不能退化成 unknown / 0。
+- `HistogramChart`：必须看到多个柱，不能塌成一个柱或一个点。
+- `CalendarChart`：如果标题是 2024 年 1 月，就应该是 1 月视图，不能把 1 月数据挤在全年日历左侧。
+- `DumbbellChart`：必须能看出两个点之间的连接；数值很近时连接会短，但不能完全没有。
+- `ComboChart`：第二条线不能是 0 直线。
+- `MermaidDiagram`：不能空白。
+- `HeatmapChart`：必须有非零值和颜色差异，不能全白/全 0。
+- `SankeyChart`：节点、流向、标签都应可见。
 
-Pass criteria:
+### S12. 宿主 API 稳定性
 
-- Uses `getVizualConversationState()` for message/artifact state.
-- Uses `getVizualDebugState()` for runtime/debug state.
-- Uses `getPendingMessage()` for raw pasted user input.
-- Does not rely on `.message`, `.bubble`, or innerText scraping when a host API exists.
+Agent 应该通过宿主 API 检查状态，而不是脆弱地抓 DOM 文本。
 
-## Negative Tests
+通过标准：
 
-The Agent should explicitly avoid these mistakes:
+- 使用 `getVizualConversationState()` 检查 message / artifact 状态。
+- 使用 `getVizualDebugState()` 检查 runtime / debug 状态。
+- 使用 `getPendingMessage()` 获取用户原始输入，尤其是乱格式粘贴内容。
+- 不依赖 `.message`、`.bubble`、大段 `innerText` 这类不稳定选择器。
 
-- Do not use `InteractivePlayground`; it was removed.
-- Do not mention LiveKit for Vizual interaction.
-- Do not use DocView just because the user says "report".
-- Do not mutate old chat bubbles for historical follow-up edits.
-- Do not assume a raw JSON spec is enough for live interactivity.
-- Do not use `theme` as a brand color injection mechanism.
-- Do not expose controls that make no sense for the current chart.
-- Do not produce an all-zero secondary ComboChart series.
-- Do not leave empty Mermaid/Heatmap/Calendar visuals and call them PASS.
+## 负例清单
 
-## Required Final QA Report Format
+被测 Agent 必须明确避免这些错误：
 
-The cold-start Agent should save a report like:
+- 不要使用 `InteractivePlayground`，它已经移除。
+- 不要提 LiveKit 作为 Vizual 交互方案。
+- 不要因为用户说“报告”就滥用 DocView。
+- 不要在历史追问里原地修改老气泡。
+- 不要假设 raw JSON spec 能自动完成实时交互。
+- 不要用 `theme` 字段伪装品牌色注入。
+- 不要展示与当前图表类型不兼容的控件。
+- 不要生成第二条线全为 0 的 ComboChart。
+- 不要把空白 Mermaid / Heatmap / Calendar / Scatter / Histogram 当成 PASS。
+- 不要只看 `31 PASS`，必须做逐项视觉确认。
+
+## 最终 QA 报告格式
+
+冷启动 Agent 应保存类似下面的 Markdown 报告：
 
 ```markdown
-# Vizual Cold-Start QA Report
+# Vizual 冷启动 QA 报告
 
-Target page:
-Skill files read:
-Browser/CDP target:
-Date/time:
+目标页面：
+读取的 skill 文件：
+浏览器/CDP 目标：
+测试时间：
 
-## Summary
+## 总结
 
-| Result | Count |
+| 结果 | 数量 |
 | --- | ---: |
 | PASS | |
 | FAIL | |
 | SKIP | |
 
-## Scenarios
+## 场景结果
 
-| ID | Scenario | Result | Evidence |
+| ID | 场景 | 结果 | 证据 |
 | --- | --- | --- | --- |
-| S0 | Host readiness | PASS/FAIL | |
+| S0 | 宿主页面就绪 | PASS/FAIL | |
 
-## Findings
+## 发现的问题
 
-### F1. Title
+### F1. 标题
 
-- Severity:
-- Scenario:
-- Repro:
-- Expected:
-- Actual:
-- Evidence:
-- Suspected owner: skill / host bridge / runtime component / test script
+- 严重级别：
+- 所属场景：
+- 复现步骤：
+- 预期：
+- 实际：
+- 证据：
+- 疑似归属：skill / host bridge / runtime component / test script
 
 ## Console Errors
 
-## Export Records
+## 导出记录
 
-## Screenshots
+## 截图或视觉证据
 ```
 
-## Stop/Success Standard
+## 成功标准
 
-The vNext cold-start acceptance is considered successful only if:
+vNext 冷启动验收只有在满足下面条件时才算通过：
 
-- S0-S12 are all PASS, or any SKIP is justified by missing browser capability rather than Vizual behavior.
-- No P0/P1 findings remain.
-- Follow-up edits create new bubbles.
-- Interactive controls update preview and state.
-- DocView annotation/revision loop works.
-- Exports work for at least one chart/dashboard artifact and one DocView artifact.
-- eval-full-31 shows 31 PASS.
-
+- S0-S12 全部 PASS；如果有 SKIP，必须是浏览器能力缺失，而不是 Vizual 行为缺失。
+- 没有 P0/P1 问题。
+- 历史追问会生成新气泡。
+- 实时控件能更新预览和 state。
+- DocView 批注/修订闭环可用。
+- 至少一个普通 chart/dashboard artifact 和一个 DocView artifact 能导出。
+- `eval-full-31.html` 显示 `31 PASS / 0 FAIL / 0 PENDING`。
+- `eval-full-31.html` 的 31 个组件已逐项视觉确认，不接受“只看顶部 PASS”的报告。
