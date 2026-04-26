@@ -4,6 +4,8 @@
 
 被测 Agent 必须像真实 SaaS / Chatbot 里的业务 Agent 一样工作：读取用户输入，判断该用静态 spec、可编辑 artifact、实时交互 bridge，还是 DocView；把内容渲染到聊天页面；支持追问改图、实时调参、批注修订和导出。
 
+如果要做无人值守冷启动盲测，把 `COLD_START_BLIND_TEST.md` 给被测 Agent。那份文档只包含规则、输入任务和报告格式，不包含本指南里的通过标准和预期答案。被测 Agent 不应读取本指南。
+
 ## 测试环境
 
 本地静态服务：
