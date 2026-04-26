@@ -36,6 +36,39 @@
       font-family: var(--rk-font-ui, var(--rk-font-sans));
       font-size: 16px;
     }
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+    .theme-switch {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px;
+      border-radius: var(--rk-radius-md, 8px);
+      border: 1px solid var(--rk-border-subtle, #e5e7eb);
+      background: var(--rk-bg-secondary, #f8fafc);
+    }
+    .theme-button {
+      appearance: none;
+      border: 1px solid transparent;
+      border-radius: var(--rk-radius-sm, 6px);
+      background: transparent;
+      color: var(--rk-text-secondary, #475569);
+      cursor: pointer;
+      font-family: var(--rk-font-ui, var(--rk-font-sans));
+      font-size: 13px;
+      font-weight: 700;
+      padding: 6px 10px;
+    }
+    .theme-button[aria-pressed="true"] {
+      border-color: var(--rk-accent, #c8152d);
+      background: var(--rk-bg-primary, #ffffff);
+      color: var(--rk-accent, #c8152d);
+    }
     main {
       display: grid;
       grid-template-columns: minmax(0, 1fr) 360px;
@@ -198,6 +231,31 @@
       border-color: #000000;
       color: #000000;
     }
+    body[data-profile="wired"] .theme-switch {
+      border: 2px solid #000000;
+      border-radius: 0;
+      background: #ffffff;
+      padding: 0;
+      gap: 0;
+    }
+    body[data-profile="wired"] .theme-button {
+      border: 0;
+      border-right: 1px solid #000000;
+      border-radius: 0;
+      color: #000000;
+      font-family: var(--rk-font-mono, monospace);
+      font-size: 12px;
+      letter-spacing: 1.1px;
+      text-transform: uppercase;
+      padding: 9px 12px;
+    }
+    body[data-profile="wired"] .theme-button:last-child {
+      border-right: 0;
+    }
+    body[data-profile="wired"] .theme-button[aria-pressed="true"] {
+      background: #000000;
+      color: #ffffff;
+    }
     body[data-profile="wired"] h2 {
       margin: 0 0 14px;
       padding: 8px 10px;
@@ -269,7 +327,13 @@
 <body>
   <header>
     <h1>DESIGN.md 主题导入验证</h1>
-    <div id="status" class="status-badge">加载中</div>
+    <div class="header-actions">
+      <div class="theme-switch" aria-label="切换 Design.md 主题">
+        <button class="theme-button" type="button" data-theme-option="cmb" aria-pressed="false">CMB</button>
+        <button class="theme-button" type="button" data-theme-option="wired" aria-pressed="false">WIRED</button>
+      </div>
+      <div id="status" class="status-badge">加载中</div>
+    </div>
   </header>
   <main>
     <section class="panel">
@@ -414,80 +478,100 @@ WIRED's depth philosophy is flat by religion. There are no shadows and no box-sh
     };
 
     const params = new URLSearchParams(location.search);
-    const selectedProfile = params.get('theme') === 'wired' || params.has('wired') ? 'wired' : 'cmb';
-    const profile = profiles[selectedProfile];
+    let selectedProfile = params.get('theme') === 'wired' || params.has('wired') ? 'wired' : 'cmb';
+    let profile = profiles[selectedProfile];
 
-    const spec = {
-      root: 'dashboard',
-      elements: {
-        dashboard: {
-          type: 'GridLayout',
-          props: {
-            columns: 2,
-            gap: 16,
+    function buildSpec(profileName) {
+      const activeProfile = profiles[profileName];
+      return {
+        root: 'dashboard',
+        elements: {
+          dashboard: {
+            type: 'GridLayout',
+            props: {
+              columns: 2,
+              gap: 16,
+            },
+            children: ['kpi', 'bar', 'table'],
           },
-          children: ['kpi', 'bar', 'table'],
-        },
-        kpi: {
-          type: 'KpiDashboard',
-          props: {
-            type: 'kpi_dashboard',
-            title: profile.title,
-            columns: 1,
-            metrics: profile.kpis,
+          kpi: {
+            type: 'KpiDashboard',
+            props: {
+              type: 'kpi_dashboard',
+              title: activeProfile.title,
+              columns: 1,
+              metrics: activeProfile.kpis,
+            },
+            children: [],
           },
-          children: [],
-        },
-        bar: {
-          type: 'BarChart',
-          props: {
-            type: 'bar',
-            title: selectedProfile === 'wired' ? 'Link Blue 驱动的图表调色板' : '品牌色驱动的图表调色板',
-            x: 'day',
-            y: 'value',
-            data: [
-              { day: 'D1', value: 120 },
-              { day: 'D2', value: 156 },
-              { day: 'D3', value: 188 },
-              { day: 'D4', value: 210 },
-              { day: 'D5', value: 238 },
-            ],
-            height: 300,
+          bar: {
+            type: 'BarChart',
+            props: {
+              type: 'bar',
+              title: profileName === 'wired' ? 'Link Blue 驱动的图表调色板' : '品牌色驱动的图表调色板',
+              x: 'day',
+              y: 'value',
+              data: [
+                { day: 'D1', value: 120 },
+                { day: 'D2', value: 156 },
+                { day: 'D3', value: 188 },
+                { day: 'D4', value: 210 },
+                { day: 'D5', value: 238 },
+              ],
+              height: 300,
+            },
+            children: [],
           },
-          children: [],
-        },
-        table: {
-          type: 'DataTable',
-          props: {
-            type: 'table',
-            title: '主题 token 验证',
-            columns: [
-              { key: 'token', label: 'Token' },
-              { key: 'expected', label: 'Expected' },
-              { key: 'actual', label: 'Actual' },
-            ],
-            data: [
-              { token: '--rk-accent', expected: profile.expected.accent, actual: 'see panel' },
-              { token: '--rk-bg-primary', expected: profile.expected.background, actual: 'see panel' },
-              { token: '--rk-text-primary', expected: profile.expected.text, actual: 'see panel' },
-              { token: '--rk-radius-md', expected: profile.expected.radiusMd, actual: 'see panel' },
-              { token: '--rk-shadow', expected: profile.expected.shadow || 'theme default', actual: 'see panel' },
-            ],
+          table: {
+            type: 'DataTable',
+            props: {
+              type: 'table',
+              title: '主题 token 验证',
+              columns: [
+                { key: 'token', label: 'Token' },
+                { key: 'expected', label: 'Expected' },
+                { key: 'actual', label: 'Actual' },
+              ],
+              data: [
+                { token: '--rk-accent', expected: activeProfile.expected.accent, actual: 'see panel' },
+                { token: '--rk-bg-primary', expected: activeProfile.expected.background, actual: 'see panel' },
+                { token: '--rk-text-primary', expected: activeProfile.expected.text, actual: 'see panel' },
+                { token: '--rk-radius-md', expected: activeProfile.expected.radiusMd, actual: 'see panel' },
+                { token: '--rk-shadow', expected: activeProfile.expected.shadow || 'theme default', actual: 'see panel' },
+              ],
+            },
+            children: [],
           },
-          children: [],
         },
-      },
-    };
+      };
+    }
 
     function cssVar(name) {
       return getComputedStyle(document.body).getPropertyValue(name).trim();
     }
 
-    function init() {
+    function updateUrl(profileName) {
+      const url = new URL(location.href);
+      url.searchParams.delete('wired');
+      url.searchParams.set('theme', profileName);
+      history.replaceState(null, '', url);
+    }
+
+    function setActiveThemeButton(profileName) {
+      document.querySelectorAll('[data-theme-option]').forEach(button => {
+        button.setAttribute('aria-pressed', button.dataset.themeOption === profileName ? 'true' : 'false');
+      });
+    }
+
+    function renderProfile(profileName, options = {}) {
+      selectedProfile = profileName;
+      profile = profiles[selectedProfile];
       document.body.dataset.profile = selectedProfile;
       document.querySelector('h1').textContent = profile.pageTitle;
+      setActiveThemeButton(selectedProfile);
+
       const theme = window.Vizual.loadDesignMd(profile.markdown, { name: selectedProfile + '-design-md-browser', apply: true });
-      window.Vizual.renderSpec(spec, document.getElementById('viz'));
+      window.Vizual.renderSpec(buildSpec(selectedProfile), document.getElementById('viz'));
 
       const result = {
         name: theme.name,
@@ -523,6 +607,18 @@ WIRED's depth philosophy is flat by religion. There are no shadows and no box-sh
       document.getElementById('status').textContent = ok ? `PASS：${selectedProfile.toUpperCase()} 主题已应用` : 'FAIL：主题映射不完整';
       document.getElementById('status').dataset.status = ok ? 'pass' : 'fail';
       if (!ok) throw new Error('DESIGN.md theme mapping failed');
+      if (options.updateUrl !== false) updateUrl(selectedProfile);
+    }
+
+    function init() {
+      document.querySelectorAll('[data-theme-option]').forEach(button => {
+        button.addEventListener('click', () => {
+          const nextProfile = button.dataset.themeOption;
+          if (!nextProfile || nextProfile === selectedProfile) return;
+          renderProfile(nextProfile);
+        });
+      });
+      renderProfile(selectedProfile, { updateUrl: false });
     }
 
     function standaloneUrl() {
