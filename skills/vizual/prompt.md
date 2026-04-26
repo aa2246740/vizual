@@ -75,6 +75,8 @@ window.markPendingHandled();
 
 `renderVizInMsg()` returns `VizualArtifact | null`; store `artifact.id` for follow-up edits/export. `renderInteractiveVizInMsg()` returns an interactive snapshot with `{ artifact, state, lastPreviewSpec, renderCount }`. `exportArtifact()` returns an `ExportRecord | null`; check `record.status === "success"` instead of assuming a browser download happened.
 
+For a custom React host, render specs with `VizualRenderer` and artifacts with `VizualArtifactView` from `vizual`. Do not use bare `StateProvider + Renderer` from `@json-render/react`; that leaves out required providers in current json-render. Keep `createAgentBridge()` for message/artifact state and use `VizualRenderer` for the React surface.
+
 For browser QA, do not guess chat DOM classes. Prefer `window.getVizualConversationState()` and `window.getVizualDebugState()`. If DOM inspection is needed, use stable attributes such as `[data-message-row="true"]`, `[data-ai-msg="true"]`, `[data-viz-container="true"]`, and `[data-artifact-id]`.
 
 For follow-up edits to an existing chart, read the saved artifact and apply Vizual typed patches:

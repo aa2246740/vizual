@@ -43,7 +43,7 @@ cp -R skills/design-md-creator/ ~/.claude/skills/design-md-creator/
 
 不要把测试页里的全局函数当成唯一实现来源。Vizual 提供 `createAgentBridge()` 作为宿主协议的状态层：它负责 artifact registry、messageId ↔ artifactId 绑定、render history、interactive snapshot 查找和导出/错误事件记录。聊天页面、SaaS 小窗、全屏 Agent 工作台都应该围绕这层状态模型接入。
 
-```ts
+```tsx
 import { createAgentBridge, normalizeArtifact } from 'vizual'
 
 const bridge = createAgentBridge({
@@ -61,17 +61,14 @@ bridge.recordRender('static', messageId, { status: 'success', artifactId: artifa
 ## 渲染普通 spec
 
 ```tsx
-import { registry } from 'vizual'
-import { Renderer, StateProvider } from '@json-render/react'
+import { VizualRenderer } from 'vizual'
 
 function AgentVisual({ spec }) {
-  return (
-    <StateProvider>
-      <Renderer spec={spec} registry={registry} />
-    </StateProvider>
-  )
+  return <VizualRenderer spec={spec} />
 }
 ```
+
+`VizualRenderer` 是推荐入口：它封装了 json-render 的 `JSONUIProvider`、Vizual registry、内置 action handlers、`$computed`、`$bindState` 和 visibility context。不要在宿主里只写 `StateProvider + Renderer`，否则当前 json-render 会缺少 visibility provider 并在渲染时崩溃。
 
 普通数据分析、Dashboard、报表默认用宿主文本 + `GridLayout` / charts / `KpiDashboard` / `DataTable`。不要因为用户说“报告”就使用 DocView。
 
@@ -79,15 +76,16 @@ function AgentVisual({ spec }) {
 
 当用户之后可能会说“这张图改成折线图”“只看华东区”“导出 PDF”时，保存 artifact，而不是只保存原始 JSON。
 
-```ts
-import { createHostRuntime, createMemoryArtifactStore } from 'vizual'
+```tsx
+import { createHostRuntime, createMemoryArtifactStore, VizualArtifactView } from 'vizual'
+import { createRoot } from 'react-dom/client'
 
 const runtime = createHostRuntime({
   store: createMemoryArtifactStore(),
   renderArtifact: async (artifact, container) => {
-    // 宿主用自己的 React root + Renderer 渲染 artifact.spec
-    renderVizualSpec(artifact.spec, container)
-    return { artifact }
+    const root = createRoot(container)
+    root.render(<VizualArtifactView artifact={artifact} />)
+    return { artifact, root }
   },
 })
 

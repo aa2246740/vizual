@@ -226,6 +226,15 @@ export type {
   InteractiveSnapshot,
 } from './core/agent-bridge'
 export {
+  VizualArtifactView,
+  VizualRenderer,
+} from './core/react-renderer'
+export type {
+  VizualArtifactViewProps,
+  VizualRendererProps,
+  VizualStateChange,
+} from './core/react-renderer'
+export {
   downloadBlob,
   downloadExport,
   exportToPNG,

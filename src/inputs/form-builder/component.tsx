@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback, useMemo, useRef } from 'react'
 import { useBoundProp } from '@json-render/react'
 import { tcss, tc } from '../../core/theme-colors'
 import { AnnotatableWrapper } from '../../docview/annotatable-wrapper'
@@ -7,6 +7,11 @@ import type { FormBuilderProps } from './schema'
 type Field = FormBuilderProps['fields'][0]
 type RuntimeFormBuilderProps = FormBuilderProps & {
   onSubmit?: (data: Record<string, unknown>) => void
+}
+type FormBuilderComponentArgs = {
+  props: RuntimeFormBuilderProps
+  bindings?: Record<string, string>
+  emit?: (event: string) => void
 }
 type NormalizedOption = { label: string; value: string | number }
 type ValidationRule = NonNullable<Field['validation']>[0]
@@ -32,39 +37,77 @@ function normalizeOptions(options: Field['options']): NormalizedOption[] {
   return options.map(o => typeof o === 'string' ? { label: o, value: o } : o)
 }
 
+function resolveFormData(props: RuntimeFormBuilderProps) {
+  const defaultData = props.fields.reduce((acc: Record<string, unknown>, f) => {
+    if (f.defaultValue !== undefined) acc[f.name] = f.defaultValue
+    return acc
+  }, {})
+  return isRecord(props.value)
+    ? { ...defaultData, ...props.value }
+    : defaultData
+}
+
 /**
  * Dynamic form builder — renders various input types based on field definitions.
  * Uses useBoundProp for two-way binding on form data via $bindState,
  * falls back to local state when unbound.
  */
-export function FormBuilder({
+export function FormBuilder(args: FormBuilderComponentArgs) {
+  if (args.bindings?.value) return <BoundFormBuilder {...args} />
+  return <UnboundFormBuilder {...args} />
+}
+
+function BoundFormBuilder({
   props,
   bindings,
   emit = () => undefined,
+}: FormBuilderComponentArgs) {
+  const resolvedData = useMemo(() => resolveFormData(props), [props])
+  const [boundData, setBoundData] = useBoundProp<Record<string, unknown>>(resolvedData, bindings!.value)
+  return (
+    <FormBuilderBody
+      props={props}
+      emit={emit}
+      formData={boundData ?? resolvedData}
+      onFormDataChange={setBoundData}
+    />
+  )
+}
+
+function UnboundFormBuilder({
+  props,
+  emit = () => undefined,
+}: FormBuilderComponentArgs) {
+  const resolvedData = useMemo(() => resolveFormData(props), [props])
+  const [localData, setLocalData] = useState<Record<string, unknown>>(resolvedData)
+
+  return (
+    <FormBuilderBody
+      props={props}
+      emit={emit}
+      formData={localData}
+      onFormDataChange={setLocalData}
+    />
+  )
+}
+
+function FormBuilderBody({
+  props,
+  emit,
+  formData,
+  onFormDataChange,
 }: {
   props: RuntimeFormBuilderProps
-  bindings?: Record<string, string>
-  emit?: (event: string) => void
+  emit: (event: string) => void
+  formData: Record<string, unknown>
+  onFormDataChange: (data: Record<string, unknown>) => void
 }) {
-  const defaultData = props.fields.reduce((acc: Record<string, unknown>, f) => {
-    if (f.defaultValue !== undefined) acc[f.name] = f.defaultValue
-    return acc
-  }, {})
-  const resolvedData = isRecord(props.value)
-    ? { ...defaultData, ...props.value }
-    : defaultData
-
-  const [boundData, setBoundData] = useBoundProp<Record<string, unknown>>(resolvedData, bindings?.value)
-  const [localData, setLocalData] = useState<Record<string, unknown>>(resolvedData)
-  const hasBinding = !!bindings?.value
-  const formData = hasBinding ? (boundData ?? {}) : localData
   const formDataRef = useRef<Record<string, unknown>>(formData)
   formDataRef.current = formData
   const setFormData = useCallback((v: Record<string, unknown>) => {
     formDataRef.current = v
-    setBoundData(v)
-    setLocalData(v)
-  }, [setBoundData])
+    onFormDataChange(v)
+  }, [onFormDataChange])
 
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [touched, setTouched] = useState<Record<string, boolean>>({})

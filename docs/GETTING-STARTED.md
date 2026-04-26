@@ -25,17 +25,15 @@ npm install vizual
 
 你不需要额外安装任何图表或渲染依赖。
 
-## 第二步：注册 Registry
+## 第二步：渲染 AI 输出
 
-`vizual` 导出了一个预构建的 `registry`，包含 31 个组件的 type → React 组件映射：
+AI（Claude、GPT 等）输出 Vizual JSON，宿主前端用 `VizualRenderer` 渲染。`VizualRenderer` 已经封装好 json-render 所需的 Provider、Vizual registry、内置 action handlers、`$computed` 和 `$bindState` 支持；接入方不要再手动组合 `StateProvider` + `Renderer`。
 
 ```tsx
-import { registry } from 'vizual'
+import { VizualRenderer } from 'vizual'
 ```
 
-## 第三步：渲染 AI 输出
-
-AI（Claude、GPT 等）输出的 JSON 格式如下：
+AI 输出的 JSON 格式如下：
 
 ```json
 {
@@ -58,22 +56,19 @@ AI（Claude、GPT 等）输出的 JSON 格式如下：
 }
 ```
 
-用 json-render 的 `Renderer` 渲染：
+在 React 页面中渲染：
 
 ```tsx
-import { registry } from 'vizual'
-import { Renderer, StateProvider } from '@json-render/react'
+import { VizualRenderer } from 'vizual'
 
 function App({ aiJsonOutput }) {
-  return (
-    <StateProvider>
-      <Renderer spec={aiJsonOutput} registry={registry} />
-    </StateProvider>
-  )
+  return <VizualRenderer spec={aiJsonOutput} />
 }
 ```
 
-## 第四步：AI Agent / 宿主集成（推荐）
+如果你需要自定义底层 json-render registry，Vizual 仍然导出 `registry`；普通 Agent 平台接入优先使用 `VizualRenderer`。
+
+## 第三步：AI Agent / 宿主集成（推荐）
 
 Vizual 设计为 **AI Agent 的视觉运行时**。Agent 负责生成 Vizual spec/artifact，宿主前端负责自动渲染、保存 artifact、处理追问 patch、导出和 DocView 批注修订。
 
@@ -99,21 +94,16 @@ cp -r skills/vizual/ ~/.claude/skills/vizual/
 import {
   createHostRuntime,
   createMemoryArtifactStore,
-  registry,
+  VizualArtifactView,
   type VizualArtifactPatch,
 } from 'vizual'
-import { Renderer, StateProvider } from '@json-render/react'
 import { createRoot } from 'react-dom/client'
 
 const runtime = createHostRuntime({
   store: createMemoryArtifactStore(),
   renderArtifact: (artifact, container) => {
     const root = createRoot(container)
-    root.render(
-      <StateProvider>
-        <Renderer spec={artifact.spec} registry={registry} />
-      </StateProvider>,
-    )
+    root.render(<VizualArtifactView artifact={artifact} />)
     return { artifact, root }
   },
 })
@@ -198,8 +188,7 @@ npm install vizual
 ```tsx
 // App.tsx
 import { useState } from 'react'
-import { registry, renderKitCatalog } from 'vizual'
-import { Renderer, StateProvider } from '@json-render/react'
+import { VizualRenderer } from 'vizual'
 
 const DEMO_SPEC = {
   root: 'main',
@@ -226,11 +215,9 @@ function App() {
   const [spec] = useState(DEMO_SPEC)
 
   return (
-    <StateProvider>
-      <div style={{ maxWidth: 800, margin: '0 auto', padding: 24 }}>
-        <Renderer spec={spec} registry={registry} />
-      </div>
-    </StateProvider>
+    <div style={{ maxWidth: 800, margin: '0 auto', padding: 24 }}>
+      <VizualRenderer spec={spec} />
+    </div>
   )
 }
 
@@ -267,7 +254,7 @@ ECharts 依赖浏览器 DOM，需要动态导入：
 import dynamic from 'next/dynamic'
 
 const Dashboard = dynamic(
-  () => import('./Dashboard'),  // 里头用 Renderer + registry
+  () => import('./Dashboard'),  // 里头用 VizualRenderer
   { ssr: false }
 )
 ```

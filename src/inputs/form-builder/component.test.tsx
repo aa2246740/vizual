@@ -153,6 +153,33 @@ describe('FormBuilder Schema', () => {
 })
 
 describe('FormBuilder component', () => {
+  it('works as a direct React component without json-render providers', () => {
+    const { container } = render(
+      <FormBuilder
+        props={{
+          type: 'form_builder',
+          value: { points: 6, mode: 'grouped' },
+          submitLabel: 'Apply',
+          fields: [
+            { name: 'points', label: 'Points', type: 'slider', min: 3, max: 12 },
+            { name: 'mode', label: 'Mode', type: 'select', options: ['grouped', 'stacked'] },
+          ],
+        }}
+      />,
+    )
+
+    fireEvent.change(container.querySelector('input[type="range"]')!, {
+      target: { value: '10' },
+    })
+    fireEvent.change(container.querySelector('select')!, {
+      target: { value: 'stacked' },
+    })
+
+    expect((container.querySelector('input[type="range"]') as HTMLInputElement).value).toBe('10')
+    expect((container.querySelector('select') as HTMLSelectElement).value).toBe('stacked')
+    expect(screen.getByRole('button', { name: 'Apply' })).toBeTruthy()
+  })
+
   it('renders form controls and submit button for interactive fields', () => {
     const { container } = render(
       <StateProvider>

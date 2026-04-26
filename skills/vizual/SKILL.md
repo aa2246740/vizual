@@ -141,6 +141,8 @@ Use `targetMap` instead of guessing component paths. Common target ids look like
 
 Vizual specs are JSON artifacts. A host page must render them. When the host is `validation/vizual-test.html`, use the page's JavaScript bridge; simply typing JSON into the chat input will not render anything.
 
+When you are asked to build or integrate a custom React host, import `VizualRenderer` / `VizualArtifactView` from `vizual` and render specs/artifacts through those components. Do **not** hand-roll `StateProvider + Renderer` from `@json-render/react`; that misses required providers in current json-render and can crash at runtime. Use `createAgentBridge()` for artifact/message state, and `VizualRenderer` for the actual React render surface.
+
 The bridge functions are backed by Vizual's formal Agent bridge state model (`Vizual.createAgentBridge()` / `createAgentBridge()` in package imports). That SDK owns artifact ids, message-to-artifact mapping, render history, and interactive snapshot lookup. Treat the return values below as the source of truth; don't infer state from DOM bubbles.
 
 Required bridge flow for agents with browser script execution (`evaluate_script`, Playwright `page.evaluate`, Chrome DevTools Protocol, etc.):

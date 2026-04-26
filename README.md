@@ -36,13 +36,12 @@ const spec = {
 }
 
 // Your app renders it:
-import { registry } from 'vizual'
-import { Renderer, StateProvider } from '@json-render/react'
+import { VizualRenderer } from 'vizual'
 
-<StateProvider>
-  <Renderer spec={spec} registry={registry} />
-</StateProvider>
+<VizualRenderer spec={spec} />
 ```
+
+`VizualRenderer` is the recommended React entry point. It wraps json-render's required providers and Vizual's registry/actions, so host apps do not need to import `@json-render/react` directly for normal rendering.
 
 ```tsx
 // AI outputs a DocView spec — renders as an annotatable document:
@@ -376,8 +375,7 @@ npm install vizual
 ## 快速使用
 
 ```tsx
-import { registry } from 'vizual'
-import { Renderer, StateProvider } from '@json-render/react'
+import { VizualRenderer } from 'vizual'
 
 // AI 返回的 JSON
 const spec = {
@@ -400,9 +398,7 @@ const spec = {
   }
 }
 
-<StateProvider>
-  <Renderer spec={spec} registry={registry} />
-</StateProvider>
+<VizualRenderer spec={spec} />
 ```
 
 ## 31 个组件
