@@ -69,6 +69,32 @@
       background: var(--rk-bg-primary, #ffffff);
       color: var(--rk-accent, #c8152d);
     }
+    .source-switch {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px;
+      border-radius: var(--rk-radius-md, 8px);
+      border: 1px solid var(--rk-border-subtle, #e5e7eb);
+      background: var(--rk-bg-secondary, #f8fafc);
+    }
+    .source-button {
+      appearance: none;
+      border: 1px solid transparent;
+      border-radius: var(--rk-radius-sm, 6px);
+      background: transparent;
+      color: var(--rk-text-secondary, #475569);
+      cursor: pointer;
+      font-family: var(--rk-font-ui, var(--rk-font-sans));
+      font-size: 13px;
+      font-weight: 700;
+      padding: 6px 10px;
+    }
+    .source-button[aria-pressed="true"] {
+      border-color: var(--rk-accent, #c8152d);
+      background: var(--rk-bg-primary, #ffffff);
+      color: var(--rk-accent, #c8152d);
+    }
     main {
       display: grid;
       grid-template-columns: minmax(0, 1fr) 360px;
@@ -136,6 +162,72 @@
       border-color: var(--rk-error, #dc2626);
       color: var(--rk-error, #dc2626);
     }
+    .mapping-report {
+      margin-top: 12px;
+      padding: 12px;
+      border: 1px solid var(--rk-border-subtle, #e5e7eb);
+      border-radius: var(--rk-radius-md, 8px);
+      background: var(--rk-bg-primary, #ffffff);
+      color: var(--rk-text-secondary, #475569);
+      font-family: var(--rk-font-ui, var(--rk-font-sans));
+      font-size: 12px;
+    }
+    .mapping-report strong {
+      display: block;
+      margin-bottom: 8px;
+      color: var(--rk-text-primary, #111827);
+    }
+    .mapping-report-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+    .mapping-report-item {
+      padding: 8px;
+      border: 1px solid var(--rk-border-subtle, #e5e7eb);
+      border-radius: var(--rk-radius-sm, 6px);
+      background: var(--rk-bg-secondary, #f8fafc);
+    }
+    .mapping-report-item span {
+      display: block;
+      margin-top: 4px;
+      color: var(--rk-text-primary, #111827);
+      font-weight: 700;
+    }
+    .parser-comparison {
+      margin-top: 12px;
+      padding: 12px;
+      border: 1px solid var(--rk-border-subtle, #e5e7eb);
+      border-radius: var(--rk-radius-md, 8px);
+      background: var(--rk-bg-primary, #ffffff);
+      color: var(--rk-text-secondary, #475569);
+      font-family: var(--rk-font-ui, var(--rk-font-sans));
+      font-size: 12px;
+    }
+    .parser-comparison strong {
+      display: block;
+      margin-bottom: 8px;
+      color: var(--rk-text-primary, #111827);
+    }
+    .parser-comparison table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+    .parser-comparison th,
+    .parser-comparison td {
+      padding: 6px 4px;
+      border-bottom: 1px solid var(--rk-border-subtle, #e5e7eb);
+      text-align: left;
+      vertical-align: top;
+    }
+    .parser-comparison th {
+      color: var(--rk-text-primary, #111827);
+      font-weight: 700;
+    }
+    .score-up { color: var(--rk-success, #16a34a); font-weight: 700; }
+    .score-flat { color: var(--rk-text-secondary, #475569); font-weight: 700; }
+    .score-down { color: var(--rk-error, #dc2626); font-weight: 700; }
     .interactive-grid {
       display: grid;
       grid-template-columns: minmax(280px, 360px) minmax(0, 1fr);
@@ -624,6 +716,10 @@
         <button class="theme-button" type="button" data-theme-option="wired" aria-pressed="false">WIRED</button>
         <button class="theme-button" type="button" data-theme-option="starbucks" aria-pressed="false">STARBUCKS</button>
       </div>
+      <div class="source-switch" aria-label="切换主题输入来源">
+        <button class="source-button" type="button" data-source-option="raw" aria-pressed="false">原始</button>
+        <button class="source-button" type="button" data-source-option="agent" aria-pressed="false">Agent Parser</button>
+      </div>
       <div id="status" class="status-badge">加载中</div>
     </div>
   </header>
@@ -657,6 +753,8 @@
         <div class="font-ui" id="font-ui-sample">UI LABEL SAMPLE</div>
         <div class="font-mono" id="font-mono-sample">mono kicker sample</div>
       </div>
+      <div class="mapping-report" id="mapping-report"></div>
+      <div class="parser-comparison" id="parser-comparison"></div>
       <pre id="debug"></pre>
     </aside>
   </main>
@@ -865,8 +963,151 @@ Whisper-soft, layered over solid surfaces.
       },
     };
 
+    // Agent parser baseline:
+    // 这些 tokens 是按 skills/design-md-parser/SKILL.md 的规则人工解析出来的：
+    // 保留品牌原名，同时补充 background/text/accent/card/border 等标准角色名，
+    // 用来验证“Agent 预处理后再交给 Vizual theme mapper”是否比直接解析原文更稳定。
+    const agentParsedTokens = {
+      cmb: {
+        raw: cmbDesignMd,
+        colors: [
+          { name: 'cmb-red', value: '#c8152d' },
+          { name: 'primary', value: '#c8152d' },
+          { name: 'accent', value: '#c8152d' },
+          { name: 'chart-1', value: '#c8152d' },
+          { name: 'cmb-black', value: '#000000' },
+          { name: 'text', value: '#000000' },
+          { name: 'foreground', value: '#000000' },
+          { name: 'background', value: '#ffffff' },
+          { name: 'surface', value: '#ffffff' },
+          { name: 'card', value: '#ffffff' },
+          { name: 'dark-gray', value: '#333333' },
+          { name: 'text-secondary', value: '#333333' },
+          { name: 'medium-gray', value: '#666666' },
+          { name: 'caption', value: '#666666' },
+          { name: 'light-gray', value: '#b3b3b3' },
+          { name: 'border', value: '#b3b3b3' },
+          { name: 'very-light-gray', value: '#cccccc' },
+          { name: 'border-subtle', value: '#cccccc' },
+          { name: 'success', value: '#16a34a' },
+          { name: 'warning', value: '#f59e0b' },
+          { name: 'error', value: '#ba1a1a' },
+        ],
+        typography: {
+          fontFamily: '"Founder Lanting Hei", "方正兰亭黑", Arial, Heiti, sans-serif',
+          fontFamilies: {
+            display: '"Founder Lanting Hei", "方正兰亭黑", Arial, Heiti, sans-serif',
+            body: '"Founder Lanting Hei", "方正兰亭黑", Arial, Heiti, sans-serif',
+            ui: '"Founder Lanting Hei", "方正兰亭黑", Arial, Heiti, sans-serif',
+            sans: '"Founder Lanting Hei", "方正兰亭黑", Arial, Heiti, sans-serif',
+          },
+          sizes: { body: '16px', h2: '24px', display: '32px', caption: '12px' },
+          weights: { regular: '400', medium: '500', semibold: '600', bold: '700' },
+        },
+        spacing: { baseUnit: '8px', scale: { 'space-1': '4px', 'space-2': '8px', 'space-3': '16px', 'space-4': '24px' } },
+        radius: { scale: { sm: '4px', md: '8px', lg: '12px', pill: '9999px' } },
+        effects: { shadow: 'none' },
+      },
+      wired: {
+        raw: wiredDesignMd,
+        colors: [
+          { name: 'wired-black', value: '#000000' },
+          { name: 'text', value: '#000000' },
+          { name: 'foreground', value: '#000000' },
+          { name: 'border', value: '#000000' },
+          { name: 'page-ink', value: '#1a1a1a' },
+          { name: 'text-primary', value: '#1a1a1a' },
+          { name: 'paper-white', value: '#ffffff' },
+          { name: 'background', value: '#ffffff' },
+          { name: 'surface', value: '#ffffff' },
+          { name: 'surface-secondary', value: '#ffffff' },
+          { name: 'card', value: '#ffffff' },
+          { name: 'link-blue', value: '#057dbc' },
+          { name: 'accent', value: '#057dbc' },
+          { name: 'primary', value: '#057dbc' },
+          { name: 'chart-1', value: '#057dbc' },
+          { name: 'caption-gray', value: '#757575' },
+          { name: 'text-secondary', value: '#757575' },
+          { name: 'disabled-gray', value: '#999999' },
+          { name: 'text-tertiary', value: '#999999' },
+          { name: 'hairline-border', value: '#e2e8f0' },
+          { name: 'border-subtle', value: '#e2e8f0' },
+          { name: 'success', value: '#16a34a' },
+          { name: 'warning', value: '#f59e0b' },
+          { name: 'error', value: '#dc2626' },
+        ],
+        typography: {
+          fontFamilies: {
+            display: '"WiredDisplay", Georgia, "Times New Roman", serif',
+            body: '"BreveText", Georgia, "Times New Roman", serif',
+            ui: '"Apercu", Inter, Helvetica, Arial, sans-serif',
+            sans: '"Apercu", Inter, Helvetica, Arial, sans-serif',
+            mono: '"WiredMono", "SF Mono", Monaco, "Courier New", monospace',
+          },
+          sizes: { caption: '12px', body: '16px', h2: '26px', display: '64px' },
+          weights: { regular: '400', semibold: '600', bold: '700' },
+        },
+        spacing: { baseUnit: '8px', scale: { 'space-1': '4px', 'space-2': '8px', 'space-3': '16px', 'space-4': '24px', 'space-5': '32px' } },
+        radius: { scale: { sm: '0px', md: '0px', lg: '0px', pill: '1920px' } },
+        effects: { shadow: 'none' },
+      },
+      starbucks: {
+        raw: starbucksDesignMd,
+        colors: [
+          { name: 'green-accent', value: '#00754A' },
+          { name: 'primary', value: '#00754A' },
+          { name: 'accent', value: '#00754A' },
+          { name: 'chart-1', value: '#00754A' },
+          { name: 'starbucks-green', value: '#006241' },
+          { name: 'brand-heading', value: '#006241' },
+          { name: 'house-green', value: '#1E3932' },
+          { name: 'chart-2', value: '#1E3932' },
+          { name: 'green-uplift', value: '#2b5148' },
+          { name: 'chart-3', value: '#2b5148' },
+          { name: 'green-light', value: '#d4e9e2' },
+          { name: 'accent-muted', value: '#d4e9e2' },
+          { name: 'gold', value: '#cba258' },
+          { name: 'warning', value: '#cba258' },
+          { name: 'neutral-warm', value: '#f2f0eb' },
+          { name: 'background', value: '#f2f0eb' },
+          { name: 'surface', value: '#f2f0eb' },
+          { name: 'ceramic', value: '#edebe9' },
+          { name: 'surface-secondary', value: '#edebe9' },
+          { name: 'white', value: '#ffffff' },
+          { name: 'card', value: '#ffffff' },
+          { name: 'black', value: '#000000' },
+          { name: 'text-black', value: 'rgba(0, 0, 0, 0.87)' },
+          { name: 'text', value: 'rgba(0, 0, 0, 0.87)' },
+          { name: 'foreground', value: 'rgba(0, 0, 0, 0.87)' },
+          { name: 'text-black-soft', value: 'rgba(0, 0, 0, 0.58)' },
+          { name: 'text-secondary', value: 'rgba(0, 0, 0, 0.58)' },
+          { name: 'border', value: 'rgba(0, 0, 0, 0.24)' },
+          { name: 'border-subtle', value: 'rgba(0, 0, 0, 0.14)' },
+          { name: 'success', value: '#00754A' },
+          { name: 'error', value: '#c82014' },
+        ],
+        typography: {
+          fontFamily: 'SoDoSans, "Helvetica Neue", Helvetica, Arial, sans-serif',
+          fontFamilies: {
+            display: 'SoDoSans, "Helvetica Neue", Helvetica, Arial, sans-serif',
+            body: 'SoDoSans, "Helvetica Neue", Helvetica, Arial, sans-serif',
+            ui: 'SoDoSans, "Helvetica Neue", Helvetica, Arial, sans-serif',
+            sans: 'SoDoSans, "Helvetica Neue", Helvetica, Arial, sans-serif',
+            serif: '"Lander Tall", "Iowan Old Style", Georgia, serif',
+            script: '"Kalam", "Comic Sans MS", cursive',
+          },
+          sizes: { caption: '13px', body: '16px', h2: '24px', display: '45px' },
+          weights: { regular: '400', medium: '500', semibold: '600', bold: '700' },
+        },
+        spacing: { baseUnit: '8px', scale: { 'space-1': '4px', 'space-2': '8px', 'space-3': '16px', 'space-4': '24px', 'space-5': '32px', 'space-6': '40px' } },
+        radius: { scale: { sm: '4px', md: '12px', lg: '12px', pill: '50px' } },
+        effects: { shadow: '0 0 0.5px rgba(0,0,0,0.14), 0 1px 1px rgba(0,0,0,0.24)' },
+      },
+    };
+
     const params = new URLSearchParams(location.search);
     let selectedProfile = profiles[params.get('theme')] ? params.get('theme') : (params.has('wired') ? 'wired' : 'cmb');
+    let selectedSource = params.get('source') === 'agent' ? 'agent' : 'raw';
     let profile = profiles[selectedProfile];
 
     function buildSpec(profileName) {
@@ -1017,6 +1258,16 @@ Whisper-soft, layered over solid surfaces.
 - **Green Accent** (\`${accent}\`): Primary interactive accent and chart-1.
 
 ${base}`;
+    }
+
+    function applyScopedInteractiveTheme(profileName, accent, container) {
+      const safeAccent = String(accent).replace(/[^0-9a-f]/gi, '').toLowerCase() || 'accent';
+      const theme = window.Vizual.loadDesignMd(makeRuntimeDesignMd(profileName, accent), {
+        name: `${profileName}-interactive-${safeAccent}`,
+        apply: false,
+      });
+      window.Vizual.applyTheme(container, theme.name);
+      return theme;
     }
 
     function buildInteractiveControlsSpec() {
@@ -1227,10 +1478,7 @@ ${base}`;
         if (runId !== interactiveRunId) return;
         const controls = normalizeControls(profileName, interactiveState.controls);
         interactiveState = { controls };
-        window.Vizual.loadDesignMd(makeRuntimeDesignMd(profileName, controls.accent), {
-          name: profileName + '-interactive-design-md',
-          apply: true,
-        });
+        applyScopedInteractiveTheme(profileName, controls.accent, previewEl);
         const spec = buildInteractivePreviewSpec(interactiveState);
         window.Vizual.renderSpec(spec, previewEl);
         interactiveRenderCount++;
@@ -1331,6 +1579,7 @@ ${base}`;
       const url = new URL(location.href);
       url.searchParams.delete('wired');
       url.searchParams.set('theme', profileName);
+      url.searchParams.set('source', selectedSource);
       history.replaceState(null, '', url);
     }
 
@@ -1338,6 +1587,94 @@ ${base}`;
       document.querySelectorAll('[data-theme-option]').forEach(button => {
         button.setAttribute('aria-pressed', button.dataset.themeOption === profileName ? 'true' : 'false');
       });
+    }
+
+    function setActiveSourceButton(sourceName) {
+      document.querySelectorAll('[data-source-option]').forEach(button => {
+        button.setAttribute('aria-pressed', button.dataset.sourceOption === sourceName ? 'true' : 'false');
+      });
+    }
+
+    function applyAgentParsedTheme(profileName, options = {}) {
+      const tokens = agentParsedTokens[profileName];
+      const theme = window.Vizual.mapDesignTokensToTheme(tokens, profileName + '-agent-parser-browser');
+      if (options.register !== false) {
+        window.Vizual.registerTheme(theme.name, theme);
+        const inverted = window.Vizual.invertTheme(theme);
+        window.Vizual.registerTheme(inverted.name, inverted);
+      }
+      if (options.apply !== false) {
+        window.Vizual.setGlobalTheme(theme.name);
+      }
+      return theme;
+    }
+
+    function loadRawTheme(profileName, options = {}) {
+      return window.Vizual.loadDesignMd(profiles[profileName].markdown, {
+        name: profileName + '-design-md-browser',
+        apply: options.apply !== false,
+        register: options.register !== false,
+      });
+    }
+
+    function compareParserScores() {
+      return Object.keys(profiles).map(profileName => {
+        const raw = window.Vizual.loadDesignMd(profiles[profileName].markdown, {
+          name: profileName + '-raw-score-only',
+          apply: false,
+          register: false,
+        });
+        const agent = window.Vizual.mapDesignTokensToTheme(agentParsedTokens[profileName], profileName + '-agent-score-only');
+        const rawScore = raw._mappingReport?.qualityScore ?? 0;
+        const agentScore = agent._mappingReport?.qualityScore ?? 0;
+        return {
+          profileName,
+          rawScore,
+          agentScore,
+          delta: agentScore - rawScore,
+          rawMapped: raw._mappingReport?.mappedCount ?? 0,
+          agentMapped: agent._mappingReport?.mappedCount ?? 0,
+          rawFallback: raw._mappingReport?.fallbackCount ?? 0,
+          agentFallback: agent._mappingReport?.fallbackCount ?? 0,
+          rawUnsupported: raw._mappingReport?.unsupportedTokens?.length ?? 0,
+          agentUnsupported: agent._mappingReport?.unsupportedTokens?.length ?? 0,
+        };
+      });
+    }
+
+    function renderParserComparison(activeReport) {
+      const rows = compareParserScores();
+      const el = document.getElementById('parser-comparison');
+      const sourceLabel = selectedSource === 'agent' ? 'Agent Parser tokens' : '原始 Design.md';
+      const activeScore = activeReport?.qualityScore ?? '-';
+      el.innerHTML = `
+        <strong>design-md-parser Skill 对比</strong>
+        <p>当前应用：${sourceLabel}，当前质量分：${activeScore}</p>
+        <table>
+          <thead>
+            <tr>
+              <th>主题</th>
+              <th>原始</th>
+              <th>Agent Parser</th>
+              <th>变化</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows.map(row => {
+              const deltaClass = row.delta > 0 ? 'score-up' : (row.delta < 0 ? 'score-down' : 'score-flat');
+              const sign = row.delta > 0 ? '+' : '';
+              return `
+                <tr>
+                  <td>${row.profileName.toUpperCase()}</td>
+                  <td>${row.rawScore}<br><small>${row.rawMapped} mapped / ${row.rawFallback} fallback</small></td>
+                  <td>${row.agentScore}<br><small>${row.agentMapped} mapped / ${row.agentFallback} fallback</small></td>
+                  <td class="${deltaClass}">${sign}${row.delta}</td>
+                </tr>
+              `;
+            }).join('')}
+          </tbody>
+        </table>
+      `;
     }
 
     function renderProfile(profileName, options = {}) {
@@ -1352,8 +1689,11 @@ ${base}`;
       document.getElementById('font-ui-sample').textContent = selectedProfile === 'starbucks' ? 'Pill button label sample' : 'UI LABEL SAMPLE';
       document.getElementById('font-mono-sample').textContent = selectedProfile === 'starbucks' ? 'Kalam cup-name touch' : 'mono kicker sample';
       setActiveThemeButton(selectedProfile);
+      setActiveSourceButton(selectedSource);
 
-      const theme = window.Vizual.loadDesignMd(profile.markdown, { name: selectedProfile + '-design-md-browser', apply: true });
+      const theme = selectedSource === 'agent'
+        ? applyAgentParsedTheme(selectedProfile)
+        : loadRawTheme(selectedProfile);
       window.Vizual.renderSpec(buildSpec(selectedProfile), document.getElementById('viz'));
 
       const result = {
@@ -1377,6 +1717,8 @@ ${base}`;
       document.getElementById('bg').textContent = result.background;
       document.getElementById('text').textContent = result.text;
       document.getElementById('chart').textContent = result.chart1;
+      renderMappingReport(theme._mappingReport);
+      renderParserComparison(theme._mappingReport);
       document.getElementById('debug').textContent = JSON.stringify(result, null, 2);
 
       const ok = result.mode === 'light'
@@ -1389,12 +1731,32 @@ ${base}`;
         && result.fontDisplay.includes(profile.expected.fontDisplayIncludes)
         && (!profile.expected.shadow || result.shadow.toLowerCase() === profile.expected.shadow.toLowerCase());
 
-      document.getElementById('status').textContent = ok ? `PASS：${selectedProfile.toUpperCase()} 主题已应用` : 'FAIL：主题映射不完整';
+      document.getElementById('status').textContent = ok
+        ? `PASS：${selectedProfile.toUpperCase()} ${selectedSource === 'agent' ? 'Agent Parser' : '原始'}主题已应用`
+        : 'FAIL：主题映射不完整';
       document.getElementById('status').dataset.status = ok ? 'pass' : 'fail';
       if (!ok) throw new Error('DESIGN.md theme mapping failed');
       renderInteractivePanel(selectedProfile, { resetAccent: true });
       renderComponentGallery(selectedProfile);
       if (options.updateUrl !== false) updateUrl(selectedProfile);
+    }
+
+    function renderMappingReport(report) {
+      const el = document.getElementById('mapping-report');
+      if (!report) {
+        el.innerHTML = '<strong>Design.md Mapping Report</strong><div>无报告</div>';
+        return;
+      }
+      el.innerHTML = `
+        <strong>Design.md Mapping Report</strong>
+        <div class="mapping-report-grid">
+          <div class="mapping-report-item">质量分<span>${report.qualityScore ?? '-'}</span></div>
+          <div class="mapping-report-item">映射变量<span>${report.mappedCount ?? report.stats?.mappedColors ?? '-'}</span></div>
+          <div class="mapping-report-item">Fallback<span>${report.fallbackCount ?? '-'}</span></div>
+          <div class="mapping-report-item">Unsupported<span>${report.unsupportedTokens?.length ?? 0}</span></div>
+        </div>
+        ${report.warnings?.length ? `<p>Warnings: ${report.warnings.join(' | ')}</p>` : ''}
+      `;
     }
 
     function init() {
@@ -1403,6 +1765,14 @@ ${base}`;
           const nextProfile = button.dataset.themeOption;
           if (!nextProfile || nextProfile === selectedProfile) return;
           renderProfile(nextProfile);
+        });
+      });
+      document.querySelectorAll('[data-source-option]').forEach(button => {
+        button.addEventListener('click', () => {
+          const nextSource = button.dataset.sourceOption;
+          if (!nextSource || nextSource === selectedSource) return;
+          selectedSource = nextSource;
+          renderProfile(selectedProfile);
         });
       });
       renderProfile(selectedProfile, { updateUrl: false });

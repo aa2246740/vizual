@@ -22,6 +22,8 @@ Claude Code 推荐安装 skill：
 
 ```bash
 cp -R skills/vizual/ ~/.claude/skills/vizual/
+
+# 可选：只有当 Agent 需要把非标准设计描述整理成标准 Design.md 时再安装
 cp -R skills/design-md-parser/ ~/.claude/skills/design-md-parser/
 cp -R skills/design-md-creator/ ~/.claude/skills/design-md-creator/
 ```
@@ -41,7 +43,7 @@ cp -R skills/design-md-creator/ ~/.claude/skills/design-md-creator/
 
 ## 正式 Agent Bridge 契约
 
-不要把测试页里的全局函数当成唯一实现来源。Vizual 提供 `createAgentBridge()` 作为宿主协议的状态层：它负责 artifact registry、messageId ↔ artifactId 绑定、render history、liveControl snapshot 查找和导出/错误事件记录。聊天页面、SaaS 小窗、全屏 Agent 工作台都应该围绕这层状态模型接入。
+不要把测试页里的全局函数当成唯一实现来源。Vizual 提供 `createAgentBridge()` 作为宿主协议的状态层：它负责 artifact registry、messageId ↔ artifactId 绑定、render history、review/revision、liveControl snapshot 查找和导出/错误事件记录。聊天页面、SaaS 小窗、全屏 Agent 工作台都应该围绕这层状态模型接入。
 
 ```tsx
 import { createAgentBridge, normalizeArtifact } from 'vizual'
@@ -57,6 +59,34 @@ bridge.recordRender('static', messageId, { status: 'success', artifactId: artifa
 ```
 
 `validation/vizual-test.html` 的 `renderVizInMsg()`、`renderLiveControlInMsg()`、`updateArtifactInMsg()`、`exportArtifact()` 是这套契约的 demo bridge。自有前端可以复用同样的状态模型，但 UI 可以完全不同。`renderInteractiveVizInMsg()` 仍是兼容旧脚本的别名。
+
+## 通用 Review / Revision 协议
+
+DocView 的批注能力已经抽象为 Core 级协议。任何 artifact 都可以拥有 review thread、target context 和 revision proposal；DocView 只是其中一个具体 UI。
+
+```ts
+const thread = bridge.createReviewThread({
+  target: 'element:chart',
+  body: '把这张图改成折线图，只看华东区',
+})
+
+const proposal = bridge.createRevisionProposal({
+  threadIds: [thread.id],
+  summary: '切换为折线图并筛选华东区',
+  patches: [
+    { type: 'changeChartType', targetId: 'element:chart', chartType: 'LineChart' },
+    { type: 'filterData', targetId: 'element:chart', field: 'region', values: '华东' },
+  ],
+})
+
+bridge.applyRevision(proposal.id)
+```
+
+原则：
+
+- `TargetRef` 只描述可定位目标，不绑定 PPT/slide/block。
+- Agent 返回 proposal，不直接静默覆盖用户历史。
+- apply 后生成新的 artifact version，review thread 标记 resolved。
 
 ## 渲染普通 spec
 
@@ -112,6 +142,30 @@ const updated = await runtime.updateArtifact(artifact.id, [
 ## liveControl 图表
 
 liveControl 不是纯 JSON spec。宿主需要提供 bridge：左侧 FormBuilder 控件绑定 state，右侧由 `makeSpec(state)` 重新渲染预览。
+
+Core 提供正式 schema helper，避免每个宿主自己发明控件协议：
+
+```ts
+import {
+  buildFormBuilderSpecFromLiveControl,
+  createLiveControlSchema,
+  applyLiveControlStatePatch,
+} from 'vizual'
+
+const schema = createLiveControlSchema({
+  statePath: '/controls',
+  fields: [
+    { name: 'chartType', label: '图表类型', type: 'select', defaultValue: 'bar', options: [
+      { label: '柱状图', value: 'bar' },
+      { label: '折线图', value: 'line' },
+    ] },
+    { name: 'points', label: '数据点', type: 'slider', min: 3, max: 20, defaultValue: 8 },
+  ],
+})
+
+const controlsSpec = buildFormBuilderSpecFromLiveControl(schema)
+const nextState = applyLiveControlStatePatch(schema, currentState, { points: 12 })
+```
 
 自有 React 宿主推荐用 `VizualRenderer` 加 `getVizualStateValue()`。注意：当 FormBuilder 绑定 `value: { "$bindState": "/controls" }` 时，`onStateChange` 返回的是 `/controls` 整个对象，不是顶层 controls 字段的增量。不要把这个 change 直接浅合并进 controls 本身。
 
@@ -255,6 +309,28 @@ const xlsx = await exportDataToXLSX(rows, { sheetName: '明细' })
 await downloadBlob(pdf, 'report.pdf')
 await downloadBlob(xlsx, 'data.xlsx')
 ```
+
+## Design.md 主题
+
+Vizual runtime 只消费标准 Design.md 字符串。用户粘贴的非标准设计描述可以先交给 Agent 或可选 parser/creator skill 整理，但这不是 runtime 主流程。
+
+```ts
+const theme = loadDesignMd(markdown, { name: 'brand', apply: true })
+console.log(theme._mappingReport)
+```
+
+`theme._mappingReport` 包含：
+
+- `tokenCount`
+- `mappedCount`
+- `fallbackCount`
+- `unsupportedTokens`
+- `warnings`
+- `mappedVariables`
+- `fallbackVariables`
+- `qualityScore`
+
+`validation/design-md-load.html` 是长期主题验收页：CMB / WIRED / Starbucks 动态切换、全部组件矩阵、liveControl、mapping report 都在这里验证。
 
 ## 冷启动验收
 

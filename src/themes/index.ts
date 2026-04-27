@@ -181,13 +181,16 @@ ${cssRules}
 }
   `.trim()
 
-  // Sync theme colors to the runtime color cache synchronously
-  // Must be sync so that renderAll() after setGlobalTheme() uses correct colors
-  updateActiveColors(theme)
+  const isGlobalContainer = typeof document !== 'undefined' && container === document.body
+  if (isGlobalContainer) {
+    // Sync global theme colors to the runtime color cache synchronously.
+    // Scoped container themes must not overwrite this cache, otherwise one
+    // liveControl artifact can leak its colors into unrelated charts.
+    updateActiveColors(theme)
+    currentThemeName = themeName
+  }
 
-  currentThemeName = themeName
-
-  // 通知所有 ECharts 图表实例重建 option（主题色已变）
+  // 通知相关 ECharts 图表实例重建 option。局部主题只刷新该容器内的图表。
   if (typeof document !== 'undefined') {
     document.dispatchEvent(new CustomEvent('vizual-theme-change', { detail: { themeName, target: container } }))
   }

@@ -53,6 +53,28 @@ import {
   createAgentBridge,
   VizualAgentBridge,
 } from './core/agent-bridge'
+import {
+  addReviewComment,
+  acceptRevisionProposal,
+  applyRevisionProposalToArtifact,
+  createReviewComment,
+  createReviewThread,
+  createRevisionProposal,
+  createVizualReviewId,
+  defaultVizualReviewAgent,
+  defaultVizualReviewUser,
+  normalizeTargetRef,
+  rejectRevisionProposal,
+  updateReviewThreadStatus,
+} from './core/review'
+import {
+  applyLiveControlStatePatch,
+  buildFormBuilderSpecFromLiveControl,
+  createLiveControlInitialState,
+  createLiveControlSchema,
+  getVisibleLiveControlFields,
+  validateLiveControlState,
+} from './core/live-control'
 import type {
   CreateVizualArtifactInput,
   VizualArtifact,
@@ -305,6 +327,24 @@ const vizual = {
   VizualHostRuntime,
   createAgentBridge,
   VizualAgentBridge,
+  addReviewComment,
+  acceptRevisionProposal,
+  applyRevisionProposalToArtifact,
+  createReviewComment,
+  createReviewThread,
+  createRevisionProposal,
+  createVizualReviewId,
+  defaultVizualReviewAgent,
+  defaultVizualReviewUser,
+  normalizeTargetRef,
+  rejectRevisionProposal,
+  updateReviewThreadStatus,
+  applyLiveControlStatePatch,
+  buildFormBuilderSpecFromLiveControl,
+  createLiveControlInitialState,
+  createLiveControlSchema,
+  getVisibleLiveControlFields,
+  validateLiveControlState,
 
   // All components
   BarChart,

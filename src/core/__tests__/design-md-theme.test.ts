@@ -124,6 +124,9 @@ describe('DESIGN.md theme loading', () => {
     expect(theme.cssVariables['--rk-font-display']).toContain('Founder Lanting Hei')
     expect(theme.cssVariables['--rk-font-body']).toContain('Founder Lanting Hei')
     expect(theme.cssVariables['--rk-font-sans']).toContain('Arial')
+    expect(theme._mappingReport?.mappedVariables).toContain('--rk-accent')
+    expect(theme._mappingReport?.fallbackCount).toBeGreaterThan(0)
+    expect(theme._mappingReport?.qualityScore).toBeGreaterThan(30)
   })
 
   it('maps a WIRED-style editorial document without treating WIRED as error red', () => {
@@ -153,6 +156,8 @@ describe('DESIGN.md theme loading', () => {
     expect(theme.cssVariables['--rk-font-sans']).toContain('Apercu')
     expect(theme.cssVariables['--rk-shadow']).toBe('none')
     expect(theme._mappingReport?.roles.error).toBe(false)
+    expect(Array.isArray(theme._mappingReport?.unsupportedTokens)).toBe(true)
+    expect(theme._mappingReport?.mappedCount).toBeGreaterThan(10)
   })
 
   it('maps a Starbucks-style retail document with warm canvas and pill/card geometry', () => {

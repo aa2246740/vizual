@@ -137,13 +137,30 @@ Use these Vizual typed patch objects. Do not generate RFC-style JSON Patch (`{ o
 
 Use `targetMap` instead of guessing component paths. Common target ids look like `element:chart`, `section:trend`, `metric:revenue`, and `column:region`.
 
+For custom hosts, use the generic review loop when a user comments on any artifact, not only DocView:
+
+```js
+const thread = bridge.createReviewThread({ target: 'element:chart', body: '改成折线图，只看华东区' });
+const proposal = bridge.createRevisionProposal({
+  threadIds: [thread.id],
+  summary: '切换为折线图并筛选华东区',
+  patches: [
+    { type: 'changeChartType', targetId: 'element:chart', chartType: 'LineChart' },
+    { type: 'filterData', targetId: 'element:chart', field: 'region', values: '华东' },
+  ],
+});
+bridge.applyRevision(proposal.id);
+```
+
+DocView still has its own UI/controller helpers, but the underlying mental model is the same: user request → target/context → Agent proposal → accept/apply → resolved.
+
 ## Host Runtime and Test Page Bridge
 
 Vizual specs are JSON artifacts. A host page must render them. When the host is `validation/vizual-test.html`, use the page's JavaScript bridge; simply typing JSON into the chat input will not render anything.
 
 When you are asked to build or integrate a custom React host, import `VizualRenderer` / `VizualArtifactView` from `vizual` and render specs/artifacts through those components. Do **not** hand-roll `StateProvider + Renderer` from `@json-render/react`; that misses required providers in current json-render and can crash at runtime. Use `createAgentBridge()` for artifact/message state, and `VizualRenderer` for the actual React render surface.
 
-The bridge functions are backed by Vizual's formal Agent bridge state model (`Vizual.createAgentBridge()` / `createAgentBridge()` in package imports). That SDK owns artifact ids, message-to-artifact mapping, render history, and liveControl snapshot lookup. Treat the return values below as the source of truth; don't infer state from DOM bubbles.
+The bridge functions are backed by Vizual's formal Agent bridge state model (`Vizual.createAgentBridge()` / `createAgentBridge()` in package imports). That SDK owns artifact ids, message-to-artifact mapping, render history, generic review/revision state, liveControl snapshot lookup, export records, and error events. Treat the return values below as the source of truth; don't infer state from DOM bubbles.
 
 Required bridge flow for agents with browser script execution (`evaluate_script`, Playwright `page.evaluate`, Chrome DevTools Protocol, etc.):
 
@@ -532,5 +549,5 @@ Lower-level APIs are also available: `Vizual.exportToPNG`, `exportToPDF`, `expor
 
 ## Combining with Other Skills
 
-- **design-md-parser** — When the user provides a design document and wants to extract theme tokens.
-- **design-md-creator** — When the user wants to create a design system from scratch with an interactive preview.
+- **design-md-parser** — Optional. Use only when the user provides a loose/non-standard design document and wants the Agent to normalize it into standard Design.md before calling `Vizual.loadDesignMd()`.
+- **design-md-creator** — Optional. Use only when the user wants the Agent to create a design system draft. Vizual runtime itself only consumes standard Design.md; parser/creator are not part of the core render flow.

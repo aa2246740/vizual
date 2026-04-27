@@ -16,10 +16,14 @@ export interface AnnotationInputProps {
   onCancel: () => void
   /** Width of the parent container for boundary clamping */
   containerWidth?: number
+  /** Height of the parent container for boundary-aware vertical placement */
+  containerHeight?: number
 }
 
 const POPUP_WIDTH = 280
 const POPUP_HALF = POPUP_WIDTH / 2
+const POPUP_ESTIMATED_HEIGHT = 180
+const POPUP_GAP = 8
 
 /** tcss() returns var() references — naturally reactive via CSS engine, safe at module level */
 const popupStyle: React.CSSProperties = {
@@ -65,7 +69,7 @@ const buttonBase: React.CSSProperties = {
  * Boundary-aware: clamps position to stay within container.
  * Auto-resets note when selectedText changes (new target).
  */
-export function AnnotationInput({ position, selectedText, onConfirm, onCancel, containerWidth }: AnnotationInputProps) {
+export function AnnotationInput({ position, selectedText, onConfirm, onCancel, containerWidth, containerHeight }: AnnotationInputProps) {
   const [note, setNote] = useState('')
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
@@ -95,9 +99,12 @@ export function AnnotationInput({ position, selectedText, onConfirm, onCancel, c
   const clampedLeft = containerWidth
     ? Math.max(POPUP_HALF + 4, Math.min(position.left, containerWidth - POPUP_HALF - 4))
     : position.left
+  const clampedTop = containerHeight && position.top + POPUP_ESTIMATED_HEIGHT > containerHeight
+    ? Math.max(4, position.top - POPUP_ESTIMATED_HEIGHT - POPUP_GAP)
+    : position.top
 
   return (
-    <div style={{ ...popupStyle, top: position.top, left: clampedLeft }} data-annotation-input>
+    <div style={{ ...popupStyle, top: clampedTop, left: clampedLeft }} data-annotation-input>
       {/* Selected text preview */}
       <div style={{
         fontSize: tcss('--rk-text-sm'), color: tcss('--rk-text-secondary'), marginBottom: 8,

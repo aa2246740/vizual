@@ -42,8 +42,11 @@ export interface TextRangeAnchor {
 
 /** Table cell anchor for row/column-level review */
 export interface TableCellAnchor {
+  /** -1 means the table header row */
   rowIndex: number
   columnIndex: number
+  /** True when the anchor points at a header cell rather than body data */
+  isHeader?: boolean
   rowKey?: string | number
   columnKey?: string
   value?: unknown

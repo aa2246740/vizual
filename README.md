@@ -69,24 +69,26 @@ const docSpec = {
 
 ## AI Skills
 
-3 个 Claude Code Skill，安装后 AI 自动触发：
+Vizual Core 主流程只需要 Vizual Skill。Design.md creator/parser 是可选 Agent 能力：用户需要把非标准设计描述整理成标准 Design.md 时可以调用，但 runtime 本身只负责加载标准 Design.md。
 
 | Skill | 路径 | 一句话说明 |
 |-------|------|-----------|
 | **Vizual** | `skills/vizual/` | AI 输出 Vizual spec/artifact → 自动渲染、追问修改、导出和 DocView 修订 |
-| **DESIGN.md Parser** | `skills/design-md-parser/` | 从设计文档提取 token → 全局一键换肤 |
-| **DESIGN.md Creator** | `skills/design-md-creator/` | 从品牌目标生成 DESIGN.md 主题草案 |
+| **DESIGN.md Parser** | `skills/design-md-parser/` | 可选：把非标准设计文档整理成标准 Design.md |
+| **DESIGN.md Creator** | `skills/design-md-creator/` | 可选：从品牌目标生成 Design.md 草案 |
 
 ```bash
-# 一键安装全部 Skills
+# Core 接入只需要安装 Vizual Skill
 cp -r skills/vizual/ ~/.claude/skills/vizual/
+
+# 可选：需要 Agent 帮用户整理/创建 Design.md 时再安装
 cp -r skills/design-md-parser/ ~/.claude/skills/design-md-parser/
 cp -r skills/design-md-creator/ ~/.claude/skills/design-md-creator/
 ```
 
 **Vizual** — 用户说"画个图表"、"做个仪表盘"、"把这张图改成折线图"、"做可批注报告"时自动触发，输出符合 Schema 的 spec/artifact 或调用宿主 bridge。
 
-**DESIGN.md Parser** — 用户粘贴设计文档或说"应用这个主题"时触发。支持 CMYK/Pantone、中英混合、品牌指南。如果内置 dark/light 主题够用，可以跳过。
+**DESIGN.md Parser** — 用户粘贴的设计描述不标准、需要 Agent 先整理成标准 Design.md 时触发。Vizual runtime 不依赖它；runtime 只消费标准 Design.md 字符串。
 
 **DESIGN.md Creator** — 用户需要从品牌目标、语气或参考色生成主题文档时触发。实时 adjust-preview 场景由宿主页面调用 Vizual JS bridge 完成。
 
@@ -98,10 +100,12 @@ cp -r skills/design-md-creator/ ~/.claude/skills/design-md-creator/
 - **Native ECharts Builders** — Vizual owns every chart option builder; no external chart-builder runtime dependency
 - **AI Skill Integration** — 3 progressive disclosure skills for Claude Code and other AI agents
 - **Agent Runtime** — `VizualArtifact`, target maps, versions, host runtime store, historical patch/update flow
-- **liveControl** — `FormBuilder` + `$bindState` + host bridge for real-time adjustable previews
-- **DocView Review SDK** — user comments, submitted review threads, Agent revision proposals, apply/reject loop
+- **liveControl** — formal control schema, `FormBuilder` + `$bindState`, scoped state patching for real-time adjustable previews
+- **Review / Revision** — generic artifact-level target refs, review threads, Agent revision proposals, accept/reject/apply loop
+- **DocView Review SDK** — DocView-specific projection of the same annotation → revision workflow
 - **Export Built-ins** — PNG/PDF for rendered visuals; CSV/XLSX for artifact data
 - **Theme System** — OKLCH palette generation, background-aware contrast, DESIGN.md auto-parsing
+- **Design.md Mapping Report** — `loadDesignMd()` returns mapped/fallback/unsupported tokens and a quality score
 - **Responsive** — Built-in ResizeObserver for popup/sidebar/embedded layouts
 - **MIT License** — Open source, commercially usable
 
@@ -260,7 +264,7 @@ These pages double as **integration examples** — each component's JSON spec fo
 
 ### Claude Code Skills
 
-Install the 3 skills listed above. Each auto-triggers based on user intent — no manual invocation needed.
+Install `skills/vizual/` for the core runtime workflow. The Design.md parser/creator skills are optional helper skills for Agents that need to turn loose design requirements into a standard Design.md before calling `loadDesignMd()`.
 
 ### Other AI Agents
 
@@ -287,17 +291,21 @@ Every component in Vizual reads colors from the theme system. Users can customiz
 ```tsx
 import { loadDesignMd } from 'vizual'
 
-// Parse a DESIGN.md file and apply it globally
-loadDesignMd(`
+// Parse a standard DESIGN.md string and apply it globally
+const theme = loadDesignMd(`
 Primary: #0052ef
 Canvas: #0b0b0b
 Surface: #141414
 Text: #e8e8e8
 Border: #2a2a2a
 `, { apply: true })
+
+console.log(theme._mappingReport)
 ```
 
 All 31 components instantly reflect the new theme — no per-component configuration needed.
+
+`loadDesignMd()` returns a mapping report with `tokenCount`, `mappedCount`, `fallbackCount`, `unsupportedTokens`, `warnings`, `mappedVariables`, `fallbackVariables`, and `qualityScore`. Use `validation/design-md-load.html` to visually verify a Design.md across all components and liveControl.
 
 **Preset themes**: `claude-dark` (default), `claude-light`, `default-dark`, `default-light`, `linear`, `vercel` — applied via `setGlobalTheme('linear')`.
 

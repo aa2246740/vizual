@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
 import React from 'react'
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 
 vi.mock('../../core/theme-colors', () => ({
   tcss: (v: string) => `var(${v})`,
@@ -78,5 +78,42 @@ describe('SectionRenderer chart sections', () => {
     }]} />)
 
     expect(screen.getByText('Revenue|bar|1|amount')).toBeTruthy()
+  })
+
+  it('emits table header targets for DocView review annotations', () => {
+    const onTargetClick = vi.fn()
+    render(<SectionRenderer
+      onTargetClick={onTargetClick}
+      sections={[{
+        id: 'risk-table',
+        type: 'table',
+        content: '',
+        data: {
+          columns: ['Branch', 'Risk'],
+          rows: [
+            ['Central Operations', 'Medium'],
+          ],
+        },
+      }]}
+    />)
+
+    fireEvent.click(screen.getByText('Risk'))
+
+    expect(onTargetClick).toHaveBeenCalledTimes(1)
+    const [target] = onTargetClick.mock.calls[0]
+    expect(target).toMatchObject({
+      sectionIndex: 0,
+      sectionId: 'risk-table',
+      targetType: 'table',
+      label: 'Header: Risk',
+      targetId: 'table-risk-table-header-1',
+      tableCell: {
+        rowIndex: -1,
+        columnIndex: 1,
+        isHeader: true,
+        columnKey: 'Risk',
+        value: 'Risk',
+      },
+    })
   })
 })

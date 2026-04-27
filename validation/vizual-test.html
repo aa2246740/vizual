@@ -62,6 +62,7 @@
 
     /* Viz 容器 — 在气泡内部 */
     .viz-wrap { margin-top: 12px; background: var(--rk-bg-primary, var(--bg-viz)); border: 1px solid var(--rk-border-subtle, var(--border)); border-radius: 10px; padding: 14px; min-height: 200px; width: 100%; min-width: 0; overflow-x: auto; position: relative; }
+    .viz-wrap.has-docview { overflow: visible; }
     .viz-wrap .viz-error { margin: 0; min-height: 160px; display: flex; align-items: center; justify-content: center; color: #fecaca; border: 1px solid rgba(239,68,68,0.55); border-radius: 8px; background: rgba(127,29,29,0.38); padding: 14px; font-size: 13px; text-align: center; white-space: pre-wrap; }
     .artifact-toolbar { position: absolute; top: 8px; right: 8px; display: flex; gap: 6px; z-index: 4; padding: 4px; border: 1px solid var(--rk-border-subtle, var(--border)); border-radius: 8px; background: color-mix(in srgb, var(--rk-bg-secondary, var(--bg-bubble)) 86%, transparent); box-shadow: 0 8px 24px rgba(0,0,0,0.18); }
     .artifact-toolbar button { border: 1px solid var(--rk-border-subtle, var(--border)); border-radius: 6px; background: var(--rk-bg-tertiary, rgba(255,255,255,0.06)); color: var(--rk-text-primary, var(--text)); font-size: 11px; line-height: 1; padding: 6px 7px; cursor: pointer; }
@@ -72,7 +73,7 @@
     .interactive-preview { min-height: 260px; position: relative; }
     .interactive-preview-root { min-height: 260px; min-width: 0; }
     .interactive-error { margin-top: 8px; padding: 8px 10px; border: 1px solid rgba(239,68,68,0.45); border-radius: 8px; color: #fecaca; background: rgba(239,68,68,0.12); font-size: 12px; display: none; }
-    .docview-bridge-root { min-height: 520px; min-width: 0; width: 100%; }
+    .docview-bridge-root { min-height: 0; min-width: 0; width: 100%; }
     @media (max-width: 720px) {
       .main { padding: 16px 12px; }
       .messages { max-width: calc(100vw - 24px); }
@@ -816,6 +817,8 @@ setInterval(async () => {
     function destroyDocViewSessionByMessage(id) {
       const artifactId = window.__messageDocViews[id];
       const session = artifactId ? window._docViewSessions[artifactId] : null;
+      const vizWrap = document.getElementById(id + '-viz');
+      if (vizWrap) vizWrap.classList.remove('has-docview');
       if (window._docViewRoots[id]) {
         try { window._docViewRoots[id].unmount(); } catch (_) {}
         delete window._docViewRoots[id];
@@ -928,14 +931,90 @@ setInterval(async () => {
     }
 
     function extractRowsFromArtifact(artifact) {
+      const artifactRows = normalizeRecordRows(artifact?.data);
+      if (artifactRows.length) return artifactRows;
+
       const elements = Object.values(artifact?.spec?.elements || {});
       for (const element of elements) {
-        const data = element?.props?.data;
-        if (Array.isArray(data) && data.every(row => row && typeof row === 'object' && !Array.isArray(row))) {
-          return data;
-        }
+        const directRows = normalizeRecordRows(element?.props?.data);
+        if (directRows.length) return directRows;
       }
-      return Array.isArray(artifact?.data) ? artifact.data : [];
+
+      for (const element of elements) {
+        const docRows = extractRowsFromDocViewElement(element);
+        if (docRows.length) return docRows;
+      }
+
+      return [];
+    }
+
+    function extractRowsFromDocViewElement(element) {
+      const sections = element?.type === 'DocView' && Array.isArray(element?.props?.sections)
+        ? element.props.sections
+        : [];
+      if (!sections.length) return [];
+
+      for (const section of sections) {
+        if (!isPlainRecord(section) || section.type !== 'table') continue;
+        const tableRows = normalizeTableRows(section.data);
+        if (tableRows.length) return tableRows;
+      }
+
+      for (const section of sections) {
+        if (!isPlainRecord(section)) continue;
+        const sectionData = isPlainRecord(section.data) ? section.data : null;
+        const chartRows = normalizeRecordRows(sectionData?.data);
+        if (chartRows.length) return chartRows;
+        const metricRows = normalizeRecordRows(sectionData?.metrics);
+        if (metricRows.length) return metricRows;
+      }
+
+      return [];
+    }
+
+    function normalizeTableRows(data) {
+      if (Array.isArray(data)) return normalizeRecordRows(data);
+      if (!isPlainRecord(data)) return [];
+
+      const columns = normalizeTableColumns(data.columns);
+
+      if (Array.isArray(data.rows)) {
+        const objectRows = normalizeRecordRows(data.rows);
+        if (objectRows.length) return objectRows;
+        if (!columns.length) return [];
+        return data.rows
+          .filter(Array.isArray)
+          .map(row => Object.fromEntries(columns.map((column, index) => [column.label || column.key, row[index] ?? ''])));
+      }
+
+      if (Array.isArray(data.data)) {
+        const objectRows = normalizeRecordRows(data.data);
+        if (objectRows.length) return objectRows;
+      }
+
+      return [];
+    }
+
+    function normalizeTableColumns(value) {
+      if (!Array.isArray(value)) return [];
+      return value.map((column, index) => {
+        if (typeof column === 'string') return { key: column, label: column };
+        if (isPlainRecord(column)) {
+          const key = String(column.key ?? column.label ?? `column_${index + 1}`);
+          return { key, label: String(column.label ?? key) };
+        }
+        return { key: `column_${index + 1}`, label: String(column) };
+      });
+    }
+
+    function normalizeRecordRows(value) {
+      if (!Array.isArray(value) || !value.length) return [];
+      if (!value.every(row => isPlainRecord(row))) return [];
+      return value;
+    }
+
+    function isPlainRecord(value) {
+      return value && typeof value === 'object' && !Array.isArray(value);
     }
 
     function resolveExportElement(vizWrap) {
@@ -1077,6 +1156,7 @@ setInterval(async () => {
       window._liveControlViz[id]?.destroy?.();
       delete window._liveControlViz[id];
       destroyDocViewSessionByMessage(id);
+      vizWrap.classList.remove('has-docview');
 
       let artifact;
       try {
@@ -1243,6 +1323,7 @@ setInterval(async () => {
       docRoot.className = 'docview-bridge-root';
       vizWrap.replaceChildren(docRoot);
       vizWrap.style.display = 'block';
+      vizWrap.classList.add('has-docview');
       bubble.classList.add('has-viz');
       applyBubbleWidth(bubble, inputConfig.bubbleWidth || 'full', 'full');
 
@@ -1480,7 +1561,9 @@ setInterval(async () => {
       try {
         let blob;
         if (format === 'csv' || format === 'xlsx') {
-          blob = await window.Vizual.exportData(extractRowsFromArtifact(artifact), format, {
+          const rows = extractRowsFromArtifact(artifact);
+          if (!rows.length) throw new Error(`No tabular data available for ${format} export`);
+          blob = await window.Vizual.exportData(rows, format, {
             filename: options?.filename || artifact.id,
             columns: options?.columns,
             sheetName: options?.sheetName,
@@ -1505,7 +1588,7 @@ setInterval(async () => {
           status: 'success',
           width: exportEl?.offsetWidth,
           height: exportEl?.offsetHeight,
-          meta: { size: blob.size, type: blob.type },
+          meta: { size: blob.size, type: blob.type, rowCount: format === 'csv' || format === 'xlsx' ? extractRowsFromArtifact(artifact).length : undefined },
         });
         const updated = window.Vizual.updateArtifact(artifact, {
           type: 'addExportRecord',
@@ -1580,6 +1663,7 @@ setInterval(async () => {
       shell.appendChild(previewShell);
       vizWrap.replaceChildren(shell);
       vizWrap.style.display = 'block';
+      vizWrap.classList.remove('has-docview');
       bubble.classList.add('has-viz');
       applyBubbleWidth(bubble, config.bubbleWidth || 'full', 'full');
 

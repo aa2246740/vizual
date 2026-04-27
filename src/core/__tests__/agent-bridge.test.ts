@@ -135,4 +135,28 @@ describe('VizualAgentBridge', () => {
     expect(bridge.resolveInteractiveSession('msg-legacy')?.session.getSnapshot()).toEqual(snapshot)
     expect(bridge.snapshot().interactiveIds).toEqual(['msg-legacy'])
   })
+
+  it('manages generic review threads and revision proposals for artifacts', () => {
+    const bridge = createAgentBridge({ now: () => '2026-04-27T00:00:00.000Z' })
+    const artifact = normalizeArtifact(spec, { source: { messageId: 'msg-1' } })
+    bridge.rememberArtifact('msg-1', artifact)
+
+    const thread = bridge.createReviewThread({
+      target: 'element:chart',
+      body: '请改成折线图',
+    })
+    const comment = bridge.addReviewComment(thread.id, '只保留华东区')
+    const proposal = bridge.createRevisionProposal({
+      threadIds: [thread.id],
+      summary: '切换为折线图',
+      patches: { type: 'changeChartType', targetId: 'element:chart', chartType: 'LineChart' },
+    })
+    const applied = bridge.applyRevision(proposal.id)
+
+    expect(comment?.body).toBe('只保留华东区')
+    expect(applied?.status).toBe('applied')
+    expect(bridge.getArtifact('msg-1')?.spec.elements.chart.type).toBe('LineChart')
+    expect(bridge.snapshot().reviewThreads[0].status).toBe('resolved')
+    expect(bridge.snapshot().revisionProposals[0].id).toBe(proposal.id)
+  })
 })

@@ -349,20 +349,24 @@ function DocViewInner({
     ? <SectionRenderer sections={effectiveSections} onTargetClick={handleTargetClick} annotations={annotations} />
     : children
 
+  const isBottomPanel = panelPosition === 'bottom'
+
   const containerStyle: React.CSSProperties = {
     display: 'flex',
-    flexDirection: panelPosition === 'bottom' ? 'column' : 'row',
+    flexDirection: isBottomPanel ? 'column' : 'row',
     position: 'relative',
     width: '100%',
-    height: '100%',
+    minHeight: '100%',
+    alignItems: 'stretch',
     ...style,
   }
 
   const contentStyle: React.CSSProperties = {
     flex: 1,
     position: 'relative',
-    overflow: 'auto',
-    minHeight: 0,
+    overflow: isBottomPanel ? 'auto' : 'visible',
+    minWidth: 0,
+    minHeight: isBottomPanel ? 0 : 'auto',
     background: tcss('--rk-bg-primary'),
     display: 'flex',
     justifyContent: 'center',
@@ -388,6 +392,7 @@ function DocViewInner({
             onConfirm={handleConfirmAnnotation}
             onCancel={clearSelection}
             containerWidth={contentRef.current?.clientWidth}
+            containerHeight={contentRef.current?.clientHeight}
           />
         )}
 
@@ -400,6 +405,7 @@ function DocViewInner({
             onConfirm={handleConfirmTargetAnnotation}
             onCancel={() => setTargetAnnotation(null)}
             containerWidth={contentRef.current?.clientWidth}
+            containerHeight={contentRef.current?.clientHeight}
           />
         )}
       </div>

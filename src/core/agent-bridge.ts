@@ -5,6 +5,22 @@ import {
   type VizualArtifactPatch,
   type VizualSpec,
 } from './artifact'
+import {
+  acceptRevisionProposal,
+  addReviewComment,
+  applyRevisionProposalToArtifact,
+  createReviewThread,
+  createRevisionProposal,
+  rejectRevisionProposal,
+  updateReviewThreadStatus,
+  type CreateVizualReviewThreadInput,
+  type CreateVizualRevisionProposalInput,
+  type VizualReviewActor,
+  type VizualReviewComment,
+  type VizualReviewStatus,
+  type VizualReviewThread,
+  type VizualRevisionProposal,
+} from './review'
 
 export type AgentBridgeArtifactRef = string | VizualArtifact | undefined | null
 
@@ -71,6 +87,9 @@ export type AgentBridgeSnapshot = {
   liveControlIds: string[]
   /** @deprecated use liveControlIds */
   interactiveIds: string[]
+  reviewThreads: VizualReviewThread[]
+  revisionProposals: VizualRevisionProposal[]
+  openReviewThreads: VizualReviewThread[]
 }
 
 export type CreateAgentBridgeOptions = {
@@ -88,6 +107,8 @@ export class VizualAgentBridge {
   private artifactHistory: AgentBridgeArtifactEvent[] = []
   private renderHistory: AgentBridgeRenderRecord[] = []
   private liveControlSessions = new Map<string, LiveControlSessionAdapter>()
+  private reviewThreads = new Map<string, VizualReviewThread>()
+  private revisionProposals = new Map<string, VizualRevisionProposal>()
   private lastArtifactId: string | null = null
   private maxRenderHistory: number
   private maxArtifactHistory: number
@@ -239,6 +260,133 @@ export class VizualAgentBridge {
     return this.getLiveControlSnapshot(ref)
   }
 
+  createReviewThread(input: CreateVizualReviewThreadInput): VizualReviewThread {
+    const artifact = input.artifactId ? this.getArtifact(input.artifactId) : this.getLastArtifact()
+    const thread = createReviewThread({
+      ...input,
+      artifactId: input.artifactId || artifact?.id,
+      now: this.now(),
+    })
+    this.reviewThreads.set(thread.id, thread)
+    this.recordArtifactEvent('review-thread-created', artifact, {
+      threadId: thread.id,
+      targetId: thread.target.targetId || null,
+      status: thread.status,
+    })
+    return cloneJson(thread)
+  }
+
+  addReviewComment(
+    threadId: string,
+    body: string,
+    author?: VizualReviewActor,
+    kind?: VizualReviewComment['kind'],
+  ): VizualReviewComment | null {
+    const thread = this.reviewThreads.get(threadId)
+    if (!thread) return null
+    const { thread: updated, comment } = addReviewComment(thread, body, author, kind, this.now())
+    this.reviewThreads.set(threadId, updated)
+    this.recordArtifactEvent('review-comment-added', this.getArtifact(updated.artifactId), {
+      threadId,
+      commentId: comment.id,
+    })
+    return cloneJson(comment)
+  }
+
+  updateReviewThreadStatus(threadId: string, status: VizualReviewStatus): VizualReviewThread | null {
+    const thread = this.reviewThreads.get(threadId)
+    if (!thread) return null
+    const updated = updateReviewThreadStatus(thread, status, this.now())
+    this.reviewThreads.set(threadId, updated)
+    this.recordArtifactEvent('review-thread-updated', this.getArtifact(updated.artifactId), {
+      threadId,
+      status,
+    })
+    return cloneJson(updated)
+  }
+
+  listReviewThreads(query: { artifactId?: string; status?: VizualReviewStatus } = {}): VizualReviewThread[] {
+    return Array.from(this.reviewThreads.values())
+      .filter(thread => !query.artifactId || thread.artifactId === query.artifactId)
+      .filter(thread => !query.status || thread.status === query.status)
+      .map(thread => cloneJson(thread))
+  }
+
+  createRevisionProposal(input: CreateVizualRevisionProposalInput): VizualRevisionProposal {
+    const artifact = input.artifactId ? this.getArtifact(input.artifactId) : this.getLastArtifact()
+    const proposal = createRevisionProposal({
+      ...input,
+      artifactId: input.artifactId || artifact?.id,
+      now: this.now(),
+    })
+    this.revisionProposals.set(proposal.id, proposal)
+    for (const threadId of proposal.threadIds) {
+      const thread = this.reviewThreads.get(threadId)
+      if (!thread) continue
+      const updated = updateReviewThreadStatus({
+        ...thread,
+        revisionProposalIds: Array.from(new Set([...(thread.revisionProposalIds || []), proposal.id])),
+      }, 'proposed', this.now())
+      this.reviewThreads.set(threadId, updated)
+    }
+    this.recordArtifactEvent('revision-proposal-created', artifact, {
+      proposalId: proposal.id,
+      threadIds: proposal.threadIds,
+      patchCount: proposal.patches.length,
+    })
+    return cloneJson(proposal)
+  }
+
+  acceptRevision(proposalId: string): VizualRevisionProposal | null {
+    const proposal = this.revisionProposals.get(proposalId)
+    if (!proposal) return null
+    const updated = acceptRevisionProposal(proposal, this.now())
+    this.revisionProposals.set(proposalId, updated)
+    this.recordArtifactEvent('revision-accepted', this.getArtifact(updated.artifactId), { proposalId })
+    return cloneJson(updated)
+  }
+
+  rejectRevision(proposalId: string, reason?: string): VizualRevisionProposal | null {
+    const proposal = this.revisionProposals.get(proposalId)
+    if (!proposal) return null
+    const updated = rejectRevisionProposal(proposal, reason, this.now())
+    this.revisionProposals.set(proposalId, updated)
+    for (const threadId of updated.threadIds) {
+      this.updateReviewThreadStatus(threadId, 'rejected')
+    }
+    this.recordArtifactEvent('revision-rejected', this.getArtifact(updated.artifactId), { proposalId, reason })
+    return cloneJson(updated)
+  }
+
+  applyRevision(proposalId: string, ref?: AgentBridgeArtifactRef): VizualRevisionProposal | null {
+    const proposal = this.revisionProposals.get(proposalId)
+    if (!proposal) return null
+    const artifact = this.getArtifact(ref || proposal.artifactId || 'last')
+    if (!artifact) return null
+    const result = applyRevisionProposalToArtifact(artifact, proposal, this.now())
+    this.revisionProposals.set(proposalId, result.proposal)
+    if (result.proposal.status === 'applied') {
+      const messageId = this.getMessageIdForArtifactRef(ref || artifact.id, artifact)
+      this.rememberArtifact(messageId, result.artifact)
+      for (const threadId of result.proposal.threadIds) {
+        this.updateReviewThreadStatus(threadId, 'resolved')
+      }
+    }
+    this.recordArtifactEvent('revision-applied', result.artifact, {
+      proposalId,
+      status: result.proposal.status,
+      error: result.proposal.error || null,
+    })
+    return cloneJson(result.proposal)
+  }
+
+  listRevisionProposals(query: { artifactId?: string; status?: VizualRevisionProposal['status'] } = {}): VizualRevisionProposal[] {
+    return Array.from(this.revisionProposals.values())
+      .filter(proposal => !query.artifactId || proposal.artifactId === query.artifactId)
+      .filter(proposal => !query.status || proposal.status === query.status)
+      .map(proposal => cloneJson(proposal))
+  }
+
   snapshot(): AgentBridgeSnapshot {
     const artifactsById = Object.fromEntries(
       Array.from(this.artifacts.entries()).map(([id, artifact]) => [id, cloneJson(artifact)]),
@@ -257,6 +405,9 @@ export class VizualAgentBridge {
       lastArtifact: this.getLastArtifact(),
       liveControlIds: Array.from(this.liveControlSessions.keys()),
       interactiveIds: Array.from(this.liveControlSessions.keys()),
+      reviewThreads: this.listReviewThreads(),
+      revisionProposals: this.listRevisionProposals(),
+      openReviewThreads: this.listReviewThreads().filter(thread => !['resolved', 'rejected'].includes(thread.status)),
     }
   }
 }

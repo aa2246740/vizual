@@ -22,8 +22,10 @@ describe('GridLayout', () => {
     )
     const grid = container.firstChild as HTMLElement
     expect(grid.style.display).toBe('grid')
-    expect(grid.style.gridTemplateColumns).toBe('repeat(3, 1fr)')
+    expect(grid.style.gridTemplateColumns).toBe('repeat(3, minmax(0, 1fr))')
     expect(grid.style.gap).toBe('12px')
+    expect(grid.style.minWidth).toBe('0px')
+    expect((grid.firstChild as HTMLElement).style.minWidth).toBe('0px')
   })
 
   it('uses columnWidths when provided', () => {

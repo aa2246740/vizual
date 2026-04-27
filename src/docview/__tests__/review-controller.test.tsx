@@ -10,6 +10,28 @@ vi.mock('../../core/theme-colors', () => ({
 }))
 
 describe('DocView Review SDK controller', () => {
+  it('lets side-panel documents grow with the host instead of clipping inside a fixed viewport', () => {
+    const { container } = render(
+      <DocView
+        panelPosition="right"
+        sections={[
+          { id: 'summary', type: 'heading', content: 'DocView Data Export Regression Test' },
+          { id: 'body', type: 'text', content: 'This artifact should use the surrounding document flow.' },
+        ]}
+      />,
+    )
+
+    const root = container.firstElementChild as HTMLElement
+    const viewport = container.querySelector('[data-docview-viewport]') as HTMLElement
+    const panel = root.children[1] as HTMLElement
+
+    expect(root.style.height).toBe('')
+    expect(root.style.minHeight).toBe('100%')
+    expect(viewport.style.overflow).toBe('visible')
+    expect(panel.style.maxHeight).toBe('')
+    expect(panel.style.minHeight).toBe('100%')
+  })
+
   it('lets hosts create threads, submit them, and apply revision proposals', () => {
     let controller: DocViewReviewController | null = null
     const events: DocViewReviewActionEvent[] = []

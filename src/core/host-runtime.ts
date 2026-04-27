@@ -258,35 +258,61 @@ export class VizualHostRuntime {
     const artifact = await this.getArtifact(input.ref)
     if (!artifact) throw new Error('Cannot export missing Vizual artifact')
     const filename = input.filename || artifact.id
-    let blob: Blob
+    const dimensions = input.element ? getElementDimensions(input.element) : {}
 
-    if (input.format === 'png' || input.format === 'pdf') {
-      if (!input.element) throw new Error(`${input.format} export requires an HTMLElement`)
-      blob = await exportElement(input.element, input.format, {
-        ...(input.options as ExportOptions | PDFExportOptions | undefined),
+    try {
+      let blob: Blob
+
+      let exportedRowCount: number | undefined
+
+      if (input.format === 'png' || input.format === 'pdf') {
+        if (!input.element) throw new Error(`${input.format} export requires an HTMLElement`)
+        blob = await exportElement(input.element, input.format, {
+          ...(input.options as ExportOptions | PDFExportOptions | undefined),
+          filename,
+        })
+      } else if (input.format === 'csv' || input.format === 'xlsx') {
+        const rows = input.rows || extractRowsFromArtifact(artifact)
+        if (!rows.length) throw new Error(`No tabular data available for ${input.format} export`)
+        exportedRowCount = rows.length
+        blob = await exportData(rows, input.format, input.options as DataExportOptions | undefined)
+      } else {
+        throw new Error(`Unsupported export format: ${input.format}`)
+      }
+
+      const record = createExportRecord(artifact, {
+        format: input.format,
         filename,
+        status: 'success',
+        ...dimensions,
+        meta: {
+          size: blob.size,
+          type: blob.type,
+          rowCount: exportedRowCount,
+        },
       })
-    } else if (input.format === 'csv' || input.format === 'xlsx') {
-      const rows = input.rows || extractFirstRows(artifact)
-      blob = await exportData(rows, input.format, input.options as DataExportOptions | undefined)
-    } else {
-      throw new Error(`Unsupported export format: ${input.format}`)
+      const updated = applyArtifactPatch(artifact, { type: 'addExportRecord', export: record })
+      const saved = await this.store.save(updated)
+      this.lastArtifactId = saved.id
+      this.emit({ type: 'artifactExported', artifact: saved, exportRecord: record })
+      return { blob, record, artifact: saved }
+    } catch (error) {
+      const record = createExportRecord(artifact, {
+        format: input.format,
+        filename,
+        status: 'error',
+        ...dimensions,
+        error: error instanceof Error ? error.message : String(error),
+      })
+      const updated = applyArtifactPatch(artifact, { type: 'addExportRecord', export: record })
+      const saved = await this.store.save(updated)
+      this.lastArtifactId = saved.id
+      const normalizedError = error instanceof Error ? error : new Error(String(error))
+      this.emit({ type: 'artifactExported', artifact: saved, exportRecord: record })
+      this.emit({ type: 'artifactError', artifact: saved, error: normalizedError })
+      Object.assign(normalizedError, { record, artifact: saved })
+      throw normalizedError
     }
-
-    const record = createExportRecord(artifact, {
-      format: input.format,
-      filename,
-      status: 'success',
-      meta: {
-        size: blob.size,
-        type: blob.type,
-      },
-    })
-    const updated = applyArtifactPatch(artifact, { type: 'addExportRecord', export: record })
-    const saved = await this.store.save(updated)
-    this.lastArtifactId = saved.id
-    this.emit({ type: 'artifactExported', artifact: saved, exportRecord: record })
-    return { blob, record, artifact: saved }
   }
 
   private emit(event: HostRuntimeEvent) {
@@ -300,6 +326,16 @@ export class VizualHostRuntime {
   }
 }
 
+function getElementDimensions(element: HTMLElement): { width?: number; height?: number } {
+  const rect = element.getBoundingClientRect?.()
+  const width = rect?.width || element.offsetWidth
+  const height = rect?.height || element.offsetHeight
+  return {
+    width: width ? Math.round(width) : undefined,
+    height: height ? Math.round(height) : undefined,
+  }
+}
+
 export function createHostRuntime(options?: ConstructorParameters<typeof VizualHostRuntime>[0]) {
   return new VizualHostRuntime(options)
 }
@@ -308,16 +344,92 @@ function isArtifactObject(value: ArtifactRef): value is VizualArtifact {
   return typeof value === 'object' && value !== null && 'id' in value && 'spec' in value
 }
 
-function extractFirstRows(artifact: VizualArtifact): Array<Record<string, unknown>> {
+export function extractRowsFromArtifact(artifact: VizualArtifact): Array<Record<string, unknown>> {
+  const artifactRows = normalizeRecordRows(artifact.data)
+  if (artifactRows.length) return artifactRows
+
   const elements = Object.values(artifact.spec.elements || {})
+
   for (const element of elements) {
-    const data = element.props?.data
-    if (Array.isArray(data) && data.every(row => typeof row === 'object' && row !== null && !Array.isArray(row))) {
-      return data as Array<Record<string, unknown>>
-    }
+    const directRows = normalizeRecordRows(element.props?.data)
+    if (directRows.length) return directRows
   }
-  if (Array.isArray(artifact.data) && artifact.data.every(row => typeof row === 'object' && row !== null && !Array.isArray(row))) {
-    return artifact.data as Array<Record<string, unknown>>
+
+  for (const element of elements) {
+    const docRows = extractRowsFromDocViewElement(element)
+    if (docRows.length) return docRows
   }
+
   return []
+}
+
+function extractRowsFromDocViewElement(element: { type?: string; props?: Record<string, unknown> }): Array<Record<string, unknown>> {
+  const sections = element.type === 'DocView' && Array.isArray(element.props?.sections)
+    ? element.props.sections
+    : []
+  if (!sections.length) return []
+
+  for (const section of sections) {
+    if (!isPlainRecord(section) || section.type !== 'table') continue
+    const tableRows = normalizeTableRows(section.data)
+    if (tableRows.length) return tableRows
+  }
+
+  for (const section of sections) {
+    if (!isPlainRecord(section)) continue
+    const sectionData = isPlainRecord(section.data) ? section.data : null
+    const chartRows = normalizeRecordRows(sectionData?.data)
+    if (chartRows.length) return chartRows
+    const metricRows = normalizeRecordRows(sectionData?.metrics)
+    if (metricRows.length) return metricRows
+  }
+
+  return []
+}
+
+function normalizeTableRows(data: unknown): Array<Record<string, unknown>> {
+  if (Array.isArray(data)) return normalizeRecordRows(data)
+  if (!isPlainRecord(data)) return []
+
+  const columns = normalizeTableColumns(data.columns)
+
+  if (Array.isArray(data.rows)) {
+    const objectRows = normalizeRecordRows(data.rows)
+    if (objectRows.length) return objectRows
+    if (!columns.length) return []
+    return data.rows
+      .filter(Array.isArray)
+      .map(row => Object.fromEntries(columns.map((column, index) => [column.label || column.key, row[index] ?? ''])))
+  }
+
+  if (Array.isArray(data.data)) {
+    const objectRows = normalizeRecordRows(data.data)
+    if (objectRows.length) return objectRows
+  }
+
+  return []
+}
+
+function normalizeTableColumns(value: unknown): Array<{ key: string; label: string }> {
+  if (!Array.isArray(value)) return []
+  return value
+    .map((column, index) => {
+      if (typeof column === 'string') return { key: column, label: column }
+      if (isPlainRecord(column)) {
+        const key = String(column.key ?? column.label ?? `column_${index + 1}`)
+        return { key, label: String(column.label ?? key) }
+      }
+      return { key: `column_${index + 1}`, label: String(column) }
+    })
+}
+
+function normalizeRecordRows(value: unknown): Array<Record<string, unknown>> {
+  if (!Array.isArray(value)) return []
+  if (!value.length) return []
+  if (!value.every(row => isPlainRecord(row))) return []
+  return value as Array<Record<string, unknown>>
+}
+
+function isPlainRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
 }

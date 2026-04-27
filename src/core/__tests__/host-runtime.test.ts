@@ -60,6 +60,97 @@ describe('VizualHostRuntime', () => {
     expect(result.record.format).toBe('csv')
     expect(result.record.status).toBe('success')
     expect(result.artifact.exports).toHaveLength(1)
+    expect(result.record.meta?.rowCount).toBe(2)
     expect(await result.blob.text()).toContain('华东')
+  })
+
+  it('exports DocView table section data instead of an empty file', async () => {
+    const runtime = createHostRuntime()
+    const artifact = await runtime.saveArtifact({
+      root: 'doc',
+      elements: {
+        doc: {
+          type: 'DocView',
+          props: {
+            title: '风险报告',
+            sections: [
+              { id: 'summary', type: 'text', content: '摘要' },
+              {
+                id: 'branch-table',
+                type: 'table',
+                content: '',
+                data: {
+                  columns: ['Branch', 'Risk score', 'Open items'],
+                  rows: [
+                    ['Wuhan', 82, 6],
+                    ['Hangzhou', 71, 5],
+                  ],
+                },
+              },
+            ],
+          },
+          children: [],
+        },
+      },
+    })
+
+    const result = await runtime.exportArtifact({
+      ref: artifact.id,
+      format: 'csv',
+      filename: 'docview-risk',
+    })
+
+    const text = await result.blob.text()
+    expect(result.record.status).toBe('success')
+    expect(result.record.meta?.rowCount).toBe(2)
+    expect(text).toContain('Branch,Risk score,Open items')
+    expect(text).toContain('Wuhan,82,6')
+  })
+
+  it('records a data export error when no tabular rows are available', async () => {
+    const runtime = createHostRuntime()
+    const artifact = await runtime.saveArtifact({
+      root: 'title',
+      elements: {
+        title: {
+          type: 'DocView',
+          props: {
+            sections: [{ id: 'summary', type: 'text', content: '无表格数据' }],
+          },
+          children: [],
+        },
+      },
+    })
+
+    await expect(runtime.exportArtifact({
+      ref: artifact.id,
+      format: 'csv',
+      filename: 'empty',
+    })).rejects.toMatchObject({
+      record: { status: 'error', format: 'csv' },
+    })
+
+    const updated = await runtime.getArtifact(artifact.id)
+    expect(updated?.exports[0]?.error).toContain('No tabular data available')
+  })
+
+  it('records failed export attempts for artifact auditability', async () => {
+    const runtime = createHostRuntime()
+    const artifact = await runtime.saveArtifact(spec)
+
+    await expect(runtime.exportArtifact({
+      ref: artifact.id,
+      format: 'pdf',
+      filename: 'needs-element',
+    })).rejects.toMatchObject({
+      record: { status: 'error', format: 'pdf' },
+    })
+
+    const updated = await runtime.getArtifact(artifact.id)
+    expect(updated?.exports[0]).toMatchObject({
+      status: 'error',
+      format: 'pdf',
+      filename: 'needs-element',
+    })
   })
 })

@@ -97,6 +97,7 @@ export function SectionRenderer({ sections, onTargetClick, annotations }: Sectio
       ? {
           rowIndex: parseInt(element.getAttribute('data-row-index') || '0', 10),
           columnIndex: parseInt(element.getAttribute('data-column-index') || '0', 10),
+          isHeader: element.getAttribute('data-table-cell-kind') === 'header',
           rowKey: element.getAttribute('data-row-key') || undefined,
           columnKey: element.getAttribute('data-column-key') || undefined,
           value: element.getAttribute('data-cell-value') || undefined,
@@ -551,6 +552,18 @@ function renderTable(
               {columns.map((col, cIdx) => (
                 <th
                   key={`th-${cIdx}`}
+                  data-docview-target={`table-${suffix}-header-${cIdx}`}
+                  data-section-index={index}
+                  data-section-id={getSectionId(section, index)}
+                  data-target-type="table"
+                  data-row-index={-1}
+                  data-column-index={cIdx}
+                  data-table-cell-kind="header"
+                  data-column-key={col}
+                  data-cell-value={col}
+                  onClick={(e) =>
+                    handleClick(e, index, 'table', `Header: ${col}`)
+                  }
                   style={{
                     padding: '10px 14px',
                     fontSize:tcss('--rk-text-sm'),
@@ -559,7 +572,11 @@ function renderTable(
                     background: tcss('--rk-bg-primary'),
                     borderBottom: `1px solid ${tcss('--rk-border-subtle')}`,
                     textAlign: 'left',
+                    cursor: 'pointer',
+                    transition: 'background 0.15s',
                   }}
+                  onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = tcss('--rk-bg-secondary') }}
+                  onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = tcss('--rk-bg-primary') }}
                 >
                   {col}
                 </th>
