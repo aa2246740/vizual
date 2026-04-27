@@ -472,6 +472,20 @@ function sanitizeColors(colors: ColorToken[]): {
 // ─── 完整度报告 ──────────────────────────────────────────
 
 export interface ThemeMappingReport {
+  /** 解析出的设计 token 总数 */
+  tokenCount: number
+  /** 已映射到 Vizual CSS 变量的数量 */
+  mappedCount: number
+  /** 由默认主题补齐的变量数量 */
+  fallbackCount: number
+  /** 未被当前 runtime 直接消费的 token 名称 */
+  unsupportedTokens: string[]
+  /** 已映射变量名，供 UI 和 Agent 精确解释 */
+  mappedVariables: string[]
+  /** fallback 变量名，供 UI 和 Agent 判断覆盖缺口 */
+  fallbackVariables: string[]
+  /** 0-100 的启发式质量分，表示 Design.md 被 runtime 消化的程度 */
+  qualityScore: number
   /** 关键角色是否被匹配 */
   roles: {
     accent: boolean
@@ -680,16 +694,31 @@ export function mapDesignTokensToTheme(
   const displayName = mode === 'dark' ? 'Design.md (Dark)' : 'Design.md (Light)'
 
   // 8. 生成完整度报告
+  const mappedVariables = Array.from(mapped.keys()).sort()
+  const fallbackVariables = Object.keys(fallbackBase).filter(key => !mapped.has(key)).sort()
+  const mappedValues = new Set(Array.from(mapped.values()))
+  const unsupportedTokens = sanitized
+    .filter(token => !mappedValues.has(token.value))
+    .map(token => token.name)
+    .sort()
+  const roleCoverage = {
+    accent: mapped.has('--rk-accent'),
+    background: mapped.has('--rk-bg-primary'),
+    text: mapped.has('--rk-text-primary'),
+    border: mapped.has('--rk-border'),
+    success: mapped.has('--rk-success'),
+    warning: mapped.has('--rk-warning'),
+    error: mapped.has('--rk-error'),
+  }
   const report: ThemeMappingReport = {
-    roles: {
-      accent: mapped.has('--rk-accent'),
-      background: mapped.has('--rk-bg-primary'),
-      text: mapped.has('--rk-text-primary'),
-      border: mapped.has('--rk-border'),
-      success: mapped.has('--rk-success'),
-      warning: mapped.has('--rk-warning'),
-      error: mapped.has('--rk-error'),
-    },
+    tokenCount: countDesignTokens(tokens),
+    mappedCount: mappedVariables.length,
+    fallbackCount: fallbackVariables.length,
+    unsupportedTokens,
+    mappedVariables,
+    fallbackVariables,
+    qualityScore: 0,
+    roles: roleCoverage,
     warnings,
     stats: {
       totalColors: sanitized.length,
@@ -705,6 +734,7 @@ export function mapDesignTokensToTheme(
   if (missingRoles.length > 0) {
     report.warnings.push(`Key roles not matched: ${missingRoles.join(', ')} — using default values`)
   }
+  report.qualityScore = scoreMappingReport(report)
 
   return {
     name,
@@ -713,6 +743,31 @@ export function mapDesignTokensToTheme(
     mode,
     _mappingReport: report,
   }
+}
+
+function countDesignTokens(tokens: DesignTokens): number {
+  let total = tokens.colors.length
+  total += Object.keys(tokens.typography?.fontFamilies || {}).length
+  total += tokens.typography?.fontFamily ? 1 : 0
+  total += Object.keys(tokens.typography?.sizes || {}).length
+  total += Object.keys(tokens.typography?.weights || {}).length
+  total += Object.keys(tokens.spacing?.scale || {}).length
+  total += Object.keys(tokens.radius?.scale || {}).length
+  total += tokens.effects?.shadow ? 1 : 0
+  return total
+}
+
+function scoreMappingReport(report: ThemeMappingReport): number {
+  const roleValues = Object.values(report.roles)
+  const roleScore = roleValues.filter(Boolean).length / roleValues.length
+  const coverageScore = report.tokenCount > 0
+    ? Math.min(1, report.mappedCount / Math.max(report.tokenCount, 1))
+    : 0
+  const warningPenalty = Math.min(0.25, report.warnings.length * 0.03)
+  const unsupportedPenalty = report.tokenCount > 0
+    ? Math.min(0.2, report.unsupportedTokens.length / report.tokenCount * 0.2)
+    : 0
+  return Math.max(0, Math.min(100, Math.round((roleScore * 0.55 + coverageScore * 0.45 - warningPenalty - unsupportedPenalty) * 100)))
 }
 
 // ─── 主题反转 ──────────────────────────────────────────

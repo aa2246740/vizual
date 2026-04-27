@@ -77,6 +77,8 @@ window.markPendingHandled();
 
 For a custom React host, render specs with `VizualRenderer` and artifacts with `VizualArtifactView` from `vizual`. Do not use bare `StateProvider + Renderer` from `@json-render/react`; that leaves out required providers in current json-render. Keep `createAgentBridge()` for message/artifact state and use `VizualRenderer` for the React surface.
 
+For review loops outside DocView, use Core's generic review/revision methods on `createAgentBridge()`: create a thread with a target/context, create a revision proposal with typed artifact patches, then accept/apply/reject it. Do not silently overwrite an old artifact when the user is giving a comment or revision request.
+
 For browser QA, do not guess chat DOM classes. Prefer `window.getVizualConversationState()` and `window.getVizualDebugState()`. If DOM inspection is needed, use stable attributes such as `[data-message-row="true"]`, `[data-ai-msg="true"]`, `[data-viz-container="true"]`, and `[data-artifact-id]`.
 
 For follow-up edits to an existing chart, read the saved artifact and apply Vizual typed patches:
@@ -106,6 +108,8 @@ For automated QA of liveControl previews, use `updateLiveControlInMsg(id, { cont
 DocView is for document workflows: comments, highlights, review, AI revision, version history, or a reviewable document artifact. It is not the default for chat answers, dashboards, ordinary analysis reports, or exportable charts. If the host can display text next to the Vizual component, keep prose in the host message and render charts/KPIs/tables with GridLayout. Use export APIs for normal dashboard/chart export; use DocView only when the document itself needs review/revision behavior.
 
 For revisable DocView documents, include stable section `id` values. Agent-driven revision loops require host/controller access (`controllerRef`, `onReviewAction`). In `validation/vizual-test.html`, use `renderDocViewInMsg(id, { sections, showPanel: true })`, then read `getDocViewReviewState(ref)` and create proposals with `createDocViewRevision(ref, input)`. A pure JSON spec can render the document, but cannot by itself call an LLM or apply revision proposals.
+
+Design.md parser/creator skills are optional preprocessing helpers. Vizual runtime only consumes standard Design.md via `loadDesignMd()`, which returns a mapping report with mapped/fallback/unsupported tokens and a quality score.
 
 ```json
 {

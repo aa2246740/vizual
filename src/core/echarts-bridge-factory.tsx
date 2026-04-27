@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useRef } from 'react'
+import { useEffect, useRef } from 'react'
 import * as echarts from 'echarts'
-import { chartColors, tc } from './theme-colors'
+import { tc } from './theme-colors'
 import { useAnnotationContext } from '../docview/annotation-context'
 import type { AnnotationTarget, ChartDataPoint } from '../docview/types'
 
@@ -20,6 +20,23 @@ function stableStringify(value: unknown): string {
         return acc
       }, {})
   }) ?? ''
+}
+
+function themeValue(varName: string, host?: HTMLElement | null): string {
+  if (host && typeof getComputedStyle !== 'undefined') {
+    const scoped = getComputedStyle(host).getPropertyValue(varName).trim()
+    if (scoped) return scoped
+  }
+  return tc(varName)
+}
+
+function chartColorsFromHost(count: number, host?: HTMLElement | null): string[] {
+  const colors: string[] = []
+  for (let i = 1; i <= count; i += 1) {
+    const color = themeValue(`--rk-chart-${i}`, host)
+    if (color) colors.push(color)
+  }
+  return colors
 }
 
 /**
@@ -54,11 +71,6 @@ export function createEChartsBridge(
     // chart data has not changed; rebuilding then calling setOption replays
     // ECharts animations.
     const propsKey = stableStringify(props)
-    const option = useMemo(
-      () => buildOption(chartType, props, buildFallbackOption),
-      [propsKey],
-    )
-
     // Init chart on mount, dispose on unmount
     useEffect(() => {
       if (!containerRef.current) return
@@ -79,10 +91,11 @@ export function createEChartsBridge(
 
     // Update chart option when props change
     useEffect(() => {
-      if (chartRef.current && option) {
+      if (chartRef.current) {
+        const option = buildOption(chartType, props, buildFallbackOption, containerRef.current)
         chartRef.current.setOption(option, true)
       }
-    }, [option])
+    }, [propsKey])
 
     // 主题切换时用最新 tc() 色值重建 option 并刷新图表
     useEffect(() => {
@@ -96,7 +109,7 @@ export function createEChartsBridge(
           return
         }
         if (!chartRef.current) return
-        const newOption = buildOption(chartType, props, buildFallbackOption)
+        const newOption = buildOption(chartType, props, buildFallbackOption, containerRef.current)
         chartRef.current.setOption(newOption, true)
       }
       document.addEventListener('vizual-theme-change', handler)
@@ -208,6 +221,7 @@ function buildOption(
   chartType: string,
   props: ChartProps,
   fallback: (props: ChartProps) => Record<string, unknown>,
+  themeHost?: HTMLElement | null,
 ): Record<string, unknown> {
   let option: Record<string, unknown>
 
@@ -219,7 +233,7 @@ function buildOption(
   }
 
   // Inject theme chart palette — all charts follow DESIGN.md / theme colors
-  const palette = chartColors(6)
+  const palette = chartColorsFromHost(6, themeHost)
   if (palette.length > 0) {
     option.color = palette
     // Override series-level hardcoded colors with palette colors
@@ -251,13 +265,14 @@ function buildOption(
   }
 
   // Normalize text/axis/tooltip/splitLine colors with theme colors
-  const textColor = tc('--rk-text-secondary')
-  const primaryTextColor = tc('--rk-text-primary') || textColor
-  const bgColor = tc('--rk-bg-secondary')
-  const cellBgColor = tc('--rk-bg-tertiary') || bgColor
-  const borderColor = tc('--rk-border-subtle')
-  const displayFont = tc('--rk-font-display') || tc('--rk-font-sans')
-  const uiFont = tc('--rk-font-ui') || tc('--rk-font-sans')
+  const tv = (name: string) => themeValue(name, themeHost)
+  const textColor = tv('--rk-text-secondary')
+  const primaryTextColor = tv('--rk-text-primary') || textColor
+  const bgColor = tv('--rk-bg-secondary')
+  const cellBgColor = tv('--rk-bg-tertiary') || bgColor
+  const borderColor = tv('--rk-border-subtle')
+  const displayFont = tv('--rk-font-display') || tv('--rk-font-sans')
+  const uiFont = tv('--rk-font-ui') || tv('--rk-font-sans')
 
   if (option.title && typeof option.title === 'object') {
     const title = option.title as Record<string, unknown>
@@ -320,7 +335,7 @@ function buildOption(
     const visualMaps = (Array.isArray(option.visualMap)
       ? option.visualMap
       : option.visualMap ? [option.visualMap] : []) as Record<string, unknown>[]
-    const firstChartColor = palette[0] || tc('--rk-accent') || primaryTextColor
+    const firstChartColor = palette[0] || tv('--rk-accent') || primaryTextColor
     const secondChartColor = palette[1] || firstChartColor
     for (const visualMap of visualMaps) {
       if (!visualMap || typeof visualMap !== 'object') continue

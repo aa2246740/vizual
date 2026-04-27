@@ -928,14 +928,90 @@ setInterval(async () => {
     }
 
     function extractRowsFromArtifact(artifact) {
+      const artifactRows = normalizeRecordRows(artifact?.data);
+      if (artifactRows.length) return artifactRows;
+
       const elements = Object.values(artifact?.spec?.elements || {});
       for (const element of elements) {
-        const data = element?.props?.data;
-        if (Array.isArray(data) && data.every(row => row && typeof row === 'object' && !Array.isArray(row))) {
-          return data;
-        }
+        const directRows = normalizeRecordRows(element?.props?.data);
+        if (directRows.length) return directRows;
       }
-      return Array.isArray(artifact?.data) ? artifact.data : [];
+
+      for (const element of elements) {
+        const docRows = extractRowsFromDocViewElement(element);
+        if (docRows.length) return docRows;
+      }
+
+      return [];
+    }
+
+    function extractRowsFromDocViewElement(element) {
+      const sections = element?.type === 'DocView' && Array.isArray(element?.props?.sections)
+        ? element.props.sections
+        : [];
+      if (!sections.length) return [];
+
+      for (const section of sections) {
+        if (!isPlainRecord(section) || section.type !== 'table') continue;
+        const tableRows = normalizeTableRows(section.data);
+        if (tableRows.length) return tableRows;
+      }
+
+      for (const section of sections) {
+        if (!isPlainRecord(section)) continue;
+        const sectionData = isPlainRecord(section.data) ? section.data : null;
+        const chartRows = normalizeRecordRows(sectionData?.data);
+        if (chartRows.length) return chartRows;
+        const metricRows = normalizeRecordRows(sectionData?.metrics);
+        if (metricRows.length) return metricRows;
+      }
+
+      return [];
+    }
+
+    function normalizeTableRows(data) {
+      if (Array.isArray(data)) return normalizeRecordRows(data);
+      if (!isPlainRecord(data)) return [];
+
+      const columns = normalizeTableColumns(data.columns);
+
+      if (Array.isArray(data.rows)) {
+        const objectRows = normalizeRecordRows(data.rows);
+        if (objectRows.length) return objectRows;
+        if (!columns.length) return [];
+        return data.rows
+          .filter(Array.isArray)
+          .map(row => Object.fromEntries(columns.map((column, index) => [column.label || column.key, row[index] ?? ''])));
+      }
+
+      if (Array.isArray(data.data)) {
+        const objectRows = normalizeRecordRows(data.data);
+        if (objectRows.length) return objectRows;
+      }
+
+      return [];
+    }
+
+    function normalizeTableColumns(value) {
+      if (!Array.isArray(value)) return [];
+      return value.map((column, index) => {
+        if (typeof column === 'string') return { key: column, label: column };
+        if (isPlainRecord(column)) {
+          const key = String(column.key ?? column.label ?? `column_${index + 1}`);
+          return { key, label: String(column.label ?? key) };
+        }
+        return { key: `column_${index + 1}`, label: String(column) };
+      });
+    }
+
+    function normalizeRecordRows(value) {
+      if (!Array.isArray(value) || !value.length) return [];
+      if (!value.every(row => isPlainRecord(row))) return [];
+      return value;
+    }
+
+    function isPlainRecord(value) {
+      return value && typeof value === 'object' && !Array.isArray(value);
     }
 
     function resolveExportElement(vizWrap) {
@@ -1480,7 +1556,9 @@ setInterval(async () => {
       try {
         let blob;
         if (format === 'csv' || format === 'xlsx') {
-          blob = await window.Vizual.exportData(extractRowsFromArtifact(artifact), format, {
+          const rows = extractRowsFromArtifact(artifact);
+          if (!rows.length) throw new Error(`No tabular data available for ${format} export`);
+          blob = await window.Vizual.exportData(rows, format, {
             filename: options?.filename || artifact.id,
             columns: options?.columns,
             sheetName: options?.sheetName,
@@ -1505,7 +1583,7 @@ setInterval(async () => {
           status: 'success',
           width: exportEl?.offsetWidth,
           height: exportEl?.offsetHeight,
-          meta: { size: blob.size, type: blob.type },
+          meta: { size: blob.size, type: blob.type, rowCount: format === 'csv' || format === 'xlsx' ? extractRowsFromArtifact(artifact).length : undefined },
         });
         const updated = window.Vizual.updateArtifact(artifact, {
           type: 'addExportRecord',

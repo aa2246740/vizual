@@ -40,6 +40,50 @@ export type {
   LiveControlSnapshot,
 } from './agent-bridge'
 export {
+  addReviewComment,
+  acceptRevisionProposal,
+  applyRevisionProposalToArtifact,
+  createReviewComment,
+  createReviewThread,
+  createRevisionProposal,
+  createVizualReviewId,
+  defaultVizualReviewAgent,
+  defaultVizualReviewUser,
+  normalizeTargetRef,
+  rejectRevisionProposal,
+  updateReviewThreadStatus,
+} from './review'
+export type {
+  ApplyVizualRevisionResult,
+  CreateVizualReviewThreadInput,
+  CreateVizualRevisionProposalInput,
+  VizualReviewActor,
+  VizualReviewActorRole,
+  VizualReviewComment,
+  VizualReviewStatus,
+  VizualReviewThread,
+  VizualRevisionProposal,
+  VizualRevisionStatus,
+  VizualTargetRef,
+} from './review'
+export {
+  applyLiveControlStatePatch,
+  buildFormBuilderSpecFromLiveControl,
+  createLiveControlInitialState,
+  createLiveControlSchema,
+  getVisibleLiveControlFields,
+  validateLiveControlState,
+} from './live-control'
+export type {
+  CreateLiveControlSchemaInput,
+  VizualLiveControlField,
+  VizualLiveControlFieldType,
+  VizualLiveControlOption,
+  VizualLiveControlSchema,
+  VizualLiveControlStatePatch,
+  VizualLiveControlVisibilityRule,
+} from './live-control'
+export {
   applyVizualStateChanges,
   getVizualStateValue,
   VizualArtifactView,

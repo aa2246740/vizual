@@ -63,14 +63,34 @@ function buildHeatmapFallback(props: HeatmapChartProps): Record<string, unknown>
     Number(d[valueField]) || 0,
   ])
   const maxVal = Math.max(...seriesData.map(d => d[2] as number), 1)
+  const top = props.title ? 56 : 28
   return {
     title: props.title ? { text: props.title } : undefined,
     tooltip: { position: 'top' },
-    grid: { top: 30, right: 10, bottom: 40, left: 50 },
-    xAxis: { type: 'category', data: xCats, splitArea: { show: true } },
-    yAxis: { type: 'category', data: yCats, splitArea: { show: true } },
-    visualMap: { min: 0, max: maxVal, calculable: true, orient: 'horizontal', left: 'center', bottom: 0 },
-    series: [{ type: 'heatmap', data: seriesData, label: { show: true } }],
+    grid: { top, right: 24, bottom: 82, left: 64, containLabel: true },
+    xAxis: {
+      type: 'category',
+      data: xCats,
+      splitArea: { show: true },
+      axisLabel: { interval: 0, hideOverlap: true, margin: 10 },
+    },
+    yAxis: {
+      type: 'category',
+      data: yCats,
+      splitArea: { show: true },
+      axisLabel: { interval: 0, hideOverlap: true, margin: 10 },
+    },
+    visualMap: {
+      min: 0,
+      max: maxVal,
+      calculable: true,
+      orient: 'horizontal',
+      left: 'center',
+      bottom: 12,
+      itemWidth: 16,
+      itemHeight: 120,
+    },
+    series: [{ type: 'heatmap', data: seriesData, label: { show: true }, emphasis: { focus: 'self' } }],
   }
 }
 
