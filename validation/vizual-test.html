@@ -62,6 +62,7 @@
 
     /* Viz 容器 — 在气泡内部 */
     .viz-wrap { margin-top: 12px; background: var(--rk-bg-primary, var(--bg-viz)); border: 1px solid var(--rk-border-subtle, var(--border)); border-radius: 10px; padding: 14px; min-height: 200px; width: 100%; min-width: 0; overflow-x: auto; position: relative; }
+    .viz-wrap.has-docview { overflow: visible; }
     .viz-wrap .viz-error { margin: 0; min-height: 160px; display: flex; align-items: center; justify-content: center; color: #fecaca; border: 1px solid rgba(239,68,68,0.55); border-radius: 8px; background: rgba(127,29,29,0.38); padding: 14px; font-size: 13px; text-align: center; white-space: pre-wrap; }
     .artifact-toolbar { position: absolute; top: 8px; right: 8px; display: flex; gap: 6px; z-index: 4; padding: 4px; border: 1px solid var(--rk-border-subtle, var(--border)); border-radius: 8px; background: color-mix(in srgb, var(--rk-bg-secondary, var(--bg-bubble)) 86%, transparent); box-shadow: 0 8px 24px rgba(0,0,0,0.18); }
     .artifact-toolbar button { border: 1px solid var(--rk-border-subtle, var(--border)); border-radius: 6px; background: var(--rk-bg-tertiary, rgba(255,255,255,0.06)); color: var(--rk-text-primary, var(--text)); font-size: 11px; line-height: 1; padding: 6px 7px; cursor: pointer; }
@@ -72,7 +73,7 @@
     .interactive-preview { min-height: 260px; position: relative; }
     .interactive-preview-root { min-height: 260px; min-width: 0; }
     .interactive-error { margin-top: 8px; padding: 8px 10px; border: 1px solid rgba(239,68,68,0.45); border-radius: 8px; color: #fecaca; background: rgba(239,68,68,0.12); font-size: 12px; display: none; }
-    .docview-bridge-root { min-height: 520px; min-width: 0; width: 100%; }
+    .docview-bridge-root { min-height: 0; min-width: 0; width: 100%; }
     @media (max-width: 720px) {
       .main { padding: 16px 12px; }
       .messages { max-width: calc(100vw - 24px); }
@@ -816,6 +817,8 @@ setInterval(async () => {
     function destroyDocViewSessionByMessage(id) {
       const artifactId = window.__messageDocViews[id];
       const session = artifactId ? window._docViewSessions[artifactId] : null;
+      const vizWrap = document.getElementById(id + '-viz');
+      if (vizWrap) vizWrap.classList.remove('has-docview');
       if (window._docViewRoots[id]) {
         try { window._docViewRoots[id].unmount(); } catch (_) {}
         delete window._docViewRoots[id];
@@ -1153,6 +1156,7 @@ setInterval(async () => {
       window._liveControlViz[id]?.destroy?.();
       delete window._liveControlViz[id];
       destroyDocViewSessionByMessage(id);
+      vizWrap.classList.remove('has-docview');
 
       let artifact;
       try {
@@ -1319,6 +1323,7 @@ setInterval(async () => {
       docRoot.className = 'docview-bridge-root';
       vizWrap.replaceChildren(docRoot);
       vizWrap.style.display = 'block';
+      vizWrap.classList.add('has-docview');
       bubble.classList.add('has-viz');
       applyBubbleWidth(bubble, inputConfig.bubbleWidth || 'full', 'full');
 
@@ -1658,6 +1663,7 @@ setInterval(async () => {
       shell.appendChild(previewShell);
       vizWrap.replaceChildren(shell);
       vizWrap.style.display = 'block';
+      vizWrap.classList.remove('has-docview');
       bubble.classList.add('has-viz');
       applyBubbleWidth(bubble, config.bubbleWidth || 'full', 'full');
 
