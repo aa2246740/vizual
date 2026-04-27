@@ -25,6 +25,7 @@
     "build:types": "tsc -p tsconfig.build.json --emitDeclarationOnly",
     "build:standalone": "node build.js --standalone",
     "typecheck": "tsc -p tsconfig.build.json --noEmit",
+    "prepare": "npm run build",
     "prepublishOnly": "npm test && npm run typecheck && npm run build"
   },
   "keywords": [
