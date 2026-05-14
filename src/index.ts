@@ -2,6 +2,20 @@
 export { renderKitCatalog } from './catalog'
 export { registry, handlers, executeAction } from './registry'
 
+// A2UI protocol bridge
+export { A2UIBridge, a2uiToVizualSpec } from './a2ui'
+export type {
+  A2UIMessage,
+  A2UISurfaceState,
+  A2UIComponentDef,
+  A2UIDynamicValue,
+  A2UIAction,
+  A2UICreateSurface,
+  A2UIUpdateComponents,
+  A2UIUpdateDataModel,
+  A2UIDeleteSurface,
+} from './a2ui'
+
 // Charts
 export { BarChart, BarChartSchema } from './charts/bar-chart'
 export type { BarChartProps } from './charts/bar-chart'

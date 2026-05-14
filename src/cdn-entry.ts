@@ -258,6 +258,9 @@ function updateArtifact(
   return applyArtifactPatch(input, patchOrPatches)
 }
 
+// A2UI protocol bridge
+import { A2UIBridge, a2uiToVizualSpec } from './a2ui'
+
 // === Expose to window ===
 declare global {
   interface Window {
@@ -408,6 +411,10 @@ const vizual = {
   HeroLayout,
   HeroLayoutSchema,
   DocView,
+
+  // A2UI protocol bridge
+  A2UIBridge,
+  a2uiToVizualSpec,
 }
 
 // Expose to window for <script> tag usage
