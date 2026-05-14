@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vizual × Daemon — A2UI 对话</title>
+<script src="../dist/vizual.standalone.js"></script>
+<style>
+  :root {
+    --bg: #0a0a0a; --surface: #141414; --surface2: #1e1e1e;
+    --border: #2a2a2a; --text: #e5e5e5; --text-dim: #888;
+    --accent: #6366f1; --accent-hover: #818cf8;
+    --success: #22c55e; --error: #ef4444;
+    --radius: 8px;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, sans-serif; height: 100vh; display: flex; flex-direction: column; }
+
+  .topbar { background: var(--surface); border-bottom: 1px solid var(--border); padding: 12px 20px; display: flex; align-items: center; justify-content: space-between; }
+  .topbar h1 { font-size: 16px; font-weight: 600; }
+  .topbar .tags { display: flex; gap: 8px; }
+  .badge { padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+  .badge-daemon { background: #6366f120; color: #818cf8; }
+  .badge-a2ui { background: #3b82f620; color: #60a5fa; }
+  .badge-vizual { background: #22c55e20; color: #4ade80; }
+  .status { font-size: 12px; color: var(--text-dim); display: flex; align-items: center; gap: 6px; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; }
+  .dot.ok { background: var(--success); }
+  .dot.err { background: var(--error); }
+  .dot.wait { background: #f59e0b; animation: pulse 1s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+  .messages { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 16px; }
+  .msg { max-width: 900px; width: 100%; margin: 0 auto; }
+  .msg-header { font-size: 12px; color: var(--text-dim); margin-bottom: 6px; display: flex; align-items: center; gap: 8px; }
+  .msg-header .role { font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+  .msg-header .role.user { color: var(--accent); }
+  .msg-header .role.assistant { color: var(--success); }
+  .msg-body { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; line-height: 1.7; font-size: 14px; white-space: pre-wrap; word-break: break-word; }
+
+  .vizual-render { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px; margin: 8px 0; min-height: 100px; overflow: hidden; }
+  .vizual-render .viz-label { font-size: 11px; color: var(--success); margin-bottom: 8px; font-weight: 600; }
+
+  .input-area { background: var(--surface); border-top: 1px solid var(--border); padding: 16px 20px; }
+  .input-row { display: flex; gap: 10px; max-width: 900px; margin: 0 auto; }
+  .input-row textarea { flex: 1; background: var(--surface2); color: var(--text); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px; font-size: 14px; resize: none; outline: none; min-height: 48px; max-height: 200px; font-family: inherit; }
+  .input-row textarea:focus { border-color: var(--accent); }
+  .input-row button { background: var(--accent); color: white; border: none; border-radius: var(--radius); padding: 12px 24px; cursor: pointer; font-size: 14px; font-weight: 600; white-space: nowrap; }
+  .input-row button:hover { background: var(--accent-hover); }
+  .input-row button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .empty { text-align: center; color: var(--text-dim); margin-top: 15vh; }
+  .empty h2 { font-size: 20px; margin-bottom: 8px; color: var(--text); }
+  .empty p { font-size: 14px; margin-bottom: 4px; }
+  .empty .hint { font-size: 12px; color: var(--text-dim); margin-top: 12px; background: var(--surface2); padding: 12px; border-radius: var(--radius); text-align: left; white-space: pre-wrap; line-height: 1.6; }
+
+  .loading::after { content: ''; animation: dots 1.5s infinite; }
+  @keyframes dots { 0%{content:''} 25%{content:'.'} 50%{content:'..'} 75%{content:'...'} }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div style="display:flex;align-items:center;gap:12px;">
+    <h1>Vizual × Daemon</h1>
+    <div class="tags">
+      <span class="badge badge-daemon">CLI Daemon</span>
+      <span class="badge badge-a2ui">A2UI v0.10</span>
+      <span class="badge badge-vizual">Vizual Runtime</span>
+    </div>
+  </div>
+  <div class="status">
+    <span class="dot wait" id="dot"></span>
+    <span id="statusText">Connecting...</span>
+  </div>
+</div>
+
+<div class="messages" id="messages">
+  <div class="empty">
+    <h2>Agent 视觉对话 Demo</h2>
+    <p>输入自然语言，Agent 输出 A2UI JSON，自动渲染为 Vizual 图表</p>
+    <div class="hint">示例输入:
+  "画一个柱状图，展示四个区域的销售数据"
+  "创建一个 KPI 仪表板，包含营收、用户数、转化率"
+  "画一个柱状图对比 Q3 和 Q4 的数据"</div>
+  </div>
+</div>
+
+<div class="input-area">
+  <div class="input-row">
+    <textarea id="input" placeholder="输入消息... (Shift+Enter 换行)" rows="1"></textarea>
+    <button id="sendBtn" onclick="send()">发送</button>
+  </div>
+</div>
+
+<script>
+const DAEMON = 'http://localhost:7456';
+const SYSTEM_PROMPT = `你是一个全能 AI 助手（类似 Jarvis）。你可以输出文字和 A2UI v0.10 JSON 来展示数据可视化、图表、仪表板、文档、表格、看板、甘特图等。
+
+规则：
+1. 根据用户需求，输出 A2UI JSON（用 \`\`\`json 包裹）或纯文字，或两者混合
+2. A2UI 格式：JSON 数组，包含 createSurface + updateComponents + updateDataModel
+3. version 固定为 "v0.10"
+4. catalogId 固定为 "https://vizual.org/catalog/v0_1/vizual_catalog.json"
+5. 数据放在 updateDataModel 里，组件中用 {path: "/..."} 引用
+6. 尽量生成真实有意义的数据，模拟真实场景
+7. 使用 GridLayout 可以组合多个组件形成仪表板
+
+全部 31 个可用组件及其 props：
+
+【图表类 19 个】
+- BarChart: title, x, y(字段或字段数组), data({path}), stacked, horizontal, height
+- LineChart: title, x, y, data({path}), smooth, height
+- AreaChart: title, x, y, data({path}), stacked, smooth, height
+- PieChart: title, name, value, data({path}), roseType, height
+- ScatterChart: title, x, y, data({path}), symbolSize, height
+- BubbleChart: title, x, y, size, data({path}), height
+- BoxplotChart: title, data({path}), height
+- HistogramChart: title, x, data({path}), bins, height
+- WaterfallChart: title, x, y, data({path}), height
+- XmrChart: title, data({path}), height
+- SankeyChart: title, data({path}), data格式=[{source,target,value}] 自动推断nodes, height
+- FunnelChart: title, name, value, data({path}), height
+- HeatmapChart: title, data({path}), height
+- CalendarChart: title, data({path}), height
+- SparklineChart: title, data({path}), height
+- ComboChart: title, x, series(数组[{type,x,y}]), data({path}), height
+- DumbbellChart: title, x, start, end, data({path}), height
+- RadarChart: title, indicators, data({path}), height
+- MermaidDiagram: code(mermaid语法字符串), height
+
+【业务组件 6 个】
+- KpiDashboard: metrics({path:"/kpiMetrics"}), metrics=[{label,value,change,trend}]
+- Kanban: title, columns({path}), columns=[{id,title,cards:[{id,title,description,tags,assignee}]}]
+- GanttChart: title, tasks({path}), tasks=[{id,name,start,end,progress,group}]
+- OrgChart: title, data({path}), data=[{id,name,title,parentId}]
+- Timeline: title, events({path}), events=[{id,date,title,description,type}]
+- AuditLog: title, entries({path}), entries=[{id,timestamp,actor,action,target,status}]
+
+【表格】
+- DataTable: title, columns([{key,label,type}]), data({path}), height
+
+【文档】
+- DocView: title, sections({path:"/sections"}), sections=[{id,type,content,level?}]
+  section types: heading, text, chart, callout, table, image
+
+【输入】
+- FormBuilder: title, schema({path:"/formSchema"}), value({path:"/formValue"})
+
+【布局 3 个】
+- GridLayout: columns, gap, children(子组件ID数组)
+- SplitLayout: direction("horizontal"|"vertical"), ratio, left(子ID), right(子ID)
+- HeroLayout: hero(子ID), body(子ID)
+
+示例输出：
+\`\`\`json
+[
+  {"version":"v0.10","createSurface":{"surfaceId":"chart-1","catalogId":"https://vizual.org/catalog/v0_1/vizual_catalog.json"}},
+  {"version":"v0.10","updateComponents":{"surfaceId":"chart-1","components":[{"id":"root","component":"BarChart","title":"销售数据","x":"region","y":"sales","data":{"path":"/chartData"}}]}},
+  {"version":"v0.10","updateDataModel":{"surfaceId":"chart-1","path":"/chartData","value":[{"region":"华东","sales":320},{"region":"华南","sales":280}]}}
+]
+\`\`\`
+`;
+
+let sessionId = null;
+let streaming = false;
+const input = document.getElementById('input');
+
+input.addEventListener('input', () => { input.style.height = 'auto'; input.style.height = Math.min(input.scrollHeight, 200) + 'px'; });
+input.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } });
+
+// Check daemon health
+fetch(DAEMON + '/api/health').then(r => r.json()).then(d => {
+  const dot = document.getElementById('dot');
+  const text = document.getElementById('statusText');
+  if (d.agent?.available) {
+    dot.className = 'dot ok';
+    text.textContent = 'Claude Code ' + (d.agent.version || '') + ' ready';
+  } else {
+    dot.className = 'dot err';
+    text.textContent = 'Daemon running, but Claude Code not found';
+  }
+}).catch(() => {
+  document.getElementById('dot').className = 'dot err';
+  document.getElementById('statusText').textContent = 'Daemon not running (start: node daemon.mjs)';
+});
+
+async function send() {
+  if (streaming) return;
+  const prompt = input.value.trim();
+  if (!prompt) return;
+  input.value = '';
+  input.style.height = 'auto';
+  streaming = true;
+  document.getElementById('sendBtn').disabled = true;
+
+  const msgs = document.getElementById('messages');
+  const empty = msgs.querySelector('.empty');
+  if (empty) empty.remove();
+
+  addMsg('user', prompt);
+  const assistantEl = addMsg('assistant', '', true);
+  const body = assistantEl.querySelector('.msg-body');
+
+  try {
+    const req = { prompt: SYSTEM_PROMPT + '\n\n用户需求：' + prompt };
+    if (sessionId) req.sessionId = sessionId;
+
+    const resp = await fetch(DAEMON + '/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(req),
+    });
+
+    const reader = resp.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    let fullText = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop();
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        try {
+          const ev = JSON.parse(line.slice(6));
+          if (ev.type === 'session') sessionId = ev.sessionId;
+          else if (ev.type === 'text_delta') { fullText += ev.text; }
+          else if (ev.type === 'done') { /* stream end */ }
+        } catch {}
+      }
+    }
+
+    // Try to parse response as A2UI JSON
+    renderResponse(body, fullText);
+
+  } catch (err) {
+    body.textContent = 'Error: ' + err.message;
+    body.style.color = 'var(--error)';
+  } finally {
+    body.classList.remove('loading');
+    streaming = false;
+    document.getElementById('sendBtn').disabled = false;
+    input.focus();
+  }
+}
+
+function repairJSON(str) {
+  // Remove trailing commas before } or ]
+  let s = str.replace(/,\s*([}\]])/g, '$1');
+  // Remove comments
+  s = s.replace(/\/\/.*$/gm, '');
+  // Remove trailing commas in objects/arrays (second pass)
+  s = s.replace(/,\s*([}\]])/g, '$1');
+  return s;
+}
+
+function renderResponse(body, text) {
+  // Try extracting A2UI JSON from the response
+  let a2uiMessages = null;
+
+  // 1. Try direct JSON parse
+  try { a2uiMessages = JSON.parse(text); } catch {}
+
+  // 2. Try extracting from ```json...``` block
+  if (!a2uiMessages) {
+    const m = text.match(/```(?:json)?\s*\n?([\s\S]*?)```/);
+    if (m) {
+      try { a2uiMessages = JSON.parse(m[1]); } catch {
+        try { a2uiMessages = JSON.parse(repairJSON(m[1])); } catch {}
+      }
+    }
+  }
+
+  // 3. Try finding JSON array in text
+  if (!a2uiMessages) {
+    const m = text.match(/\[[\s\S]*\]/);
+    if (m) {
+      try { a2uiMessages = JSON.parse(m[0]); } catch {
+        try { a2uiMessages = JSON.parse(repairJSON(m[0])); } catch {}
+      }
+    }
+  }
+
+  if (a2uiMessages && Array.isArray(a2uiMessages) && a2uiMessages.length > 0 && a2uiMessages[0].version === 'v0.10') {
+    // Render as Vizual via A2UI bridge
+    try {
+      const bridge = new Vizual.A2UIBridge();
+      const spec = bridge.processMessages(a2uiMessages);
+
+      if (spec) {
+        const container = document.createElement('div');
+        container.className = 'vizual-render';
+
+        const label = document.createElement('div');
+        label.className = 'viz-label';
+        label.textContent = 'A2UI → Vizual Rendered (' + a2uiMessages.length + ' messages)';
+        container.appendChild(label);
+
+        const renderArea = document.createElement('div');
+        container.appendChild(renderArea);
+        body.appendChild(container);
+
+        Vizual.renderSpec(spec, renderArea);
+        body.style.whiteSpace = 'normal';
+      } else {
+        body.textContent = text;
+      }
+    } catch (e) {
+      body.textContent = text + '\n\n[Render error: ' + e.message + ']';
+    }
+  } else {
+    // Plain text response
+    body.textContent = text;
+  }
+}
+
+function addMsg(role, content, isLoading = false) {
+  const msgs = document.getElementById('messages');
+  const div = document.createElement('div');
+  div.className = 'msg';
+  const header = document.createElement('div');
+  header.className = 'msg-header';
+  header.innerHTML = '<span class="role ' + role + '">' + role + '</span>';
+  const body = document.createElement('div');
+  body.className = 'msg-body' + (isLoading ? ' loading' : '');
+  if (content) body.textContent = content;
+  div.appendChild(header);
+  div.appendChild(body);
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+  return div;
+}
+</script>
+</body>
+</html>

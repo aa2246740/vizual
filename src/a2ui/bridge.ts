@@ -132,75 +132,36 @@ export class A2UIBridge {
   /**
    * 从 A2UI surface 状态构建 VizualSpec。
    *
-   * 核心转换：A2UI 扁平组件列表 + ID 引用 → Vizual 嵌套树
+   * 核心转换：A2UI 扁平组件列表 + ID 引用 → Vizual 平铺 elements + 字符串 children
+   * json-render 要求 children 为字符串 ID 引用，所有组件平铺在 elements 顶层。
    */
   private buildSpec(surface: A2UISurfaceState): VizualSpec {
     const elements: Record<string, any> = {}
 
-    // 找到 root 组件
     const rootComp = surface.components.get('root')
     if (!rootComp) {
       return { root: 'root', elements: {}, state: surface.dataModel }
     }
 
-    // 递归构建嵌套树
-    const buildElement = (comp: A2UIComponentDef): any => {
-      // 解析 props — 解析 DynamicString path 引用到 dataModel
+    // 平铺所有组件到 elements，children 保持为字符串 ID 引用
+    for (const [id, comp] of surface.components) {
       const props = this.resolveProps(comp, surface.dataModel)
-
-      // 递归构建子组件
-      const children: any[] = []
-
-      // ChildList (children 数组)
-      if (Array.isArray(comp.children)) {
-        for (const childId of comp.children) {
-          const childComp = surface.components.get(childId)
-          if (childComp) {
-            children.push(buildElement(childComp))
-          }
-        }
-      }
-
-      // Template ChildList（动态模板 — 从 dataModel 生成）
-      if (comp.children && typeof comp.children === 'object' && !Array.isArray(comp.children)) {
-        const template = comp.children as { componentId: string; path: string }
-        const templateComp = surface.components.get(template.componentId)
-        const list = this.getValueAtPath(surface.dataModel, template.path)
-        if (templateComp && Array.isArray(list)) {
-          for (const item of list) {
-            children.push(buildElement(templateComp))
-          }
-        }
-      }
-
-      // Single child (Card, Button 等)
-      if (comp.child) {
-        const childComp = surface.components.get(comp.child)
-        if (childComp) {
-          children.push(buildElement(childComp))
-        }
-      }
-
       const element: any = {
         type: comp.component,
         props,
       }
-      if (children.length > 0) {
-        element.children = children
-      }
-      return element
-    }
 
-    elements['root'] = buildElement(rootComp)
-
-    // 也把非 root 组件加入 elements（供 targetMap 等使用）
-    for (const [id, comp] of surface.components) {
-      if (id !== 'root' && !elements[id]) {
-        elements[id] = {
-          type: comp.component,
-          props: this.resolveProps(comp, surface.dataModel),
-        }
+      // children 保持为字符串 ID 数组（json-render 通过 ID 查找 elements）
+      if (Array.isArray(comp.children) && comp.children.length > 0) {
+        element.children = [...comp.children]
       }
+
+      // Single child
+      if (comp.child) {
+        element.children = [comp.child]
+      }
+
+      elements[id] = element
     }
 
     return {
