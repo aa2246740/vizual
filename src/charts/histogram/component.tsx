@@ -12,8 +12,13 @@ function clampBinCount(value: unknown): number {
   return Math.max(1, Math.min(100, Math.round(num)))
 }
 
-function inferLabelField(data: Record<string, unknown>[], props: HistogramChartProps): string | undefined {
-  const firstRow = data[0] ?? {}
+function toObjectRow(row: unknown): Record<string, unknown> {
+  if (row != null && typeof row === 'object' && !Array.isArray(row)) return row as Record<string, unknown>
+  return {}
+}
+
+function inferLabelField(data: unknown[], props: HistogramChartProps): string | undefined {
+  const firstRow = toObjectRow(data[0])
   const candidates = [
     props.x,
     'range',
@@ -27,8 +32,8 @@ function inferLabelField(data: Record<string, unknown>[], props: HistogramChartP
   return candidates.find(key => key in firstRow)
 }
 
-function inferCountField(data: Record<string, unknown>[], props: HistogramChartProps): string | undefined {
-  const firstRow = data[0] ?? {}
+function inferCountField(data: unknown[], props: HistogramChartProps): string | undefined {
+  const firstRow = toObjectRow(data[0])
   const y = Array.isArray(props.y) ? props.y[0] : props.y
   const candidates = [
     y,
@@ -41,8 +46,8 @@ function inferCountField(data: Record<string, unknown>[], props: HistogramChartP
   return candidates.find(key => key in firstRow && finiteNumber(firstRow[key]) !== null)
 }
 
-function inferRawValueField(data: Record<string, unknown>[], props: HistogramChartProps): string {
-  const firstRow = data[0] ?? {}
+function inferRawValueField(data: unknown[], props: HistogramChartProps): string {
+  const firstRow = toObjectRow(data[0])
   const explicit = props.value ?? props.x ?? (Array.isArray(props.y) ? props.y[0] : props.y)
   if (explicit) return explicit
   return Object.keys(firstRow).find(key => finiteNumber(firstRow[key]) !== null) ?? 'value'
@@ -61,8 +66,14 @@ export function buildHistogramFallback(props: HistogramChartProps): Record<strin
   const labelField = inferLabelField(data, props)
   const countField = inferCountField(data, props)
   if (!explicitRawField && labelField && countField) {
-    const labels = data.map((row, index) => String(row[labelField] ?? `Bin ${index + 1}`))
-    const counts = data.map(row => finiteNumber(row[countField]) ?? 0)
+    const labels = data.map((row, index) => {
+      const obj = toObjectRow(row)
+      return String(obj[labelField] ?? `Bin ${index + 1}`)
+    })
+    const counts = data.map(row => {
+      const obj = toObjectRow(row)
+      return finiteNumber(obj[countField]) ?? 0
+    })
     return {
       title: props.title ? { text: props.title } : undefined,
       tooltip: { trigger: 'axis' },
@@ -75,7 +86,11 @@ export function buildHistogramFallback(props: HistogramChartProps): Record<strin
 
   const valueField = inferRawValueField(data, props)
   const values = data
-    .map(d => finiteNumber(d[valueField]))
+    .map(d => {
+      if (typeof d === 'number') return d
+      const obj = toObjectRow(d)
+      return finiteNumber(obj[valueField])
+    })
     .filter((value): value is number => value !== null)
   // Manual binning
   if (values.length === 0) return { series: [] }
