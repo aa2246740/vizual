@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>A2UI Primitives + FreeformHtml Visual Acceptance</title>
+  <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+  <script src="https://unpkg.com/echarts@5.5.0/dist/echarts.min.js"></script>
+  <style>
+    :root { --rk-bg-primary:#0f1117;--rk-bg-secondary:#1a1b23;--rk-bg-tertiary:#252630;--rk-text-primary:#e2e8f0;--rk-text-secondary:#94a3b8;--rk-text-tertiary:#64748b;--rk-border:#334155;--rk-border-subtle:#1e293b;--rk-accent:#6366f1;--rk-accent-hover:#818cf8;--rk-accent-muted:#6366f120;--rk-success:#22c55e;--rk-success-muted:#22c55e20;--rk-warning:#f59e0b;--rk-warning-muted:#f59e0b20;--rk-error:#ef4444;--rk-error-muted:#ef444420;--rk-font-sans:-apple-system,'Inter',system-ui,sans-serif;--rk-radius-md:8px;--rk-chart-1:#6366f1;--rk-chart-2:#22c55e;--rk-chart-3:#f59e0b;--rk-chart-4:#ef4444;--rk-chart-5:#3b82f6;--rk-chart-6:#8b5cf6;--rk-chart-7:#ec4899;--rk-chart-8:#14b8a6; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--rk-bg-primary); color: var(--rk-text-primary); font-family: var(--rk-font-sans); padding: 24px; }
+    h1 { margin-bottom: 8px; }
+    .subtitle { color: var(--rk-text-tertiary); margin-bottom: 32px; }
+    .section { margin-bottom: 40px; }
+    .section h2 { color: var(--rk-accent); margin-bottom: 16px; border-bottom: 1px solid var(--rk-border); padding-bottom: 8px; }
+    .test-row { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 16px; }
+    .test-case { background: var(--rk-bg-secondary); border: 1px solid var(--rk-border); border-radius: 8px; padding: 16px; min-width: 200px; flex: 1; }
+    .test-case h4 { color: var(--rk-text-secondary); font-size: 12px; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.05em; }
+    .test-case .render-area { min-height: 40px; }
+    #status { position: fixed; top: 8px; right: 8px; padding: 8px 16px; border-radius: 8px; font-size: 14px; font-weight: 600; z-index: 999; }
+    .pass { background: #22c55e30; color: #22c55e; }
+    .fail { background: #ef444430; color: #ef4444; }
+  </style>
+</head>
+<body>
+  <div id="status" class="pass">Loading...</div>
+  <h1>A2UI Primitives + FreeformHtml Visual Acceptance</h1>
+  <p class="subtitle">19 new components — edge cases, XSS, composition, visual verification</p>
+
+  <div class="section"><h2>1. FreeformHtml — Escape Hatch</h2><div id="freeform" class="test-row"></div></div>
+  <div class="section"><h2>2. Layout Primitives</h2><div id="layout" class="test-row"></div></div>
+  <div class="section"><h2>3. Display Primitives</h2><div id="display" class="test-row"></div></div>
+  <div class="section"><h2>4. Input Primitives</h2><div id="inputs" class="test-row"></div></div>
+  <div class="section"><h2>5. Complex Components</h2><div id="complex" class="test-row"></div></div>
+  <div class="section"><h2>6. Composition — Agent Dashboard</h2><div id="composition" class="test-row"></div></div>
+  <div class="section"><h2>7. Edge Cases + XSS</h2><div id="edge" class="test-row"></div></div>
+
+  <script>
+  async function main() {
+    const src = await (await fetch('../dist/vizual.standalone.js')).text();
+    eval(src);
+    var V = window.Vizual;
+    var rid = 0;
+
+    function render(sectionId, spec, label) {
+      rid++;
+      var uid = 'tc-' + rid;
+      var wrap = document.createElement('div');
+      wrap.className = 'test-case';
+      var heading = document.createElement('h4');
+      heading.textContent = label;
+      var area = document.createElement('div');
+      area.className = 'render-area';
+      area.id = uid;
+      wrap.appendChild(heading);
+      wrap.appendChild(area);
+      document.getElementById(sectionId).appendChild(wrap);
+      try {
+        V.renderSpec(spec, area);
+        return { label: label, ok: true };
+      } catch(e) {
+        area.textContent = 'ERROR: ' + e.message;
+        area.style.color = '#ef4444';
+        return { label: label, ok: false, error: e.message };
+      }
+    }
+
+    var results = [];
+
+    // === 1. FREEFORM HTML ===
+    var gridHtml = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;"><section style="background:var(--rk-bg-tertiary);border-radius:12px;padding:16px;"><h3>Card A<\/h3><p>Content here<\/p><\/section><section style="background:var(--rk-bg-tertiary);border-radius:12px;padding:16px;"><h3>Card B<\/h3><p>More content<\/p><\/section><\/div>';
+    results.push(render('freeform', { root:'r', elements:{ r:{ type:'FreeformHtml', props:{ html: gridHtml }}}}, 'Grid Layout'));
+    var heroHtml = '<div style="background:linear-gradient(135deg,#667eea,#764ba2);border-radius:16px;padding:24px;color:white;"><h2>Good morning<\/h2><p>May 15, 2026<\/p><\/div>';
+    results.push(render('freeform', { root:'r', elements:{ r:{ type:'FreeformHtml', props:{ html: heroHtml }}}}, 'Personal Homepage'));
+
+    // === 2. LAYOUT ===
+    results.push(render('layout', { root:'r', elements:{ r:{ type:'Row', props:{ gap:12 }, children:['c1','c2','c3'] }, c1:{ type:'Card', props:{ padding:16 }, children:['t1'] }, c2:{ type:'Card', props:{ padding:16 }, children:['t2'] }, c3:{ type:'Card', props:{ padding:16 }, children:['t3'] }, t1:{ type:'Text', props:{ content:'Card 1' }}, t2:{ type:'Text', props:{ content:'Card 2' }}, t3:{ type:'Text', props:{ content:'Card 3' }}}}, 'Row + Card + Text'));
+    results.push(render('layout', { root:'r', elements:{ r:{ type:'Column', props:{ gap:8 }, children:['t1','t2'] }, t1:{ type:'Text', props:{ content:'Item A' }}, t2:{ type:'Text', props:{ content:'Item B' }}}}, 'Column + Text'));
+    results.push(render('layout', { root:'r', elements:{ r:{ type:'Card', props:{ padding:24, radius:16, shadow:2 }, children:['t'] }, t:{ type:'Text', props:{ content:'Shadow level 2 card', variant:'heading' }}}}, 'Card with shadow'));
+
+    // === 3. DISPLAY ===
+    results.push(render('display', { root:'r', elements:{ r:{ type:'Column', props:{ gap:8 }, children:['h','b','c','l'] }, h:{ type:'Text', props:{ content:'Heading Text', variant:'heading', size:24, weight:'bold' }}, b:{ type:'Text', props:{ content:'Body text with default styling' }}, c:{ type:'Text', props:{ content:'Caption text', variant:'caption' }}, l:{ type:'Text', props:{ content:'Label', variant:'label', weight:'semibold' }}}}, 'Text variants'));
+    results.push(render('display', { root:'r', elements:{ r:{ type:'Row', props:{ gap:16, align:'center' }, children:['i1','i2','i3'] }, i1:{ type:'Icon', props:{ name:'🏠', size:32 }}, i2:{ type:'Icon', props:{ name:'📊', size:32 }}, i3:{ type:'Icon', props:{ name:'🔔', size:32 }}}}, 'Icons'));
+    results.push(render('display', { root:'r', elements:{ r:{ type:'List', props:{ items:['Design system','Component library','Agent runtime','Visual rendering'], ordered:false }}}}, 'Unordered List'));
+    results.push(render('display', { root:'r', elements:{ r:{ type:'Column', props:{ gap:8 }, children:['d1','t'] }, d1:{ type:'Divider', props:{ spacing:4 }}, t:{ type:'Text', props:{ content:'Below divider' }}}}, 'Divider'));
+
+    // === 4. INPUTS ===
+    results.push(render('inputs', { root:'r', elements:{ r:{ type:'Column', props:{ gap:12 }, children:['b1','b2','b3'] }, b1:{ type:'Button', props:{ label:'Primary', variant:'primary' }}, b2:{ type:'Button', props:{ label:'Secondary', variant:'secondary' }}, b3:{ type:'Button', props:{ label:'Ghost', variant:'ghost' }}}}, 'Button variants'));
+    results.push(render('inputs', { root:'r', elements:{ r:{ type:'Column', props:{ gap:8 }, children:['cb1','cb2'] }, cb1:{ type:'CheckBox', props:{ label:'Accept terms', checked:true }}, cb2:{ type:'CheckBox', props:{ label:'Disabled', disabled:true }}}}, 'CheckBox'));
+    results.push(render('inputs', { root:'r', elements:{ r:{ type:'Column', props:{ gap:8 }, children:['tf1','tf2'] }, tf1:{ type:'TextField', props:{ label:'Name', placeholder:'Enter name' }}, tf2:{ type:'TextField', props:{ label:'Email', type:'email', value:'test@example.com' }}}}, 'TextField'));
+    results.push(render('inputs', { root:'r', elements:{ r:{ type:'Column', props:{ gap:8 }, children:['cp','sl','dt'] }, cp:{ type:'ChoicePicker', props:{ label:'Priority', options:['Low','Medium','High'], value:'Medium' }}, sl:{ type:'Slider', props:{ label:'Progress', min:0, max:100, value:65 }}, dt:{ type:'DateTimeInput', props:{ label:'Due date', value:'2026-05-20' }}}}, 'ChoicePicker + Slider + DateTime'));
+
+    // === 5. COMPLEX ===
+    results.push(render('complex', { root:'r', elements:{ r:{ type:'Tabs', props:{ tabs:[{label:'Overview',key:'t1'},{label:'Details',key:'t2'},{label:'Settings',key:'t3'}], activeTab:'t1' }, children:['content'] }, content:{ type:'Text', props:{ content:'Tab content area' }}}}, 'Tabs'));
+    results.push(render('complex', { root:'r', elements:{ r:{ type:'AudioPlayer', props:{ src:'test.mp3', title:'Sample Audio' }}}}, 'AudioPlayer'));
+
+    // === 6. COMPOSITION — Full Dashboard ===
+    results.push(render('composition', { root:'r', elements:{ r:{ type:'Column', props:{ gap:16 }, children:['header','metrics','details'] }, header:{ type:'Row', props:{ gap:12, align:'center' }, children:['icon','title'] }, icon:{ type:'Icon', props:{ name:'📊', size:32 }}, title:{ type:'Text', props:{ content:'Agent Dashboard', variant:'heading', size:22, weight:'bold' }}, metrics:{ type:'Row', props:{ gap:12 }, children:['m1','m2','m3'] }, m1:{ type:'Card', props:{ padding:16 }, children:['mt1','mv1'] }, mt1:{ type:'Text', props:{ content:'Total Tasks', variant:'caption' }}, mv1:{ type:'Text', props:{ content:'128', size:28, weight:'bold' }}, m2:{ type:'Card', props:{ padding:16 }, children:['mt2','mv2'] }, mt2:{ type:'Text', props:{ content:'Completed', variant:'caption' }}, mv2:{ type:'Text', props:{ content:'96', size:28, weight:'bold', color:'var(--rk-success)' }}, m3:{ type:'Card', props:{ padding:16 }, children:['mt3','mv3'] }, mt3:{ type:'Text', props:{ content:'Pending', variant:'caption' }}, mv3:{ type:'Text', props:{ content:'32', size:28, weight:'bold', color:'var(--rk-warning)' }}, details:{ type:'Row', props:{ gap:12 }, children:['list','form'] }, list:{ type:'Card', props:{ padding:16 }, children:['lt','ul'] }, lt:{ type:'Text', props:{ content:'Recent Activity', weight:'semibold' }}, ul:{ type:'List', props:{ items:['Agent completed task A','User added comment','Agent updated chart'] }}, form:{ type:'Card', props:{ padding:16 }, children:['ft','fn','fp','fb'] }, ft:{ type:'Text', props:{ content:'Quick Action', weight:'semibold' }}, fn:{ type:'TextField', props:{ label:'Task name', placeholder:'Enter task' }}, fp:{ type:'ChoicePicker', props:{ label:'Priority', options:['Low','Medium','High'] }}, fb:{ type:'Button', props:{ label:'Add Task', variant:'primary' }}}}, 'Full Agent Dashboard'));
+
+    // === 7. EDGE CASES + XSS ===
+    var xss1 = String.fromCharCode(60)+'script>alert("XSS")'+String.fromCharCode(60)+'/script><p>Script stripped, this text is safe<\/p>';
+    results.push(render('edge', { root:'r', elements:{ r:{ type:'FreeformHtml', props:{ html: xss1 }}}}, 'XSS: script injection'));
+    var xss2 = '<div onclick="alert(1)" onerror="alert(2)">Event handlers stripped<\/div>';
+    results.push(render('edge', { root:'r', elements:{ r:{ type:'FreeformHtml', props:{ html: xss2 }}}}, 'XSS: event handlers'));
+    results.push(render('edge', { root:'r', elements:{ r:{ type:'FreeformHtml', props:{ html:'', minHeight:20 }}}}, 'Empty HTML'));
+    results.push(render('edge', { root:'r', elements:{ r:{ type:'Text', props:{ content:'' }}}}, 'Empty Text'));
+    results.push(render('edge', { root:'r', elements:{ r:{ type:'List', props:{ items:[] }}}}, 'Empty List'));
+    results.push(render('edge', { root:'r', elements:{ r:{ type:'Row', props:{ gap:0 }, children:[] }}}, 'Empty Row'));
+    results.push(render('edge', { root:'r', elements:{ r:{ type:'Text', props:{ content:'A'.repeat(500), maxLines:2 }}}}, 'Long text truncated'));
+    results.push(render('edge', { root:'r', elements:{ r:{ type:'FreeformHtml', props:{ html:'<h1 style="color:#6366f1">Theme color replacement<\/h1><p style="background:#1a1b23">BG secondary<\/p>' }}}}, 'Theme color injection'));
+
+    // Update status
+    var passed = results.filter(function(r){ return r.ok; }).length;
+    var failed = results.filter(function(r){ return !r.ok; }).length;
+    var status = document.getElementById('status');
+    status.textContent = results.length + ' tests rendered — ' + passed + ' pass, ' + failed + ' fail';
+    status.className = failed > 0 ? 'fail' : 'pass';
+    console.log('Visual Acceptance Results:', JSON.stringify(results, null, 2));
+  }
+  main().catch(function(e) {
+    document.getElementById('status').textContent = 'ERROR: ' + e.message;
+    document.getElementById('status').className = 'fail';
+    console.error(e);
+  });
+  </script>
+</body>
+</html>
