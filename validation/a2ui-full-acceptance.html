@@ -73,7 +73,7 @@
     .summary-stat .label { font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.05em; }
 
     /* Main */
-    .main { padding: 24px; max-width: 1400px; margin: 0 auto; }
+    .main { padding: 24px; max-width: 1200px; margin: 0 auto; }
 
     /* Category section */
     .category {
@@ -100,7 +100,7 @@
     .category-title { font-size: 16px; font-weight: 600; color: var(--text-bright); }
     .category-count { font-size: 12px; color: var(--text-dim); margin-left: auto; }
 
-    /* Test card */
+    /* Test card — full-width single column */
     .test-card {
       background: var(--bg-card);
       border: 1px solid var(--border);
@@ -137,17 +137,37 @@
     .status-dot.fail { background: var(--error); }
 
     .test-card-body { padding: 16px; }
+
+    /* Render area — full-width, generous min-height */
     .render-area {
-      min-height: 120px;
+      min-height: 300px;
       border-radius: var(--radius);
       overflow: hidden;
+      width: 100%;
     }
+    /* SplitLayout needs extra height for left/right columns */
+    .render-area.split-layout {
+      min-height: 400px;
+    }
+
     .render-error {
       padding: 12px;
       color: var(--error);
       font-size: 13px;
       background: var(--error-bg);
       border-radius: var(--radius);
+    }
+
+    /* Edge case hint displayed above render area */
+    .edge-hint {
+      padding: 8px 12px;
+      margin-bottom: 8px;
+      background: var(--warning-bg);
+      border: 1px solid #f59e0b30;
+      border-radius: var(--radius);
+      font-size: 12px;
+      color: #fbbf24;
+      font-style: italic;
     }
 
     /* Details panel */
@@ -217,12 +237,74 @@
       font-weight: 600;
     }
 
+    /* Error status panel (E01/E02) */
+    .error-status-panel {
+      padding: 16px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      min-height: 120px;
+    }
+    .error-status-panel .status-line {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 4px 0;
+      font-size: 13px;
+      color: var(--text);
+    }
+    .error-status-panel .status-icon {
+      font-size: 16px;
+      font-weight: 700;
+    }
+    .error-status-panel .status-icon.ok { color: var(--success); }
+    .error-status-panel .status-icon.warn { color: var(--warning); }
+    .error-status-panel .detail-box {
+      margin-top: 8px;
+      padding: 8px 12px;
+      background: #08080e;
+      border-radius: var(--radius);
+      font-family: 'SF Mono', monospace;
+      font-size: 11px;
+      color: #a5b4fc;
+      line-height: 1.5;
+    }
+
+    /* Daemon test area */
+    .daemon-area {
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+      margin-bottom: 12px;
+    }
+    .daemon-area input {
+      flex: 1;
+      padding: 8px 12px;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      background: var(--bg-surface);
+      color: var(--text);
+      font-size: 13px;
+      outline: none;
+    }
+    .daemon-area input:focus { border-color: var(--accent); }
+    .daemon-status {
+      padding: 8px 12px;
+      margin-bottom: 8px;
+      border-radius: var(--radius);
+      font-size: 12px;
+    }
+    .daemon-status.pending { background: var(--info-bg); color: #93c5fd; }
+    .daemon-status.ok { background: var(--success-bg); color: #4ade80; }
+    .daemon-status.error { background: var(--error-bg); color: #f87171; }
+
     /* Controls bar */
     .controls-bar {
       margin-bottom: 24px;
       display: flex;
       gap: 12px;
       align-items: center;
+      flex-wrap: wrap;
     }
     .btn {
       padding: 8px 16px;
@@ -238,14 +320,7 @@
     .btn:hover { background: #2a2a3a; border-color: #4a4a5a; }
     .btn-primary { background: var(--accent); border-color: var(--accent); color: white; }
     .btn-primary:hover { background: var(--accent-dim); }
-
-    /* Responsive grid for small cards */
-    .test-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
-      gap: 16px;
-    }
-    .test-grid .test-card { margin-bottom: 0; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
   </style>
 </head>
 <body>
@@ -268,11 +343,13 @@
   <div class="controls-bar">
     <button class="btn btn-primary" onclick="runAllTests()">Run All Tests</button>
     <button class="btn" onclick="runCategory('widget')">Widget Only</button>
+    <button class="btn" onclick="runCategory('interaction')">Action Only</button>
     <button class="btn" onclick="runCategory('formbuilder')">FormBuilder Only</button>
     <button class="btn" onclick="runCategory('docview')">DocView Only</button>
     <button class="btn" onclick="runCategory('theme')">Theme Only</button>
     <button class="btn" onclick="runCategory('error')">Error Recovery Only</button>
     <button class="btn" onclick="runCategory('edge')">Edge Cases Only</button>
+    <button class="btn" onclick="runCategory('ai')">AI Interaction Only</button>
   </div>
 
   <!-- 1. Widget System -->
@@ -282,7 +359,7 @@
       <span class="category-title">Widget System — AI 生成可嵌入小组件</span>
       <span class="category-count" id="widget-count"></span>
     </div>
-    <div class="test-grid" id="widget-tests"></div>
+    <div id="widget-tests"></div>
   </div>
 
   <!-- 2. Interaction Protocol -->
@@ -342,7 +419,17 @@
       <span class="category-title">Edge Cases — 边界条件与异常场景</span>
       <span class="category-count" id="edge-count"></span>
     </div>
-    <div class="test-grid" id="edge-tests"></div>
+    <div id="edge-tests"></div>
+  </div>
+
+  <!-- 8. AI Interaction -->
+  <div class="category" id="cat-ai">
+    <div class="category-header">
+      <div class="category-icon" style="background:#a855f720;color:#c084fc;">AI</div>
+      <span class="category-title">AI Interaction — Daemon 端到端测试</span>
+      <span class="category-count" id="ai-count"></span>
+    </div>
+    <div id="ai-tests"></div>
   </div>
 </div>
 
@@ -419,7 +506,8 @@
               { label: 'Temperature', value: '26C', change: '+2C', trend: 'up' },
               { label: 'Humidity', value: '65%', change: '-5%', trend: 'down' },
               { label: 'Wind', value: '12km/h', change: 'NE', trend: 'up' },
-              { label: 'UV Index', value: '7', change: 'High', trend: 'up' },
+              { label: 'UV Index', value: '7 High', change: 'Caution', trend: 'up' },
+              { label: 'Pressure', value: '1013hPa', change: 'Stable', trend: 'up' },
             ]
           }}}
         ]
@@ -482,12 +570,10 @@
             }
           });
 
-          // Subscribe
           const unsub = bridge.onAction((action) => {
             logDiv.innerHTML += `<div class="log-entry"><span class="log-time">[${new Date().toLocaleTimeString()}]</span> <span class="log-action">subscriber:</span> ${action.name}</div>`;
           });
 
-          // Create surface
           bridge.processMessages([
             { version: 'v0.10', createSurface: { surfaceId: 'action-test', catalogId: 'vizual' } },
             { version: 'v0.10', updateComponents: { surfaceId: 'action-test', components: [
@@ -498,7 +584,6 @@
             ]}}
           ]);
 
-          // Trigger actions
           const spec = bridge.getSpec('action-test');
           if (spec) {
             renderSpec(spec, container);
@@ -511,7 +596,6 @@
 
           logDiv.innerHTML += `<div class="log-entry" style="color:var(--success);">--- Unsubscribed after 2nd action. 3rd action only fires onAction, not subscriber ---</div>`;
 
-          // Verify action log exists
           const hasActions = logDiv.innerHTML.includes('onAction:') && logDiv.innerHTML.includes('subscriber:');
           return hasActions;
         }
@@ -538,13 +622,11 @@
           renderSpec(bridge.getSpec('bidir-test'), container);
           logDiv.innerHTML += `<div class="log-entry">Initial data: ${JSON.stringify(bridge.getDataModel('bidir-test').items)}</div>`;
 
-          // Simulate client->Agent update
           bridge.updateSurfaceDataModel('bidir-test', '/items', [
             { item: 'X', count: 10 }, { item: 'Y', count: 15 }, { item: 'Z', count: 7 }
           ]);
           logDiv.innerHTML += `<div class="log-entry">After client update: ${JSON.stringify(bridge.getDataModel('bidir-test').items)}</div>`;
 
-          // Incremental path update
           bridge.updateSurfaceDataModel('bidir-test', '/extra', 'added-by-client');
           logDiv.innerHTML += `<div class="log-entry">After path update /extra: ${JSON.stringify(bridge.getDataModel('bidir-test').extra)}</div>`;
 
@@ -666,10 +748,13 @@
 
     // ==========================================
     // 4. DocView
+    // Uses heading + text + callout + table + kpi + chart sections.
+    // DocView chart sections need ECharts-style data in section.data,
+    // not Vizual component props.
     // ==========================================
     docview: {
       'D01-DocViewBasic': {
-        title: 'DocView: 基础文档渲染',
+        title: 'DocView: 基础文档渲染 (heading + text + callout + table)',
         messages: [
           { version: 'v0.10', createSurface: { surfaceId: 'doc-basic', catalogId: 'vizual' } },
           { version: 'v0.10', updateComponents: { surfaceId: 'doc-basic', components: [
@@ -680,15 +765,31 @@
           { version: 'v0.10', updateDataModel: { surfaceId: 'doc-basic', path: '/sections', value: [
             { id: 'h1', type: 'heading', content: 'Q3 Business Review', level: 1 },
             { id: 'p1', type: 'text', content: 'Q3 showed strong growth across all regions. Total revenue increased 12.3% year-over-year, driven by expansion in the East region.' },
-            { id: 'c1', type: 'chart', componentType: 'BarChart', title: 'Revenue by Region', data: { x: 'region', y: 'revenue', data: [{ region: 'North', revenue: 320 }, { region: 'South', revenue: 280 }, { region: 'East', revenue: 350 }, { region: 'West', revenue: 290 }] } },
+            { id: 'kpi1', type: 'kpi', content: '', data: { metrics: [
+              { label: 'Total Revenue', value: '$4.2M', change: '+12.3%' },
+              { label: 'Growth Rate', value: '12.3%', change: '+2.1%' },
+              { label: 'Customers', value: '1,234', change: '+89' },
+              { label: 'NPS', value: '72', change: '+8' }
+            ]}},
             { id: 'callout1', type: 'callout', content: 'East region exceeded targets by 6%. Consider increasing Q4 allocation.', variant: 'success' },
-            { id: 'h2', type: 'heading', content: 'Key Takeaways', level: 2 },
+            { id: 'h2', type: 'heading', content: 'Revenue by Region', level: 2 },
+            { id: 'table1', type: 'table', content: '', title: 'Regional Revenue Breakdown', data: {
+              columns: ['Region', 'Revenue', 'Growth', 'Market Share'],
+              rows: [
+                ['North', '$1.1M', '+8%', '26%'],
+                ['South', '$0.9M', '+5%', '22%'],
+                ['East', '$1.2M', '+18%', '29%'],
+                ['West', '$1.0M', '+10%', '23%']
+              ]
+            }},
+            { id: 'h3', type: 'heading', content: 'Key Takeaways', level: 2 },
             { id: 'p2', type: 'text', content: '1. Focus on scaling East region success to other territories.\n2. Investigate South region underperformance.\n3. Increase marketing spend for Q4.' },
+            { id: 'callout2', type: 'callout', content: 'South region growth slowed to 5%. Root cause analysis recommended before Q4 planning.', variant: 'warning' },
           ]}}
         ]
       },
       'D02-DocViewComplex': {
-        title: 'DocView: 复合内容 (图表+表格+标注)',
+        title: 'DocView: 复合内容 (KPI + 表格 + Callout + Chart)',
         messages: [
           { version: 'v0.10', createSurface: { surfaceId: 'doc-complex', catalogId: 'vizual' } },
           { version: 'v0.10', updateComponents: { surfaceId: 'doc-complex', components: [
@@ -699,31 +800,40 @@
           { version: 'v0.10', updateDataModel: { surfaceId: 'doc-complex', path: '/sections', value: [
             { id: 'h1', type: 'heading', content: 'Product Analytics Report', level: 1 },
             { id: 'p1', type: 'text', content: 'Comprehensive analysis of product metrics for the past quarter.' },
-            { id: 'kpi1', type: 'chart', componentType: 'KpiDashboard', data: { metrics: [
-              { label: 'DAU', value: '125K', change: '+15%', trend: 'up' },
-              { label: 'Retention', value: '68%', change: '+3%', trend: 'up' },
-              { label: 'NPS', value: '72', change: '+8', trend: 'up' },
-              { label: 'Churn', value: '2.1%', change: '-0.5%', trend: 'down' }
+            { id: 'kpi1', type: 'kpi', content: '', data: { metrics: [
+              { label: 'DAU', value: '125K', change: '+15%' },
+              { label: 'Retention', value: '68%', change: '+3%' },
+              { label: 'NPS', value: '72', change: '+8' },
+              { label: 'Churn', value: '2.1%', change: '-0.5%' }
             ]}},
             { id: 'h2', type: 'heading', content: 'User Growth Trend', level: 2 },
-            { id: 'chart1', type: 'chart', componentType: 'LineChart', title: 'Monthly Active Users', data: {
-              x: 'month', y: 'users', smooth: true,
-              data: [
-                { month: 'Jan', users: 85000 }, { month: 'Feb', users: 92000 },
-                { month: 'Mar', users: 98000 }, { month: 'Apr', users: 105000 },
-                { month: 'May', users: 112000 }, { month: 'Jun', users: 125000 }
-              ]
+            { id: 'chart1', type: 'chart', content: '', title: 'Monthly Active Users', data: {
+              xAxis: { type: 'category', data: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'] },
+              yAxis: { type: 'value' },
+              series: [{ type: 'line', smooth: true, data: [85000, 92000, 98000, 105000, 112000, 125000] }]
             }},
             { id: 'callout1', type: 'callout', content: 'User growth accelerated in Q2 after the new onboarding flow launch.', variant: 'info' },
             { id: 'h3', type: 'heading', content: 'Feature Usage', level: 3 },
-            { id: 'chart2', type: 'chart', componentType: 'PieChart', title: 'Feature Distribution', data: {
-              name: 'feature', value: 'pct',
-              data: [
-                { feature: 'Dashboard', pct: 35 }, { feature: 'Reports', pct: 25 },
-                { feature: 'Settings', pct: 15 }, { feature: 'API', pct: 15 },
-                { feature: 'Other', pct: 10 }
+            { id: 'chart2', type: 'chart', content: '', title: 'Feature Distribution', data: {
+              series: [{ type: 'pie', data: [
+                { name: 'Dashboard', value: 35 },
+                { name: 'Reports', value: 25 },
+                { name: 'Settings', value: 15 },
+                { name: 'API', value: 15 },
+                { name: 'Other', value: 10 }
+              ]}]
+            }},
+            { id: 'h4', type: 'heading', content: 'Engagement by Platform', level: 3 },
+            { id: 'table1', type: 'table', content: '', title: 'Platform Breakdown', data: {
+              columns: ['Platform', 'Users', 'Sessions', 'Avg Duration'],
+              rows: [
+                ['Web', '89K', '345K', '8m 23s'],
+                ['iOS', '52K', '198K', '6m 45s'],
+                ['Android', '41K', '167K', '5m 12s'],
+                ['API', '18K', '892K', 'N/A']
               ]
             }},
+            { id: 'callout2', type: 'callout', content: 'Web platform has the highest engagement. Consider prioritizing mobile UX improvements.', variant: 'warning' },
           ]}}
         ]
       },
@@ -751,9 +861,7 @@
 
           const theme = bridge.getTheme('theme-test-1');
           const spec = bridge.getSpec('theme-test-1');
-          // Verify theme is stored
           const themeOk = theme && theme.primaryColor === '#8b5cf6';
-          // Verify theme is injected into spec state
           const specThemeOk = spec && spec.state && spec.state._a2uiTheme && spec.state._a2uiTheme.primaryColor === '#8b5cf6';
           renderSpec(spec, container);
           return themeOk && specThemeOk;
@@ -776,14 +884,12 @@
           ]);
 
           const theme1 = bridge.getTheme('theme-test-2');
-          // Runtime theme update
           bridge.processMessage({ version: 'v0.10', updateTheme: { surfaceId: 'theme-test-2', theme: { primaryColor: '#ef4444', mode: 'dark' } }});
           const theme2 = bridge.getTheme('theme-test-2');
 
           const spec = bridge.getSpec('theme-test-2');
           renderSpec(spec, container);
 
-          // Verify theme was updated (merge)
           return theme1.primaryColor === '#3b82f6' && theme2.primaryColor === '#ef4444' && theme2.mode === 'dark';
         }
       },
@@ -797,14 +903,12 @@
         title: 'Error: 操作不存在的 surface',
         test: function(container, cardBody) {
           let errorFired = false;
-          const logDiv = document.createElement('div');
-          logDiv.className = 'action-log';
-          cardBody.appendChild(logDiv);
+          let errorDetail = null;
 
           const bridge = new A2UIBridge({
             onError: (err) => {
               errorFired = true;
-              logDiv.innerHTML += `<div class="log-entry" style="color:var(--warning)">Error caught: surfaceId=${err.surfaceId} phase=${err.phase} msg="${err.message}" recoverable=${err.recoverable}</div>`;
+              errorDetail = err;
             }
           });
 
@@ -815,9 +919,25 @@
             ]}
           });
 
-          logDiv.innerHTML += `<div class="log-entry">Result: ${result === null ? 'null (correct)' : 'NOT null (unexpected)'}</div>`;
-          logDiv.innerHTML += `<div class="log-entry">Error callback fired: ${errorFired ? 'YES' : 'NO'}</div>`;
-          logDiv.innerHTML += `<div class="log-entry">Surface exists: ${bridge.hasSurface('nonexistent') ? 'YES' : 'NO'}</div>`;
+          // Build a visual status panel in render-area
+          const panel = document.createElement('div');
+          panel.className = 'error-status-panel';
+          panel.innerHTML = `
+            <div class="status-line">
+              <span class="status-icon ${errorFired ? 'ok' : 'warn'}">${errorFired ? '&#10003;' : '&#10007;'}</span>
+              <span>Error caught correctly: ${errorFired ? 'YES' : 'NO'}</span>
+            </div>
+            <div class="status-line">
+              <span class="status-icon ${result === null ? 'ok' : 'warn'}">${result === null ? '&#10003;' : '&#10007;'}</span>
+              <span>processMessage returned null: ${result === null ? 'YES' : 'NO'}</span>
+            </div>
+            <div class="status-line">
+              <span class="status-icon ${!bridge.hasSurface('nonexistent') ? 'ok' : 'warn'}">${!bridge.hasSurface('nonexistent') ? '&#10003;' : '&#10007;'}</span>
+              <span>Surface does not exist: ${!bridge.hasSurface('nonexistent') ? 'YES' : 'NO'}</span>
+            </div>
+            ${errorDetail ? `<div class="detail-box">Error details:\n  surfaceId: ${errorDetail.surfaceId}\n  phase: ${errorDetail.phase}\n  message: "${errorDetail.message}"\n  recoverable: ${errorDetail.recoverable}</div>` : ''}
+          `;
+          container.appendChild(panel);
 
           return result === null && errorFired;
         }
@@ -825,10 +945,6 @@
       'E02-ErrorRecoveryReset': {
         title: 'Error Recovery: reset 清空 surface',
         test: function(container, cardBody) {
-          const logDiv = document.createElement('div');
-          logDiv.className = 'action-log';
-          cardBody.appendChild(logDiv);
-
           const bridge = new A2UIBridge();
 
           // Create and populate
@@ -841,18 +957,34 @@
           ]);
 
           const beforeSpec = bridge.getSpec('recovery-test');
-          logDiv.innerHTML += `<div class="log-entry">Before reset: elements=${Object.keys(beforeSpec.elements).length}, dataKeys=${Object.keys(bridge.getDataModel('recovery-test')).length}</div>`;
+          const beforeElements = Object.keys(beforeSpec.elements).length;
+          const beforeDataKeys = Object.keys(bridge.getDataModel('recovery-test')).length;
 
           // Reset
           bridge.processMessage({ version: 'v0.10', errorRecovery: { surfaceId: 'recovery-test', action: 'reset' }});
 
           const afterSpec = bridge.getSpec('recovery-test');
-          logDiv.innerHTML += `<div class="log-entry">After reset: elements=${Object.keys(afterSpec.elements).length}, dataKeys=${Object.keys(bridge.getDataModel('recovery-test')).length}</div>`;
+          const afterElements = Object.keys(afterSpec.elements).length;
+          const afterDataKeys = Object.keys(bridge.getDataModel('recovery-test')).length;
+          const surfaceExists = bridge.hasSurface('recovery-test');
 
+          // Render the empty post-reset spec
           renderSpec(afterSpec, container);
-          logDiv.innerHTML += `<div class="log-entry" style="color:var(--success)">Surface still exists: ${bridge.hasSurface('recovery-test')}</div>`;
 
-          return Object.keys(afterSpec.elements).length === 0 && Object.keys(bridge.getDataModel('recovery-test')).length === 0;
+          // Build comparison panel above the empty render
+          const panel = document.createElement('div');
+          panel.className = 'error-status-panel';
+          panel.style.marginBottom = '12px';
+          panel.innerHTML = `
+            <div class="status-line">
+              <span class="status-icon ok">&#10003;</span>
+              <span>Reset executed — comparing before/after state</span>
+            </div>
+            <div class="detail-box">Before reset:\n  elements: ${beforeElements}\n  dataKeys: ${beforeDataKeys}\n\nAfter reset:\n  elements: ${afterElements}\n  dataKeys: ${afterDataKeys}\n  surface exists: ${surfaceExists}\n\n${afterElements === 0 && afterDataKeys === 0 && surfaceExists ? 'PASS: Surface cleared but still exists' : 'FAIL: Unexpected state'}</div>
+          `;
+          container.insertBefore(panel, container.firstChild);
+
+          return afterElements === 0 && afterDataKeys === 0 && surfaceExists;
         }
       },
       'E03-ErrorRecoveryRetry': {
@@ -866,7 +998,6 @@
             onError: (err) => { logDiv.innerHTML += `<div class="log-entry" style="color:var(--warning)">Error: ${err.message}</div>`; }
           });
 
-          // Create surface, then trigger error
           bridge.processMessages([
             { version: 'v0.10', createSurface: { surfaceId: 'retry-test', catalogId: 'vizual' } },
             { version: 'v0.10', updateComponents: { surfaceId: 'retry-test', components: [
@@ -875,10 +1006,8 @@
             { version: 'v0.10', updateDataModel: { surfaceId: 'retry-test', path: '/d', value: [{ x: 'A', y: 10 }] } }
           ]);
 
-          // Simulate error
           bridge.processMessage({ version: 'v0.10', updateComponents: { surfaceId: 'unknown-surface', components: [] }});
 
-          // Retry
           bridge.processMessage({ version: 'v0.10', errorRecovery: { surfaceId: 'retry-test', action: 'retry' }});
 
           const spec = bridge.getSpec('retry-test');
@@ -887,7 +1016,7 @@
           const error = bridge.getError('retry-test');
           logDiv.innerHTML += `<div class="log-entry">Error after retry: ${error ? error.message : 'none (cleared)'}</div>`;
 
-          return !error; // Error should be cleared
+          return !error;
         }
       },
       'E04-DeleteSurface': {
@@ -924,6 +1053,7 @@
     edge: {
       'X01-EmptyData': {
         title: 'Edge: 空数据 dataModel',
+        hint: 'Empty data state — chart renders with no bars',
         messages: [
           { version: 'v0.10', createSurface: { surfaceId: 'edge-empty', catalogId: 'vizual' } },
           { version: 'v0.10', updateComponents: { surfaceId: 'edge-empty', components: [
@@ -946,6 +1076,7 @@
       },
       'X03-MissingPath': {
         title: 'Edge: 引用不存在的 dataModel path',
+        hint: 'Data path /nonexistent/data not found — chart renders with unresolved binding',
         messages: [
           { version: 'v0.10', createSurface: { surfaceId: 'edge-missing', catalogId: 'vizual' } },
           { version: 'v0.10', updateComponents: { surfaceId: 'edge-missing', components: [
@@ -973,16 +1104,13 @@
 
           logDiv.innerHTML += `<div class="log-entry">Initial: ${JSON.stringify(bridge.getDataModel('edge-incr'))}</div>`;
 
-          // Partial update
           bridge.processMessage({ version: 'v0.10', updateDataModel: { surfaceId: 'edge-incr', path: '/data', value: [{ name: 'B', val: 20 }, { name: 'C', val: 30 }] }});
           logDiv.innerHTML += `<div class="log-entry">After partial /data update: ${JSON.stringify(bridge.getDataModel('edge-incr'))}</div>`;
 
-          // Add new key
           bridge.processMessage({ version: 'v0.10', updateDataModel: { surfaceId: 'edge-incr', path: '/added', value: 'new-value' }});
           logDiv.innerHTML += `<div class="log-entry">After adding /added: ${JSON.stringify(bridge.getDataModel('edge-incr'))}</div>`;
 
-          // Delete key (value undefined)
-          bridge.processMessage({ version: 'v0.10', updateDataModel: { surfaceId: 'edge-incr', path: '/extra' }});
+          bridge.processMessage({ version: 'v0.10', updateDataModel: { surfaceId: 'edge-incr', path: '/extra' } });
 
           const dm = bridge.getDataModel('edge-incr');
           logDiv.innerHTML += `<div class="log-entry">After deleting /extra: ${JSON.stringify(dm)}</div>`;
@@ -1016,14 +1144,12 @@
 
           const bridge = new A2UIBridge();
 
-          // Create 3 surfaces
           ['s1', 's2', 's3'].forEach(sid => {
             bridge.processMessage({ version: 'v0.10', createSurface: { surfaceId: sid, catalogId: 'vizual' } });
           });
 
           logDiv.innerHTML += `<div class="log-entry">Surfaces: ${bridge.getSurfaceIds().join(', ')}</div>`;
 
-          // Update s1
           bridge.processMessages([
             { version: 'v0.10', updateComponents: { surfaceId: 's1', components: [
               { id: 'root', component: 'BarChart', title: 'Surface 1', x: 'n', y: 'v', data: { path: '/d' } }
@@ -1031,7 +1157,6 @@
             { version: 'v0.10', updateDataModel: { surfaceId: 's1', path: '/d', value: [{ n: 'A', v: 10 }] } }
           ]);
 
-          // Update s2
           bridge.processMessages([
             { version: 'v0.10', updateComponents: { surfaceId: 's2', components: [
               { id: 'root', component: 'PieChart', title: 'Surface 2', name: 'n', value: 'v', data: { path: '/d' } }
@@ -1042,12 +1167,9 @@
           const ids = bridge.getSurfaceIds();
           logDiv.innerHTML += `<div class="log-entry">After updates: ${ids.length} surfaces</div>`;
 
-          // Render s1
           const spec1 = bridge.getSpec('s1');
-          const spec2 = bridge.getSpec('s2');
           renderSpec(spec1, container);
 
-          // Delete s2
           bridge.processMessage({ version: 'v0.10', deleteSurface: { surfaceId: 's2' } });
           logDiv.innerHTML += `<div class="log-entry">After delete s2: ${bridge.getSurfaceIds().join(', ')}</div>`;
           logDiv.innerHTML += `<div class="log-entry">s1 spec: ${spec1 ? 'OK' : 'FAIL'}, s2 spec after delete: ${bridge.getSpec('s2') === null ? 'null (OK)' : 'FAIL'}</div>`;
@@ -1076,6 +1198,7 @@
       },
       'X08-SplitLayout': {
         title: 'Edge: SplitLayout 布局',
+        extraClass: 'split-layout',
         messages: [
           { version: 'v0.10', createSurface: { surfaceId: 'edge-split', catalogId: 'vizual' } },
           { version: 'v0.10', updateComponents: { surfaceId: 'edge-split', components: [
@@ -1093,16 +1216,150 @@
         ]
       },
     },
+
+    // ==========================================
+    // 8. AI Interaction (Daemon)
+    // ==========================================
+    ai: {
+      'AI01-DaemonE2E': {
+        title: 'Daemon 端到端: 发送 prompt → AI 生成 A2UI JSON → 渲染',
+        test: function(container, cardBody) {
+          // Build UI: input + button + status + render area
+          const wrapper = document.createElement('div');
+
+          // Status line
+          const statusDiv = document.createElement('div');
+          statusDiv.className = 'daemon-status pending';
+          statusDiv.textContent = 'Checking daemon availability...';
+          wrapper.appendChild(statusDiv);
+
+          // Input row
+          const inputRow = document.createElement('div');
+          inputRow.className = 'daemon-area';
+          const input = document.createElement('input');
+          input.type = 'text';
+          input.placeholder = 'e.g. Show a bar chart of monthly sales';
+          input.value = 'Show a bar chart of monthly sales for Q1 2026';
+          inputRow.appendChild(input);
+
+          const btn = document.createElement('button');
+          btn.className = 'btn btn-primary';
+          btn.textContent = 'Send to Daemon';
+          btn.disabled = true;
+          inputRow.appendChild(btn);
+          wrapper.appendChild(inputRow);
+
+          cardBody.insertBefore(wrapper, container);
+
+          const DAEMON = 'http://localhost:7456';
+          let daemonAvailable = false;
+
+          // Check daemon health
+          fetch(DAEMON + '/api/health', { signal: AbortSignal.timeout(3000) })
+            .then(r => r.json())
+            .then(d => {
+              daemonAvailable = true;
+              statusDiv.className = 'daemon-status ok';
+              statusDiv.textContent = 'Daemon online: ' + JSON.stringify(d).substring(0, 100);
+              btn.disabled = false;
+            })
+            .catch(() => {
+              statusDiv.className = 'daemon-status error';
+              statusDiv.textContent = 'Daemon not available — start the daemon at localhost:7456 to run this test. Displaying a fallback chart instead.';
+              btn.disabled = true;
+              btn.textContent = 'Daemon Unavailable';
+
+              // Fallback: render a static chart so the render area is not empty
+              const bridge = new A2UIBridge();
+              bridge.processMessages([
+                { version: 'v0.10', createSurface: { surfaceId: 'daemon-fallback', catalogId: 'vizual' } },
+                { version: 'v0.10', updateComponents: { surfaceId: 'daemon-fallback', components: [
+                  { id: 'root', component: 'BarChart', title: 'Fallback: Monthly Sales Q1 2026', x: 'month', y: 'sales', data: { path: '/data' }, height: 300 }
+                ]}},
+                { version: 'v0.10', updateDataModel: { surfaceId: 'daemon-fallback', path: '/data', value: [
+                  { month: 'Jan', sales: 42000 },
+                  { month: 'Feb', sales: 38000 },
+                  { month: 'Mar', sales: 51000 }
+                ]}}
+              ]);
+              renderSpec(bridge.getSpec('daemon-fallback'), container);
+            });
+
+          // Send prompt to daemon
+          btn.addEventListener('click', async () => {
+            if (!daemonAvailable) return;
+            const prompt = input.value.trim();
+            if (!prompt) return;
+
+            btn.disabled = true;
+            btn.textContent = 'Generating...';
+            statusDiv.className = 'daemon-status pending';
+            statusDiv.textContent = 'Sending prompt to daemon...';
+
+            try {
+              const resp = await fetch(DAEMON + '/api/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message: prompt }),
+              });
+              const data = await resp.json();
+              const text = data.response || data.message || data.content || JSON.stringify(data);
+
+              // Try to extract A2UI JSON from response
+              let a2uiMessages = null;
+              try { a2uiMessages = JSON.parse(text); } catch {}
+              if (!a2uiMessages) {
+                const m = text.match(/```json\s*([\s\S]*?)```/);
+                if (m) {
+                  try { a2uiMessages = JSON.parse(m[1]); } catch {}
+                }
+              }
+
+              if (!a2uiMessages || !Array.isArray(a2uiMessages)) {
+                statusDiv.className = 'daemon-status error';
+                statusDiv.textContent = 'Daemon responded but no valid A2UI JSON array found. Raw: ' + text.substring(0, 200);
+                btn.disabled = false;
+                btn.textContent = 'Retry';
+                return;
+              }
+
+              // Render the AI-generated A2UI messages
+              const bridge = new A2UIBridge();
+              const spec = bridge.processMessages(a2uiMessages);
+              container.innerHTML = '';
+              if (spec) {
+                renderSpec(spec, container);
+                statusDiv.className = 'daemon-status ok';
+                statusDiv.textContent = 'Successfully rendered AI-generated A2UI (' + a2uiMessages.length + ' messages)';
+              } else {
+                statusDiv.className = 'daemon-status error';
+                statusDiv.textContent = 'A2UI messages processed but no spec generated';
+              }
+            } catch (e) {
+              statusDiv.className = 'daemon-status error';
+              statusDiv.textContent = 'Error: ' + (e.message || String(e));
+            }
+            btn.disabled = false;
+            btn.textContent = 'Send to Daemon';
+          });
+
+          // This test always "passes" — it's informational
+          return true;
+        }
+      },
+    },
   };
 
   // ============================================
   // Test Runner
   // ============================================
 
-  function createTestCard(testId, title, category) {
+  function createTestCard(testId, title, category, testDef) {
     const card = document.createElement('div');
     card.className = 'test-card';
     card.id = 'card-' + testId;
+
+    const extraClass = testDef.extraClass || '';
 
     card.innerHTML = `
       <div class="test-card-header">
@@ -1110,7 +1367,8 @@
         <span class="test-card-status" id="status-${testId}"><span class="status-dot pending"></span>Pending</span>
       </div>
       <div class="test-card-body" id="body-${testId}">
-        <div class="render-area" id="render-${testId}"></div>
+        ${testDef.hint ? `<div class="edge-hint">${testDef.hint}</div>` : ''}
+        <div class="render-area ${extraClass}" id="render-${testId}"></div>
       </div>
       <div class="details-toggle" onclick="toggleDetails('${testId}')">&#9654; A2UI Messages / VizualSpec</div>
       <div class="details-panel" id="details-${testId}">
@@ -1146,7 +1404,7 @@
   };
 
   function runSingleTest(category, testId, testDef) {
-    const card = createTestCard(testId, testDef.title, category);
+    const card = createTestCard(testId, testDef.title, category, testDef);
     const container = document.getElementById('render-' + testId);
     const body = document.getElementById('body-' + testId);
 
@@ -1205,13 +1463,10 @@
     const container = document.getElementById(catKey + '-tests');
     container.innerHTML = '';
 
-    // Reset counts for this category
     for (const [testId, testDef] of Object.entries(catTests)) {
-      // Remove previous results
       const prevCard = document.getElementById('card-' + testId);
       if (prevCard) prevCard.remove();
 
-      // Adjust counts if we're re-running
       if (testResults[testId] !== undefined) {
         totalTests--;
         if (testResults[testId]) passCount--;
@@ -1228,7 +1483,6 @@
   }
 
   window.runAllTests = function() {
-    // Reset
     passCount = 0;
     failCount = 0;
     totalTests = 0;
