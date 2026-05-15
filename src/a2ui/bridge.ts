@@ -4,39 +4,65 @@ import type {
   A2UIComponentDef,
   A2UIDynamicValue,
   A2UIAction,
+  A2UIError,
+  A2UIBridgeOptions,
 } from './types'
 import type { VizualSpec } from '../core/artifact'
 
 /**
  * A2UI → Vizual bridge.
  *
- * 接收 A2UI v0.10 消息流（createSurface / updateComponents / updateDataModel），
+ * 接收 A2UI v0.10 消息流（createSurface / updateComponents / updateDataModel / updateTheme / errorRecovery），
  * 维护 surface 状态，输出 VizualSpec 供 VizualRenderer 渲染。
+ *
+ * 支持：
+ * - 完整 A2UI 消息生命周期管理
+ * - Action 回调（FormBuilder 提交 → onAction）
+ * - 运行时主题切换
+ * - Error recovery（retry / fallback / reset）
+ * - 状态订阅与同步
  */
 export class A2UIBridge {
   private surfaces = new Map<string, A2UISurfaceState>()
-  private onChange?: (surfaceId: string, spec: VizualSpec) => void
+  private options: A2UIBridgeOptions
+  private actionSubscribers = new Set<(action: A2UIAction) => void>()
 
-  constructor(options?: { onChange?: (surfaceId: string, spec: VizualSpec) => void }) {
-    this.onChange = options?.onChange
+  constructor(options: A2UIBridgeOptions = {}) {
+    this.options = options
   }
 
   /** 处理一条 A2UI 消息，返回更新后的 VizualSpec（如果有） */
   processMessage(msg: A2UIMessage): VizualSpec | null {
-    if ('createSurface' in msg) {
-      return this.handleCreateSurface(msg.createSurface)
-    }
-    if ('updateComponents' in msg) {
-      return this.handleUpdateComponents(msg.updateComponents)
-    }
-    if ('updateDataModel' in msg) {
-      return this.handleUpdateDataModel(msg.updateDataModel)
-    }
-    if ('deleteSurface' in msg) {
-      this.surfaces.delete(msg.deleteSurface.surfaceId)
+    try {
+      if ('createSurface' in msg) {
+        return this.handleCreateSurface(msg.createSurface)
+      }
+      if ('updateComponents' in msg) {
+        return this.handleUpdateComponents(msg.updateComponents)
+      }
+      if ('updateDataModel' in msg) {
+        return this.handleUpdateDataModel(msg.updateDataModel)
+      }
+      if ('deleteSurface' in msg) {
+        return this.handleDeleteSurface(msg.deleteSurface.surfaceId)
+      }
+      if ('updateTheme' in msg) {
+        return this.handleUpdateTheme(msg.updateTheme)
+      }
+      if ('errorRecovery' in msg) {
+        return this.handleErrorRecovery(msg.errorRecovery)
+      }
+      return null
+    } catch (e) {
+      this.emitError({
+        surfaceId: this.guessSurfaceId(msg),
+        phase: 'update',
+        message: e instanceof Error ? e.message : String(e),
+        recoverable: true,
+        timestamp: Date.now(),
+      })
       return null
     }
-    return null
   }
 
   /** 批量处理消息序列（A2UI 标准用法） */
@@ -61,14 +87,68 @@ export class A2UIBridge {
     return this.surfaces.get(surfaceId)?.dataModel ?? null
   }
 
-  /** 将 Vizual action 事件转为 A2UI action 格式 */
+  /** 获取 surface 的 theme 配置 */
+  getTheme(surfaceId: string): Record<string, unknown> | null {
+    return this.surfaces.get(surfaceId)?.theme ?? null
+  }
+
+  /** 获取 surface 的错误状态 */
+  getError(surfaceId: string): A2UIError | undefined {
+    return this.surfaces.get(surfaceId)?.error
+  }
+
+  /** 获取所有 surface ID */
+  getSurfaceIds(): string[] {
+    return Array.from(this.surfaces.keys())
+  }
+
+  /** 判断 surface 是否存在 */
+  hasSurface(surfaceId: string): boolean {
+    return this.surfaces.has(surfaceId)
+  }
+
+  /** 将 Vizual action 事件转为 A2UI action 格式，并触发回调 */
   createActionFromVizual(actionName: string, surfaceId: string, params: Record<string, unknown>): A2UIAction {
-    return {
+    const action: A2UIAction = {
       name: actionName,
       surfaceId,
       sourceComponentId: params._sourceComponentId as string | undefined,
       context: params,
     }
+    // 通知所有订阅者
+    this.options.onAction?.(action)
+    for (const subscriber of this.actionSubscribers) {
+      try { subscriber(action) } catch {}
+    }
+    return action
+  }
+
+  /**
+   * 注册 action 订阅者。
+   * 用于 FormBuilder 提交、Widget 交互等场景。
+   * 返回 unsubscribe 函数。
+   */
+  onAction(handler: (action: A2UIAction) => void): () => void {
+    this.actionSubscribers.add(handler)
+    return () => this.actionSubscribers.delete(handler)
+  }
+
+  /**
+   * 增量更新 surface 的 dataModel（客户端→Agent 方向）。
+   * 用于表单提交、Widget 状态变化等需要将数据回传的场景。
+   */
+  updateSurfaceDataModel(surfaceId: string, path: string, value: unknown): VizualSpec | null {
+    return this.handleUpdateDataModel({ surfaceId, path, value })
+  }
+
+  /** 重置 surface 到初始状态（仅保留 surfaceId 和 catalogId） */
+  resetSurface(surfaceId: string): VizualSpec | null {
+    const surface = this.surfaces.get(surfaceId)
+    if (!surface) return null
+    surface.components.clear()
+    surface.dataModel = {}
+    surface.error = undefined
+    return this.buildSpec(surface)
   }
 
   // --- internal ---
@@ -87,15 +167,20 @@ export class A2UIBridge {
 
   private handleUpdateComponents(msg: { surfaceId: string; components: A2UIComponentDef[] }): VizualSpec | null {
     const surface = this.surfaces.get(msg.surfaceId)
-    if (!surface) return null
+    if (!surface) {
+      this.emitError({ surfaceId: msg.surfaceId, phase: 'update', message: `Surface ${msg.surfaceId} not found`, recoverable: true, timestamp: Date.now() })
+      return null
+    }
 
     // A2UI updateComponents 是 additive/merge：同 ID 更新，新 ID 添加
     for (const comp of msg.components) {
       surface.components.set(comp.id, comp)
     }
+    // 更新组件后清除之前的错误
+    surface.error = undefined
 
     const spec = this.buildSpec(surface)
-    this.onChange?.(msg.surfaceId, spec)
+    this.options.onChange?.(msg.surfaceId, spec)
     return spec
   }
 
@@ -105,10 +190,8 @@ export class A2UIBridge {
 
     const path = msg.path ?? '/'
     if (path === '/' || path === '') {
-      // 全量替换
       surface.dataModel = (msg.value as Record<string, unknown>) ?? {}
     } else {
-      // 增量更新（path-based）
       const parts = path.replace(/^\/+/, '').split('/').filter(Boolean)
       let cursor: any = surface.dataModel
       for (let i = 0; i < parts.length - 1; i++) {
@@ -125,8 +208,71 @@ export class A2UIBridge {
     }
 
     const spec = this.buildSpec(surface)
-    this.onChange?.(msg.surfaceId, spec)
+    this.options.onChange?.(msg.surfaceId, spec)
     return spec
+  }
+
+  private handleDeleteSurface(surfaceId: string): null {
+    const surface = this.surfaces.get(surfaceId)
+    this.surfaces.delete(surfaceId)
+    if (surface) {
+      this.options.onSurfaceDelete?.(surfaceId)
+    }
+    return null
+  }
+
+  private handleUpdateTheme(msg: { surfaceId: string; theme: Record<string, unknown> }): VizualSpec | null {
+    const surface = this.surfaces.get(msg.surfaceId)
+    if (!surface) return null
+
+    surface.theme = { ...surface.theme, ...msg.theme }
+    const spec = this.buildSpec(surface)
+    this.options.onChange?.(msg.surfaceId, spec)
+    return spec
+  }
+
+  private handleErrorRecovery(msg: { surfaceId: string; action: 'retry' | 'fallback' | 'reset'; payload?: unknown }): VizualSpec | null {
+    const surface = this.surfaces.get(msg.surfaceId)
+    if (!surface) return null
+
+    switch (msg.action) {
+      case 'reset':
+        surface.components.clear()
+        surface.dataModel = {}
+        surface.error = undefined
+        return this.buildSpec(surface)
+
+      case 'fallback':
+        // payload 应该是兜底的 VizualSpec
+        if (msg.payload && typeof msg.payload === 'object') {
+          surface.error = undefined
+          return msg.payload as VizualSpec
+        }
+        return this.buildSpec(surface)
+
+      case 'retry':
+        // 清除错误状态，重新 buildSpec
+        surface.error = undefined
+        return this.buildSpec(surface)
+
+      default:
+        return null
+    }
+  }
+
+  private emitError(error: A2UIError) {
+    const surface = this.surfaces.get(error.surfaceId)
+    if (surface) surface.error = error
+    this.options.onError?.(error)
+  }
+
+  private guessSurfaceId(msg: A2UIMessage): string {
+    for (const key of Object.keys(msg)) {
+      if (key === 'version') continue
+      const val = (msg as any)[key]
+      if (val && typeof val === 'object' && val.surfaceId) return val.surfaceId
+    }
+    return ''
   }
 
   /**
@@ -142,6 +288,11 @@ export class A2UIBridge {
     if (!rootComp) {
       return { root: 'root', elements: {}, state: surface.dataModel }
     }
+
+    // 如果 surface 有 theme，注入到 spec state
+    const stateWithTheme = surface.theme
+      ? { ...surface.dataModel, _a2uiTheme: surface.theme }
+      : surface.dataModel
 
     // 平铺所有组件到 elements，children 保持为字符串 ID 引用
     for (const [id, comp] of surface.components) {
@@ -173,7 +324,7 @@ export class A2UIBridge {
     return {
       root: 'root',
       elements,
-      state: surface.dataModel,
+      state: stateWithTheme,
     }
   }
 

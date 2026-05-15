@@ -5,8 +5,12 @@ export type {
   A2UIComponentDef,
   A2UIDynamicValue,
   A2UIAction,
+  A2UIError,
+  A2UIBridgeOptions,
   A2UICreateSurface,
   A2UIUpdateComponents,
   A2UIUpdateDataModel,
   A2UIDeleteSurface,
+  A2UIUpdateTheme,
+  A2UIErrorRecovery,
 } from './types'
