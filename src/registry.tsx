@@ -45,8 +45,35 @@ import { GridLayout } from './components/grid-layout/component'
 import { SplitLayout } from './components/split-layout/component'
 import { HeroLayout } from './components/hero-layout/component'
 
-/** 不需要 wrapper 的组件 — 布局类和 DocView 自身管理背景 */
-const NO_WRAP = new Set(['GridLayout', 'SplitLayout', 'HeroLayout', 'DocView'])
+// Freeform HTML
+import { FreeformHtml } from './components/freeform-html/component'
+
+// A2UI basic catalog primitives
+import { Row } from './components/a2ui-row/component'
+import { Column } from './components/a2ui-column/component'
+import { Card } from './components/a2ui-card/component'
+import { Text } from './components/a2ui-text/component'
+import { Image } from './components/a2ui-image/component'
+import { Icon } from './components/a2ui-icon/component'
+import { List } from './components/a2ui-list/component'
+import { Divider } from './components/a2ui-divider/component'
+import { Button } from './components/a2ui-button/component'
+import { CheckBox } from './components/a2ui-checkbox/component'
+import { TextField } from './components/a2ui-textfield/component'
+import { ChoicePicker } from './components/a2ui-choicepicker/component'
+import { Slider } from './components/a2ui-slider/component'
+import { DateTimeInput } from './components/a2ui-datetime/component'
+import { Tabs } from './components/a2ui-tabs/component'
+import { Modal } from './components/a2ui-modal/component'
+import { Video } from './components/a2ui-video/component'
+import { AudioPlayer } from './components/a2ui-audio/component'
+
+/** 不需要 wrapper 的组件 — 布局类、容器类和 DocView 自身管理背景 */
+const NO_WRAP = new Set([
+  'GridLayout', 'SplitLayout', 'HeroLayout', 'DocView',
+  'Row', 'Column', 'Card', 'Tabs', 'Modal',
+  'FreeformHtml',
+])
 const CHART_COMPONENTS = new Set([
   'BarChart', 'AreaChart', 'LineChart', 'PieChart', 'ScatterChart', 'BubbleChart',
   'BoxplotChart', 'HistogramChart', 'WaterfallChart', 'XmrChart', 'SankeyChart',
@@ -90,6 +117,11 @@ export const { registry, handlers, executeAction } = defineRegistry(renderKitCat
     FormBuilder,
     DocView,
     GridLayout, SplitLayout, HeroLayout,
+    FreeformHtml,
+    Row, Column, Card,
+    Text, Image, Icon, List, Divider,
+    Button, CheckBox, TextField, ChoicePicker, Slider, DateTimeInput,
+    Tabs, Modal, Video, AudioPlayer,
   } as any,
   actions: {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

@@ -312,12 +312,6 @@ export class A2UIBridge {
         element.children = [comp.child]
       }
 
-      // Named slot mapping: resolve props that reference child IDs into children array
-      const childSlots = this.resolveNamedSlots(comp, props)
-      if (childSlots.length > 0 && !element.children) {
-        element.children = childSlots
-      }
-
       elements[id] = element
     }
 
@@ -377,33 +371,6 @@ export class A2UIBridge {
       cursor = cursor[part]
     }
     return cursor
-  }
-
-  /**
-   * 将布局组件的命名插槽（hero/body, left/right）映射为 json-render children 数组。
-   * 这些 prop 中的字符串值是子组件 ID 引用，需要转为 children 以便 json-render 渲染。
-   */
-  private resolveNamedSlots(comp: A2UIComponentDef, resolvedProps: Record<string, unknown>): string[] {
-    const children: string[] = []
-    const compType = comp.component
-
-    // HeroLayout: hero → children[0], body → children[1]
-    if (compType === 'HeroLayout') {
-      const hero = resolvedProps.hero
-      const body = resolvedProps.body
-      if (typeof hero === 'string') { children.push(hero); delete resolvedProps.hero }
-      if (typeof body === 'string') { children.push(body); delete resolvedProps.body }
-    }
-
-    // SplitLayout: left → children[0], right → children[1]
-    if (compType === 'SplitLayout') {
-      const left = resolvedProps.left
-      const right = resolvedProps.right
-      if (typeof left === 'string') { children.push(left); delete resolvedProps.left }
-      if (typeof right === 'string') { children.push(right); delete resolvedProps.right }
-    }
-
-    return children
   }
 }
 

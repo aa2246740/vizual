@@ -45,6 +45,29 @@ import { GridLayoutSchema } from './components/grid-layout/schema'
 import { SplitLayoutSchema } from './components/split-layout/schema'
 import { HeroLayoutSchema } from './components/hero-layout/schema'
 
+// Freeform HTML rendering
+import { FreeformHtmlSchema } from './components/freeform-html/schema'
+
+// A2UI basic catalog primitives
+import { RowSchema } from './components/a2ui-row/schema'
+import { ColumnSchema } from './components/a2ui-column/schema'
+import { CardSchema } from './components/a2ui-card/schema'
+import { TextSchema } from './components/a2ui-text/schema'
+import { ImageSchema } from './components/a2ui-image/schema'
+import { IconSchema } from './components/a2ui-icon/schema'
+import { ListSchema } from './components/a2ui-list/schema'
+import { DividerSchema } from './components/a2ui-divider/schema'
+import { ButtonSchema } from './components/a2ui-button/schema'
+import { CheckBoxSchema } from './components/a2ui-checkbox/schema'
+import { TextFieldSchema } from './components/a2ui-textfield/schema'
+import { ChoicePickerSchema } from './components/a2ui-choicepicker/schema'
+import { SliderSchema } from './components/a2ui-slider/schema'
+import { DateTimeInputSchema } from './components/a2ui-datetime/schema'
+import { TabsSchema } from './components/a2ui-tabs/schema'
+import { ModalSchema } from './components/a2ui-modal/schema'
+import { VideoSchema } from './components/a2ui-video/schema'
+import { AudioPlayerSchema } from './components/a2ui-audio/schema'
+
 /**
  * Vizual catalog — 31 components registered as json-render visualization catalog
  * Use host bridges such as renderLiveControlInMsg for liveControl parameter exploration.
@@ -187,6 +210,86 @@ export const renderKitCatalog = defineCatalog(schema, {
     HeroLayout: {
       props: HeroLayoutSchema as any,
       description: 'Large prominent hero section with gradient, solid, or transparent background.',
+    },
+
+    // Freeform HTML — escape hatch for arbitrary agent UI
+    FreeformHtml: {
+      props: FreeformHtmlSchema as any,
+      description: 'Render arbitrary HTML/CSS content. Agent escape hatch for custom UI, personal homepages, creative widgets. DOMPurify sanitized, theme-aware.',
+    },
+
+    // A2UI basic catalog primitives — 17 components
+    Row: {
+      props: RowSchema as any,
+      description: 'Horizontal flex layout. Compose child components side by side with configurable gap, alignment, and wrapping.',
+    },
+    Column: {
+      props: ColumnSchema as any,
+      description: 'Vertical flex layout. Stack child components with configurable gap and alignment.',
+    },
+    Card: {
+      props: CardSchema as any,
+      description: 'Container with background, border-radius, and shadow. Wraps child components in a styled card.',
+    },
+    Text: {
+      props: TextSchema as any,
+      description: 'Typography primitive. Body text, headings, captions, labels, code with full style control.',
+    },
+    Image: {
+      props: ImageSchema as any,
+      description: 'Image display with responsive sizing, object-fit, and border-radius.',
+    },
+    Icon: {
+      props: IconSchema as any,
+      description: 'Icon or emoji display with configurable size and color.',
+    },
+    List: {
+      props: ListSchema as any,
+      description: 'Ordered or unordered list of text items.',
+    },
+    Divider: {
+      props: DividerSchema as any,
+      description: 'Horizontal or vertical divider line.',
+    },
+    Button: {
+      props: ButtonSchema as any,
+      description: 'Clickable button with primary, secondary, or ghost variants. Supports A2UI action callbacks.',
+    },
+    CheckBox: {
+      props: CheckBoxSchema as any,
+      description: 'Checkbox input with label.',
+    },
+    TextField: {
+      props: TextFieldSchema as any,
+      description: 'Text input field with label, placeholder, and type variants (text/email/password/number/url).',
+    },
+    ChoicePicker: {
+      props: ChoicePickerSchema as any,
+      description: 'Choice selector — dropdown or radio group from a list of options.',
+    },
+    Slider: {
+      props: SliderSchema as any,
+      description: 'Range slider with min/max/step configuration.',
+    },
+    DateTimeInput: {
+      props: DateTimeInputSchema as any,
+      description: 'Date, time, or datetime-local input.',
+    },
+    Tabs: {
+      props: TabsSchema as any,
+      description: 'Tab navigation with labeled tabs and content panels.',
+    },
+    Modal: {
+      props: ModalSchema as any,
+      description: 'Modal dialog overlay with title and content area.',
+    },
+    Video: {
+      props: VideoSchema as any,
+      description: 'Video player with controls, autoplay, and muted options.',
+    },
+    AudioPlayer: {
+      props: AudioPlayerSchema as any,
+      description: 'Audio player with controls and optional title.',
     },
   },
   actions: {
