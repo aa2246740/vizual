@@ -6,7 +6,7 @@
 
 Vizual 让 AI Agent 可以在对话中自然地产生图表、仪表盘、表格、表单、时间线、组织图、甘特图、流程图和可交互 UI。用户仍然正常提问；Agent 自己判断什么时候需要可视化或交互表达。
 
-[English](README.md) · [快速开始](docs/GETTING-STARTED.zh-CN.md) · [Agent 接入](docs/AI-INTEGRATION.zh-CN.md) · [组件目录](docs/COMPONENTS.zh-CN.md)
+[English](README.md) · [快速开始](docs/GETTING-STARTED.zh-CN.md) · [Chatbot 接入](docs/CHATBOT-INTEGRATION.zh-CN.md) · [Agent 接入](docs/AI-INTEGRATION.zh-CN.md) · [组件目录](docs/COMPONENTS.zh-CN.md)
 
 </div>
 
@@ -220,7 +220,9 @@ async function presentVizualUi(args) {
 }
 ```
 
-完整接入说明见 [docs/AI-INTEGRATION.zh-CN.md](docs/AI-INTEGRATION.zh-CN.md)。
+完整 Agent 契约见 [docs/AI-INTEGRATION.zh-CN.md](docs/AI-INTEGRATION.zh-CN.md)。
+把现有 chatbot 一步步改造成支持 Vizual，见
+[docs/CHATBOT-INTEGRATION.zh-CN.md](docs/CHATBOT-INTEGRATION.zh-CN.md)。
 
 ## Agent 什么时候应该使用 Vizual？
 
@@ -259,6 +261,7 @@ npm run build
 ## 文档
 
 - [快速开始](docs/GETTING-STARTED.zh-CN.md)
+- [Chatbot 接入](docs/CHATBOT-INTEGRATION.zh-CN.md)
 - [Agent 接入](docs/AI-INTEGRATION.zh-CN.md)
 - [组件目录](docs/COMPONENTS.zh-CN.md)
 - [English README](README.md)

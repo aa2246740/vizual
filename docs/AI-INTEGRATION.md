@@ -72,6 +72,9 @@ DeerFlow-like platforms, or business workbenches. It cannot render inside closed
 consumer chat products such as ChatGPT or Claude.ai unless that platform
 integrates the Vizual runtime.
 
+For a concrete step-by-step retrofit of an existing chatbot, read
+[CHATBOT-INTEGRATION.md](CHATBOT-INTEGRATION.md).
+
 ## Render A Normal Spec
 
 ```tsx

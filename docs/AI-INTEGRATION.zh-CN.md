@@ -39,6 +39,8 @@ Native Catalog 是组件、action/function、data binding、theme token、artifa
 
 Vizual 可以接入自有 SaaS 小聊天窗、完整 ChatGPT-like 对话页、DeerFlow 类 Agent 平台或 B 端工作台；但不能直接在 ChatGPT / Claude.ai 这类封闭消费级聊天界面里渲染，除非平台方集成 Vizual runtime。
 
+把一个现有 chatbot 逐步改造成支持 Vizual，见 [CHATBOT-INTEGRATION.zh-CN.md](CHATBOT-INTEGRATION.zh-CN.md)。
+
 ## Agent Bridge 契约
 
 不要把测试页里的全局函数当成唯一实现来源。Vizual 提供 `createAgentBridge()` 作为宿主协议的状态层：它负责 artifact registry、messageId 到 artifactId 绑定、render history、liveControl snapshot 查找和导出/错误事件记录。

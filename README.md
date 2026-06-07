@@ -13,7 +13,7 @@ surface makes the answer clearer.
 [![license](https://img.shields.io/npm/l/vizual.svg)](https://github.com/aa2246740/vizual/blob/main/LICENSE)
 [![agent runtime](https://img.shields.io/badge/AI%20agent-native%20visual%20runtime-blue)](docs/AI-INTEGRATION.md)
 
-[中文](README.zh-CN.md) · [Getting Started](docs/GETTING-STARTED.md) · [Agent Integration](docs/AI-INTEGRATION.md) · [Components](docs/COMPONENTS.md)
+[中文](README.zh-CN.md) · [Getting Started](docs/GETTING-STARTED.md) · [Chatbot Integration](docs/CHATBOT-INTEGRATION.md) · [Agent Integration](docs/AI-INTEGRATION.md) · [Components](docs/COMPONENTS.md)
 
 </div>
 
@@ -274,6 +274,8 @@ async function presentVizualUi(args) {
 ```
 
 See [docs/AI-INTEGRATION.md](docs/AI-INTEGRATION.md) for the full agent contract.
+For a step-by-step retrofit guide for an existing chatbot, see
+[docs/CHATBOT-INTEGRATION.md](docs/CHATBOT-INTEGRATION.md).
 
 ## When Should An Agent Use Vizual?
 
@@ -313,6 +315,7 @@ natural-language tasks and inspect the rendered result visually:
 ## Documentation
 
 - [Getting Started](docs/GETTING-STARTED.md)
+- [Chatbot Integration](docs/CHATBOT-INTEGRATION.md)
 - [Agent Integration](docs/AI-INTEGRATION.md)
 - [Components](docs/COMPONENTS.md)
 - [Chinese README](README.zh-CN.md)
