@@ -2,7 +2,7 @@
  * Theme Registry
  *
  * Central registry for all RenderKit themes.
- * Provides theme registration, retrieval, and application.
+ * Provides theme registration, retrieval, and explicit scoped application.
  *
  * 支持 Dark/Light 模式切换：
  *   import { setGlobalTheme, toggleMode } from 'vizual'
@@ -33,8 +33,8 @@ export type { ThemeMappingReport } from './design-md-mapper'
 // Internal registry storage
 const themes = new Map<string, Theme>()
 
-/** 当前生效的主题名 */
-let currentThemeName: string = 'claude-dark'
+/** 当前显式应用过的主题名；bundle 加载时不会自动应用到页面 */
+let currentThemeName: string = 'default-light'
 
 /**
  * Register a new theme with the registry
@@ -129,7 +129,7 @@ export function toggleMode(): 'dark' | 'light' {
 }
 
 /**
- * Apply a theme to a specific container element by injecting CSS variables
+ * Apply a theme to a specific container element by injecting inherited CSS variables.
  */
 export function applyTheme(container: HTMLElement, themeName: string): boolean {
   const theme = getTheme(themeName)
@@ -161,7 +161,9 @@ export function applyTheme(container: HTMLElement, themeName: string): boolean {
     document.head.appendChild(styleEl)
   }
 
-  // Build CSS variable rules for the container
+  // Build CSS variable rules for the theme root. CSS variables inherit by default,
+  // so do not duplicate them onto every descendant; doing so would override local
+  // agent/host variables and make page-level design composition brittle.
   const cssRules = Object.entries(cssVariables)
     .map(([key, value]) => {
       // Handle nested selectors
@@ -174,9 +176,6 @@ export function applyTheme(container: HTMLElement, themeName: string): boolean {
 
   styleEl.textContent = `
 .rk-theme-${theme.name} {
-${cssRules}
-}
-.rk-theme-${theme.name} * {
 ${cssRules}
 }
   `.trim()
@@ -230,11 +229,6 @@ registerTheme('vercel', vercelTheme)
 // 自动为只有 dark 的预设生成 light 变体
 registerTheme('linear-light', invertThemeFn(linearTheme))
 registerTheme('vercel-light', invertThemeFn(vercelTheme))
-
-// 自动应用默认主题，确保 CSS 变量在首次渲染前就已注入 DOM
-if (typeof document !== 'undefined' && document.body) {
-  applyTheme(document.body as unknown as HTMLElement, currentThemeName)
-}
 
 // ─── DESIGN.md 公共 API ──────────────────────────────────
 

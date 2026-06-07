@@ -1,0 +1,735 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Vizual x DeerFlow Agent UI 验收</title>
+  <script src="../dist/vizual.standalone.js"></script>
+  <style>
+    :root {
+      color-scheme: light;
+      --page-bg: #f6f7fb;
+      --panel-bg: #ffffff;
+      --line: #d8deea;
+      --text: #172033;
+      --muted: #667085;
+      --accent: #2563eb;
+      --accent-soft: #e8f0ff;
+      --success: #14965f;
+      --danger: #c93636;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--page-bg);
+      color: var(--text);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      letter-spacing: 0;
+    }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 18px 28px;
+      background: rgba(255, 255, 255, 0.94);
+      border-bottom: 1px solid var(--line);
+      backdrop-filter: blur(12px);
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 20px;
+      line-height: 1.25;
+    }
+
+    .status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 13px;
+      white-space: nowrap;
+    }
+
+    .dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: var(--muted);
+    }
+
+    .dot.ok { background: var(--success); }
+    .dot.err { background: var(--danger); }
+
+    main {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 360px;
+      gap: 18px;
+      max-width: 1340px;
+      margin: 0 auto;
+      padding: 22px 28px 28px;
+    }
+
+    .chat, .inspector {
+      background: var(--panel-bg);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      min-height: 0;
+    }
+
+    .chat {
+      display: grid;
+      grid-template-rows: 1fr auto;
+      min-height: calc(100vh - 116px);
+      overflow: hidden;
+    }
+
+    #messages {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      padding: 20px;
+      overflow: auto;
+    }
+
+    .message {
+      display: grid;
+      gap: 8px;
+      max-width: 100%;
+    }
+
+    .role {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .bubble {
+      width: min(920px, 100%);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 14px 16px;
+      background: #fff;
+      line-height: 1.65;
+      overflow-wrap: anywhere;
+    }
+
+    .message.user { justify-items: end; }
+    .message.user .bubble { background: #f8fbff; border-color: #c8d8f5; }
+    .message.assistant .bubble { background: #fff; }
+
+    .tool-card {
+      width: min(980px, 100%);
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      overflow: hidden;
+      background: #fff;
+    }
+
+    .tool-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--line);
+      background: #f8fafc;
+    }
+
+    .tool-title {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      min-width: 0;
+    }
+
+    .tool-title strong {
+      font-size: 14px;
+    }
+
+    .tool-title span {
+      color: var(--muted);
+      font-size: 12px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .badge {
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 4px 9px;
+      font-size: 12px;
+      color: var(--muted);
+      background: #fff;
+      white-space: nowrap;
+    }
+
+    .badge.ok { color: var(--success); border-color: #b8e2cb; background: #effaf4; }
+    .badge.err { color: var(--danger); border-color: #f0b8b8; background: #fff4f4; }
+
+    .viz-mount {
+      min-height: 360px;
+      padding: 16px;
+      background: #fff;
+    }
+
+    .composer {
+      border-top: 1px solid var(--line);
+      padding: 14px;
+      background: #fbfcff;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 118px;
+      resize: vertical;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      padding: 12px;
+      font: inherit;
+      line-height: 1.5;
+      color: var(--text);
+      background: #fff;
+      outline: none;
+    }
+
+    textarea:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+    }
+
+    .composer-actions {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-top: 10px;
+    }
+
+    .left-actions, .right-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    select, button, .model-input {
+      height: 36px;
+      border: 1px solid #cbd5e1;
+      border-radius: 7px;
+      padding: 0 12px;
+      font: inherit;
+      background: #fff;
+      color: var(--text);
+    }
+
+    .model-input {
+      width: 180px;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    button.primary {
+      background: var(--accent);
+      color: white;
+      border-color: var(--accent);
+      font-weight: 700;
+    }
+
+    button:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+
+    .inspector {
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr) auto;
+      min-height: calc(100vh - 116px);
+      overflow: hidden;
+    }
+
+    .inspector h2 {
+      margin: 0;
+      padding: 16px;
+      border-bottom: 1px solid var(--line);
+      font-size: 16px;
+    }
+
+    .inspect-body {
+      display: grid;
+      gap: 12px;
+      padding: 14px;
+      overflow: auto;
+    }
+
+    details {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+    }
+
+    summary {
+      cursor: pointer;
+      padding: 10px 12px;
+      color: var(--text);
+      font-weight: 700;
+    }
+
+    pre {
+      margin: 0;
+      padding: 12px;
+      border-top: 1px solid var(--line);
+      background: #f8fafc;
+      color: #24324b;
+      font: 12px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+
+    .event-log {
+      min-height: 60px;
+      padding: 12px 14px;
+      border-top: 1px solid var(--line);
+      background: #fbfcff;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .empty {
+      color: var(--muted);
+      font-size: 14px;
+      padding: 4px 0;
+    }
+
+    @media (max-width: 980px) {
+      header { align-items: flex-start; flex-direction: column; }
+      main {
+        grid-template-columns: 1fr;
+        padding: 16px;
+      }
+      .chat, .inspector {
+        min-height: auto;
+      }
+      .composer-actions {
+        align-items: stretch;
+        flex-direction: column;
+      }
+      .left-actions, .right-actions {
+        width: 100%;
+      }
+      button.primary {
+        flex: 1;
+      }
+    }
+  </style>
+</head>
+<body data-workbench="deerflow-sim">
+  <header>
+    <div>
+      <h1>Vizual x DeerFlow 真实 Agent UI 验收</h1>
+      <div class="status"><span class="dot" id="runtimeDot"></span><span id="runtimeText">runtime loading</span></div>
+    </div>
+    <div class="status">
+      <span class="badge">真实问答</span>
+      <span class="badge">工具调用</span>
+      <span class="badge">交互回传</span>
+    </div>
+  </header>
+
+  <main>
+    <section class="chat" aria-label="DeerFlow chat simulation">
+      <div id="messages" data-message-list="true"></div>
+      <div class="composer">
+        <textarea id="prompt" data-chat-input="true"></textarea>
+        <div class="composer-actions">
+          <div class="left-actions">
+            <select id="agent">
+              <option value="pi-agent">Pi Agent</option>
+              <option value="codex">Codex CLI</option>
+              <option value="claude-code">Claude Code</option>
+            </select>
+            <input id="model" class="model-input" type="text" value="gpt-5.3-codex" aria-label="Agent model" title="Agent model" />
+            <button id="sampleBtn" type="button">填入门店诊断</button>
+            <button id="followBtn" type="button">填入追问更新</button>
+          </div>
+          <div class="right-actions">
+            <button id="clearBtn" type="button">清空</button>
+            <button id="sendBtn" class="primary" type="button">发送给真实 Agent</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <aside class="inspector" aria-label="runtime inspector">
+      <h2>运行时检查</h2>
+      <div class="inspect-body">
+        <details open>
+          <summary>工具调用参数</summary>
+          <pre id="toolArgs" data-tool-args="true">尚未运行</pre>
+        </details>
+        <details open>
+          <summary>Preview / Validation</summary>
+          <pre id="previewJson" data-preview-json="true">尚未运行</pre>
+        </details>
+        <details>
+          <summary>Agent 原始输出</summary>
+          <pre id="rawJson" data-raw-json="true">尚未运行</pre>
+        </details>
+      </div>
+      <div class="event-log" id="eventLog" data-event-log="true">等待用户发送消息。</div>
+    </aside>
+  </main>
+
+  <script>
+    const params = new URLSearchParams(location.search);
+    const apiBase = resolveApiBase();
+    const state = {
+      messages: [],
+      lastResponse: null,
+      actionLog: [],
+    };
+
+    const samplePrompt = `你是连锁门店经营诊断助手。请基于下面 6 家门店近 7 天经营数据，识别营收下滑主因，给出门店优先级、风险解释和下周整改动作。需要先用普通中文给出经营判断，再用 present_vizual_ui 展示一个可交互诊断面板。
+
+数据：
+- 总营收 1,282,000 元，较上周 -7.4%；总客流 18,420，较上周 -5.8%；平均转化率 22.6%，较上周 -2.1 个百分点；异常门店 3 家。
+- 门店明细：
+  1. 静安店，华东，营收 286000，较上周 -3.1%，客流 3820，转化率 26.4%，客单价 75，缺货率 2.1%，差评 6，人工成本率 18%，风险 中，原因：工作日客流回落但转化稳定。
+  2. 徐汇店，华东，营收 231000，较上周 -14.8%，客流 3140，转化率 19.8%，客单价 73，缺货率 9.6%，差评 21，人工成本率 23%，风险 高，原因：爆品缺货叠加差评集中。
+  3. 南京西路店，华东，营收 338000，较上周 +4.2%，客流 4210，转化率 28.1%，客单价 80，缺货率 1.4%，差评 4，人工成本率 17%，风险 低，原因：商圈活动带动自然客流。
+  4. 苏州中心店，华东，营收 176000，较上周 -18.6%，客流 2680，转化率 18.3%，客单价 66，缺货率 11.8%，差评 18，人工成本率 26%，风险 高，原因：库存与排班同时异常。
+  5. 杭州湖滨店，华东，营收 154000，较上周 -9.4%，客流 2370，转化率 20.5%，客单价 71，缺货率 4.9%，差评 10，人工成本率 21%，风险 中，原因：周末转化下降。
+  6. 宁波天一店，华东，营收 97000，较上周 -22.2%，客流 2200，转化率 15.9%，客单价 61，缺货率 13.5%，差评 24，人工成本率 29%，风险 高，原因：转化、缺货、差评三项同时恶化。
+- 7 日趋势：
+  D1 营收 198000 客流 2860 转化率 24.1
+  D2 营收 192000 客流 2790 转化率 23.8
+  D3 营收 185000 客流 2710 转化率 23.1
+  D4 营收 181000 客流 2660 转化率 22.4
+  D5 营收 176000 客流 2580 转化率 21.9
+  D6 营收 173000 客流 2510 转化率 21.7
+  D7 营收 177000 客流 2310 转化率 21.2
+
+要求：
+1. 诊断必须区分相关性与已证明因果，不要过度断言。
+2. 面板至少包含 KPI、一个有真实数据的图表、6 家门店明细表、一个可填写的整改动作表单。
+3. 图表需要支持 drillDown；表单提交用 submitForm。
+4. 不要把 UI JSON 写进聊天正文。`;
+
+    const followPrompt = `基于刚才的门店诊断面板，只看高风险门店，并保留可以提交整改动作的表单。不要重新虚构门店数据，继续复用同一个 surfaceId。`;
+
+    const $ = selector => document.querySelector(selector);
+    const messagesEl = $('#messages');
+    const promptEl = $('#prompt');
+    const sendBtn = $('#sendBtn');
+
+    function resolveApiBase() {
+      const explicit = params.get('apiBase') || params.get('daemonUrl');
+      if (explicit) return explicit.replace(/\/$/, '');
+      if (
+        (location.protocol === 'http:' || location.protocol === 'https:')
+        && /^(127\.0\.0\.1|localhost|\[::1\])(?::8794)?$/i.test(location.host)
+      ) {
+        return '';
+      }
+      return 'http://127.0.0.1:8794';
+    }
+
+    function apiUrl(path) {
+      return `${apiBase}${path}`;
+    }
+    const runtimeDot = $('#runtimeDot');
+    const runtimeText = $('#runtimeText');
+
+    function setRuntime(ok, text) {
+      runtimeDot.className = `dot ${ok ? 'ok' : 'err'}`;
+      runtimeText.textContent = text;
+    }
+
+    function escapeHtml(value) {
+      return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function writeInspector(response) {
+      const hasToolSurface = Boolean(response?.toolCall?.arguments && response?.preview);
+      $('#toolArgs').textContent = response?.toolCall?.arguments
+        ? JSON.stringify(response.toolCall.arguments, null, 2)
+        : '无工具调用';
+      $('#previewJson').textContent = hasToolSurface
+        ? JSON.stringify({
+            ok: response?.ok,
+            errors: response?.errors,
+            validation: response?.validation ? {
+              ok: response.validation.ok,
+              issues: response.validation.issues,
+              surfaceId: response.validation.surfaceId,
+            } : null,
+            preview: response?.preview ? {
+              ok: response.preview.ok,
+              surfaceId: response.preview.surfaceId,
+              summary: response.preview.summary,
+              componentTypes: response.preview.summary?.componentTypes,
+            } : null,
+          }, null, 2)
+        : response
+          ? '无可视化预览'
+          : '尚未运行';
+      $('#rawJson').textContent = response?.raw || JSON.stringify(response || {}, null, 2);
+    }
+
+    function logEvent(text) {
+      const entry = `${new Date().toLocaleTimeString()} ${text}`;
+      state.actionLog.push(entry);
+      $('#eventLog').textContent = state.actionLog.slice(-8).join('\n');
+    }
+
+    function previousToolContext(response) {
+      if (!response?.toolCall?.arguments) return null;
+      const args = response.toolCall.arguments;
+      return {
+        name: response.toolCall.name,
+        surfaceId: args.surfaceId || response.preview?.surfaceId,
+        fallbackText: args.fallbackText,
+        display: args.display,
+        input: args.input,
+      };
+    }
+
+    function shouldCarrySessionContext(message, options = {}) {
+      if (options.source === 'vizual-action' || options.useSessionContext) return true;
+      if (!previousToolContext(state.lastResponse)) return false;
+      return /(继续|更新|刚才|这个|下钻|筛选|提交|回传|表单|图表|面板|drill|submit|filter)/iu.test(message);
+    }
+
+    function addMessage(role, html, attrs = {}) {
+      const row = document.createElement('div');
+      row.className = `message ${role}`;
+      Object.entries(attrs).forEach(([key, value]) => row.setAttribute(key, value));
+      row.innerHTML = `<div class="role">${role}</div><div class="bubble">${html}</div>`;
+      messagesEl.appendChild(row);
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+      return row;
+    }
+
+    function metricLabel(value) {
+      const key = String(value || '').toLowerCase();
+      if (key === 'conversion') return '转化率';
+      if (key === 'revenue') return '营收';
+      if (key === 'traffic') return '客流';
+      return String(value || '未知指标');
+    }
+
+    function buildInteractionSummary(action, params) {
+      if (action === 'drillDown') {
+        const point = params?.point || params?.selectedPoint || params?.data?.point || {};
+        const chartId = params?.chartId || params?.chart || '未知图表';
+        const name = point.name ?? point.label ?? (Number.isFinite(point.dataIndex) ? `第 ${point.dataIndex + 1} 个点` : '未知点位');
+        const series = metricLabel(point.seriesName || point.series || point.metric);
+        const value = point.value ?? point.data ?? point.y;
+        return `用户点击了 ${chartId} 图表的 ${series} 系列，点位 ${name}，值 ${value ?? '未知'}。如果 payload 缺少某个业务维度，只能说明该维度未提供，不得否认已经提供的图表、指标、点位或数值。`;
+      }
+      if (action === 'submitForm') {
+        const fields = params?.values || params?.data || params || {};
+        const filled = Object.entries(fields)
+          .filter(([, value]) => value !== undefined && value !== null && String(value).trim())
+          .map(([key, value]) => `${key}=${value}`)
+          .join('；');
+        return `用户提交了整改动作表单：${filled || '没有填写有效字段'}。请确认收到并给出下一步跟进判断。`;
+      }
+      return `用户触发了 ${action} 交互，请读取交互数据并基于当前业务上下文继续。`;
+    }
+
+    function buildInteractionMessage(action, params) {
+      const interactionSummary = buildInteractionSummary(action, params);
+      return [
+        '用户刚才在 Vizual 诊断面板里触发了交互，请像真实 DeerFlow 对话一样继续回复。',
+        '',
+        `action: ${action}`,
+        `surfaceId: ${state.lastResponse?.preview?.surfaceId || state.lastResponse?.toolCall?.arguments?.surfaceId || 'unknown'}`,
+        `交互摘要（必须引用，不可忽略）：${interactionSummary}`,
+        '',
+        '交互数据：',
+        '```json',
+        JSON.stringify({ source: 'vizual-workbench', action, params }, null, 2),
+        '```',
+        '',
+        '请基于当前业务数据和图表上下文继续分析；如果需要更新界面，请复用同一个 surfaceId。'
+      ].join('\n');
+    }
+
+    async function returnInteractionToAgent(action, params) {
+      if (sendBtn.disabled) {
+        logEvent(`Agent busy, ignored ${action}`);
+        return { ok: false, reason: 'agent-busy' };
+      }
+      logEvent(`return ${action} to Agent`);
+      await sendMessage(buildInteractionMessage(action, params), { source: 'vizual-action' });
+      return { ok: true, returnedToAgent: true };
+    }
+
+    function addToolCard(response) {
+      if (!response?.toolCall?.name || !response?.preview?.spec) return;
+      const tool = response.toolCall || {};
+      const args = tool.arguments || {};
+      const card = document.createElement('div');
+      card.className = 'message assistant';
+      card.setAttribute('data-tool-call', tool.name || 'missing');
+      card.innerHTML = `
+        <div class="role">tool</div>
+        <div class="tool-card">
+          <div class="tool-head">
+            <div class="tool-title">
+              <strong>${escapeHtml(tool.name || 'missing tool')}</strong>
+              <span>${escapeHtml(args.display?.title || args.surfaceId || response.runId || '')}</span>
+            </div>
+            <span class="badge ${response.ok ? 'ok' : 'err'}">${response.ok ? '已渲染' : '渲染失败'}</span>
+          </div>
+          <div class="viz-mount" data-viz-mount="true"></div>
+        </div>`;
+      messagesEl.appendChild(card);
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+
+      const mount = card.querySelector('[data-viz-mount]');
+      if (response.preview?.spec && window.Vizual?.renderSpec) {
+        try {
+          window.Vizual.renderSpec(response.preview.spec, mount, {
+            handlers: {
+              drillDown: params => returnInteractionToAgent('drillDown', params),
+              applyFilter: params => returnInteractionToAgent('applyFilter', params),
+              selectLocation: params => returnInteractionToAgent('selectLocation', params),
+              updatePlan: params => returnInteractionToAgent('updatePlan', params),
+              submitNextMonthPlan: params => {
+                logEvent(`submitNextMonthPlan ${JSON.stringify(params)}`);
+                return { ok: true };
+              },
+              confirmAction: params => {
+                logEvent(`confirmAction ${JSON.stringify(params)}`);
+                return { ok: true };
+              },
+              submit: params => {
+                return returnInteractionToAgent('submitForm', params);
+              },
+              submitForm: params => {
+                return returnInteractionToAgent('submitForm', params);
+              },
+            },
+            onStateChange: changes => {
+              logEvent(`state change ${JSON.stringify(changes)}`);
+            },
+          });
+          logEvent(`rendered ${response.preview.surfaceId} with ${response.preview.summary?.componentTypes?.join(', ') || 'unknown components'}`);
+        } catch (error) {
+          mount.innerHTML = `<div class="empty">渲染失败：${escapeHtml(error.message || error)}</div>`;
+          logEvent(`render failed ${error.message || error}`);
+        }
+      } else {
+        mount.innerHTML = `<div class="empty">Agent 没有返回可渲染 preview。</div>`;
+      }
+    }
+
+    async function sendMessage(overrideMessage, options = {}) {
+      const message = String(overrideMessage ?? promptEl.value).trim();
+      if (!message) return;
+      const agent = $('#agent').value;
+      const model = $('#model').value.trim();
+      const carryContext = shouldCarrySessionContext(message, options);
+      const history = carryContext ? state.messages.slice(-8) : [];
+      const previousToolCall = carryContext ? previousToolContext(state.lastResponse) : null;
+
+      addMessage('user', escapeHtml(message).replace(/\n/g, '<br>'), {
+        'data-user-message': 'true',
+        ...(options.source ? { 'data-message-source': options.source } : {}),
+      });
+      state.messages.push({ role: 'user', content: message });
+      if (overrideMessage === undefined) promptEl.value = '';
+      sendBtn.disabled = true;
+      sendBtn.textContent = 'Agent 运行中...';
+      logEvent(`sent to ${agent}${model ? ` ${model}` : ''}${carryContext ? ' with context' : ' fresh'}`);
+
+      const pending = addMessage('assistant', '正在调用真实 Agent，并等待工具调用结果...', { 'data-ai-pending': 'true' });
+
+      try {
+        const response = await fetch(apiUrl('/deerflow-sim/run'), {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ message, agent, model, history, previousToolCall, source: 'deerflow-sim-workbench', runtimeMode: 'skill', forceAgent: true }),
+        }).then(res => res.json());
+
+        state.lastResponse = response;
+        pending.remove();
+        addMessage('assistant', escapeHtml(response.assistantText || 'Agent 没有返回正文。').replace(/\n/g, '<br>'), {
+          'data-assistant-text': 'true',
+        });
+        state.messages.push({ role: 'assistant', content: response.assistantText || '' });
+        if (response.toolCall?.name) {
+          state.messages.push({
+            role: 'tool',
+            content: `${response.toolCall.name} ${response.preview?.surfaceId || response.toolCall.arguments?.surfaceId || ''} ${response.preview?.summary?.componentTypes?.join(', ') || ''}`,
+          });
+        }
+        if (response.toolCall?.name && response.preview?.spec) addToolCard(response);
+        writeInspector(response);
+        const commandMeta = response.command?.skipped ? 'skipped' : `${response.command?.model || model || agent} ${Math.round((response.command?.durationMs || 0) / 1000)}s`;
+        logEvent(response.ok ? `run succeeded ${response.runId} ${commandMeta}` : `run failed ${response.errors?.join('; ')}`);
+      } catch (error) {
+        pending.remove();
+        const response = { ok: false, error: error.message || String(error) };
+        state.lastResponse = response;
+        addMessage('assistant', `请求失败：${escapeHtml(response.error)}`);
+        state.messages.push({ role: 'assistant', content: `请求失败：${response.error}` });
+        writeInspector(response);
+        logEvent(`request failed ${response.error}`);
+      } finally {
+        sendBtn.disabled = false;
+        sendBtn.textContent = '发送给真实 Agent';
+      }
+    }
+
+    function clearAll() {
+      state.messages = [];
+      state.lastResponse = null;
+      state.actionLog = [];
+      messagesEl.innerHTML = '';
+      writeInspector(null);
+      logEvent('cleared');
+    }
+
+    $('#sampleBtn').addEventListener('click', () => { promptEl.value = samplePrompt; promptEl.focus(); });
+    $('#followBtn').addEventListener('click', () => { promptEl.value = followPrompt; promptEl.focus(); });
+    $('#clearBtn').addEventListener('click', clearAll);
+    sendBtn.addEventListener('click', () => sendMessage());
+    promptEl.addEventListener('keydown', event => {
+      if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') sendMessage();
+    });
+
+    promptEl.value = samplePrompt;
+    $('#agent').value = params.get('agent') || $('#agent').value;
+    $('#model').value = params.get('model') || ($('#agent').value === 'pi-agent' ? 'xiaomi-token-plan-cn/mimo-v2.5-pro' : $('#model').value);
+    window.__deerflowSimState = state;
+    window.__deerflowSimSend = sendMessage;
+
+    if (window.Vizual?.renderSpec && window.Vizual?.renderVizualAgentInput) {
+      window.Vizual.applyTheme?.(document.body, 'default-light');
+      setRuntime(true, 'Vizual runtime ready');
+    } else {
+      setRuntime(false, 'Vizual runtime missing');
+    }
+  </script>
+</body>
+</html>

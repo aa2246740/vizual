@@ -2,9 +2,25 @@ import React from 'react'
 import { tcss } from '../../core/theme-colors'
 import type { ListProps } from './schema'
 
-export function List({ props }: { props: ListProps }) {
+export function List({ props, children }: { props: ListProps; children?: React.ReactNode }) {
   const { items = [], ordered = false, gap = 4 } = props
   const Tag = ordered ? 'ol' : 'ul'
+  const childItems = React.Children.toArray(children)
+  if (childItems.length > 0) {
+    return (
+      <div style={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap,
+        color: tcss('--rk-text-primary'),
+        fontFamily: tcss('--rk-font-sans'),
+        fontSize: 14,
+        lineHeight: 1.5,
+      }}>
+        {childItems}
+      </div>
+    )
+  }
   return (
     <Tag style={{
       margin: 0,

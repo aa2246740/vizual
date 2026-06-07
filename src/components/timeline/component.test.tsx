@@ -41,4 +41,23 @@ describe('Timeline', () => {
     )
     expect(container.querySelector('h3')?.textContent).toBe('My Timeline')
   })
+
+  it('accepts agent-style items aliases', () => {
+    const { container } = render(
+      <Timeline
+        props={{
+          type: 'timeline',
+          items: [
+            { time: '第1周', label: '客户动线梳理', detail: '先完成现场观察' },
+            { time: '第2周', label: '窗口排班调整' },
+          ],
+        }}
+      />
+    )
+
+    expect(container.textContent).toContain('第1周')
+    expect(container.textContent).toContain('客户动线梳理')
+    expect(container.textContent).toContain('第2周')
+    expect(container.textContent).toContain('窗口排班调整')
+  })
 })

@@ -1,5 +1,6 @@
 import React from 'react'
 import { tcss } from '../../core/theme-colors'
+import { normalizeEscapedText } from '../../core/text-normalize'
 import type { TextProps } from './schema'
 
 const weightMap: Record<string, number> = {
@@ -12,6 +13,7 @@ const defaultSizes: Record<string, number> = {
 
 export function Text({ props }: { props: TextProps }) {
   const { content, variant = 'body', size, weight, color, align = 'left', maxLines } = props
+  const normalizedContent = normalizeEscapedText(content)
   const Tag = variant === 'heading' ? 'h2' : 'p'
   const fontSize = size ?? defaultSizes[variant] ?? 14
 
@@ -28,9 +30,13 @@ export function Text({ props }: { props: TextProps }) {
       textAlign: align,
       fontFamily: variant === 'code' ? 'monospace' : tcss('--rk-font-sans'),
       lineHeight: variant === 'heading' ? 1.3 : 1.5,
+      whiteSpace: 'pre-wrap',
+      minWidth: 0,
+      overflowWrap: 'anywhere',
+      wordBreak: 'break-word',
       ...lineClamp,
     }}>
-      {content}
+      {normalizedContent}
     </Tag>
   )
 }

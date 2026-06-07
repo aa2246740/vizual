@@ -9,4 +9,4 @@ export const DividerSchema = z.object({
   color: z.string().optional(),
 })
 
-export type DividerProps = z.infer<typeof DividerSchema>
+export type DividerProps = z.input<typeof DividerSchema>

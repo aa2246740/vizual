@@ -206,6 +206,62 @@ describe('FormBuilder component', () => {
     expect(screen.getByRole('button', { name: 'Apply changes' })).toBeTruthy()
   })
 
+  it('renders native date and time controls without forcing dark browser chrome', () => {
+    const { container } = render(
+      <StateProvider>
+        <FormBuilder
+          props={{
+            type: 'form_builder',
+            fields: [
+              { name: 'date', label: 'Date', type: 'date' },
+              { name: 'time', label: 'Time', type: 'time' },
+              { name: 'datetime', label: 'Date time', type: 'datetime' },
+            ],
+          }}
+        />
+      </StateProvider>,
+    )
+
+    const dateInput = container.querySelector('input[name="date"]') as HTMLInputElement
+    const timeInput = container.querySelector('input[name="time"]') as HTMLInputElement
+    const datetimeInput = container.querySelector('input[name="datetime"]') as HTMLInputElement
+
+    expect(dateInput.type).toBe('date')
+    expect(timeInput.type).toBe('time')
+    expect(datetimeInput.type).toBe('datetime-local')
+    expect(dateInput.style.colorScheme).toBe('')
+    expect(timeInput.style.colorScheme).toBe('')
+    expect(datetimeInput.style.colorScheme).toBe('')
+    expect(container.textContent).not.toContain('Select a date')
+    expect(container.textContent).not.toContain('Select time')
+  })
+
+  it('normalizes agent-style date defaults before required validation and submit', () => {
+    const onSubmit = vi.fn()
+    const { container } = render(
+      <StateProvider>
+        <FormBuilder
+          props={{
+            type: 'form_builder',
+            submitLabel: 'Submit',
+            fields: [
+              { name: 'dueDate', label: 'Due date', type: 'date', required: true, defaultValue: '2026/06/02' },
+            ],
+            onSubmit,
+          }}
+        />
+      </StateProvider>,
+    )
+
+    const dateInput = container.querySelector('input[name="dueDate"]') as HTMLInputElement
+    expect(dateInput.value).toBe('2026-06-02')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Submit' }))
+
+    expect(screen.queryByText('Due date is required')).toBeNull()
+    expect(onSubmit).toHaveBeenCalledWith({ dueDate: '2026-06-02' })
+  })
+
   it('writes bound form data into json-render state when controls change', () => {
     const onStateChange = vi.fn()
     const initialControls = {
@@ -284,5 +340,175 @@ describe('FormBuilder component', () => {
 
     expect(onSubmit).toHaveBeenCalledWith({ email: 'ai@example.com', name: 'Ada' })
     expect(emit).toHaveBeenCalledWith('submit')
+  })
+
+  it('submits native DOM field values when browser automation updates controls without React change events', () => {
+    const onSubmit = vi.fn()
+
+    const { container } = render(
+      <StateProvider>
+        <FormBuilder
+          props={{
+            type: 'form_builder',
+            submitLabel: 'Send',
+            fields: [
+              { name: 'actionPlan', label: 'Action plan', type: 'textarea' },
+              { name: 'owner', label: 'Owner', type: 'text' },
+              { name: 'expectedEffect', label: 'Expected effect', type: 'text' },
+            ],
+            onSubmit,
+          }}
+        />
+      </StateProvider>,
+    )
+
+    ;(container.querySelector('textarea[name="actionPlan"]') as HTMLTextAreaElement).value =
+      'Fix B store stock within 48h'
+    ;(container.querySelector('input[name="owner"]') as HTMLInputElement).value = 'Ops Manager Zhang'
+    ;(container.querySelector('input[name="expectedEffect"]') as HTMLInputElement).value =
+      'Stockout below 5%'
+
+    fireEvent.click(screen.getByRole('button', { name: 'Send' }))
+
+    expect(onSubmit).toHaveBeenCalledWith({
+      actionPlan: 'Fix B store stock within 48h',
+      owner: 'Ops Manager Zhang',
+      expectedEffect: 'Stockout below 5%',
+    })
+  })
+
+  it('submits multi-checkbox option values through native form data', () => {
+    const onSubmit = vi.fn()
+
+    render(
+      <StateProvider>
+        <FormBuilder
+          props={{
+            type: 'form_builder',
+            submitLabel: 'Send',
+            fields: [
+              {
+                name: 'channels',
+                label: 'Channels',
+                type: 'checkbox',
+                options: ['Web', 'Store'],
+                defaultValue: ['Store'],
+              },
+            ],
+            onSubmit,
+          }}
+        />
+      </StateProvider>,
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: 'Send' }))
+
+    expect(onSubmit).toHaveBeenCalledWith({ channels: ['Store'] })
+  })
+
+  it('ignores declarative onSubmit objects and still emits the runtime submit event', () => {
+    const emit = vi.fn()
+
+    const { container } = render(
+      <StateProvider>
+        <FormBuilder
+          props={{
+            type: 'form_builder',
+            submitLabel: 'Send',
+            fields: [
+              { name: 'owner', label: 'Owner', type: 'text' },
+            ],
+            onSubmit: { action: 'submitForm' },
+          } as any}
+          emit={emit}
+        />
+      </StateProvider>,
+    )
+
+    fireEvent.change(container.querySelector('input[name="owner"]')!, {
+      target: { value: 'Ada' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Send' }))
+
+    expect(emit).toHaveBeenCalledWith('submit')
+  })
+
+  it('keeps required select state aligned with the visible first option', () => {
+    const onSubmit = vi.fn()
+
+    render(
+      <StateProvider>
+        <FormBuilder
+          props={{
+            type: 'form_builder',
+            submitLabel: 'Send',
+            fields: [
+              {
+                name: 'metric',
+                label: 'Metric',
+                type: 'select',
+                required: true,
+                options: ['降低广告获客成本', '提升复购率'],
+              },
+            ],
+            onSubmit,
+          }}
+        />
+      </StateProvider>,
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: 'Send' }))
+
+    expect(screen.queryByText('Metric is required')).toBeNull()
+    expect(onSubmit).toHaveBeenCalledWith({ metric: '降低广告获客成本' })
+  })
+
+  it('keeps cleared number fields empty instead of coercing them to zero', () => {
+    const onSubmit = vi.fn()
+    const { container } = render(
+      <StateProvider>
+        <FormBuilder
+          props={{
+            type: 'form_builder',
+            submitLabel: 'Send',
+            fields: [
+              { name: 'confidence', label: 'Confidence', type: 'number', defaultValue: 5 },
+            ],
+            onSubmit,
+          }}
+        />
+      </StateProvider>,
+    )
+
+    const input = container.querySelector('input[name="confidence"]') as HTMLInputElement
+    fireEvent.change(input, { target: { value: '' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Send' }))
+
+    expect(input.value).toBe('')
+    expect(onSubmit).toHaveBeenCalledWith({ confidence: '' })
+  })
+
+  it('rejects unchecked required checkbox fields', () => {
+    const onSubmit = vi.fn()
+
+    render(
+      <StateProvider>
+        <FormBuilder
+          props={{
+            type: 'form_builder',
+            submitLabel: 'Agree',
+            fields: [
+              { name: 'agree', label: 'I agree', type: 'checkbox', required: true },
+            ],
+            onSubmit,
+          }}
+        />
+      </StateProvider>,
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: 'Agree' }))
+
+    expect(onSubmit).not.toHaveBeenCalled()
+    expect(screen.getByText('I agree is required')).toBeTruthy()
   })
 })

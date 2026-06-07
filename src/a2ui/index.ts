@@ -10,6 +10,7 @@ export type {
   A2UICreateSurface,
   A2UIUpdateComponents,
   A2UIUpdateDataModel,
+  A2UIAppendDataModel,
   A2UIDeleteSurface,
   A2UIUpdateTheme,
   A2UIErrorRecovery,

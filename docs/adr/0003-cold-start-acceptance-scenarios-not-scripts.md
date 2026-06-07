@@ -1,0 +1,3 @@
+# Cold Start Acceptance Uses Scenarios, Not Scripts
+
+Vizual cold-start acceptance should use clean-agent natural language scenarios rather than explicit component calls or preset answer scripts. The first scenario tree covers natural data analysis, exploratory interaction, A2UI-style surface/data/action, AG-UI-style event flow, drill-down feedback loops, ordinary text-only requests, explicit web/landing-page creation requests, and optional Catalog Gap learning. Passing evidence must come from a real browser inspected and operated with Computer Use, including visual chart observation and event/action capture, not only JSON or model stdout.

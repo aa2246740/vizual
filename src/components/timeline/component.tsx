@@ -1,8 +1,17 @@
-import type React from 'react'
 import type { CSSProperties } from 'react'
 import type { TimelineProps } from './schema'
-import { tcss, tc } from '../../core/theme-colors'
-import { useAnnotationContext } from '../../docview/annotation-context'
+import { tcss } from '../../core/theme-colors'
+
+type TimelineEvent = {
+  date?: string
+  time?: string
+  title?: string
+  label?: string
+  name?: string
+  description?: string
+  detail?: string
+  content?: string
+}
 
 const styles: Record<string, CSSProperties> = {
   container: {
@@ -51,46 +60,63 @@ const styles: Record<string, CSSProperties> = {
   },
 }
 
+function toRecord(value: unknown): Record<string, unknown> {
+  return value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {}
+}
+
+function asArray(value: unknown): unknown[] | undefined {
+  return Array.isArray(value) ? value : undefined
+}
+
+function normalizeEvents(props: TimelineProps | Record<string, unknown>): Array<{ date: string; title: string; description?: string }> {
+  const record = props as Record<string, unknown>
+  const data = toRecord(record.data)
+  const source =
+    asArray(record.events) ??
+    asArray(record.items) ??
+    asArray(data.events) ??
+    asArray(data.items) ??
+    asArray(data.timeline) ??
+    []
+
+  return source
+    .map((item): { date: string; title: string; description?: string } | null => {
+      const record = toRecord(item) as TimelineEvent
+      const date = String(record.date ?? record.time ?? '').trim()
+      const title = String(record.title ?? record.label ?? record.name ?? '').trim()
+      if (!date || !title) return null
+      const description = record.description ?? record.detail ?? record.content
+      return {
+        date,
+        title,
+        description: description == null ? undefined : String(description),
+      }
+    })
+    .filter((event): event is { date: string; title: string; description?: string } => Boolean(event))
+}
+
 /**
  * Timeline custom component — vertical event flow.
- * 在 DocView 内时，每个事件支持独立批注。
  */
-export function Timeline({ props }: { props: TimelineProps }) {
-  const ctx = useAnnotationContext()
+export function Timeline({ props }: { props: TimelineProps | Record<string, unknown> }) {
+  const events = normalizeEvents(props)
   return (
     <div style={styles.container}>
-      {props.title && (
+      {typeof props.title === 'string' && props.title && (
         <h3 style={{ fontSize:tcss('--rk-text-lg'), fontWeight:tcss('--rk-weight-semibold'), marginBottom: 12, color: tcss('--rk-text-primary') }}>
           {props.title}
         </h3>
       )}
       <div style={{maxHeight:400,overflowY:'auto',position:'relative'}}>
       <div style={styles.line} />
-      {props.events.map((event, i) => {
-        const eventAnnotationProps = ctx ? {
-          'data-docview-target': `timeline-${ctx.sectionIndex}-${i}`,
-          'data-section-index': ctx.sectionIndex,
-          'data-target-type': 'component',
-          onClick: (e: React.MouseEvent) => {
-            e.stopPropagation()
-            ctx.onTargetClick?.({
-              sectionIndex: ctx.sectionIndex,
-              targetType: 'component',
-              label: `${event.date} - ${event.title}`,
-              targetId: `timeline-${ctx.sectionIndex}-${i}`,
-            }, e.currentTarget as HTMLElement)
-          },
-          style: { ...styles.event, cursor: 'pointer' as const },
-        } : { style: styles.event }
-        return (
-          <div key={i} {...eventAnnotationProps}>
+      {events.map((event, i) => (
+          <div key={i} style={styles.event}>
             <div style={styles.dot} />
             <div style={styles.date}>{event.date}</div>
             <div style={styles.title}>{event.title}</div>
             {event.description && <div style={styles.description}>{event.description}</div>}
           </div>
-        )
-      })}
+      ))}
       </div>
     </div>
   )

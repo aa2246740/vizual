@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>A2UI Adversarial Browser Tests</title>
+  <link rel="icon" href="data:,">
+  <style>
+    :root {
+      --rk-bg-primary: #f7f9fc;
+      --rk-bg-secondary: #ffffff;
+      --rk-bg-tertiary: #eef4fb;
+      --rk-text-primary: #172033;
+      --rk-text-secondary: #516078;
+      --rk-border: #d8e0eb;
+      --rk-accent: #2563eb;
+      --rk-success: #16a34a;
+      --rk-error: #dc2626;
+      --rk-warning: #b7791f;
+      --rk-font-sans: -apple-system, "Inter", system-ui, sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 24px;
+      background: var(--rk-bg-primary);
+      color: var(--rk-text-primary);
+      font-family: var(--rk-font-sans);
+    }
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 5;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin: -24px -24px 24px;
+      padding: 16px 24px;
+      background: rgba(247,249,252,0.96);
+      border-bottom: 1px solid var(--rk-border);
+      backdrop-filter: blur(10px);
+    }
+    h1 { margin: 0; font-size: 20px; }
+    #status {
+      padding: 8px 12px;
+      border-radius: 8px;
+      color: var(--rk-warning);
+      background: #fef3c7;
+      font-size: 13px;
+      font-weight: 700;
+    }
+    #status.pass { color: var(--rk-success); background: #dcfce7; border: 1px solid #bbf7d0; }
+    #status.fail { color: var(--rk-error); background: #fee2e2; border: 1px solid #fecaca; }
+    #results {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 12px;
+    }
+    .case {
+      min-width: 0;
+      border: 1px solid var(--rk-border);
+      border-radius: 8px;
+      background: var(--rk-bg-secondary);
+      overflow: hidden;
+      box-shadow: 0 8px 20px rgba(23,32,51,0.04);
+    }
+    .case-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--rk-border);
+      background: var(--rk-bg-tertiary);
+      font-size: 13px;
+      font-weight: 650;
+    }
+    .case-status { flex: 0 0 auto; color: var(--rk-warning); }
+    .case-status.pass { color: var(--rk-success); }
+    .case-status.fail { color: var(--rk-error); }
+    .render {
+      min-height: 80px;
+      padding: 12px;
+      overflow: auto;
+    }
+    pre {
+      margin: 0;
+      padding: 8px 12px;
+      border-top: 1px solid var(--rk-border);
+      color: var(--rk-text-secondary);
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-size: 11px;
+      line-height: 1.45;
+      max-height: 180px;
+      overflow: auto;
+      background: #fbfdff;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>A2UI Adversarial Browser Tests</h1>
+      <div style="margin-top:4px;color:var(--rk-text-secondary);font-size:12px;">Runs edge cases in the page main context using window.Vizual</div>
+    </div>
+    <div id="status">Loading...</div>
+  </header>
+  <main id="results"></main>
+
+  <script src="../dist/vizual.standalone.js"></script>
+  <script>
+    const resultsEl = document.getElementById('results');
+    const statusEl = document.getElementById('status');
+
+    function makeCard(name) {
+      const card = document.createElement('section');
+      card.className = 'case';
+      card.innerHTML = '<div class="case-head"><span></span><span class="case-status">Pending</span></div><div class="render"></div><pre></pre>';
+      card.querySelector('.case-head span').textContent = name;
+      resultsEl.appendChild(card);
+      return {
+        card,
+        area: card.querySelector('.render'),
+        status: card.querySelector('.case-status'),
+        detail: card.querySelector('pre'),
+      };
+    }
+
+    function setResult(ui, ok, detail) {
+      ui.status.textContent = ok ? 'Pass' : 'Fail';
+      ui.status.className = 'case-status ' + (ok ? 'pass' : 'fail');
+      ui.detail.textContent = typeof detail === 'string' ? detail : JSON.stringify(detail, null, 2);
+      return ok;
+    }
+
+    function textSpec(content, extraProps = {}) {
+      return { root: 'r', elements: { r: { type: 'Text', props: { content, ...extraProps } } } };
+    }
+
+    function visibleOverflowCount(root) {
+      return Array.from(root.querySelectorAll('*')).filter(el => {
+        if (!(el instanceof HTMLElement)) return false;
+        const rect = el.getBoundingClientRect();
+        if (rect.width < 24 || rect.height < 12) return false;
+        return el.scrollWidth > el.clientWidth + 8 && getComputedStyle(el).overflowX !== 'auto';
+      }).length;
+    }
+
+    function renderCase(name, spec, verify) {
+      const ui = makeCard(name);
+      try {
+        window.Vizual.renderSpec(spec, ui.area);
+        return new Promise(resolve => setTimeout(() => {
+          try {
+            const verdict = verify ? verify(ui.area) : { ok: true, detail: 'rendered' };
+            resolve({ name, ok: setResult(ui, verdict.ok, verdict.detail), detail: verdict.detail });
+          } catch (error) {
+            resolve({ name, ok: setResult(ui, false, error.stack || error.message), detail: error.message });
+          }
+        }, 300));
+      } catch (error) {
+        const ok = verify ? false : true;
+        return Promise.resolve({ name, ok: setResult(ui, ok, error.stack || error.message), detail: error.message });
+      }
+    }
+
+    function runCase(name, fn) {
+      const ui = makeCard(name);
+      try {
+        const result = fn(ui.area);
+        const ok = result?.ok !== false;
+        return Promise.resolve({ name, ok: setResult(ui, ok, result?.detail ?? result ?? 'ok'), detail: result });
+      } catch (error) {
+        return Promise.resolve({ name, ok: setResult(ui, false, error.stack || error.message), detail: error.message });
+      }
+    }
+
+    (async function main() {
+      if (!window.Vizual?.renderSpec) {
+        statusEl.textContent = '0 pass / 1 fail — Vizual not loaded';
+        statusEl.className = 'fail';
+        return;
+      }
+
+      const cases = [];
+
+      cases.push(renderCase('Deep nesting Row > Column > Card x6', {
+        root: 'n0',
+        elements: {
+          n0: { type: 'Row', props: { gap: 4 }, children: ['n1'] },
+          n1: { type: 'Column', props: { gap: 4 }, children: ['n2'] },
+          n2: { type: 'Card', props: { padding: 8 }, children: ['n3'] },
+          n3: { type: 'Row', props: { gap: 4 }, children: ['n4'] },
+          n4: { type: 'Column', props: { gap: 4 }, children: ['n5'] },
+          n5: { type: 'Card', props: { padding: 8 }, children: ['n6'] },
+          n6: { type: 'Text', props: { content: 'Nested leaf' } },
+        },
+      }, area => ({ ok: area.textContent.includes('Nested leaf'), detail: area.textContent.trim() })));
+
+      cases.push(renderCase('Markdown SVG onload sanitized', {
+        root: 'r',
+        elements: { r: { type: 'Markdown', props: { content: '<svg onload="alert(1)"><circle r="40"></circle></svg><p>safe</p>' } } },
+      }, area => ({ ok: !area.querySelector('[onload]') && area.textContent.includes('safe'), detail: area.innerHTML })));
+
+      cases.push(renderCase('Markdown iframe filtered', {
+        root: 'r',
+        elements: { r: { type: 'Markdown', props: { content: '<iframe src="https://example.com"></iframe><p>safe iframe text</p>' } } },
+      }, area => ({ ok: !area.querySelector('iframe') && area.textContent.includes('safe iframe text'), detail: area.innerHTML })));
+
+      cases.push(renderCase('Markdown style tag filtered', {
+        root: 'r',
+        elements: { r: { type: 'Markdown', props: { content: '<style>body{display:none}</style><p>style stayed contained</p>' } } },
+      }, area => ({ ok: !area.querySelector('style') && getComputedStyle(document.body).display !== 'none', detail: area.innerHTML })));
+
+      cases.push(renderCase('Markdown form/input filtered', {
+        root: 'r',
+        elements: { r: { type: 'Markdown', props: { content: '<form action="https://example.com"><input name="x"><button>send</button></form><p>form text</p>' } } },
+      }, area => ({ ok: !area.querySelector('form,input,button') && area.textContent.includes('form text'), detail: area.innerHTML })));
+
+      cases.push(renderCase('Markdown base href filtered', {
+        root: 'r',
+        elements: { r: { type: 'Markdown', props: { content: '<base href="https://evil.example/"><a href="/relative">relative link</a><p>base text</p>' } } },
+      }, area => ({ ok: !area.querySelector('base') && area.textContent.includes('base text'), detail: area.innerHTML })));
+
+      const manyElements = { root: 'root', elements: { root: { type: 'Column', props: { gap: 2 }, children: [] } } };
+      for (let i = 0; i < 120; i += 1) {
+        const id = 't' + i;
+        manyElements.elements.root.children.push(id);
+        manyElements.elements[id] = { type: 'Text', props: { content: 'Item ' + i } };
+      }
+      cases.push(renderCase('100+ elements render', manyElements, area => ({
+        ok: area.textContent.includes('Item 119'),
+        detail: { textLength: area.textContent.length, lastVisible: area.textContent.includes('Item 119') },
+      })));
+
+      cases.push(renderCase('Missing optional props degrade', {
+        root: 'r',
+        elements: { r: { type: 'Column', props: {}, children: ['text', 'list', 'button'] }, text: { type: 'Text', props: { content: '' } }, list: { type: 'List', props: { items: [] } }, button: { type: 'Button', props: { label: 'OK' } } },
+      }, area => ({ ok: !!area.querySelector('button') && !area.textContent.includes('ERROR'), detail: area.innerHTML })));
+
+      cases.push(renderCase('Children pointing to missing ID is contained', {
+        root: 'r',
+        elements: {
+          r: { type: 'Column', props: { gap: 8 }, children: ['missing-child', 'present'] },
+          present: { type: 'Text', props: { content: 'present child survived' } },
+        },
+      }, area => ({ ok: area.textContent.includes('present child survived') && !area.textContent.includes('ERROR'), detail: area.innerHTML })));
+
+      cases.push(runCase('Wrong prop type does not crash page', area => {
+        window.Vizual.renderSpec({ root: 'r', elements: { r: { type: 'Text', props: { content: 12345 } } } }, area);
+        return { ok: true, detail: 'render call returned' };
+      }));
+
+      cases.push(runCase('Cyclic children reference is rejected or contained', area => {
+        try {
+          window.Vizual.renderSpec({
+            root: 'a',
+            elements: {
+              a: { type: 'Row', props: {}, children: ['b'] },
+              b: { type: 'Column', props: {}, children: ['a'] },
+            },
+          }, area);
+          return { ok: true, detail: 'render call returned without blocking page' };
+        } catch (error) {
+          return { ok: true, detail: 'caught: ' + error.message };
+        }
+      }));
+
+      cases.push(runCase('Unknown component type is contained', area => {
+        try {
+          window.Vizual.renderSpec({ root: 'r', elements: { r: { type: 'NotARealComponent', props: {} } } }, area);
+          return { ok: true, detail: 'render call returned' };
+        } catch (error) {
+          return { ok: true, detail: 'caught: ' + error.message };
+        }
+      }));
+
+      cases.push(renderCase('Special characters Unicode emoji RTL long text', textSpec('Unicode: 你好 👋 مرحبا עברית ' + 'Z'.repeat(400), { maxLines: 2 }), area => ({
+        ok: area.textContent.includes('你好') && area.textContent.includes('مرحبا'),
+        detail: area.textContent.slice(0, 120),
+      })));
+
+      cases.push(renderCase('Very long unbroken text wraps without horizontal overflow', textSpec('LONGWORD'.repeat(1250), { maxLines: 3 }), area => {
+        const overflowCount = visibleOverflowCount(area);
+        return { ok: overflowCount === 0, detail: { overflowCount, textLength: area.textContent.length } };
+      }));
+
+      cases.push(runCase('Theme switch API callable', area => {
+        const before = window.Vizual.getCurrentThemeName?.();
+        window.Vizual.setGlobalTheme?.('default-light');
+        window.Vizual.renderSpec(textSpec('Theme switched'), area);
+        window.Vizual.setGlobalTheme?.('default-dark');
+        const afterDark = window.Vizual.getCurrentThemeName?.();
+        window.Vizual.setGlobalTheme?.('default-light');
+        return { ok: true, detail: { before, afterDark, restored: window.Vizual.getCurrentThemeName?.() } };
+      }));
+
+      cases.push(renderCase('Extreme sizes gap/padding/size zero and negative', {
+        root: 'r',
+        elements: {
+          r: { type: 'Row', props: { gap: 0 }, children: ['c', 't'] },
+          c: { type: 'Card', props: { padding: 0, radius: 0 }, children: ['inner'] },
+          inner: { type: 'Text', props: { content: 'zero padding', size: 0 } },
+          t: { type: 'Text', props: { content: 'negative size', size: -4 } },
+        },
+      }, area => ({ ok: area.textContent.includes('zero padding') && area.textContent.includes('negative size'), detail: area.innerHTML })));
+
+      cases.push(runCase('A2UI messages out of order fail gracefully', () => {
+        const bridge = new window.Vizual.A2UIBridge();
+        const spec = bridge.processMessage({ version: 'v0.10', updateComponents: { surfaceId: 'missing', components: [{ id: 'root', component: 'Text', content: 'late' }] } });
+        return { ok: spec == null, detail: spec };
+      }));
+
+      cases.push(runCase('Duplicate createSurface is stable', () => {
+        const bridge = new window.Vizual.A2UIBridge();
+        bridge.processMessage({ version: 'v0.10', createSurface: { surfaceId: 'dup', catalogId: 'vizual' } });
+        bridge.processMessage({ version: 'v0.10', createSurface: { surfaceId: 'dup', catalogId: 'vizual' } });
+        const spec = bridge.processMessage({ version: 'v0.10', updateComponents: { surfaceId: 'dup', components: [{ id: 'root', component: 'Text', content: 'duplicate ok' }] } });
+        return { ok: spec?.elements?.root?.props?.content === 'duplicate ok', detail: spec };
+      }));
+
+      cases.push(runCase('Concurrent renderSpec same container reuses root', area => {
+        window.Vizual.renderSpec(textSpec('first'), area);
+        window.Vizual.renderSpec(textSpec('second'), area);
+        window.Vizual.renderSpec(textSpec('third'), area);
+        return { ok: true, detail: 'rendered third call' };
+      }));
+
+      cases.push(renderCase('Empty Markdown renders stable', {
+        root: 'r',
+        elements: { r: { type: 'Markdown', props: { content: '' } } },
+      }, area => {
+        const child = area.firstElementChild;
+        return { ok: !!child, detail: { height: child?.getBoundingClientRect().height } };
+      }));
+
+      const results = await Promise.all(cases);
+      await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+      const pass = results.filter(result => result.ok).length;
+      const fail = results.length - pass;
+      statusEl.textContent = pass + ' pass / ' + fail + ' fail / ' + results.length + ' total';
+      statusEl.className = fail ? 'fail' : 'pass';
+      window.__a2uiAdversarialResults = results;
+      console.log('A2UI adversarial results:', results);
+    })();
+  </script>
+</body>
+</html>

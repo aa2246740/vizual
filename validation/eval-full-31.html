@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vizual Core Catalog Gallery</title>
+  <link rel="icon" href="data:,">
+  <style>
+    :root {
+      --rk-bg-primary: #f7f9fc;
+      --rk-bg-secondary: #ffffff;
+      --rk-bg-tertiary: #eef4fb;
+      --rk-text-primary: #172033;
+      --rk-text-secondary: #52627a;
+      --rk-text-tertiary: #7a8aa3;
+      --rk-border: #d7e0ec;
+      --rk-border-subtle: #e6edf5;
+      --rk-accent: #3b82f6;
+      --rk-success: #16a34a;
+      --rk-error: #dc2626;
+      --rk-warning: #b45309;
+      --rk-radius-md: 8px;
+      --rk-font-sans: -apple-system, "Inter", system-ui, sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 24px;
+      background: var(--rk-bg-primary);
+      color: var(--rk-text-primary);
+      font-family: var(--rk-font-sans);
+    }
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 16px;
+      margin: -24px -24px 24px;
+      padding: 16px 24px;
+      background: color-mix(in srgb, var(--rk-bg-primary) 92%, transparent);
+      border-bottom: 1px solid var(--rk-border);
+      backdrop-filter: blur(10px);
+    }
+    h1 { margin: 0; font-size: 20px; }
+    #status {
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 700;
+      white-space: nowrap;
+      color: var(--rk-warning);
+      background: #fef3c7;
+    }
+    #status.pass {
+      color: var(--rk-success);
+      background: #dcfce7;
+    }
+    #status.fail {
+      color: var(--rk-error);
+      background: #fee2e2;
+    }
+    #grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+      gap: 16px;
+    }
+    .case {
+      min-width: 0;
+      background: var(--rk-bg-secondary);
+      border: 1px solid var(--rk-border);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .case.full {
+      grid-column: 1 / -1;
+    }
+    .case-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--rk-border-subtle);
+      background: var(--rk-bg-tertiary);
+    }
+    .case-title {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: 13px;
+      font-weight: 650;
+    }
+    .badge {
+      flex: 0 0 auto;
+      font-size: 11px;
+      color: var(--rk-warning);
+    }
+    .badge.pass { color: var(--rk-success); }
+    .badge.fail { color: var(--rk-error); }
+    .render-area {
+      min-height: 180px;
+      padding: 12px;
+      overflow: auto;
+    }
+    .error {
+      white-space: pre-wrap;
+      color: #991b1b;
+      padding: 12px;
+      border: 1px solid #fecaca;
+      border-radius: 8px;
+      background: #fff1f2;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>Vizual Core Catalog Gallery</h1>
+      <div style="margin-top:4px;color:var(--rk-text-tertiary);font-size:12px;">一个页面覆盖当前 Vizual catalog 52 个组件，通过 dist/vizual.standalone.js 真实渲染并检查可见内容。</div>
+    </div>
+    <div id="status">Loading...</div>
+  </header>
+  <main id="grid"></main>
+
+  <script src="../dist/vizual.standalone.js"></script>
+  <script src="./specs-31.js"></script>
+  <script>
+    (async function main() {
+      const grid = document.getElementById('grid');
+      const status = document.getElementById('status');
+      if (!window.Vizual?.renderSpec) {
+        status.textContent = '0 pass / 1 fail — Vizual not loaded';
+        status.className = 'fail';
+        return;
+      }
+      if (!Array.isArray(window.SPECS || SPECS)) {
+        status.textContent = '0 pass / 1 fail — specs not loaded';
+        status.className = 'fail';
+        return;
+      }
+
+      const specs = window.SPECS || SPECS;
+      const results = [];
+
+      for (const item of specs) {
+        const card = document.createElement('section');
+        card.className = 'case' + (item.full ? ' full' : '');
+        card.id = item.id;
+        card.innerHTML = [
+          '<div class="case-head">',
+          '<div class="case-title"></div>',
+          '<div class="badge">Pending</div>',
+          '</div>',
+          '<div class="render-area"></div>',
+        ].join('');
+        card.querySelector('.case-title').textContent = item.name;
+        grid.appendChild(card);
+
+        const badge = card.querySelector('.badge');
+        const area = card.querySelector('.render-area');
+        try {
+          window.Vizual.renderSpec(item.spec, area);
+          results.push({ id: item.id, name: item.name, ok: true });
+          badge.textContent = 'Rendered';
+          badge.className = 'badge pass';
+        } catch (error) {
+          results.push({ id: item.id, name: item.name, ok: false, error: error.message });
+          badge.textContent = 'Failed';
+          badge.className = 'badge fail';
+          area.innerHTML = '<div class="error"></div>';
+          area.firstChild.textContent = error.stack || error.message;
+        }
+      }
+
+      await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+      await new Promise(resolve => setTimeout(resolve, 1200));
+      for (const result of results) {
+        const card = document.getElementById(result.id);
+        if (!card || !result.ok) continue;
+        const area = card.querySelector('.render-area');
+        const images = Array.from(area.querySelectorAll('img'));
+        const brokenImages = images.filter(image => !image.complete || image.naturalWidth <= 0 || image.naturalHeight <= 0);
+        const hasMedia = Boolean(area.querySelector('canvas,svg,video,audio,table,input,textarea,select,button')) || images.length > 0;
+        const hasText = area.innerText.trim().length > 0;
+        const rect = area.getBoundingClientRect();
+        result.visible = rect.width > 80 && rect.height > 40 && (hasMedia || hasText) && brokenImages.length === 0;
+        if (!result.visible) {
+          result.ok = false;
+          result.error = brokenImages.length ? 'rendered with broken image media' : 'rendered without visible content';
+          const badge = card.querySelector('.badge');
+          badge.textContent = brokenImages.length ? 'Broken media' : 'Blank';
+          badge.className = 'badge fail';
+        }
+      }
+      const pass = results.filter(result => result.ok).length;
+      const fail = results.length - pass;
+      status.textContent = pass + ' pass / ' + fail + ' fail / ' + results.length + ' total';
+      status.className = fail ? 'fail' : 'pass';
+      window.__vizualCatalogResults = results;
+      window.__vizualFull31Results = results;
+      console.log('Vizual Core Catalog Results:', results);
+    })().catch(function(error) {
+      const status = document.getElementById('status');
+      status.textContent = 'Fatal: ' + error.message;
+      status.className = 'fail';
+      console.error(error);
+    });
+  </script>
+</body>
+</html>

@@ -1,94 +1,78 @@
-# AI 集成指南 — Vizual
+# AI Integration Guide
 
-Vizual 是给 AI Agent 产品接入的视觉运行时。Agent 不只返回 Markdown，而是返回 Vizual spec/artifact；宿主前端把它渲染成图表、Dashboard、表格、liveControl 面板、可导出报表或可批注文档。
+Vizual is a native visual runtime for AI agent products. Users still ask normal
+questions in natural language. When the agent decides that text alone is not
+clear enough, it can insert an inline visual or interactive UI block into the
+answer. The host frontend renders the agent payload as charts, KPI cards,
+tables, timelines, org charts, Gantt charts, Markdown, forms, and A2UI
+primitives.
 
-## 适用场景
+Vizual is not a keyword router, a page-template library, or a creative gate. The
+agent decides whether to use Vizual, where the visual block belongs in the
+answer, and which capabilities to combine. Vizual provides the catalog, schema,
+validation, rendering, artifacts, and action transport.
 
-Vizual 适合：
+## Product Boundary
 
-- 自有 SaaS / B 端系统里的 Agent 对话框
-- 类 ChatGPT 的独立 Agent 对话页面
-- 数据分析 Agent 的图表、报表和导出结果
-- 可被用户批注、由 Agent 修订的长文档 / 报告
-- 需要保存历史对话并支持后续追问修改的 Agent 平台
+- **Natural conversation visualization**: use Vizual for analysis, explanation,
+  planning, comparison, diagnosis, and decision support when trends,
+  comparisons, distributions, relationships, flows, structured input, filters,
+  or what-if exploration are clearer as UI than as paragraphs.
+- **Text-only negative cases**: do not generate UI for short facts, ordinary
+  explanations, light rewrites, command explanations, casual chat, or explicit
+  "text only" requests.
+- **Explicit creation requests**: if the user explicitly asks for a webpage,
+  landing page, game, React/HTML/CSS, SVG, code artifact, or custom app, follow
+  that creation path. Do not force the request into Vizual Native unless the
+  user asks to embed a Vizual surface.
+- **Useful interaction only**: buttons, forms, filters, drill-downs, and plan
+  updates must help the user understand, change state, or invoke a capability
+  the host really provides. Do not add controls only to demonstrate that controls
+  exist.
+- **Optional catalog gaps**: agents or SDKs may record optional catalog-gap
+  metadata when the native catalog cannot express a useful idea. Gap metadata
+  must not change rendering or block the answer.
 
-Vizual 不能直接在 ChatGPT / Claude.ai 等封闭消费级聊天界面里渲染，除非该平台集成 Vizual runtime。它不是“让任意聊天机器人直接显示图表”的魔法；它需要一个宿主前端。
+## Two-Layer Integration
 
-## 两层接入
+### Agent Layer
 
-### 1. Agent 层：让 Agent 知道怎么输出
+Choose at least one explicit capability entry:
 
-Claude Code 推荐安装 skill：
+- **Skill**: install `skills/vizual/` so the agent knows when and how to produce
+  Vizual surfaces.
+- **MCP**: run the Vizual MCP server so the agent can discover the catalog,
+  validate inputs, and preview payloads before presenting UI.
+- **SDK tool schema**: expose `createVizualAgentToolDefinition()` as a host tool
+  such as `present_vizual_ui`.
 
-```bash
-cp -R skills/vizual/ ~/.claude/skills/vizual/
+`skills/vizual/prompt.md` is a legacy fallback for agent platforms that cannot
+install skills, connect MCP, or expose SDK tool definitions. Cold-start
+acceptance should not depend on hidden prompt injection.
 
-# 可选：只有当 Agent 需要把非标准设计描述整理成标准 Design.md 时再安装
-cp -R skills/design-md-parser/ ~/.claude/skills/design-md-parser/
-cp -R skills/design-md-creator/ ~/.claude/skills/design-md-creator/
-```
+The native catalog is the source of truth for components, actions, data binding,
+theme tokens, artifact behavior, and protocol compatibility. Skills, MCP, SDK
+tool schemas, and docs should explain how to discover and use that catalog, not
+maintain a second handwritten catalog.
 
-其他 Agent 可把 `skills/vizual/prompt.md` 作为系统提示，并按需读取 `skills/vizual/references/` 下的组件文档。
+### Host Layer
 
-### 2. 宿主层：让前端会渲染和回调
+The host frontend should support:
 
-宿主前端需要支持：
+- rendering one-shot JSON specs
+- saving `VizualArtifact` objects in chat history or product storage
+- patching existing artifacts from follow-up turns through `targetMap`
+- exporting PNG/PDF for visuals and CSV/XLSX for data
+- bridging FormBuilder state for liveControl surfaces
+- receiving host-visible actions: `submitForm`, `applyFilter`, `drillDown`,
+  `selectLocation`, and `updatePlan`
 
-- 渲染一次性 JSON spec
-- 保存 `VizualArtifact` 到聊天记录或业务存储
-- 后续追问时基于 artifact targetMap 做 patch
-- 导出 PNG/PDF/CSV/XLSX
-- liveControl 场景下提供 FormBuilder state bridge
-- DocView 场景下接入 review controller 和 revision proposal loop
+Vizual can be integrated into SaaS chat panels, ChatGPT-like agent products,
+DeerFlow-like platforms, or business workbenches. It cannot render inside closed
+consumer chat products such as ChatGPT or Claude.ai unless that platform
+integrates the Vizual runtime.
 
-## 正式 Agent Bridge 契约
-
-不要把测试页里的全局函数当成唯一实现来源。Vizual 提供 `createAgentBridge()` 作为宿主协议的状态层：它负责 artifact registry、messageId ↔ artifactId 绑定、render history、review/revision、liveControl snapshot 查找和导出/错误事件记录。聊天页面、SaaS 小窗、全屏 Agent 工作台都应该围绕这层状态模型接入。
-
-```tsx
-import { createAgentBridge, normalizeArtifact } from 'vizual'
-
-const bridge = createAgentBridge({
-  getPendingMessage: () => currentPendingMessage,
-})
-
-const artifact = bridge.rememberArtifact(messageId, normalizeArtifact(spec))
-const same = bridge.getArtifact(artifact.id)
-const byMessage = bridge.getArtifact(messageId)
-bridge.recordRender('static', messageId, { status: 'success', artifactId: artifact.id })
-```
-
-`validation/vizual-test.html` 的 `renderVizInMsg()`、`renderLiveControlInMsg()`、`updateArtifactInMsg()`、`exportArtifact()` 是这套契约的 demo bridge。自有前端可以复用同样的状态模型，但 UI 可以完全不同。`renderInteractiveVizInMsg()` 仍是兼容旧脚本的别名。
-
-## 通用 Review / Revision 协议
-
-DocView 的批注能力已经抽象为 Core 级协议。任何 artifact 都可以拥有 review thread、target context 和 revision proposal；DocView 只是其中一个具体 UI。
-
-```ts
-const thread = bridge.createReviewThread({
-  target: 'element:chart',
-  body: '把这张图改成折线图，只看华东区',
-})
-
-const proposal = bridge.createRevisionProposal({
-  threadIds: [thread.id],
-  summary: '切换为折线图并筛选华东区',
-  patches: [
-    { type: 'changeChartType', targetId: 'element:chart', chartType: 'LineChart' },
-    { type: 'filterData', targetId: 'element:chart', field: 'region', values: '华东' },
-  ],
-})
-
-bridge.applyRevision(proposal.id)
-```
-
-原则：
-
-- `TargetRef` 只描述可定位目标，不绑定 PPT/slide/block。
-- Agent 返回 proposal，不直接静默覆盖用户历史。
-- apply 后生成新的 artifact version，review thread 标记 resolved。
-
-## 渲染普通 spec
+## Render A Normal Spec
 
 ```tsx
 import { VizualRenderer } from 'vizual'
@@ -98,13 +82,21 @@ function AgentVisual({ spec }) {
 }
 ```
 
-`VizualRenderer` 是推荐入口：它封装了 json-render 的 `JSONUIProvider`、Vizual registry、内置 action handlers、`$computed`、`$bindState` 和 visibility context。不要在宿主里只写 `StateProvider + Renderer`，否则当前 json-render 会缺少 visibility provider 并在渲染时崩溃。
+`VizualRenderer` is the recommended entry point. It wraps the json-render
+providers, Vizual registry, built-in action handlers, `$computed`,
+`$bindState`, and visibility context. Host apps should not wire the low-level
+renderer manually unless they are intentionally replacing the integration layer.
 
-普通数据分析、Dashboard、报表默认用宿主文本 + `GridLayout` / charts / `KpiDashboard` / `DataTable`。不要因为用户说“报告”就使用 DocView。
+Common agent surfaces combine host prose with semantic components such as KPI
+cards, charts, DataTable, Markdown, and FormBuilder. Use `Column`, `Row`, and
+`Container` for light composition. Page-level design belongs to the host product,
+not native core.
 
-## 保存可追问 Artifact
+## Persist Follow-Up Artifacts
 
-当用户之后可能会说“这张图改成折线图”“只看华东区”“导出 PDF”时，保存 artifact，而不是只保存原始 JSON。
+When a user might later say "change this to a line chart", "only show East
+China", or "export this as PDF", save a `VizualArtifact` rather than only saving
+raw JSON.
 
 ```tsx
 import { createHostRuntime, createMemoryArtifactStore, VizualArtifactView } from 'vizual'
@@ -126,235 +118,89 @@ const artifact = await runtime.renderMessageArtifact({
   spec: aiSpec,
   container,
 })
-
-const updated = await runtime.updateArtifact(artifact.id, [
-  { type: 'changeChartType', targetId: 'element:chart', chartType: 'LineChart' },
-  { type: 'filterData', targetId: 'element:chart', field: 'region', values: '华东' },
-])
 ```
 
-关键原则：
+Rules:
 
-- 使用 targetMap，不要猜 JSON path。
-- follow-up 修改默认生成新的 AI 气泡，旧气泡作为历史保留。
-- `mode: 'replace'` 只适合临时预览，不适合真实聊天历史。
+- Use `targetMap`; do not guess JSON paths.
+- Follow-up edits should normally create a new assistant bubble while preserving
+  the previous rendered answer as history.
+- `mode: 'replace'` is for temporary previews, not durable chat history.
 
-## liveControl 图表
-
-liveControl 不是纯 JSON spec。宿主需要提供 bridge：左侧 FormBuilder 控件绑定 state，右侧由 `makeSpec(state)` 重新渲染预览。
-
-Core 提供正式 schema helper，避免每个宿主自己发明控件协议：
+## SDK Tool Definition
 
 ```ts
-import {
-  buildFormBuilderSpecFromLiveControl,
-  createLiveControlSchema,
-  applyLiveControlStatePatch,
-} from 'vizual'
+import { createVizualAgentToolDefinition, renderVizualAgentInput } from 'vizual'
 
-const schema = createLiveControlSchema({
-  statePath: '/controls',
-  fields: [
-    { name: 'chartType', label: '图表类型', type: 'select', defaultValue: 'bar', options: [
-      { label: '柱状图', value: 'bar' },
-      { label: '折线图', value: 'line' },
-    ] },
-    { name: 'points', label: '数据点', type: 'slider', min: 3, max: 20, defaultValue: 8 },
-  ],
-})
+const tool = createVizualAgentToolDefinition({ includeCatalogManifest: true })
 
-const controlsSpec = buildFormBuilderSpecFromLiveControl(schema)
-const nextState = applyLiveControlStatePatch(schema, currentState, { points: 12 })
-```
+async function presentVizualUi(args) {
+  const result = renderVizualAgentInput(args.input, {
+    surfaceId: args.surfaceId,
+    fallbackText: args.fallbackText,
+    display: args.display,
+  })
 
-自有 React 宿主推荐用 `VizualRenderer` 加 `getVizualStateValue()`。注意：当 FormBuilder 绑定 `value: { "$bindState": "/controls" }` 时，`onStateChange` 返回的是 `/controls` 整个对象，不是顶层 controls 字段的增量。不要把这个 change 直接浅合并进 controls 本身。
-
-```tsx
-import { VizualRenderer, getVizualStateValue } from 'vizual'
-
-const [controls, setControls] = useState({ chartType: 'bar', points: 8, brandColor: '#ff6b35' })
-
-<VizualRenderer
-  spec={controlsSpec}
-  initialState={{ controls }}
-  onStateChange={(changes) => {
-    setControls(prev => getVizualStateValue(changes, '/controls', prev))
-  }}
-/>
-
-<VizualRenderer spec={makeSpec(controls)} />
-```
-
-`validation/vizual-test.html` 的参考 API：
-
-```js
-const snapshot = window.renderLiveControlInMsg(id, {
-  answerText: '可以实时调整图表类型、数据点和品牌色。',
-  initialState: {
-    controls: { chartType: 'bar', points: 8, brandColor: '#ff6b35' },
-  },
-  controlsSpec: {
-    root: 'controls',
-    elements: {
-      controls: {
-        type: 'FormBuilder',
-        props: {
-          type: 'form_builder',
-          value: { $bindState: '/controls' },
-          fields: [
-            { name: 'chartType', type: 'select', label: '图表类型', options: ['bar', 'line'] },
-            { name: 'points', type: 'slider', label: '数据点', min: 3, max: 15 },
-            { name: 'brandColor', type: 'color', label: '主色' },
-          ],
-        },
-        children: [],
-      },
-    },
-  },
-  applyTheme: (state, Vizual) => {
-    Vizual.loadDesignMd(`Primary: ${state.controls.brandColor}`, { apply: true })
-  },
-  makeSpec: (state) => ({
-    root: 'chart',
-    elements: {
-      chart: {
-        type: state.controls.chartType === 'line' ? 'LineChart' : 'BarChart',
-        props: {
-          type: state.controls.chartType === 'line' ? 'line' : 'bar',
-          x: 'day',
-          y: 'value',
-          data: makeData(Number(state.controls.points || 8)),
-        },
-        children: [],
-      },
-    },
-  }),
-})
-```
-
-返回值是 liveControl snapshot：`{ artifact, state, lastPreviewSpec, renderCount }`。多个 liveControl artifact 必须隔离 state 和 theme scope。不要让图 1 的颜色选择器影响图 2。后续测试或导出优先使用 `snapshot.artifact.id`，不要只用 `'last'`。
-
-## DocView 批注修订循环
-
-DocView 是 SDK，不会自己调用 LLM。宿主负责把用户批注交给 Agent，Agent 返回 revision proposal。
-
-```tsx
-const controllerRef = useRef<Vizual.DocViewReviewController | null>(null)
-const [sections, setSections] = useState(initialSections)
-
-<Vizual.DocView
-  sections={sections}
-  showPanel
-  controllerRef={controllerRef}
-  onSectionsChange={setSections}
-  onReviewAction={async (event) => {
-    if (event.type !== 'threadsSubmitted') return
-    const proposal = await agent.revise({
-      threads: event.threads,
-      sectionContexts: event.sectionContexts,
-    })
-    controllerRef.current?.createRevisionProposal(proposal)
-  }}
-/>
-```
-
-Proposal 示例：
-
-```json
-{
-  "fromThreadIds": ["thread_123"],
-  "summary": "补充下一步行动细节",
-  "patches": [
-    {
-      "op": "updateSection",
-      "sectionId": "next-steps",
-      "updates": {
-        "content": "1. 明确实验负责人...\n2. 设置 7 天观察窗口..."
-      }
+  if (!result.ok) {
+    return {
+      ok: false,
+      errors: result.preview.issues,
+      repair: 'Rebuild the payload with supported native Vizual components.',
     }
-  ],
-  "author": { "id": "agent", "role": "agent" },
-  "risk": "low"
+  }
+
+  return {
+    ok: true,
+    envelope: result.envelope,
+    renderEvidence: result.preview,
+  }
 }
 ```
 
-在 `validation/vizual-test.html` 中测试 DocView 时，使用：
+The tool should return validation/preview errors to the agent so the agent can
+repair its payload. Hosts should not show failed internal repair attempts as
+final user-visible cards unless the final answer truly cannot be rendered.
 
-- `renderDocViewInMsg(id, config)`
-- `createDocViewThread(ref, input)`
-- `submitDocViewThreads(ref, threadIds?)`
-- `getDocViewReviewState(ref?)`
-- `createDocViewRevision(ref, input)`
-- `applyDocViewRevision(ref, proposalId?)`
+## liveControl
 
-## 导出
+liveControl is not just static JSON. The host needs to bridge FormBuilder state
+to preview rendering: controls bind to state, and `makeSpec(state)` generates
+the visual preview.
 
-宿主可以按 artifact 导出：
+Use liveControl only when parameter adjustment helps exploration or decision
+making. Do not add sliders, buttons, or forms as decoration.
 
-```js
-const pdf = await window.exportArtifact(artifact.id, { format: 'pdf', filename: 'report' })
-const xlsx = await window.exportArtifact(artifact.id, { format: 'xlsx', filename: 'data' })
-```
+## Actions
 
-`validation/vizual-test.html` 的 `exportArtifact()` 返回 `ExportRecord | null`。成功记录包含 `status: "success"`、`url`、`filename`、`format`、`meta.size/type`、`width`、`height`；失败记录包含 `status: "error"` 和 `error`。不要把返回值当成本地下载句柄。
+| Action | Purpose |
+| --- | --- |
+| `submitForm` | Send structured input from FormBuilder or input primitives to the host agent |
+| `applyFilter` | Apply a visible filter to host context or UI state |
+| `drillDown` | Ask for deeper analysis on a chart point, table row, or entity |
+| `selectLocation` | Select a branch, region, store, or location-like entity |
+| `updatePlan` | Return a visible plan/status update to the host |
 
-库级 API：
+Actions are events, not business promises. Vizual does not save, approve,
+dispatch, create tickets, write databases, or call external systems by itself.
 
-```ts
-import { exportElement, exportDataToXLSX, downloadBlob } from 'vizual'
+## Current Agent-Facing Catalog
 
-const pdf = await exportElement(element, 'pdf', { filename: 'report' })
-const xlsx = await exportDataToXLSX(rows, { sheetName: '明细' })
+See [COMPONENTS.md](COMPONENTS.md). Historical compatibility components are not
+part of agent-facing guidance.
 
-await downloadBlob(pdf, 'report.pdf')
-await downloadBlob(xlsx, 'data.xlsx')
-```
+Removed native-core components should produce stable unsupported-component
+errors and should not appear in new agent output.
 
-## Design.md 主题
+## Acceptance
 
-Vizual runtime 只消费标准 Design.md 字符串。用户粘贴的非标准设计描述可以先交给 Agent 或可选 parser/creator skill 整理，但这不是 runtime 主流程。
+Real acceptance must happen in a browser, not only against JSON:
 
-```ts
-const theme = loadDesignMd(markdown, { name: 'brand', apply: true })
-console.log(theme._mappingReport)
-```
+- natural-language tasks for data analysis, concept interaction, forms,
+  project/organization/timeline cases, and dashboards
+- A2UI, AG-UI, and native operations normalize to the same catalog
+- FormBuilder submit events reach the host action log
+- text-only requests do not force UI
+- explicit webpage/HTML/React requests do not get forced into native core
+- removed components return stable unsupported errors
 
-`theme._mappingReport` 包含：
-
-- `tokenCount`
-- `mappedCount`
-- `fallbackCount`
-- `unsupportedTokens`
-- `warnings`
-- `mappedVariables`
-- `fallbackVariables`
-- `qualityScore`
-
-`validation/design-md-load.html` 是长期主题验收页：CMB / WIRED / Starbucks 动态切换、全部组件矩阵、liveControl、mapping report 都在这里验证。
-
-## 冷启动验收
-
-主验收页面是 `validation/vizual-test.html`。它模拟真实 Agent 聊天宿主，覆盖：
-
-- 乱格式数据解析并渲染 Dashboard
-- 历史追问改图，新气泡保留旧历史
-- 实时调参和品牌色变更
-- 多个 liveControl artifact 隔离
-- ComboChart、Scatter、Histogram、Calendar、Dumbbell、Mermaid 等复杂图
-- DocView 批注、提交、修订 proposal、apply、resolved
-- 普通 dashboard 和 DocView 导出
-
-文档分工：
-
-| 文件 | 给谁 | 说明 |
-| --- | --- | --- |
-| `COLD_START_BLIND_TEST.md` | 被测 Agent | 只包含任务和约束。Agent 需要自己读 skill、自己操作 `vizual-test.html`、自己写 QA 报告。 |
-| `COLD_START_ACCEPTANCE_GUIDE.md` | 测试主持人 / 维护者 | 包含验收标准和预期结果。不要给被测 Agent，否则测试会失真。 |
-
-最小执行流程：
-
-1. 安装 `skills/vizual/` 到被测 Agent 环境。
-2. 在仓库根目录运行 `python3 -m http.server 8793`。
-3. 打开 `http://127.0.0.1:8793/validation/vizual-test.html`，并让 Chrome DevTools MCP 或等价能力连接同一个可见页面。
-4. 开一个全新 Agent 会话，只给它 `COLD_START_BLIND_TEST.md`。
-5. Agent 必须在可见页面里输入测试消息、读取 `window.getPendingMessage()`、调用页面 bridge API，并提交 Markdown QA 报告。
+[中文版本](AI-INTEGRATION.zh-CN.md)

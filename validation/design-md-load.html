@@ -1116,11 +1116,8 @@ Whisper-soft, layered over solid surfaces.
         root: 'dashboard',
         elements: {
           dashboard: {
-            type: 'GridLayout',
-            props: {
-              columns: 2,
-              gap: 16,
-            },
+            type: 'Column',
+            props: { gap: 16 },
             children: ['kpi', 'bar', 'table'],
           },
           kpi: {
@@ -1339,8 +1336,8 @@ ${base}`;
           };
       const elements = {
         layout: {
-          type: 'GridLayout',
-          props: { columns: controls.showTable ? 2 : 1, gap: 16 },
+          type: 'Column',
+          props: { gap: 16 },
           children: controls.showTable ? ['chart', 'table'] : ['chart'],
         },
         chart: {

@@ -6,6 +6,7 @@ function buildBubbleFallback(props: BubbleChartProps): Record<string, unknown> {
   const x = props.x ?? 'x'
   const y = (Array.isArray(props.y) ? props.y[0] : props.y) ?? 'y'
   const sizeField = (props as Record<string, unknown>).size ?? (props as Record<string, unknown>).r ?? 'size'
+  const labelField = props.label ?? props.groupField
   const maxSize = Math.max(...data.map(d => Number((d as Record<string, unknown>)[sizeField as string]) || 0), 1)
   return {
     title: props.title ? { text: props.title, left: 'center' } : undefined,
@@ -20,7 +21,7 @@ function buildBubbleFallback(props: BubbleChartProps): Record<string, unknown> {
         Number(d[x]) || 0,
         Number(d[y]) || 0,
         Number(d[sizeField as string]) || 0,
-        d.name ?? d.label ?? '',
+        labelField ? d[labelField] ?? '' : d.name ?? d.label ?? '',
       ]),
       symbolSize: (value: unknown) => {
         const row = Array.isArray(value) ? value : []

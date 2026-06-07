@@ -8,4 +8,4 @@ export const TextFieldSchema = z.object({
   disabled: z.boolean().optional().default(false),
 })
 
-export type TextFieldProps = z.infer<typeof TextFieldSchema>
+export type TextFieldProps = z.input<typeof TextFieldSchema>

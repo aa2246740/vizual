@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { tcss } from '../../core/theme-colors'
 import type { ButtonProps } from './schema'
 
@@ -8,14 +8,28 @@ const sizes: Record<string, React.CSSProperties> = {
   large: { padding: '12px 24px', fontSize: 16 },
 }
 
-export function Button({ props }: { props: ButtonProps }) {
-  const { label, variant = 'primary', disabled = false, size = 'medium' } = props
+export function Button({
+  props,
+  emit = () => undefined,
+}: {
+  props: ButtonProps
+  emit?: (event: string) => void
+}) {
+  const { label, text, variant = 'primary', disabled = false, size = 'medium', action } = props
+  const [pressed, setPressed] = useState(false)
   const isPrimary = variant === 'primary'
   const isGhost = variant === 'ghost'
+  const content = label ?? text ?? ''
 
   return (
     <button
       disabled={disabled}
+      data-clicked={pressed ? 'true' : 'false'}
+      onClick={() => {
+        setPressed(true)
+        emit('press')
+        if (action) emit(action)
+      }}
       style={{
         ...sizes[size],
         border: isGhost ? 'none' : `1px solid ${isPrimary ? 'transparent' : tcss('--rk-border')}`,
@@ -27,9 +41,17 @@ export function Button({ props }: { props: ButtonProps }) {
         fontWeight: 500,
         fontFamily: tcss('--rk-font-sans'),
         transition: 'opacity 0.15s',
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: 'fit-content',
+        maxWidth: '100%',
+        height: 'fit-content',
+        lineHeight: 1.25,
+        textAlign: 'center',
       }}
     >
-      {label}
+      {content}
     </button>
   )
 }

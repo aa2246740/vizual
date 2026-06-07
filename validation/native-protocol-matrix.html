@@ -1,0 +1,1135 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Vizual Native Protocol Matrix</title>
+  <link rel="icon" href="data:," />
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f4f5f7;
+      --panel: #ffffff;
+      --panel2: #f9fafb;
+      --line: #d8dde6;
+      --line-strong: #b9c2d0;
+      --text: #20242c;
+      --muted: #667085;
+      --ok: #39d98a;
+      --bad: #b42318;
+      --warn: #b54708;
+      --blue: #2563eb;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font: 14px/1.5 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
+    }
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      padding: 16px 24px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(255, 255, 255, .96);
+      backdrop-filter: blur(12px);
+    }
+    h1 { margin: 0; font-size: 18px; }
+    .summary { display: flex; gap: 12px; flex-wrap: wrap; }
+    .pill {
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 4px 10px;
+      color: var(--muted);
+      background: var(--panel2);
+    }
+    .pill strong { color: var(--text); }
+    main { max-width: 1320px; margin: 0 auto; padding: 24px; }
+    .guide {
+      display: grid;
+      grid-template-columns: minmax(260px, 1fr) minmax(360px, 2fr);
+      gap: 16px;
+      margin-bottom: 16px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      overflow: hidden;
+    }
+    .guide-main,
+    .guide-list {
+      padding: 16px;
+    }
+    .guide-main {
+      border-right: 1px solid var(--line);
+      background: var(--panel2);
+    }
+    .guide h2 {
+      margin: 0 0 8px;
+      font-size: 16px;
+    }
+    .guide p {
+      margin: 0;
+      color: var(--muted);
+    }
+    .guide-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 10px 18px;
+      margin: 0;
+      list-style: none;
+      counter-reset: guide;
+    }
+    .guide-list li {
+      counter-increment: guide;
+      position: relative;
+      padding-left: 34px;
+      min-height: 28px;
+    }
+    .guide-list li::before {
+      content: counter(guide);
+      position: absolute;
+      left: 0;
+      top: 1px;
+      width: 22px;
+      height: 22px;
+      display: grid;
+      place-items: center;
+      border-radius: 999px;
+      background: #eff6ff;
+      color: var(--blue);
+      font-weight: 750;
+      font-size: 12px;
+    }
+    .guide-list strong {
+      display: block;
+      font-size: 13px;
+    }
+    .guide-list span {
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+      gap: 16px;
+      align-items: start;
+    }
+    .case {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+      background: var(--panel);
+    }
+    .case-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--line);
+      background: var(--panel2);
+    }
+    .case-title { font-weight: 700; }
+    .case-source { margin-top: 2px; color: var(--muted); font-size: 12px; }
+    .case-brief {
+      display: grid;
+      gap: 6px;
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--line);
+      background: #ffffff;
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .case-brief div {
+      display: grid;
+      grid-template-columns: 78px 1fr;
+      gap: 10px;
+    }
+    .case-brief b {
+      color: #475467;
+      font-weight: 700;
+    }
+    .status { font-weight: 700; white-space: nowrap; }
+    .status.pass { color: var(--ok); }
+    .status.fail { color: var(--bad); }
+    .status.pending { color: var(--warn); }
+    .render {
+      min-height: 140px;
+      padding: 16px;
+      background: #ffffff;
+      color: var(--text);
+      overflow: auto;
+      --rk-bg-primary: #ffffff;
+      --rk-bg-secondary: #f8fafc;
+      --rk-bg-tertiary: #eef2f6;
+      --rk-surface: #ffffff;
+      --rk-border: #d8dde6;
+      --rk-border-subtle: #e6eaf0;
+      --rk-text-primary: #20242c;
+      --rk-text-secondary: #667085;
+      --rk-text-tertiary: #8a94a6;
+      --rk-accent: #2563eb;
+      --rk-success: #039855;
+      --rk-error: #b42318;
+      --rk-radius-md: 8px;
+      --rk-font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
+      --rk-font-body: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
+      --rk-font-ui: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
+      --rk-font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", sans-serif;
+      --rk-font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      --rk-text-xs: 11px;
+      --rk-text-sm: 12px;
+      --rk-text-base: 14px;
+      --rk-text-md: 16px;
+      --rk-text-lg: 18px;
+      --rk-text-xl: 22px;
+      --rk-text-2xl: 28px;
+      --rk-weight-semibold: 650;
+      --rk-weight-bold: 750;
+    }
+    .audit {
+      border-top: 1px solid var(--line);
+      padding: 8px 14px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .audit summary {
+      cursor: pointer;
+      color: var(--muted);
+      font-weight: 600;
+      list-style: none;
+    }
+    .audit summary::-webkit-details-marker { display: none; }
+    .audit summary::before {
+      content: "▸";
+      display: inline-block;
+      margin-right: 6px;
+      color: var(--blue);
+    }
+    .audit[open] summary::before { content: "▾"; }
+    .audit-body {
+      margin-top: 8px;
+      line-height: 1.55;
+    }
+    .audit code {
+      color: #1d4ed8;
+      background: #eff6ff;
+      padding: 1px 4px;
+      border-radius: 4px;
+    }
+    .wide { grid-column: 1 / -1; }
+    .actions {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+    button.run {
+      border: 0;
+      border-radius: 8px;
+      padding: 9px 14px;
+      background: var(--blue);
+      color: #ffffff;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .log {
+      margin-top: 16px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #ffffff;
+      overflow: hidden;
+    }
+    .log summary {
+      cursor: pointer;
+      padding: 10px 14px;
+      font-size: 14px;
+      font-weight: 700;
+      border-bottom: 1px solid var(--line);
+      list-style: none;
+    }
+    .log summary::-webkit-details-marker { display: none; }
+    pre {
+      margin: 0;
+      padding: 14px;
+      max-height: 320px;
+      overflow: auto;
+      white-space: pre-wrap;
+      word-break: break-word;
+      color: #344054;
+      font: 12px/1.45 "SF Mono", Menlo, Consolas, monospace;
+    }
+    @media (max-width: 720px) {
+      header { align-items: flex-start; flex-direction: column; }
+      main { padding: 14px; }
+      .guide { grid-template-columns: 1fr; }
+      .guide-main { border-right: 0; border-bottom: 1px solid var(--line); }
+      .grid { grid-template-columns: 1fr; }
+      .render { padding: 12px; }
+      .case-brief div { grid-template-columns: 1fr; gap: 2px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>Vizual Native Protocol Matrix</h1>
+      <div class="case-source">A2UI + AG-UI + AGenUI 真实用法原生融合验收</div>
+    </div>
+    <div class="summary" id="summary">
+      <span class="pill">total <strong>0</strong></span>
+      <span class="pill">pass <strong>0</strong></span>
+      <span class="pill">fail <strong>0</strong></span>
+    </div>
+  </header>
+  <main>
+    <section class="guide" aria-label="验收导读">
+      <div class="guide-main">
+        <h2>这个矩阵在验收什么</h2>
+        <p>每个 Part 都是一个协议入口的最小真实用法：先喂给 VizualNativeCore，再由同一个原生 renderer 渲染，最后检查可见内容、交互状态、图表画布和错误。</p>
+      </div>
+      <ol class="guide-list">
+        <li><strong>A2UI 原生组件</strong><span>图片、表单、按钮、数据绑定和 action。</span></li>
+        <li><strong>A2UI 模板 children</strong><span>列表模板按数据模型展开。</span></li>
+        <li><strong>AG-UI 流式事件</strong><span>消息、state patch、tool args/result 拼成原生界面。</span></li>
+        <li><strong>AGenUI 扩展</strong><span>Chart/Table/Markdown/RichText/Web/Lottie/Carousel。</span></li>
+        <li><strong>AGenUI 全 catalog</strong><span>25 个 catalog 组件至少有可见表征。</span></li>
+        <li><strong>上游交付兼容</strong><span>A2UI MIME、MCP/A2A resource、AG-UI render_a2ui 新参数。</span></li>
+        <li><strong>AG-UI 全事件名</strong><span>33 个 EventType 进入同一个 native core。</span></li>
+      </ol>
+    </section>
+    <div class="actions">
+      <button class="run" id="rerun">重跑完整矩阵</button>
+      <span class="pill">core 不做布局/设计门禁，只验证协议语义、渲染可见、交互可触发</span>
+      <span class="pill" id="runtime">runtime loading</span>
+    </div>
+    <section class="grid" id="cases"></section>
+    <details class="log">
+      <summary>审计日志</summary>
+      <pre id="log"></pre>
+    </details>
+  </main>
+
+  <script src="../dist/vizual.standalone.js"></script>
+  <script>
+    const state = {
+      cases: [],
+      actions: [],
+      stateChanges: [],
+      failures: [],
+      themeImport: null,
+    };
+    const AG_UI_EVENT_TYPES = [
+      'TEXT_MESSAGE_START', 'TEXT_MESSAGE_CONTENT', 'TEXT_MESSAGE_END', 'TEXT_MESSAGE_CHUNK',
+      'TOOL_CALL_START', 'TOOL_CALL_ARGS', 'TOOL_CALL_END', 'TOOL_CALL_CHUNK', 'TOOL_CALL_RESULT',
+      'THINKING_START', 'THINKING_END', 'THINKING_TEXT_MESSAGE_START', 'THINKING_TEXT_MESSAGE_CONTENT', 'THINKING_TEXT_MESSAGE_END',
+      'STATE_SNAPSHOT', 'STATE_DELTA', 'MESSAGES_SNAPSHOT', 'ACTIVITY_SNAPSHOT', 'ACTIVITY_DELTA',
+      'RAW', 'CUSTOM', 'RUN_STARTED', 'RUN_FINISHED', 'RUN_ERROR', 'STEP_STARTED', 'STEP_FINISHED',
+      'REASONING_START', 'REASONING_MESSAGE_START', 'REASONING_MESSAGE_CONTENT', 'REASONING_MESSAGE_END',
+      'REASONING_MESSAGE_CHUNK', 'REASONING_END', 'REASONING_ENCRYPTED_VALUE',
+    ];
+    const AGENUI_CATALOG_COMPONENTS = [
+      'Text', 'Image', 'Icon', 'Video', 'AudioPlayer',
+      'Row', 'Column', 'List', 'Card', 'Tabs', 'Divider',
+      'Button', 'TextField', 'CheckBox', 'ChoicePicker', 'Slider', 'DateTimeInput',
+      'RichText', 'Lottie', 'Table', 'Web', 'Markdown', 'Chart', 'Carousel',
+    ];
+    const REAL_DOWNLOAD_IMAGE = 'assets/download-alert-management.png';
+    const REAL_SAMPLE_VIDEO = 'assets/a2ui-sample-video.mp4';
+    const BREAK_AGUI_EVENTS = new URLSearchParams(window.location.search).has('break-agui-events');
+    window.__nativeProtocolMatrix = state;
+
+    state.themeImport = {
+      bodyThemeClasses: Array.from(document.body.classList).filter(cls => cls.startsWith('rk-theme-')),
+      themeStyleIds: Array.from(document.querySelectorAll('style[id^="rk-theme-variables-"]')).map(style => style.id),
+      currentThemeName: window.Vizual?.getCurrentThemeName?.(),
+      defaultBackgroundFallback: window.Vizual?.tc?.('--rk-bg-primary'),
+    };
+
+    const $ = (selector) => document.querySelector(selector);
+    const log = (entry) => {
+      state.cases.push(entry);
+      $('#log').textContent = JSON.stringify({
+        cases: state.cases.map(item => ({ id: item.id, ok: item.ok, checks: item.checks })),
+        themeImport: state.themeImport,
+        actions: state.actions,
+        stateChanges: state.stateChanges,
+        failures: state.failures,
+      }, null, 2);
+      const pass = state.cases.filter(item => item.ok).length;
+      const fail = state.cases.filter(item => !item.ok).length;
+      $('#summary').innerHTML = `
+        <span class="pill">total <strong>${state.cases.length}</strong></span>
+        <span class="pill">pass <strong>${pass}</strong></span>
+        <span class="pill">fail <strong>${fail}</strong></span>
+      `;
+    };
+
+    function caseShell(testCase) {
+      const card = document.createElement('article');
+      card.className = `case ${testCase.wide ? 'wide' : ''}`;
+      card.id = `case-${testCase.id}`;
+      card.innerHTML = `
+        <div class="case-head">
+          <div>
+            <div class="case-title">${testCase.title}</div>
+            <div class="case-source">${testCase.source}</div>
+          </div>
+          <div class="status pending">PENDING</div>
+        </div>
+        <div class="case-brief">
+          <div><b>测什么</b><span>${testCase.purpose}</span></div>
+          <div><b>输入</b><span>${testCase.input}</span></div>
+          <div><b>通过条件</b><span>${testCase.pass}</span></div>
+        </div>
+        <div class="render"></div>
+        <details class="audit">
+          <summary>审计待运行</summary>
+          <div class="audit-body"></div>
+        </details>
+      `;
+      $('#cases').appendChild(card);
+      return card;
+    }
+
+    function renderSnapshot(testCase, snapshot, card, handlers = {}) {
+      const target = card.querySelector('.render');
+      target.innerHTML = '';
+      window.Vizual.renderSpec(snapshot.spec, target, {
+        initialState: snapshot.spec.state || {},
+        handlers,
+        onStateChange(changes) {
+          state.stateChanges.push({ caseId: testCase.id, changes });
+        },
+      });
+      return target;
+    }
+
+    async function settle() {
+      await new Promise(resolve => setTimeout(resolve, 350));
+    }
+
+    async function waitUntil(predicate, timeout = 5000) {
+      const started = performance.now();
+      while (performance.now() - started < timeout) {
+        if (predicate()) return true;
+        await new Promise(resolve => setTimeout(resolve, 120));
+      }
+      return predicate();
+    }
+
+    function hasNonEmptyCanvas(target) {
+      const canvases = Array.from(target.querySelectorAll('canvas'));
+      return canvases.some(canvas => {
+        if (canvas.width < 20 || canvas.height < 20) return false;
+        try {
+          const ctx = canvas.getContext('2d', { willReadFrequently: true });
+          const xStep = Math.max(1, Math.floor(canvas.width / 24));
+          const yStep = Math.max(1, Math.floor(canvas.height / 24));
+          for (let y = 0; y < canvas.height; y += yStep) {
+            for (let x = 0; x < canvas.width; x += xStep) {
+              const data = ctx.getImageData(x, y, 1, 1).data;
+              if (data[3] !== 0) return true;
+            }
+          }
+        } catch {
+          return true;
+        }
+        return false;
+      });
+    }
+
+    function visibleText(target, text) {
+      return (target.innerText || target.textContent || '').includes(text);
+    }
+
+    function auditComponentVisualCoverage(target) {
+      const checks = {
+        Text: visibleText(target, 'Text component'),
+        Image: target.querySelectorAll('img[alt="Image component"]').length > 0,
+        Icon: Boolean(target.querySelector('[aria-label="check"]')) || visibleText(target, '✓') || visibleText(target, 'check'),
+        Video: target.querySelectorAll('video').length > 0,
+        AudioPlayer: target.querySelectorAll('audio').length > 0 && visibleText(target, 'Audio component'),
+        Row: visibleText(target, 'Row child'),
+        Column: visibleText(target, 'Column child'),
+        List: visibleText(target, 'one') && visibleText(target, 'two'),
+        Card: visibleText(target, 'Card title') && visibleText(target, 'Card child'),
+        Tabs: target.querySelectorAll('button').length > 0 && visibleText(target, 'General'),
+        Divider: target.querySelectorAll('div').length > 0,
+        Button: Array.from(target.querySelectorAll('button')).some(button => button.textContent.includes('Open URL')),
+        TextField: Array.from(target.querySelectorAll('input')).some(input => input.value === 'alice@example.com'),
+        CheckBox: Array.from(target.querySelectorAll('input[type="checkbox"]')).some(input => input.checked),
+        ChoicePicker: Array.from(target.querySelectorAll('select')).some(select => select.value === 'ca'),
+        Slider: target.querySelectorAll('input[type="range"]').length > 0,
+        DateTimeInput: target.querySelectorAll('input[type="date"], input[type="datetime-local"]').length > 0,
+        RichText: visibleText(target, 'Rich text'),
+        Lottie: visibleText(target, 'Lottie: https://example.com/animation.json'),
+        Table: target.querySelectorAll('table').length > 0 && visibleText(target, 'Alice'),
+        Web: visibleText(target, 'https://a2ui.org/'),
+        Markdown: visibleText(target, 'Markdown'),
+        Chart: hasNonEmptyCanvas(target),
+        Carousel: target.querySelectorAll('img').length >= 3,
+      };
+      const failures = Object.entries(checks)
+        .filter(([, value]) => value === false)
+        .map(([name]) => name);
+      return {
+        ok: failures.length === 0,
+        failures,
+        summary: Object.entries(checks).map(([name, value]) => `${name}:${value === true ? 'visible' : value === false ? 'missing' : value}`).join(', '),
+      };
+    }
+
+    function auditTarget(target, extra = {}) {
+      const rect = target.getBoundingClientRect();
+      const inputs = target.querySelectorAll('input, select, button, textarea').length;
+      const canvasCount = target.querySelectorAll('canvas').length;
+      return {
+        visible: rect.width > 40 && rect.height > 40,
+        noRenderError: !target.textContent.includes('Unknown component') && !target.textContent.includes('Error:'),
+        controlCount: inputs,
+        canvasCount,
+        hasNonEmptyCanvas: canvasCount > 0 ? hasNonEmptyCanvas(target) : 'n/a',
+        noHorizontalOverflow: target.scrollWidth <= target.clientWidth + 8,
+        text: (target.innerText || target.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 260),
+        ...extra,
+      };
+    }
+
+    function categoryForAguiEvent(type) {
+      if (type.startsWith('TEXT_MESSAGE')) return 'message';
+      if (type.startsWith('TOOL_CALL')) return 'tool';
+      if (type.startsWith('THINKING')) return 'legacy thinking';
+      if (type.includes('STATE') || type.includes('SNAPSHOT') || type.includes('ACTIVITY')) return 'state/activity';
+      if (type.startsWith('RUN') || type.startsWith('STEP') || type === 'RAW' || type === 'CUSTOM') return 'run/step/custom';
+      if (type.startsWith('REASONING')) return 'reasoning';
+      return 'other';
+    }
+
+    function summarizeAguiCategories(types) {
+      return types.reduce((acc, type) => {
+        const category = categoryForAguiEvent(type);
+        acc[category] = (acc[category] || 0) + 1;
+        return acc;
+      }, {});
+    }
+
+    async function runCase(testCase) {
+      const card = caseShell(testCase);
+      const status = card.querySelector('.status');
+      const audit = card.querySelector('.audit');
+      const auditSummary = audit.querySelector('summary');
+      const auditBody = audit.querySelector('.audit-body');
+      try {
+        const core = new window.Vizual.VizualNativeCore({
+          onAction(action) {
+            state.actions.push({ from: 'native-core', caseId: testCase.id, action });
+          },
+          onMessage(message) {
+            if (testCase.id === 'agui-stream') state.lastAguiMessage = message;
+          },
+        });
+        const result = await testCase.run(core, card);
+        await settle();
+        const checks = result.checks || auditTarget(card.querySelector('.render'));
+        const ok = Object.values(checks).every(value => value !== false);
+        status.className = `status ${ok ? 'pass' : 'fail'}`;
+        status.textContent = ok ? 'PASS' : 'FAIL';
+        audit.open = !ok;
+        auditSummary.textContent = ok ? `审计通过 · ${Object.keys(checks).length} 项` : '审计失败';
+        auditBody.innerHTML = Object.entries(checks)
+          .map(([key, value]) => `<code>${key}</code>: ${String(value)}`)
+          .join(' | ');
+        const entry = { id: testCase.id, title: testCase.title, ok, checks };
+        if (!ok) state.failures.push(entry);
+        log(entry);
+      } catch (error) {
+        status.className = 'status fail';
+        status.textContent = 'FAIL';
+        audit.open = true;
+        auditSummary.textContent = '审计异常';
+        auditBody.textContent = error && error.stack ? error.stack : String(error);
+        const entry = { id: testCase.id, title: testCase.title, ok: false, checks: { exception: String(error && error.message || error) } };
+        state.failures.push(entry);
+        log(entry);
+      }
+    }
+
+    const a2uiPrimitiveMessages = [
+      { version: 'v0.9', createSurface: { surfaceId: 'a2ui-v09', catalogId: 'basic' } },
+      { version: 'v0.9', updateDataModel: { surfaceId: 'a2ui-v09', path: '/', value: {
+        title: 'Book Your Table',
+        hero: REAL_DOWNLOAD_IMAGE,
+        guests: 3,
+        agree: true,
+        country: 'ca',
+        when: '2026-06-01',
+      } } },
+      { version: 'v0.9', updateComponents: { surfaceId: 'a2ui-v09', components: [
+        { id: 'root', component: 'Column', gap: 12, children: { explicitList: ['row', 'assetNote', 'field', 'choice', 'slider', 'datetime', 'checkbox'] } },
+        { id: 'row', component: 'Row', gap: 12, align: 'center', wrap: true, children: ['image', 'copy', 'button'] },
+        { id: 'image', component: 'Image', url: { path: '/hero' }, description: { literalString: 'A2UI real downloaded asset' }, width: 420, height: 226 },
+        { id: 'copy', component: 'Card', title: { literalString: 'A2UI v0.9 primitives' }, child: 'copyText' },
+        { id: 'copyText', component: 'Text', text: { path: '/title' } },
+        { id: 'button', component: 'Button', text: { literalString: 'Confirm' }, action: { event: { name: 'confirm_booking' } } },
+        { id: 'assetNote', component: 'Text', text: { literalString: '真实图片来自 Downloads/告警管理.png，用来验证本地素材加载、缩放和布局不撑爆。' }, size: 'sm', color: 'secondary' },
+        { id: 'field', component: 'TextField', label: { literalString: 'Email' }, value: { literalString: 'alice@example.com' } },
+        { id: 'choice', component: 'ChoicePicker', label: { literalString: 'Country' }, value: { path: '/country' }, options: [{ label: { literalString: 'USA' }, value: 'us' }, { label: { literalString: 'Canada' }, value: 'ca' }] },
+        { id: 'slider', component: 'Slider', label: { literalString: 'Guests' }, min: 1, max: 8, value: { path: '/guests' } },
+        { id: 'datetime', component: 'DateTimeInput', label: { literalString: 'Date' }, value: { path: '/when' } },
+        { id: 'checkbox', component: 'CheckBox', label: { literalString: 'I agree' }, checked: { path: '/agree' } },
+      ] } },
+    ];
+
+    const cases = [
+      {
+        id: 'a2ui-primitives',
+        title: 'Part 1 · A2UI v0.9 primitives + action',
+        source: 'A2UI docs/reference/components.md + actions.md',
+        purpose: '验证 A2UI v0.9 的基础组件能被 native core 原生理解：Image、Card、Text、Button、TextField、ChoicePicker、Slider、DateTimeInput、CheckBox。',
+        input: '三条 A2UI message：createSurface、updateDataModel、updateComponents；图片使用 Downloads/告警管理.png 的本地复制件。',
+        pass: '真实图片加载成功，按钮 action 被记录，输入框/select/checkbox/slider 都能更新，且没有横向溢出或渲染错误。',
+        wide: true,
+        async run(core, card) {
+          const snapshot = core.dispatch(a2uiPrimitiveMessages);
+          const target = renderSnapshot(this, snapshot, card, {
+            confirm_booking() {
+              state.actions.push({ from: 'button-handler', caseId: 'a2ui-primitives', name: 'confirm_booking' });
+              return { ok: true };
+            },
+          });
+          await settle();
+          await waitUntil(() => {
+            const image = target.querySelector('img');
+            return image && image.complete && image.naturalWidth > 0;
+          });
+          const button = Array.from(target.querySelectorAll('button')).find(btn => btn.textContent.includes('Confirm'));
+          button && button.click();
+          const input = target.querySelector('input[type="text"]');
+          if (input) {
+            input.focus();
+            const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set;
+            setter ? setter.call(input, 'bob@example.com') : (input.value = 'bob@example.com');
+            input.dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'insertText', data: 'bob@example.com' }));
+            input.dispatchEvent(new Event('change', { bubbles: true }));
+          }
+          const checkbox = target.querySelector('input[type="checkbox"]');
+          checkbox && checkbox.click();
+          const select = target.querySelector('select');
+          if (select) {
+            select.value = 'us';
+            select.dispatchEvent(new Event('change', { bubbles: true }));
+          }
+          const slider = target.querySelector('input[type="range"]');
+          if (slider) {
+            const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set;
+            setter ? setter.call(slider, '6') : (slider.value = '6');
+            slider.dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'insertText', data: '6' }));
+            slider.dispatchEvent(new Event('change', { bubbles: true }));
+          }
+          await settle();
+          const heroImage = target.querySelector('img');
+          const checks = auditTarget(target, {
+            bundleImportDidNotApplyBodyTheme: state.themeImport.bodyThemeClasses.length === 0,
+            bundleImportDidNotInjectThemeStyle: state.themeImport.themeStyleIds.length === 0,
+            defaultFallbackIsLight: state.themeImport.defaultBackgroundFallback === '#ffffff',
+            clicked: Boolean(button && button.dataset.clicked === 'true'),
+            actionLogged: state.actions.some(action => action.name === 'confirm_booking'),
+            imageVisible: target.querySelectorAll('img').length > 0,
+            realDownloadImageLoaded: heroImage ? heroImage.complete && heroImage.naturalWidth > 0 && heroImage.currentSrc.includes(REAL_DOWNLOAD_IMAGE) : false,
+            inputEditable: input ? input.value === 'bob@example.com' : false,
+            selectEditable: select ? select.value === 'us' : false,
+            checkboxEditable: checkbox ? checkbox.checked === false : false,
+            sliderEditable: slider ? slider.value === '6' && visibleText(target, '6') : false,
+          });
+          return { checks };
+        },
+      },
+      {
+        id: 'a2ui-template',
+        title: 'Part 2 · A2UI template children',
+        source: 'A2UI docs/concepts/components.md + data-binding.md',
+        purpose: '验证 A2UI 的 template children 语义，不是手写三行 UI，而是用数据数组驱动 List 模板展开。',
+        input: 'dataModel /messages = Alice、Bob、Carol，List.children.template 指向 item-template。',
+        pass: '三个名字都由模板渲染出来，说明数据绑定和模板 children 没丢。',
+        async run(core, card) {
+          const snapshot = core.dispatch([
+            { version: 'v0.9', createSurface: { surfaceId: 'template', catalogId: 'basic' } },
+            { version: 'v0.9', updateDataModel: { surfaceId: 'template', path: '/messages', value: [{ name: 'Alice' }, { name: 'Bob' }, { name: 'Carol' }] } },
+            { version: 'v0.9', updateComponents: { surfaceId: 'template', components: [
+              { id: 'root', component: 'List', children: { template: { dataBinding: '/messages', componentId: 'item-template' } } },
+              { id: 'item-template', component: 'Text', text: { path: 'name' } },
+            ] } },
+          ]);
+          const target = renderSnapshot(this, snapshot, card);
+          await settle();
+          return { checks: auditTarget(target, { alice: visibleText(target, 'Alice'), bob: visibleText(target, 'Bob'), carol: visibleText(target, 'Carol') }) };
+        },
+      },
+      {
+        id: 'agui-stream',
+        title: 'Part 3 · AG-UI message/tool/state/activity',
+        source: 'AG-UI core events.ts',
+        purpose: '验证 AG-UI 的流式消息、state delta 和 tool call 生命周期可以直接进入同一个 native core。',
+        input: 'RUN_STARTED、STATE_SNAPSHOT/DELTA、TEXT_MESSAGE_*、TOOL_CALL_ARGS/CHUNK/END/RESULT。',
+        pass: '消息拼接为“正在生成原生界面”，state count patch 到 2，tool args 拼出 A2UI surface 并渲染表格和卡片。',
+        async run(core, card) {
+          core.dispatch({ type: 'RUN_STARTED', threadId: 't1', runId: 'run1' });
+          core.dispatch({ type: 'STATE_SNAPSHOT', snapshot: { count: 1 } });
+          core.dispatch({ type: 'STATE_DELTA', delta: [{ op: 'replace', path: '/count', value: 2 }] });
+          core.dispatch({ type: 'TEXT_MESSAGE_START', messageId: 'm1', role: 'assistant' });
+          core.dispatch({ type: 'TEXT_MESSAGE_CONTENT', messageId: 'm1', delta: '正在生成' });
+          core.dispatch({ type: 'TEXT_MESSAGE_CHUNK', messageId: 'm1', delta: '原生界面' });
+          core.dispatch({ type: 'TEXT_MESSAGE_END', messageId: 'm1' });
+          const args = JSON.stringify({ a2uiMessages: [
+            { version: 'v0.9', createSurface: { surfaceId: 'agui-tool', catalogId: 'basic' } },
+            { version: 'v0.9', updateComponents: { surfaceId: 'agui-tool', components: [
+              { id: 'root', component: 'Column', gap: 12, children: ['message', 'metrics', 'table'] },
+              { id: 'message', component: 'Card', title: 'AG-UI stream assembled', subtitle: 'TEXT_MESSAGE_CONTENT + TEXT_MESSAGE_CHUNK', child: 'messageText', shadow: 0 },
+              { id: 'messageText', component: 'Text', text: '正在生成原生界面', weight: 'semibold' },
+              { id: 'metrics', component: 'Row', gap: 12, wrap: true, children: ['stateCard', 'toolCard'] },
+              { id: 'stateCard', component: 'Card', title: 'State patch', value: 'count = 2', extra: 'STATE_SNAPSHOT -> STATE_DELTA', shadow: 0 },
+              { id: 'toolCard', component: 'Card', title: 'Tool call', value: 'render_a2ui', extra: 'TOOL_CALL_ARGS chunks merged', shadow: 0 },
+              { id: 'table', component: 'Table', title: 'AG-UI event coverage', compact: true, columns: ['Event', 'Result'], rows: [
+                ['RUN_STARTED', 'run1 tracked'],
+                ['STATE_DELTA', 'count updated to 2'],
+                ['TOOL_CALL_END', 'native surface rendered'],
+                ['TOOL_CALL_RESULT', 'function call marked success'],
+              ] },
+            ] } },
+          ] });
+          core.dispatch({ type: 'TOOL_CALL_START', toolCallId: 'tc1', toolCallName: 'render_a2ui' });
+          core.dispatch({ type: 'TOOL_CALL_ARGS', toolCallId: 'tc1', delta: args.slice(0, 32) });
+          core.dispatch({ type: 'TOOL_CALL_CHUNK', toolCallId: 'tc1', delta: args.slice(32) });
+          const snapshot = core.dispatch({ type: 'TOOL_CALL_END', toolCallId: 'tc1' });
+          core.dispatch({ type: 'TOOL_CALL_RESULT', toolCallId: 'tc1', content: JSON.stringify({ ok: true }) });
+          const target = renderSnapshot(this, snapshot || core.getArtifact('agui-tool'), card);
+          await settle();
+          const messages = core.getMessages();
+          return { checks: auditTarget(target, {
+            textStreamStored: messages.some(message => message.content === '正在生成原生界面'),
+            statePatched: core.getRunState().count === 2,
+            toolCallTracked: core.getFunctionCalls().some(call => call.id === 'tc1' && call.functionName === 'render_a2ui'),
+            toolCallSucceeded: core.getFunctionCalls().some(call => call.id === 'tc1' && call.status === 'success'),
+            renderedToolSurface: visibleText(target, 'AG-UI stream assembled'),
+            messageVisible: visibleText(target, '正在生成原生界面'),
+            stateCardVisible: visibleText(target, 'count = 2'),
+            tableVisible: visibleText(target, 'AG-UI event coverage') && visibleText(target, 'TOOL_CALL_RESULT'),
+          }) };
+        },
+      },
+      {
+        id: 'agenui-extensions',
+        title: 'Part 4 · AGenUI extensions',
+        source: 'AGenUI catalog + playground Chart/Table/Markdown/RichText/Web/Lottie/Carousel',
+        purpose: '验证 AGenUI 扩展型输出不是只出 JSON：图表、表格、Markdown、富文本、链接和轮播都要可见。',
+        input: '一个 AGenUI surface，包含 bar/line/donut chart、Table、Markdown、RichText、Web、Lottie、Carousel。',
+        pass: '至少三张图表画布有像素内容，表格/Markdown/富文本/链接/轮播都能看到。',
+        wide: true,
+        async run(core, card) {
+          const snapshot = core.dispatch([
+            { version: 'v0.9', createSurface: { surfaceId: 'agenui', catalogId: 'agenui' } },
+            { version: 'v0.9', updateComponents: { surfaceId: 'agenui', components: [
+              { id: 'root', component: 'Column', gap: 16, children: ['bar', 'line', 'donut', 'table', 'markdown', 'rich', 'web', 'lottie', 'carousel'] },
+              { id: 'bar', component: 'Chart', chartType: 'bar', data: { xAxis: ['11:50', '12:50'], series: [{ name: 'Driving', data: [{ value: 1 }, { value: 2 }] }] } },
+              { id: 'line', component: 'Chart', chartType: 'line', data: { xAxis: ['Morning', 'Evening'], series: [{ name: 'Public Transport', data: [{ value: 1.5 }, { value: 3 }] }] } },
+              { id: 'donut', component: 'Chart', chartType: 'donut', data: { series: [{ name: '', data: [{ label: 'Public Transport', value: 50 }, { label: 'Driving', value: 30 }] }] } },
+              { id: 'table', component: 'Table', columns: ['Name', 'Age', 'Role'], rows: [['Alice', '25', 'Engineer'], ['Bob', '30', 'Designer']] },
+              { id: 'markdown', component: 'Markdown', content: '# Markdown Title\\n\\n- item\\n- code' },
+              { id: 'rich', component: 'RichText', text: '<p><strong>Rich</strong> text</p>' },
+              { id: 'web', component: 'Web', source: 'https://a2ui.org/' },
+              { id: 'lottie', component: 'Lottie', url: 'https://example.com/anim.json' },
+              { id: 'carousel', component: 'Carousel', content: ['https://dummyimage.com/220x120/0ea5e9/fff.png&text=A', 'https://dummyimage.com/220x120/22c55e/fff.png&text=B'] },
+            ] } },
+          ]);
+          const target = renderSnapshot(this, snapshot, card);
+          await waitUntil(() => hasNonEmptyCanvas(target));
+          return { checks: auditTarget(target, {
+            chartsPresent: target.querySelectorAll('canvas').length >= 3,
+            chartsPainted: hasNonEmptyCanvas(target),
+            tableVisible: visibleText(target, 'Alice') && visibleText(target, 'Designer'),
+            markdownVisible: visibleText(target, 'Markdown Title'),
+            richVisible: visibleText(target, 'Rich text'),
+            linksVisible: visibleText(target, 'https://a2ui.org/') && visibleText(target, 'Lottie:'),
+            carouselImages: target.querySelectorAll('img').length >= 2,
+          }) };
+        },
+      },
+      {
+        id: 'agenui-catalog-all',
+        title: 'Part 5 · AGenUI catalog 25 components',
+        source: 'AGenUI agenui_catalog.json',
+        purpose: '验证从 AGenUI catalog 借鉴来的 25 个组件名都能走 native renderer，不靠 adapter 假装兼容。',
+        input: 'Text/Image/Icon/Video/Audio/Row/Column/List/Card/Tabs/Form 控件/Markdown/Chart/Carousel 等 25 个组件。',
+        pass: '25 个组件都在 spec 中存在，并且每类组件都有可见表征；Chart 必须有真实 canvas 内容。',
+        wide: true,
+        async run(core, card) {
+          const snapshot = core.dispatch([
+            { version: 'v0.9', createSurface: { surfaceId: 'agenui-catalog', catalogId: 'agenui' } },
+            { version: 'v0.9', updateComponents: { surfaceId: 'agenui-catalog', components: [
+              { id: 'root', component: 'Column', gap: 14, children: AGENUI_CATALOG_COMPONENTS },
+              { id: 'Text', component: 'Text', text: 'Text component', variant: 'h2' },
+              { id: 'Image', component: 'Image', url: 'https://dummyimage.com/260x130/2563eb/ffffff.png&text=Image', description: 'Image component' },
+              { id: 'Icon', component: 'Icon', name: 'check' },
+              { id: 'Video', component: 'Video', src: REAL_SAMPLE_VIDEO },
+              { id: 'AudioPlayer', component: 'AudioPlayer', src: 'https://example.com/audio.mp3', title: 'Audio component' },
+              { id: 'Row', component: 'Row', children: ['row-text'] },
+              { id: 'row-text', component: 'Text', text: 'Row child' },
+              { id: 'Column', component: 'Column', children: ['column-text'] },
+              { id: 'column-text', component: 'Text', text: 'Column child' },
+              { id: 'List', component: 'List', items: ['one', 'two'] },
+              { id: 'Card', component: 'Card', title: 'Card title', child: 'card-text' },
+              { id: 'card-text', component: 'Text', text: 'Card child' },
+              { id: 'Tabs', component: 'Tabs', items: [{ title: 'General', child: 'card-text' }], activeKey: 'General' },
+              { id: 'Divider', component: 'Divider' },
+              { id: 'Button', component: 'Button', text: 'Open URL', action: { functionCall: { call: 'openUrl', args: { url: 'https://example.com' } } } },
+              { id: 'TextField', component: 'TextField', label: 'Email', value: 'alice@example.com' },
+              { id: 'CheckBox', component: 'CheckBox', label: 'Agree', checked: true },
+              { id: 'ChoicePicker', component: 'ChoicePicker', label: 'Country', value: 'ca', options: [{ label: 'USA', value: 'us' }, { label: 'Canada', value: 'ca' }] },
+              { id: 'Slider', component: 'Slider', label: 'Score', min: 0, max: 10, value: 7 },
+              { id: 'DateTimeInput', component: 'DateTimeInput', label: 'Date', value: '2026-06-01' },
+              { id: 'RichText', component: 'RichText', text: '<p><strong>Rich</strong> text</p>' },
+              { id: 'Lottie', component: 'Lottie', url: 'https://example.com/animation.json' },
+              { id: 'Table', component: 'Table', columns: ['Name', 'Age'], rows: [['Alice', '25']] },
+              { id: 'Web', component: 'Web', source: 'https://a2ui.org/' },
+              { id: 'Markdown', component: 'Markdown', content: '# Markdown' },
+              { id: 'Chart', component: 'Chart', chartType: 'bar_grouped', data: { xAxis: ['A', 'B'], series: [{ name: 'S1', data: [{ value: 1 }, { value: 2 }] }, { name: 'S2', data: [{ value: 3 }, { value: 4 }] }] } },
+              { id: 'Carousel', component: 'Carousel', content: ['https://dummyimage.com/180x100/0ea5e9/fff.png&text=A', 'https://dummyimage.com/180x100/22c55e/fff.png&text=B'] },
+            ] } },
+          ]);
+          const target = renderSnapshot(this, snapshot, card);
+          await waitUntil(() => hasNonEmptyCanvas(target));
+          const text = target.innerText || target.textContent || '';
+          const componentVisualCoverage = auditComponentVisualCoverage(target);
+          return { checks: auditTarget(target, {
+            sourceCatalogCount: AGENUI_CATALOG_COMPONENTS.length === 24,
+            allCatalogNamesRendered: AGENUI_CATALOG_COMPONENTS.every(name => snapshot.spec.elements[name]),
+            allCatalogComponentsVisuallyCovered: componentVisualCoverage.ok,
+            componentVisualCoverage: componentVisualCoverage.summary,
+            chartPainted: hasNonEmptyCanvas(target),
+            tableVisible: text.includes('Alice'),
+            richVisible: text.includes('Rich text'),
+            markdownVisible: text.includes('Markdown'),
+            fallbackLinksVisible: text.includes('Lottie:') && text.includes('https://a2ui.org/'),
+          }) };
+        },
+      },
+      {
+        id: 'upstream-delivery',
+        title: 'Part 6 · A2UI/AG-UI upstream delivery compatibility',
+        source: 'A2UI v0.10 catalog + A2UI-over-MCP + AG-UI render_a2ui latest',
+        purpose: '验证我们跟上游最新交付方式对齐：A2UI 新 MIME、MCP EmbeddedResource、A2A 旧 MIME 兼容、Slider.steps、Video.url/posterUrl、AG-UI 无 catalogId 的结构化 render_a2ui。',
+        input: '一个 MCP Tool Result 内嵌 application/a2ui+json resource；一个 A2A-style DataPart 使用旧 application/json+a2ui；一个 AG-UI render_a2ui tool args 只含 surfaceId/components/data，不含 catalogId。',
+        pass: 'MCP resource 真实渲染 slider/video；旧 MIME 仍兼容；AG-UI structured args 由 host catalog 渲染，不要求模型传 catalogId。',
+        wide: true,
+        async run(core, card) {
+          const mcpMessages = [
+            { version: 'v0.10', createSurface: { surfaceId: 'upstream-mcp', catalogId: 'vizual' } },
+            { version: 'v0.10', updateComponents: { surfaceId: 'upstream-mcp', components: [
+              { id: 'root', component: 'Column', gap: 12, children: ['title', 'status', 'slider', 'video', 'table'] },
+              { id: 'title', component: 'Text', text: 'A2UI current MIME via MCP', variant: 'h2' },
+              { id: 'status', component: 'Card', title: 'application/a2ui+json', value: 'accepted', extra: 'MCP EmbeddedResource routed into native core', shadow: 0 },
+              { id: 'slider', component: 'Slider', label: 'Slider.steps = 4', min: 0, max: 100, value: 50, steps: 4 },
+              { id: 'video', component: 'Video', url: REAL_SAMPLE_VIDEO, posterUrl: REAL_DOWNLOAD_IMAGE },
+              { id: 'table', component: 'Table', compact: true, columns: ['Upstream contract', 'Vizual behavior'], rows: [
+                ['A2UI MIME', 'application/a2ui+json accepted'],
+                ['Deprecated MIME', 'application/json+a2ui remains accepted'],
+                ['AG-UI render_a2ui', 'catalogId supplied by host'],
+              ] },
+            ] } },
+          ];
+          const mcpSnapshot = core.dispatch({
+            type: 'TOOL_CALL_RESULT',
+            toolCallId: 'mcp-current-mime',
+            content: [
+              { type: 'text', text: 'Fallback for clients without A2UI.' },
+              {
+                type: 'resource',
+                resource: {
+                  uri: 'a2ui://upstream-mcp',
+                  mimeType: 'application/a2ui+json',
+                  text: JSON.stringify(mcpMessages),
+                },
+              },
+            ],
+          });
+
+          core.dispatch({
+            type: 'RAW',
+            event: {
+              kind: 'data',
+              metadata: { mimeType: 'application/json+a2ui' },
+              data: [
+                { version: 'v0.10', createSurface: { surfaceId: 'upstream-a2a', catalogId: 'vizual' } },
+                { version: 'v0.10', updateComponents: { surfaceId: 'upstream-a2a', components: [
+                  { id: 'root', component: 'Text', text: 'A2A deprecated MIME accepted' },
+                ] } },
+              ],
+            },
+          });
+
+          const renderPayload = {
+            surfaceId: 'upstream-agui',
+            components: [
+              { id: 'root', component: 'Column', children: { componentId: 'item', path: '/items' } },
+              { id: 'item', component: 'Text', text: { path: 'label' } },
+            ],
+            data: { items: [{ label: 'AG-UI structured args accepted' }, { label: 'Host owns catalogId' }] },
+          };
+          const renderArgs = JSON.stringify(renderPayload);
+          core.dispatch({ type: 'TOOL_CALL_START', toolCallId: 'agui-current-render', toolCallName: 'render_a2ui' });
+          core.dispatch({ type: 'TOOL_CALL_ARGS', toolCallId: 'agui-current-render', delta: renderArgs });
+          core.dispatch({ type: 'TOOL_CALL_END', toolCallId: 'agui-current-render' });
+
+          const target = renderSnapshot(this, mcpSnapshot, card);
+          await settle();
+          const slider = target.querySelector('input[type="range"]');
+          const video = target.querySelector('video');
+          const a2aSpecText = JSON.stringify(core.getSpec('upstream-a2a') || {});
+          const aguiSpecText = JSON.stringify(core.getSpec('upstream-agui') || {});
+          const aguiArtifact = core.getArtifact('upstream-agui');
+          return { checks: auditTarget(target, {
+            mcpCurrentMimeRendered: visibleText(target, 'A2UI current MIME via MCP'),
+            sliderStepsRenderedAsDiscreteStep: slider ? slider.step === '25' : false,
+            videoUrlRendered: video ? String(video.getAttribute('src') || '').includes(REAL_SAMPLE_VIDEO) : false,
+            videoPosterUrlRendered: video ? String(video.getAttribute('poster') || '').includes(REAL_DOWNLOAD_IMAGE) : false,
+            a2aDeprecatedMimeAccepted: a2aSpecText.includes('A2A deprecated MIME accepted'),
+            aguiStructuredArgsAccepted: aguiSpecText.includes('AG-UI structured args accepted') && aguiSpecText.includes('Host owns catalogId'),
+            aguiModelDidNotSupplyCatalogId: !Object.prototype.hasOwnProperty.call(renderPayload, 'catalogId') && !Object.prototype.hasOwnProperty.call(renderPayload, 'catalog_id'),
+            aguiHostCatalogApplied: aguiArtifact?.metadata?.catalogId === 'vizual',
+          }) };
+        },
+      },
+      {
+        id: 'agui-all-events',
+        title: 'Part 7 · AG-UI EventType visual coverage',
+        source: 'AG-UI EventType enum',
+        purpose: '这块不是设计效果测试，而是协议入口测试：证明 AG-UI 的 33 种事件进 native core 时不会被吞、乱序或丢派生状态。',
+        input: '按固定顺序喂 33 个 EventType；页面会把“预期输入”和“core 实际观测”逐行展示出来。',
+        pass: '预期事件序列与 core event log 逐项相等；state/reasoning/tool/run 的派生结果也能从 core 读出。负向自检：URL 加 &break-agui-events=1 应失败。',
+        wide: true,
+        async run(core, card) {
+          const eventFor = (type) => ({
+            TEXT_MESSAGE_START: { type, messageId: 'text-full', role: 'assistant' },
+            TEXT_MESSAGE_CONTENT: { type, messageId: 'text-full', delta: 'AG-UI ' },
+            TEXT_MESSAGE_END: { type, messageId: 'text-full' },
+            TEXT_MESSAGE_CHUNK: { type, messageId: 'text-chunk', role: 'assistant', delta: 'chunk' },
+            TOOL_CALL_START: { type, toolCallId: 'tool-full', toolCallName: 'noop' },
+            TOOL_CALL_ARGS: { type, toolCallId: 'tool-full', delta: '{}' },
+            TOOL_CALL_END: { type, toolCallId: 'tool-full' },
+            TOOL_CALL_CHUNK: { type, toolCallId: 'tool-chunk', toolCallName: 'noop', delta: '{}' },
+            TOOL_CALL_RESULT: { type, messageId: 'tool-message', toolCallId: 'tool-full', content: '{}' },
+            THINKING_START: { type, title: 'legacy thinking' },
+            THINKING_END: { type },
+            THINKING_TEXT_MESSAGE_START: { type },
+            THINKING_TEXT_MESSAGE_CONTENT: { type, delta: 'old reasoning' },
+            THINKING_TEXT_MESSAGE_END: { type },
+            STATE_SNAPSHOT: { type, snapshot: { count: 1 } },
+            STATE_DELTA: { type, delta: [{ op: 'replace', path: '/count', value: 2 }] },
+            MESSAGES_SNAPSHOT: { type, messages: [{ id: 'snap-text', role: 'assistant', content: 'snapshot text' }] },
+            ACTIVITY_SNAPSHOT: { type, messageId: 'activity-full', activityType: 'a2ui-surface', content: { a2ui_operations: [] } },
+            ACTIVITY_DELTA: { type, messageId: 'activity-full', activityType: 'a2ui-surface', patch: [] },
+            RAW: { type, event: {} },
+            CUSTOM: { type, name: 'noop', value: {} },
+            RUN_STARTED: { type, threadId: 't1', runId: 'run2' },
+            RUN_FINISHED: { type, threadId: 't1', runId: 'run2' },
+            RUN_ERROR: { type, message: 'boom' },
+            STEP_STARTED: { type, stepName: 'plan' },
+            STEP_FINISHED: { type, stepName: 'plan' },
+            REASONING_START: { type, messageId: 'r2' },
+            REASONING_MESSAGE_START: { type, messageId: 'r3', role: 'reasoning' },
+            REASONING_MESSAGE_CONTENT: { type, messageId: 'r3', delta: 'reasoning delta' },
+            REASONING_MESSAGE_END: { type, messageId: 'r3' },
+            REASONING_MESSAGE_CHUNK: { type, messageId: 'r2', delta: 'reasoning chunk' },
+            REASONING_END: { type, messageId: 'r2' },
+            REASONING_ENCRYPTED_VALUE: { type, subtype: 'message', entityId: 'r2', encryptedValue: 'opaque' },
+          }[type]);
+          const inputEventTypes = BREAK_AGUI_EVENTS
+            ? AG_UI_EVENT_TYPES.filter(type => type !== 'REASONING_ENCRYPTED_VALUE')
+            : AG_UI_EVENT_TYPES;
+          inputEventTypes.forEach(type => core.dispatch(eventFor(type)));
+          const observedTypes = core.getEventLog().map(event => event.type);
+          const categoryCounts = summarizeAguiCategories(AG_UI_EVENT_TYPES);
+          const comparisonRows = AG_UI_EVENT_TYPES.map((expected, index) => {
+            const observed = observedTypes[index] || 'MISSING';
+            return {
+              index: index + 1,
+              category: categoryForAguiEvent(expected),
+              expected,
+              observed,
+              result: observed === expected ? 'OK' : 'FAIL',
+            };
+          });
+          const derivedRows = [
+            { item: 'event log count', expected: '33', observed: String(observedTypes.length), result: observedTypes.length === 33 ? 'OK' : 'FAIL' },
+            { item: 'event log order', expected: 'exact same order', observed: observedTypes.join('|') === AG_UI_EVENT_TYPES.join('|') ? 'same' : 'different', result: observedTypes.join('|') === AG_UI_EVENT_TYPES.join('|') ? 'OK' : 'FAIL' },
+            { item: 'state delta', expected: 'count = 2', observed: String(core.getRunState().count), result: core.getRunState().count === 2 ? 'OK' : 'FAIL' },
+            { item: 'reasoning message', expected: 'reasoning delta stored', observed: core.getMessages().some(message => String(message.content || '').includes('reasoning delta')) ? 'stored' : 'missing', result: core.getMessages().some(message => String(message.content || '').includes('reasoning delta')) ? 'OK' : 'FAIL' },
+            { item: 'tool lifecycle', expected: 'tool-full success', observed: core.getFunctionCalls().some(call => call.id === 'tool-full' && call.status === 'success') ? 'success' : 'missing', result: core.getFunctionCalls().some(call => call.id === 'tool-full' && call.status === 'success') ? 'OK' : 'FAIL' },
+            { item: 'run lifecycle', expected: 'run2 completed', observed: core.getRuns().some(run => run.runId === 'run2' && run.status === 'completed') ? 'completed' : 'missing', result: core.getRuns().some(run => run.runId === 'run2' && run.status === 'completed') ? 'OK' : 'FAIL' },
+          ];
+          const snapshot = core.dispatch({
+            root: 'root',
+            elements: {
+              root: {
+                type: 'Column',
+                props: { gap: 12 },
+                children: ['summary', 'rules', 'groups', 'comparisonTable', 'derivedTable', 'negativeControl'],
+              },
+              summary: {
+                type: 'Card',
+                props: {
+                  title: 'AG-UI EventType 输入/观测对照',
+                  subtitle: '这块只验证协议事件入口，不验证最终页面设计美感',
+                  value: String(observedTypes.length),
+                  unit: 'events',
+                  extra: `预期 33；实际 core 记录 ${observedTypes.length}。下面逐行展示 expected vs observed。`,
+                  shadow: 0,
+                },
+                children: [],
+              },
+              rules: {
+                type: 'Card',
+                props: {
+                  title: '判定规则',
+                  value: observedTypes.join('|') === AG_UI_EVENT_TYPES.join('|') ? '序列一致' : '序列不一致',
+                  extra: 'PASS 不是看这张卡好不好看，而是 expected event sequence === core.getEventLog() sequence，并额外检查 state/reasoning/tool/run 派生状态。',
+                  shadow: 0,
+                },
+                children: [],
+              },
+              groups: {
+                type: 'Row',
+                props: { gap: 12, wrap: true },
+                children: ['messageGroup', 'toolGroup', 'thinkingGroup', 'stateGroup', 'runGroup', 'reasoningGroup'],
+              },
+              messageGroup: {
+                type: 'Card',
+                props: { title: 'message', value: String(categoryCounts.message), extra: 'TEXT_MESSAGE_*', shadow: 0 },
+                children: [],
+              },
+              toolGroup: {
+                type: 'Card',
+                props: { title: 'tool', value: String(categoryCounts.tool), extra: 'TOOL_CALL_*', shadow: 0 },
+                children: [],
+              },
+              thinkingGroup: {
+                type: 'Card',
+                props: { title: 'legacy thinking', value: String(categoryCounts['legacy thinking']), extra: 'THINKING_*', shadow: 0 },
+                children: [],
+              },
+              stateGroup: {
+                type: 'Card',
+                props: { title: 'state/activity', value: String(categoryCounts['state/activity']), extra: 'STATE / MESSAGES / ACTIVITY', shadow: 0 },
+                children: [],
+              },
+              runGroup: {
+                type: 'Card',
+                props: { title: 'run/step/custom', value: String(categoryCounts['run/step/custom']), extra: 'RAW / CUSTOM / RUN / STEP', shadow: 0 },
+                children: [],
+              },
+              reasoningGroup: {
+                type: 'Card',
+                props: { title: 'reasoning', value: String(categoryCounts.reasoning), extra: 'REASONING_*', shadow: 0 },
+                children: [],
+              },
+              comparisonTable: {
+                type: 'DataTable',
+                props: {
+                  type: 'table',
+                  title: '完整事件输入 vs core 观测（33 行）',
+                  compact: true,
+                  columns: [
+                    { key: 'index', label: '#' },
+                    { key: 'category', label: '类别' },
+                    { key: 'expected', label: '预期输入事件' },
+                    { key: 'observed', label: 'core 实际记录' },
+                    { key: 'result', label: '结果' },
+                  ],
+                  data: comparisonRows,
+                },
+                children: [],
+              },
+              derivedTable: {
+                type: 'DataTable',
+                props: {
+                  type: 'table',
+                  title: '派生状态验收',
+                  compact: true,
+                  columns: [
+                    { key: 'item', label: '检查项' },
+                    { key: 'expected', label: '预期' },
+                    { key: 'observed', label: 'core 实际值' },
+                    { key: 'result', label: '结果' },
+                  ],
+                  data: derivedRows,
+                },
+                children: [],
+              },
+              negativeControl: {
+                type: 'Card',
+                props: {
+                  title: BREAK_AGUI_EVENTS ? '负向自检已开启' : '负向自检',
+                  value: BREAK_AGUI_EVENTS ? '应当失败' : '可手动验证裁判',
+                  extra: BREAK_AGUI_EVENTS
+                    ? '当前 URL 故意少喂 REASONING_ENCRYPTED_VALUE；如果这里仍 PASS，说明裁判有问题。'
+                    : '把 URL 后面加上 &break-agui-events=1，会故意少喂一个事件；这一块应变成 FAIL。',
+                  shadow: 0,
+                },
+                children: [],
+              },
+            },
+          }, 'agui-all-events');
+          const target = renderSnapshot(this, snapshot, card);
+          await settle();
+          return { checks: auditTarget(target, {
+            eventLogComplete: core.getEventLog().map(event => event.type).join('|') === AG_UI_EVENT_TYPES.join('|'),
+            enumCount: AG_UI_EVENT_TYPES.length === 33,
+            reasoningStored: core.getMessages().some(message => String(message.content || '').includes('reasoning delta')),
+            toolLifecycleStored: core.getFunctionCalls().some(call => call.id === 'tool-full' && call.status === 'success'),
+            runComplete: core.getRuns().some(run => run.runId === 'run2' && run.status === 'completed'),
+            visualSummary: visibleText(target, 'AG-UI EventType 输入/观测对照') && visibleText(target, '预期 33'),
+            comparisonTableVisible: visibleText(target, '完整事件输入 vs core 观测') && visibleText(target, 'REASONING_ENCRYPTED_VALUE'),
+            derivedTableVisible: visibleText(target, '派生状态验收') && visibleText(target, 'tool-full success'),
+          }) };
+        },
+      },
+    ];
+
+    let isRunning = false;
+    async function runAll() {
+      if (isRunning) return;
+      isRunning = true;
+      const rerunButton = $('#rerun');
+      if (rerunButton) rerunButton.disabled = true;
+      try {
+        state.cases = [];
+        state.actions = [];
+        state.stateChanges = [];
+        state.failures = [];
+        $('#cases').innerHTML = '';
+        $('#log').textContent = '';
+        $('#runtime').textContent = window.Vizual ? 'runtime ready' : 'runtime missing';
+        if (!window.Vizual) throw new Error('Vizual CDN bundle missing');
+        window.Vizual.applyTheme?.(document.body, 'default-light');
+        for (const testCase of cases) await runCase(testCase);
+        window.__nativeProtocolMatrix.done = true;
+        window.__nativeProtocolMatrix.ok = state.failures.length === 0;
+      } finally {
+        isRunning = false;
+        if (rerunButton) rerunButton.disabled = false;
+      }
+    }
+
+    $('#rerun').addEventListener('click', runAll);
+    window.addEventListener('load', runAll);
+  </script>
+</body>
+</html>

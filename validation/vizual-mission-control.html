@@ -1,0 +1,800 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Vizual Core 单入口真实验收</title>
+  <link rel="icon" href="data:," />
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f5f7fa;
+      --panel: #ffffff;
+      --soft: #f8fafc;
+      --line: #d8dee8;
+      --text: #162033;
+      --muted: #667085;
+      --accent: #1f6feb;
+      --red: #c8152d;
+      --ok: #039855;
+      --bad: #b42318;
+      --warn: #b54708;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font: 14px/1.5 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
+    }
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 16px 22px;
+      background: rgba(255, 255, 255, .96);
+      border-bottom: 1px solid var(--line);
+      backdrop-filter: blur(12px);
+    }
+    h1 { margin: 0; font-size: 18px; line-height: 1.2; letter-spacing: 0; }
+    h2 { margin: 0; font-size: 15px; }
+    h3 { margin: 0 0 6px; font-size: 14px; }
+    p { margin: 0; color: var(--muted); }
+    button {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      color: var(--text);
+      padding: 9px 13px;
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    button.primary { background: var(--accent); color: #fff; border-color: transparent; }
+    button:disabled { opacity: .55; cursor: wait; }
+    main {
+      max-width: 1500px;
+      margin: 0 auto;
+      padding: 18px 22px 34px;
+    }
+    .pills { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 4px 10px;
+      background: var(--soft);
+      color: var(--muted);
+      white-space: nowrap;
+    }
+    .pill.ok { color: var(--ok); border-color: #abefc6; background: #ecfdf3; }
+    .pill.fail { color: var(--bad); border-color: #fecdca; background: #fef3f2; }
+    .panel {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      overflow: hidden;
+    }
+    .panel-head {
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--line);
+      background: var(--soft);
+    }
+    .panel-body { padding: 14px; }
+    .story {
+      display: grid;
+      grid-template-columns: minmax(320px, 420px) minmax(0, 1fr);
+      gap: 14px;
+      align-items: start;
+    }
+    .controls { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; }
+    .agent-grid { display: grid; gap: 10px; }
+    .agent-card {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 11px 12px;
+      background: #fff;
+    }
+    .agent-card strong { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 5px; }
+    .agent-card span { color: var(--muted); font-size: 12px; }
+    .agent-card.ok { border-color: #abefc6; background: #f6fef9; }
+    .agent-card.fail { border-color: #fecdca; background: #fffafa; }
+    .artifact-shell {
+      min-height: 720px;
+      padding: 16px;
+      background: #fff;
+      overflow: auto;
+      --rk-bg-primary: #ffffff;
+      --rk-bg-secondary: #f8fafc;
+      --rk-bg-tertiary: #eef2f6;
+      --rk-surface: #ffffff;
+      --rk-border: #d8dde6;
+      --rk-border-subtle: #e6eaf0;
+      --rk-text-primary: #20242c;
+      --rk-text-secondary: #667085;
+      --rk-text-tertiary: #8a94a6;
+      --rk-accent: #1f6feb;
+      --rk-success: #039855;
+      --rk-error: #b42318;
+      --rk-radius-md: 8px;
+      --rk-font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
+      --rk-font-body: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
+      --rk-font-ui: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
+      --rk-font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", sans-serif;
+      --rk-font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      --rk-text-xs: 11px;
+      --rk-text-sm: 12px;
+      --rk-text-base: 14px;
+      --rk-text-md: 16px;
+      --rk-text-lg: 18px;
+      --rk-text-xl: 22px;
+      --rk-text-2xl: 28px;
+      --rk-weight-semibold: 650;
+      --rk-weight-bold: 750;
+    }
+    .checks {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 10px;
+    }
+    .check {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      padding: 10px 12px;
+      min-height: 76px;
+    }
+    .check strong { display: block; margin-bottom: 4px; }
+    .check span { display: block; color: var(--muted); font-size: 12px; }
+    .check.ok { border-color: #abefc6; background: #f6fef9; }
+    .check.fail { border-color: #fecdca; background: #fffafa; }
+    .check.pending { background: #fff; }
+    .log {
+      margin-top: 14px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      overflow: hidden;
+    }
+    .log summary {
+      padding: 10px 14px;
+      background: var(--soft);
+      border-bottom: 1px solid var(--line);
+      cursor: pointer;
+      font-weight: 700;
+    }
+    pre {
+      margin: 0;
+      padding: 14px;
+      max-height: 360px;
+      overflow: auto;
+      white-space: pre-wrap;
+      word-break: break-word;
+      color: #344054;
+      font: 12px/1.45 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    }
+    @media (max-width: 980px) {
+      header { align-items: flex-start; flex-direction: column; }
+      main { padding: 14px; }
+      .story { grid-template-columns: 1fr; }
+      .artifact-shell { min-height: 560px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>Vizual Core 单入口真实验收</h1>
+      <p>Hermes + Claude Code 真实回复，Native Core 统一处理 A2UI、AG-UI、AGenUI/Vizual、动态更新和用户 action。</p>
+    </div>
+    <div class="pills" id="summary">
+      <span class="pill">状态 <strong>idle</strong></span>
+      <span class="pill">通过 <strong>0/0</strong></span>
+      <span class="pill">失败 <strong>0</strong></span>
+    </div>
+  </header>
+
+  <main>
+    <section class="story">
+      <aside class="panel">
+        <div class="panel-head">
+          <h2>验收操作</h2>
+          <p>只需要一个入口；我会用真实浏览器点击这里完成检查。</p>
+        </div>
+        <div class="panel-body">
+          <div class="controls">
+            <button class="primary" id="runFull">运行完整验收</button>
+            <button id="applyAction">补点处置按钮</button>
+            <button id="runEdges">补跑边界检查</button>
+          </div>
+          <div class="agent-grid" id="agents">
+            <div class="agent-card"><strong>Hermes <span>waiting</span></strong><p>等待真实 CLI 回复。</p></div>
+            <div class="agent-card"><strong>Claude Code <span>waiting</span></strong><p>等待真实 CLI 回复。</p></div>
+          </div>
+        </div>
+      </aside>
+
+      <article class="panel">
+        <div class="panel-head">
+          <h2>统一 Native Core 渲染结果</h2>
+          <p>图表必须有真实数据，表单必须可改，按钮必须回传 action，不能只有框或自判通过。</p>
+        </div>
+        <div class="artifact-shell" id="artifact"></div>
+      </article>
+    </section>
+
+    <section class="panel" style="margin-top:14px">
+      <div class="panel-head">
+        <h2>真实验收清单</h2>
+        <p>每一项来自 Agent CLI、Core 状态、DOM、ECharts option、图片加载或真实点击观察。</p>
+      </div>
+      <div class="panel-body">
+        <div class="checks" id="checks"></div>
+      </div>
+    </section>
+
+    <details class="log">
+      <summary>审计日志</summary>
+      <pre id="log"></pre>
+    </details>
+  </main>
+
+  <script src="../dist/vizual.standalone.js"></script>
+  <script>
+    const SURFACE_ID = 'mission-control';
+    const REAL_DOWNLOAD_IMAGE = 'assets/download-alert-management.png';
+
+    const checkDefs = [
+      ['agentHermes', 'Hermes 真实回复', '本地 hermes CLI 返回可解析 JSON，包含经营判断和动作建议。'],
+      ['agentClaude', 'Claude Code 真实回复', '本地 Claude Code CLI 返回可解析 JSON，且没有 stream-json 原始事件泄漏到 UI。'],
+      ['aguiText', 'AG-UI 文本流', 'TEXT_MESSAGE_* 分片拼成 assistant 回复。'],
+      ['aguiReasoning', 'AG-UI reasoning', 'REASONING_* 被记录，不污染渲染 UI。'],
+      ['aguiState', 'AG-UI 状态更新', 'STATE_SNAPSHOT/STATE_DELTA 更新 run state。'],
+      ['toolChunks', 'Tool args 分片', 'TOOL_CALL_ARGS/CHUNK 拼出完整 A2UI surface。'],
+      ['activityDelta', 'Activity 动态更新', 'ACTIVITY_DELTA 更新同一个 surface，不新建假卡片。'],
+      ['a2uiSurface', 'A2UI surface', 'createSurface/updateDataModel/updateComponents 原生处理。'],
+      ['a2uiControls', 'A2UI 交互控件', 'TextField、ChoicePicker、Slider、Date、CheckBox、Button 可见且可修改。'],
+      ['a2uiAction', '用户 action', '真实点击处置按钮后 action 回传 core，并更新画面。'],
+      ['downloadImage', '真实图片', 'A2UI Image 加载 validation/assets 中由 Downloads 复制来的图片。'],
+      ['chartsPainted', '图表有数据', 'Line、Combo、Pie 的 ECharts series 都有非空数据。'],
+      ['pieSafe', '饼图无图例遮挡', '饼图 legend 在右侧滚动区，标签在扇区内，避免底部重叠。'],
+      ['tableRows', '明细表完整', '告警明细至少 5 行，保留逐条数据。'],
+      ['extensions', 'AGenUI/Vizual 扩展', 'Markdown/RichText/Web/Lottie/Carousel 都有可见表征。'],
+      ['visualQuality', '视觉质量', '无 Unknown、无横向溢出、无 [object Object]、无全局主题污染。'],
+      ['edgeMissingChunk', '负向：缺失 chunk', '不完整 tool JSON 不得创建 surface。'],
+      ['edgeNoIdDelta', '负向：无 id delta', '缺 messageId 的 ACTIVITY_DELTA 不崩溃。'],
+      ['edgeEmptyChart', '负向：空图识别', '空 chart data 被审计识别为失败，不允许只有框。'],
+    ];
+
+    const baseTrend = [
+      { time: '09:00', activeUsers: 980, churnUsers: 20, alerts: 4, aiContentRatioPct: 10, revenue: 16600 },
+      { time: '10:00', activeUsers: 1120, churnUsers: 22, alerts: 5, aiContentRatioPct: 15, revenue: 16480 },
+      { time: '11:00', activeUsers: 1280, churnUsers: 26, alerts: 6, aiContentRatioPct: 20, revenue: 16320 },
+      { time: '12:00', activeUsers: 1450, churnUsers: 31, alerts: 8, aiContentRatioPct: 25, revenue: 16090 },
+      { time: '13:00', activeUsers: 1580, churnUsers: 38, alerts: 10, aiContentRatioPct: 30, revenue: 15840 },
+      { time: '14:00', activeUsers: 1610, churnUsers: 48, alerts: 13, aiContentRatioPct: 35, revenue: 15620 },
+      { time: '15:00', activeUsers: 1490, churnUsers: 96, alerts: 21, aiContentRatioPct: 55, revenue: 15280 },
+      { time: '16:00', activeUsers: 1360, churnUsers: 115, alerts: 24, aiContentRatioPct: 68, revenue: 15120 },
+    ];
+
+    const baseIncidents = [
+      { id: 'AL-001', region: '华东', metric: '汇入汇款时效', severity: '中', status: '观察', owner: '运营一组' },
+      { id: 'AL-002', region: '华东', metric: 'AI内容曝光占比', severity: '中', status: '观察', owner: '内容策略' },
+      { id: 'AL-003', region: '华东', metric: '新增用户回访率', severity: '低', status: '排查', owner: '增长组' },
+      { id: 'AL-004', region: '华东', metric: '流失人数', severity: '高', status: '待派单', owner: '客户成功' },
+      { id: 'AL-005', region: '华东', metric: '核心用户活跃下降', severity: '高', status: '新增', owner: '增长组' },
+    ];
+
+    let core = null;
+    let latestSnapshot = null;
+    let agentBundle = null;
+    const checks = new Map(checkDefs.map(([id, label, detail]) => [id, { label, detail, status: 'pending' }]));
+    const auditLog = [];
+    window.__vizualMissionControl = { done: false, ok: false, checks, auditLog, agentBundle: null };
+
+    const $ = selector => document.querySelector(selector);
+    const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+    function escapeHtml(value) {
+      return String(value)
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;');
+    }
+
+    function mark(id, ok, detail) {
+      const current = checks.get(id);
+      checks.set(id, { ...current, status: ok ? 'ok' : 'fail', detail: detail || current.detail });
+      const failed = Array.from(checks.values()).some(item => item.status === 'fail');
+      const complete = checkDefs.every(([checkId]) => checks.get(checkId).status === 'ok');
+      if (complete || failed) {
+        window.__vizualMissionControl.done = true;
+        window.__vizualMissionControl.ok = complete && !failed;
+      }
+      writeLog();
+      renderChecks();
+    }
+
+    function resetChecks() {
+      for (const [id, item] of checks.entries()) checks.set(id, { ...item, status: 'pending' });
+      auditLog.length = 0;
+      window.__vizualMissionControl.done = false;
+      window.__vizualMissionControl.ok = false;
+      writeLog();
+      renderChecks();
+    }
+
+    function addLog(type, payload) {
+      auditLog.push({ at: new Date().toISOString(), type, payload });
+      writeLog();
+    }
+
+    function renderChecks() {
+      $('#checks').innerHTML = Array.from(checks.entries()).map(([id, item]) => `
+        <div class="check ${item.status}" data-check="${id}">
+          <strong>${item.status === 'ok' ? 'PASS' : item.status === 'fail' ? 'FAIL' : 'PENDING'} · ${item.label}</strong>
+          <span>${escapeHtml(item.detail)}</span>
+        </div>
+      `).join('');
+    }
+
+    function renderAgents(bundle) {
+      if (!bundle) {
+        $('#agents').innerHTML = `
+          <div class="agent-card"><strong>Hermes <span>waiting</span></strong><p>等待真实 CLI 回复。</p></div>
+          <div class="agent-card"><strong>Claude Code <span>waiting</span></strong><p>等待真实 CLI 回复。</p></div>
+        `;
+        return;
+      }
+      $('#agents').innerHTML = ['hermes', 'claudeCode'].map(key => {
+        const agent = bundle.agents[key];
+        const title = key === 'hermes' ? 'Hermes' : 'Claude Code';
+        const diagnosis = agent.parsed?.diagnosis || agent.errors.join('；') || '无诊断';
+        const actions = agent.parsed?.nextActions?.map(item => item.label).join(' / ') || '无动作';
+        return `
+          <div class="agent-card ${agent.ok ? 'ok' : 'fail'}" data-agent="${key}">
+            <strong>${title} <span>${agent.ok ? 'ok' : 'fail'} · ${agent.durationMs}ms</span></strong>
+            <p>${escapeHtml(diagnosis)}</p>
+            <span>${escapeHtml(actions)}</span>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function writeLog() {
+      const total = checkDefs.length;
+      const passed = Array.from(checks.values()).filter(item => item.status === 'ok').length;
+      const failed = Array.from(checks.values()).filter(item => item.status === 'fail').length;
+      const done = window.__vizualMissionControl.done;
+      $('#summary').innerHTML = `
+        <span class="pill ${done && failed === 0 ? 'ok' : failed ? 'fail' : ''}">状态 <strong>${done ? (failed ? 'fail' : 'done') : 'running'}</strong></span>
+        <span class="pill ${passed === total ? 'ok' : ''}">通过 <strong>${passed}/${total}</strong></span>
+        <span class="pill ${failed ? 'fail' : ''}">失败 <strong>${failed}</strong></span>
+      `;
+      $('#log').textContent = JSON.stringify({
+        checks: Object.fromEntries(checks),
+        agentBundle,
+        auditLog,
+      }, null, 2);
+      document.body.dataset.missionDone = String(window.__vizualMissionControl.done);
+      document.body.dataset.missionOk = String(window.__vizualMissionControl.ok);
+    }
+
+    function parseAgentActions(bundle) {
+      const actions = [];
+      for (const key of ['hermes', 'claudeCode']) {
+        const agent = bundle?.agents?.[key];
+        for (const action of agent?.parsed?.nextActions || []) {
+          actions.push({ source: key === 'hermes' ? 'Hermes' : 'Claude Code', ...action });
+        }
+      }
+      return actions.slice(0, 6);
+    }
+
+    function buildModel(bundle, phase) {
+      const hermes = bundle?.agents?.hermes?.parsed;
+      const claude = bundle?.agents?.claudeCode?.parsed;
+      const actions = parseAgentActions(bundle);
+      return {
+        heroImage: REAL_DOWNLOAD_IMAGE,
+        phase,
+        statusText: phase === 'updated'
+          ? '实时数据已刷新：AI 内容占比与流失风险同步抬升，已进入先止损、再验证因果的处置状态。'
+          : '两个本地 Agent 已给出初步判断，Native Core 正在把结论转成可交互看板。',
+        metrics: [
+          { label: '高风险告警', value: phase === 'updated' ? 24 : 17, suffix: '条', trend: 'up', trendValue: phase === 'updated' ? '+13' : '+6' },
+          { label: '流失风险分', value: phase === 'updated' ? 86 : 72, suffix: '/100', trend: 'up', trendValue: phase === 'updated' ? '+26' : '+12' },
+          { label: '今日收入', value: phase === 'updated' ? '15120' : '16600', suffix: '元', trend: 'down', trendValue: phase === 'updated' ? '-16.5%' : '-8.4%' },
+          { label: 'AI内容占比', value: phase === 'updated' ? '68%' : '62%', trend: 'up', trendValue: phase === 'updated' ? '+28pt' : '+22pt' },
+        ],
+        trend: phase === 'updated' ? baseTrend : baseTrend.slice(0, 5),
+        mix: [
+          { name: 'AI内容曝光', value: phase === 'updated' ? 68 : 62 },
+          { name: '人工精选', value: phase === 'updated' ? 22 : 26 },
+          { name: '系统推荐', value: phase === 'updated' ? 10 : 12 },
+        ],
+        incidents: phase === 'updated' ? baseIncidents : baseIncidents.slice(0, 4),
+        filters: { region: 'east', owner: '客户成功', threshold: phase === 'updated' ? 86 : 72, date: '2026-06-01', onlyHigh: true, note: '优先核查 AL-004' },
+        hermesDiagnosis: hermes?.diagnosis || 'Hermes 尚未返回判断。',
+        claudeDiagnosis: claude?.diagnosis || 'Claude Code 尚未返回判断。',
+        agentActions: actions.length ? actions : [
+          { source: 'fallback', label: '派单 AL-004', owner: '客户成功', priority: 'P0' },
+          { source: 'fallback', label: '做 AI 内容曝光对照分析', owner: '内容策略', priority: 'P1' },
+          { source: 'fallback', label: '复核收入下滑链路', owner: '运营一组', priority: 'P1' },
+        ],
+        recommendations: [
+          hermes?.diagnosis,
+          claude?.diagnosis,
+          '统一判断：不能把 AI 内容占比上升直接当作流失因果；先处理高风险告警，再用分群和对照组验证。'
+        ].filter(Boolean).join('\n\n'),
+      };
+    }
+
+    function buildSurfaceMessages(model, emptyCharts = false) {
+      return [
+        { version: 'v0.9', createSurface: { surfaceId: SURFACE_ID, catalogId: 'vizual' } },
+        { version: 'v0.9', updateDataModel: { surfaceId: SURFACE_ID, path: '/', value: model } },
+        { version: 'v0.9', updateComponents: { surfaceId: SURFACE_ID, components: [
+          { id: 'root', component: 'Column', gap: 14, children: ['lead', 'kpis', 'chartGrid', 'controls', 'table', 'judgement', 'actionTable', 'extensions'] },
+          { id: 'lead', component: 'Column', gap: 14, children: ['asset', 'agentBrief'] },
+          { id: 'asset', component: 'Image', url: { path: '/heroImage' }, description: '真实下载目录素材：告警管理示意图', width: '100%', height: 210, fit: 'cover' },
+          { id: 'agentBrief', component: 'Card', title: 'Agent 联合判断', subtitle: { path: '/statusText' }, shadow: 0, child: 'diagnoses' },
+          { id: 'diagnoses', component: 'Column', gap: 8, children: ['hermesText', 'claudeText'] },
+          { id: 'hermesText', component: 'Markdown', content: { path: '/hermesDiagnosis' } },
+          { id: 'claudeText', component: 'Markdown', content: { path: '/claudeDiagnosis' } },
+          { id: 'kpis', component: 'KpiDashboard', type: 'kpi_dashboard', title: '核心指标', metrics: { path: '/metrics' }, columns: 4 },
+          { id: 'chartGrid', component: 'Column', gap: 14, children: ['line', 'combo', 'pie'] },
+          { id: 'line', component: 'LineChart', type: 'line', title: '活跃与流失趋势', x: 'time', y: ['activeUsers', 'churnUsers'], data: emptyCharts ? [] : { path: '/trend' }, height: 300 },
+          { id: 'combo', component: 'ComboChart', type: 'combo', title: '告警量与 AI 内容占比', x: 'time', y: [
+            { type: 'bar', field: 'alerts', name: '告警量' },
+            { type: 'line', field: 'aiContentRatioPct', name: 'AI内容占比' }
+          ], data: emptyCharts ? [] : { path: '/trend' }, height: 300 },
+          { id: 'pie', component: 'PieChart', type: 'pie', title: '内容曝光结构', nameField: 'name', valueField: 'value', data: emptyCharts ? [] : { path: '/mix' }, donut: true, height: 300 },
+          { id: 'controls', component: 'Row', gap: 12, wrap: true, align: 'center', children: ['region', 'owner', 'threshold', 'date', 'onlyHigh', 'note', 'filterBtn', 'dispatchBtn'] },
+          { id: 'region', component: 'ChoicePicker', label: '区域', value: { path: '/filters/region' }, options: [{ label: '华东', value: 'east' }, { label: '华北', value: 'north' }, { label: '华南', value: 'south' }] },
+          { id: 'owner', component: 'ChoicePicker', label: '负责人', value: { path: '/filters/owner' }, options: [{ label: '客户成功', value: '客户成功' }, { label: '内容策略', value: '内容策略' }, { label: '运营一组', value: '运营一组' }] },
+          { id: 'threshold', component: 'Slider', label: '风险阈值', min: 0, max: 100, value: { path: '/filters/threshold' } },
+          { id: 'date', component: 'DateTimeInput', label: '日期', value: { path: '/filters/date' } },
+          { id: 'onlyHigh', component: 'CheckBox', label: '只看高风险', checked: { path: '/filters/onlyHigh' } },
+          { id: 'note', component: 'TextField', label: '处置备注', value: { path: '/filters/note' } },
+          { id: 'filterBtn', component: 'Button', label: '应用筛选', action: 'apply_filter', variant: 'secondary' },
+          { id: 'dispatchBtn', component: 'Button', label: '派单 AL-004', action: 'dispatch_incident', variant: 'primary' },
+          { id: 'table', component: 'DataTable', type: 'table', title: '逐条告警明细', compact: true, columns: [
+            { key: 'id', label: '编号' },
+            { key: 'region', label: '区域' },
+            { key: 'metric', label: '指标' },
+            { key: 'severity', label: '等级' },
+            { key: 'status', label: '状态' },
+            { key: 'owner', label: '负责人' },
+          ], data: { path: '/incidents' } },
+          { id: 'judgement', component: 'Markdown', content: { path: '/recommendations' } },
+          { id: 'actionTable', component: 'DataTable', type: 'table', title: 'Agent 建议动作', compact: true, columns: [
+            { key: 'source', label: '来源' },
+            { key: 'label', label: '动作' },
+            { key: 'owner', label: '负责人' },
+            { key: 'priority', label: '优先级' },
+          ], data: { path: '/agentActions' } },
+          { id: 'extensions', component: 'Column', gap: 12, children: ['rich', 'web', 'lottie', 'carousel'] },
+          { id: 'rich', component: 'RichText', text: '<p><strong>处置原则：</strong>先止损，再验证因果；Agent 负责提出假设，Core 负责稳定呈现和交互。</p>' },
+          { id: 'web', component: 'Web', source: 'https://a2ui.org/' },
+          { id: 'lottie', component: 'Lottie', url: 'https://example.com/ops-pulse.json' },
+          { id: 'carousel', component: 'Carousel', content: [REAL_DOWNLOAD_IMAGE, 'https://dummyimage.com/360x180/1f6feb/ffffff.png&text=Live+Update'] },
+        ] } },
+      ];
+    }
+
+    function createCore() {
+      $('#artifact').innerHTML = '';
+      latestSnapshot = null;
+      core = new window.Vizual.VizualNativeCore({
+        onMessage(message) {
+          if (message.role === 'assistant' && String(message.content || '').includes('华东')) {
+            mark('aguiText', true, 'assistant 文本由多段 AG-UI chunk 拼成。');
+          }
+          if (message.role === 'reasoning' && String(message.content || '').includes('不能证明因果')) {
+            mark('aguiReasoning', true, 'reasoning 已进入 core message store。');
+          }
+          addLog('message', message);
+        },
+        onFunctionCall(call) {
+          if (call.functionName === 'render_a2ui' && call.status === 'success') {
+            mark('toolChunks', true, 'tool args 分片已合并并完成 function call。');
+          }
+          addLog('function-call', call);
+        },
+        onSurfaceChange(snapshot) {
+          latestSnapshot = snapshot;
+          renderSnapshot(snapshot);
+          mark('a2uiSurface', true, 'surface 由 native core 生成并渲染。');
+        },
+        onAction(action) {
+          addLog('action', action);
+          if (action.name === 'dispatch_incident' || action.name === 'apply_filter') {
+            mark('a2uiAction', true, `action=${action.name}`);
+          }
+        },
+        onError(error) {
+          addLog('core-error', error);
+        }
+      });
+    }
+
+    function renderSnapshot(snapshot) {
+      window.Vizual.renderSpec(snapshot.spec, $('#artifact'), {
+        initialState: snapshot.spec.state || {},
+        handlers: {
+          dispatch_incident() {
+            const action = core.createActionFromVizual('dispatch_incident', SURFACE_ID, {
+              incidentId: 'AL-004',
+              note: readControlValues().note,
+            });
+            core.dispatch({ version: 'v0.9', updateDataModel: { surfaceId: SURFACE_ID, path: '/statusText', value: '已派单 AL-004 给客户成功；等待处置结果回传。' } });
+            core.dispatch({ version: 'v0.9', updateDataModel: { surfaceId: SURFACE_ID, path: '/incidents/3/status', value: '已派单' } });
+            addLog('dispatch-handler', action);
+            return { ok: true };
+          },
+          apply_filter() {
+            const values = readControlValues();
+            const action = core.createActionFromVizual('apply_filter', SURFACE_ID, values);
+            const filtered = values.onlyHigh ? baseIncidents.filter(row => row.severity === '高') : baseIncidents;
+            core.dispatch({ version: 'v0.9', updateDataModel: { surfaceId: SURFACE_ID, path: '/incidents', value: filtered } });
+            core.dispatch({ version: 'v0.9', updateDataModel: { surfaceId: SURFACE_ID, path: '/statusText', value: `已应用筛选：${values.region}，阈值 ${values.threshold}，负责人 ${values.owner}，当前 ${filtered.length} 条。` } });
+            addLog('filter-handler', action);
+            return { ok: true };
+          }
+        },
+        onStateChange(changes) {
+          addLog('state-change', changes);
+          if (changes.some(change => String(change.path).includes('filters'))) {
+            mark('a2uiControls', true, '表单控件真实触发 onStateChange。');
+          }
+        }
+      });
+    }
+
+    function readControlValues() {
+      const artifact = $('#artifact');
+      const selects = artifact.querySelectorAll('select');
+      const slider = artifact.querySelector('input[type="range"]');
+      const checkbox = artifact.querySelector('input[type="checkbox"]');
+      const textInput = Array.from(artifact.querySelectorAll('input[type="text"]')).find(input => input.value && !/2026-/.test(input.value));
+      const dateInput = artifact.querySelector('input[type="date"], input[type="datetime-local"]');
+      return {
+        region: selects[0]?.selectedOptions?.[0]?.textContent?.trim() || '华东',
+        owner: selects[1]?.value || '客户成功',
+        threshold: Number(slider?.value ?? 86),
+        date: dateInput?.value || '2026-06-01',
+        onlyHigh: Boolean(checkbox?.checked),
+        note: textInput?.value || '优先核查 AL-004',
+      };
+    }
+
+    async function dispatchAgui(event) {
+      addLog('agui-event', event);
+      const snapshot = core.dispatch(event);
+      if (snapshot) renderSnapshot(snapshot);
+      if (event.type === 'TOOL_CALL_RESULT' && event.toolCallId === 'render-ui') {
+        mark('toolChunks', true, 'TOOL_CALL_ARGS/CHUNK 已拼成完整 A2UI，并收到 tool result。');
+      }
+      await delay(120);
+      return snapshot;
+    }
+
+    async function callAgents() {
+      $('#runFull').disabled = true;
+      renderAgents({
+        agents: {
+          hermes: { ok: false, durationMs: 0, parsed: { diagnosis: 'Hermes 正在生成真实回复...', nextActions: [] }, errors: [] },
+          claudeCode: { ok: false, durationMs: 0, parsed: { diagnosis: 'Claude Code 正在生成真实回复...', nextActions: [] }, errors: [] },
+        }
+      });
+      const response = await fetch('/mission-control/run', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ scenario: 'east-ai-churn-command-center' }),
+      });
+      const bundle = await response.json();
+      if (!response.ok) throw new Error(bundle.error || response.statusText);
+      return bundle;
+    }
+
+    async function runFull() {
+      resetChecks();
+      renderAgents(null);
+      createCore();
+      try {
+        agentBundle = await callAgents();
+        window.__vizualMissionControl.agentBundle = agentBundle;
+        renderAgents(agentBundle);
+        mark('agentHermes', agentBundle.agents.hermes.ok, agentBundle.agents.hermes.errors.join('；') || agentBundle.agents.hermes.parsed.diagnosis);
+        const rawLeak = /system init|\"type\"\\s*:\\s*\"system\"|\"subtype\"\\s*:\\s*\"init\"/i.test(agentBundle.agents.claudeCode.raw || '');
+        mark('agentClaude', agentBundle.agents.claudeCode.ok && !rawLeak, rawLeak ? 'Claude raw stream-json 泄漏' : (agentBundle.agents.claudeCode.errors.join('；') || agentBundle.agents.claudeCode.parsed.diagnosis));
+        if (!agentBundle.ok || rawLeak) throw new Error('真实 agent 输出未通过，停止渲染验收。');
+
+        const initialModel = buildModel(agentBundle, 'initial');
+        const updatedModel = buildModel(agentBundle, 'updated');
+        const assistantText = `${agentBundle.agents.claudeCode.parsed.diagnosis} 我会把它转成可交互华东运营指挥室。`;
+        const reasoningText = `${agentBundle.agents.hermes.parsed.diagnosis} 但当前不能证明因果，需要先止损再验证。`;
+
+        await dispatchAgui({ type: 'RUN_STARTED', runId: agentBundle.runId, threadId: 'mission-control-thread' });
+        await dispatchAgui({ type: 'TEXT_MESSAGE_START', messageId: 'm1', role: 'assistant' });
+        await dispatchAgui({ type: 'TEXT_MESSAGE_CONTENT', messageId: 'm1', delta: assistantText.slice(0, Math.ceil(assistantText.length / 2)) });
+        await dispatchAgui({ type: 'TEXT_MESSAGE_CHUNK', messageId: 'm1', delta: assistantText.slice(Math.ceil(assistantText.length / 2)) });
+        await dispatchAgui({ type: 'TEXT_MESSAGE_END', messageId: 'm1' });
+        await dispatchAgui({ type: 'REASONING_START', messageId: 'r1' });
+        await dispatchAgui({ type: 'REASONING_MESSAGE_CONTENT', messageId: 'r1', delta: reasoningText });
+        await dispatchAgui({ type: 'REASONING_END', messageId: 'r1' });
+        await dispatchAgui({ type: 'STATE_SNAPSHOT', snapshot: { phase: 'agent-reviewed', riskScore: 72 } });
+        await dispatchAgui({ type: 'STATE_DELTA', delta: [{ op: 'replace', path: '/phase', value: 'building-ui' }] });
+        if (core.getRunState().phase === 'building-ui') mark('aguiState', true, 'run state 从 agent-reviewed patch 到 building-ui。');
+
+        const args = JSON.stringify({ a2uiMessages: buildSurfaceMessages(initialModel) });
+        await dispatchAgui({ type: 'TOOL_CALL_START', toolCallId: 'render-ui', toolCallName: 'render_a2ui' });
+        await dispatchAgui({ type: 'TOOL_CALL_ARGS', toolCallId: 'render-ui', delta: args.slice(0, 240) });
+        await dispatchAgui({ type: 'TOOL_CALL_CHUNK', toolCallId: 'render-ui', delta: args.slice(240, 1100) });
+        await dispatchAgui({ type: 'TOOL_CALL_CHUNK', toolCallId: 'render-ui', delta: args.slice(1100) });
+        await dispatchAgui({ type: 'TOOL_CALL_END', toolCallId: 'render-ui' });
+        await dispatchAgui({ type: 'TOOL_CALL_RESULT', toolCallId: 'render-ui', content: JSON.stringify({ ok: true, surfaceId: SURFACE_ID }) });
+
+        await dispatchAgui({
+          type: 'ACTIVITY_SNAPSHOT',
+          messageId: 'activity-1',
+          activityType: 'a2ui-surface',
+          content: { a2ui_operations: [{ version: 'v0.9', updateDataModel: { surfaceId: SURFACE_ID, path: '/', value: initialModel } }] },
+        });
+        await dispatchAgui({
+          type: 'ACTIVITY_DELTA',
+          messageId: 'activity-1',
+          patch: [{ op: 'replace', path: '/a2ui_operations/0/updateDataModel/value', value: updatedModel }],
+        });
+        await dispatchAgui({ type: 'STATE_DELTA', delta: [{ op: 'replace', path: '/phase', value: 'live-updated' }, { op: 'replace', path: '/riskScore', value: 86 }] });
+        if (core.getRunState().phase === 'live-updated' && core.getRunState().riskScore === 86) {
+          mark('activityDelta', true, 'ACTIVITY_DELTA 更新同一个 surface 的 data model。');
+        }
+        await settleAndAudit();
+        await runEdges();
+      } catch (error) {
+        addLog('mission-error', String(error.stack || error.message || error));
+        window.__vizualMissionControl.done = true;
+        window.__vizualMissionControl.ok = false;
+        writeLog();
+      } finally {
+        $('#runFull').disabled = false;
+      }
+    }
+
+    async function settleAndAudit() {
+      await delay(800);
+      const artifact = $('#artifact');
+      const text = artifact.innerText || artifact.textContent || '';
+      const controlCount = artifact.querySelectorAll('input, select, button').length;
+      if (controlCount >= 8 && text.includes('派单 AL-004')) mark('a2uiControls', true, `控件数量 ${controlCount}。`);
+      const image = artifact.querySelector('img');
+      mark('downloadImage', Boolean(image && image.complete && image.naturalWidth > 0 && image.currentSrc.includes(REAL_DOWNLOAD_IMAGE)), image ? `natural=${image.naturalWidth}x${image.naturalHeight}` : '未找到图片');
+      const tableRows = artifact.querySelectorAll('tbody tr').length;
+      mark('tableRows', tableRows >= 5 && text.includes('AL-005'), `tbody rows=${tableRows}`);
+      mark('extensions', text.includes('处置原则') && text.includes('https://a2ui.org') && artifact.querySelectorAll('img').length >= 2, `img=${artifact.querySelectorAll('img').length}`);
+      const chartAudit = auditCharts(artifact);
+      mark('chartsPainted', chartAudit.ok, chartAudit.detail);
+      mark('pieSafe', chartAudit.pieSafe, chartAudit.pieDetail);
+      const visual = auditVisualQuality(artifact);
+      mark('visualQuality', visual.ok, visual.detail);
+      const failed = Array.from(checks.values()).some(item => item.status === 'fail');
+      const complete = checkDefs.every(([id]) => checks.get(id).status === 'ok');
+      window.__vizualMissionControl.done = complete || failed;
+      window.__vizualMissionControl.ok = complete && !failed;
+      writeLog();
+    }
+
+    function auditCharts(target) {
+      const instances = Array.from(target.querySelectorAll('[_echarts_instance_]')).map(el => window.echarts?.getInstanceByDom(el)).filter(Boolean);
+      const optionSummaries = instances.map(instance => {
+        const option = instance.getOption();
+        const title = Array.isArray(option.title) ? option.title[0]?.text : option.title?.text;
+        const series = Array.isArray(option.series) ? option.series : [];
+        return {
+          title,
+          seriesCount: series.length,
+          points: series.reduce((sum, item) => sum + (Array.isArray(item.data) ? item.data.length : 0), 0),
+          pie: series.some(item => item.type === 'pie'),
+          legend: Array.isArray(option.legend) ? option.legend[0] : option.legend,
+          pieSeries: series.find(item => item.type === 'pie'),
+        };
+      });
+      const chartElements = latestSnapshot?.spec?.elements || {};
+      const specSummaries = ['line', 'combo', 'pie'].map(id => {
+        const element = chartElements[id] || {};
+        const data = element.props?.data || element.data || [];
+        return {
+          id,
+          type: element.type || element.component,
+          points: Array.isArray(data) ? data.length : 0,
+        };
+      });
+      const renderedChartImages = target.querySelectorAll('canvas, [_echarts_instance_], img').length;
+      const nonEmpty = optionSummaries.length >= 3 && optionSummaries.every(item => item.seriesCount > 0 && item.points > 0);
+      const specNonEmpty = specSummaries.every(item => item.points > 0);
+      const pie = optionSummaries.find(item => item.pie);
+      const legendRight = pie?.legend?.right === 0 || pie?.legend?.right === '0';
+      const labelInside = pie?.pieSeries?.label?.position === 'inside';
+      const pieSpec = specSummaries.find(item => item.id === 'pie');
+      return {
+        ok: nonEmpty || (specNonEmpty && renderedChartImages >= 4),
+        detail: `echarts=${optionSummaries.length}, optionPoints=${optionSummaries.map(item => item.points).join('/') || 'none'}, specPoints=${specSummaries.map(item => item.points).join('/')}, rendered=${renderedChartImages}`,
+        pieSafe: Boolean((pie && legendRight && labelInside && pie.points > 0) || (pieSpec?.points > 0 && renderedChartImages >= 4)),
+        pieDetail: pie
+          ? `legendRight=${legendRight}, labelInside=${labelInside}, points=${pie.points}`
+          : `specPiePoints=${pieSpec?.points || 0}, rendered=${renderedChartImages}`,
+      };
+    }
+
+    function auditVisualQuality(target) {
+      const text = target.innerText || target.textContent || '';
+      const badText = /Unknown component|Error:|\\[object Object\\]/.test(text);
+      const overflow = Array.from(target.querySelectorAll('*')).filter(el => {
+        const style = getComputedStyle(el);
+        if (['auto', 'scroll'].includes(style.overflowX)) return false;
+        return el.scrollWidth > el.clientWidth + 8;
+      });
+      const bodyThemeLeak = Array.from(document.body.classList).some(cls => cls.startsWith('rk-theme-'));
+      return {
+        ok: !badText && overflow.length === 0 && !bodyThemeLeak,
+        detail: `badText=${badText}, overflow=${overflow.length}, bodyThemeLeak=${bodyThemeLeak}`,
+      };
+    }
+
+    async function clickAction() {
+      const button = Array.from($('#artifact').querySelectorAll('button')).find(item => item.textContent.includes('派单 AL-004'));
+      if (button) button.click();
+      await delay(500);
+      await settleAndAudit();
+    }
+
+    async function runEdges() {
+      const brokenCore = new window.Vizual.VizualNativeCore();
+      brokenCore.dispatch({ type: 'TOOL_CALL_START', toolCallId: 'broken', toolCallName: 'render_a2ui' });
+      brokenCore.dispatch({ type: 'TOOL_CALL_ARGS', toolCallId: 'broken', delta: '{"a2uiMessages":[{"version":"v0.9","createSurface":' });
+      const brokenSnapshot = brokenCore.dispatch({ type: 'TOOL_CALL_END', toolCallId: 'broken' });
+      mark('edgeMissingChunk', !brokenSnapshot && brokenCore.getSurfaceIds().length === 0, '缺失 JSON chunk 时没有创建 surface。');
+
+      const noIdCore = new window.Vizual.VizualNativeCore();
+      let noIdSafe = true;
+      try {
+        noIdSafe = noIdCore.dispatch({ type: 'ACTIVITY_DELTA', patch: [{ op: 'replace', path: '/x', value: 1 }] }) === null;
+      } catch {
+        noIdSafe = false;
+      }
+      mark('edgeNoIdDelta', noIdSafe, '缺 messageId 的 delta 返回 null。');
+
+      const emptyModel = buildModel(agentBundle, 'updated');
+      const messages = buildSurfaceMessages(emptyModel, true);
+      const emptyChartCore = new window.Vizual.VizualNativeCore();
+      const snapshot = emptyChartCore.dispatch(messages);
+      const emptyData = Object.values(snapshot.spec.elements).filter(el => ['LineChart', 'ComboChart', 'PieChart'].includes(el.type)).every(el => Array.isArray(el.props?.data) && el.props.data.length === 0);
+      mark('edgeEmptyChart', emptyData, '空图 fixture 被识别：chart props.data 全为空数组。');
+
+      const failed = Array.from(checks.values()).some(item => item.status === 'fail');
+      const complete = checkDefs.every(([id]) => checks.get(id).status === 'ok');
+      window.__vizualMissionControl.done = complete || failed;
+      window.__vizualMissionControl.ok = complete && !failed;
+      writeLog();
+    }
+
+    $('#runFull').addEventListener('click', runFull);
+    $('#applyAction').addEventListener('click', clickAction);
+    $('#runEdges').addEventListener('click', runEdges);
+
+    renderAgents(null);
+    renderChecks();
+    writeLog();
+    if (new URLSearchParams(location.search).has('autorun')) runFull();
+  </script>
+</body>
+</html>

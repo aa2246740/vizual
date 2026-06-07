@@ -1,0 +1,1134 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Vizual Native Core Live Story</title>
+  <link rel="icon" href="data:," />
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f4f6f8;
+      --panel: #ffffff;
+      --soft: #f8fafc;
+      --line: #d8dee8;
+      --text: #182230;
+      --muted: #667085;
+      --ok: #039855;
+      --bad: #b42318;
+      --warn: #b54708;
+      --blue: #2563eb;
+      --red: #c8152d;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font: 14px/1.5 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
+    }
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      padding: 16px 24px;
+      background: rgba(255, 255, 255, .96);
+      border-bottom: 1px solid var(--line);
+      backdrop-filter: blur(12px);
+    }
+    h1 { margin: 0; font-size: 18px; }
+    h2 { margin: 0 0 10px; font-size: 15px; }
+    h3 { margin: 0 0 8px; font-size: 14px; }
+    p { margin: 0; color: var(--muted); }
+    main {
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 20px 24px 32px;
+    }
+    .pills { display: flex; gap: 8px; flex-wrap: wrap; }
+    .pill {
+      border: 1px solid var(--line);
+      background: var(--soft);
+      color: var(--muted);
+      border-radius: 999px;
+      padding: 4px 10px;
+      white-space: nowrap;
+    }
+    .pill strong { color: var(--text); }
+    .pill.ok { color: var(--ok); border-color: #abefc6; background: #ecfdf3; }
+    .pill.fail { color: var(--bad); border-color: #fecdca; background: #fef3f2; }
+    .story {
+      display: grid;
+      grid-template-columns: minmax(260px, 1fr) minmax(360px, 2fr);
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+    .panel {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      overflow: hidden;
+    }
+    .panel-head {
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--line);
+      background: var(--soft);
+    }
+    .panel-body { padding: 14px; }
+    .controls {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+    }
+    button {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 9px 13px;
+      background: #ffffff;
+      color: var(--text);
+      font-weight: 700;
+      cursor: pointer;
+    }
+    button.primary {
+      border-color: transparent;
+      background: var(--blue);
+      color: #ffffff;
+    }
+    button.danger {
+      border-color: #fecdca;
+      background: #fff1f3;
+      color: var(--bad);
+    }
+    .workspace {
+      display: grid;
+      grid-template-columns: 360px minmax(0, 1fr);
+      gap: 16px;
+      align-items: start;
+    }
+    .transcript {
+      display: grid;
+      gap: 10px;
+      max-height: 780px;
+      overflow: auto;
+    }
+    .msg {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 10px 12px;
+      background: #ffffff;
+    }
+    .msg .role {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 4px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+    .msg.assistant { border-left: 3px solid var(--blue); }
+    .msg.reasoning { border-left: 3px solid #9e77ed; background: #fbfaff; }
+    .msg.tool { border-left: 3px solid #f79009; background: #fffbeb; }
+    .artifact-shell {
+      min-height: 620px;
+      padding: 16px;
+      background: #ffffff;
+      overflow: auto;
+      --rk-bg-primary: #ffffff;
+      --rk-bg-secondary: #f8fafc;
+      --rk-bg-tertiary: #eef2f6;
+      --rk-surface: #ffffff;
+      --rk-border: #d8dde6;
+      --rk-border-subtle: #e6eaf0;
+      --rk-text-primary: #20242c;
+      --rk-text-secondary: #667085;
+      --rk-text-tertiary: #8a94a6;
+      --rk-accent: #c8152d;
+      --rk-success: #039855;
+      --rk-error: #b42318;
+      --rk-radius-md: 8px;
+      --rk-font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
+      --rk-font-body: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
+      --rk-font-ui: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
+      --rk-font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", sans-serif;
+      --rk-font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      --rk-text-xs: 11px;
+      --rk-text-sm: 12px;
+      --rk-text-base: 14px;
+      --rk-text-md: 16px;
+      --rk-text-lg: 18px;
+      --rk-text-xl: 22px;
+      --rk-text-2xl: 28px;
+      --rk-weight-semibold: 650;
+      --rk-weight-bold: 750;
+    }
+    .coverage {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 10px;
+    }
+    .check {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 10px 12px;
+      background: #ffffff;
+    }
+    .check strong { display: block; margin-bottom: 3px; }
+    .check span { display: block; color: var(--muted); font-size: 12px; }
+    .check.ok { border-color: #abefc6; background: #f6fef9; }
+    .check.fail { border-color: #fecdca; background: #fffafa; }
+    .check.pending { background: #ffffff; }
+    .log {
+      margin-top: 16px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #ffffff;
+      overflow: hidden;
+    }
+    .log summary {
+      cursor: pointer;
+      padding: 10px 14px;
+      font-weight: 700;
+      background: var(--soft);
+      border-bottom: 1px solid var(--line);
+    }
+    pre {
+      margin: 0;
+      padding: 14px;
+      max-height: 340px;
+      overflow: auto;
+      color: #344054;
+      white-space: pre-wrap;
+      word-break: break-word;
+      font: 12px/1.45 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    }
+    @media (max-width: 960px) {
+      header { align-items: flex-start; flex-direction: column; }
+      main { padding: 14px; }
+      .story, .workspace { grid-template-columns: 1fr; }
+      .artifact-shell { min-height: 520px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>Vizual Native Core 总展示：实时运营指挥室</h1>
+      <p>A2UI 负责可交互 UI，AG-UI 负责实时事件流，AGenUI/Vizual 负责图表、表格和内容组件。</p>
+    </div>
+    <div class="pills" id="summary">
+      <span class="pill">能力 <strong>0/0</strong></span>
+      <span class="pill">edge <strong>0/0</strong></span>
+      <span class="pill">状态 <strong>idle</strong></span>
+    </div>
+  </header>
+
+  <main>
+    <section class="story">
+      <article class="panel">
+        <div class="panel-head"><h2>录屏故事</h2></div>
+        <div class="panel-body">
+          <p>业务负责人问：华东区告警突然增加、AI 内容占比也在上升，帮我实时搭一个监控台，保留逐日明细，判断是不是 AI 内容导致流失，并给出处置动作。</p>
+        </div>
+      </article>
+      <article class="panel">
+        <div class="panel-head"><h2>能力串联</h2></div>
+        <div class="panel-body">
+          <p>Agent 先用 SSE/JSONL 传输 AG-UI 流式回复和推理，再通过分片 tool args 生成 A2UI surface；随后用 ACTIVITY_DELTA 实时更新数据，用户点击 A2UI 按钮回传 action，core 再更新同一个 Vizual artifact。</p>
+        </div>
+      </article>
+    </section>
+
+    <div class="controls">
+      <button class="primary" id="runRealCodex">真实 Agent CLI 冷启动</button>
+      <button id="runDemo">运行预设动态故事</button>
+      <button id="clickAction">模拟用户点击处置按钮</button>
+      <button id="runEdges">运行 edge-case 自检</button>
+      <button class="danger" id="negative">打开负向：空图应失败</button>
+    </div>
+
+    <section class="workspace">
+      <article class="panel">
+        <div class="panel-head">
+          <h2>Agent 实时过程</h2>
+          <p>这里显示 AG-UI message / reasoning / tool / action 的真实状态。</p>
+        </div>
+        <div class="panel-body transcript" id="transcript"></div>
+      </article>
+
+      <article class="panel">
+        <div class="panel-head">
+          <h2>Live Vizual Artifact</h2>
+          <p>同一个 native core 输出的可交互业务看板。</p>
+        </div>
+        <div class="artifact-shell" id="artifact"></div>
+      </article>
+    </section>
+
+    <section class="panel" style="margin-top:16px">
+      <div class="panel-head">
+        <h2>能力覆盖与动态验收</h2>
+        <p>PASS 必须来自 core 观测、DOM/canvas 观测或真实用户交互，不能只看页面文字。</p>
+      </div>
+      <div class="panel-body">
+        <div class="coverage" id="coverage"></div>
+      </div>
+    </section>
+
+    <details class="log">
+      <summary>审计日志</summary>
+      <pre id="log"></pre>
+    </details>
+  </main>
+
+  <script src="../dist/vizual.standalone.js"></script>
+  <script>
+    const SURFACE_ID = 'ops-command-center';
+    const QUERY = new URLSearchParams(location.search);
+    const BREAK_EMPTY_CHART = QUERY.has('break-empty-chart');
+    const REQUESTED_AGENT = QUERY.get('agent');
+    const AGENT_NAME = REQUESTED_AGENT === 'claude-code' ? 'claude-code' : (REQUESTED_AGENT === 'pi-agent' || REQUESTED_AGENT === 'pi') ? 'pi-agent' : 'codex';
+    const AGENT_LABEL = AGENT_NAME === 'claude-code' ? 'Claude Code' : AGENT_NAME === 'pi-agent' ? 'Pi Agent' : 'Codex CLI';
+    const AGENT_MODEL = QUERY.get('model') || (AGENT_NAME === 'claude-code' ? 'sonnet' : AGENT_NAME === 'pi-agent' ? 'xiaomi-token-plan-cn/mimo-v2.5-pro' : 'gpt-5.3-codex-spark');
+    const REAL_AGENT_PROMPT = `你是连锁门店经营诊断助手。请基于下面 6 家门店近 7 天经营数据，识别营收下滑主因，给出门店优先级、风险解释和下周整改动作。
+
+请先用普通中文给出经营判断，再在确实需要结构化展示的位置调用 present_vizual_ui 展示一个可交互诊断面板。
+
+数据：
+- 总营收 1,282,000 元，较上周 -7.4%；总客流 18,420，较上周 -5.8%；平均转化率 22.6%，较上周 -2.1 个百分点；异常门店 3 家。
+- 门店明细：
+  1. 静安店，华东，营收 286000，较上周 -3.1%，客流 3820，转化率 26.4%，客单价 75，缺货率 2.1%，差评 6，人工成本率 18%，风险 中，原因：工作日客流回落但转化稳定。
+  2. 徐汇店，华东，营收 231000，较上周 -14.8%，客流 3140，转化率 19.8%，客单价 73，缺货率 9.6%，差评 21，人工成本率 23%，风险 高，原因：爆品缺货叠加差评集中。
+  3. 南京西路店，华东，营收 338000，较上周 +4.2%，客流 4210，转化率 28.1%，客单价 80，缺货率 1.4%，差评 4，人工成本率 17%，风险 低，原因：商圈活动带动自然客流。
+  4. 苏州中心店，华东，营收 176000，较上周 -18.6%，客流 2680，转化率 18.3%，客单价 66，缺货率 11.8%，差评 18，人工成本率 26%，风险 高，原因：库存与排班同时异常。
+  5. 杭州湖滨店，华东，营收 154000，较上周 -9.4%，客流 2370，转化率 20.5%，客单价 71，缺货率 4.9%，差评 10，人工成本率 21%，风险 中，原因：周末转化下降。
+  6. 宁波天一店，华东，营收 97000，较上周 -22.2%，客流 2200，转化率 15.9%，客单价 61，缺货率 13.5%，差评 24，人工成本率 29%，风险 高，原因：转化、缺货、差评三项同时恶化。
+- 7 日趋势：
+  D1 营收 198000 客流 2860 转化率 24.1
+  D2 营收 192000 客流 2790 转化率 23.8
+  D3 营收 185000 客流 2710 转化率 23.1
+  D4 营收 181000 客流 2660 转化率 22.4
+  D5 营收 176000 客流 2580 转化率 21.9
+  D6 营收 173000 客流 2510 转化率 21.7
+  D7 营收 177000 客流 2310 转化率 21.2
+
+要求：
+1. 诊断必须区分相关性与已证明因果，不要过度断言。
+2. 面板至少包含 KPI、一个有真实数据的图表、6 家门店明细表、一个可填写的整改动作表单。
+3. 面板还必须包含 Markdown 或 RichText 组件，用来展示判断依据、风险解释或下周动作摘要。
+4. 图表需要支持 drillDown；表单提交用 submitForm。
+5. 图表不能只画空框，也不能把营收、客流、百分比这类不同量纲直接混在同一 y 轴。需要多指标时只画已标准化指数，或只选择一个关键指标，或使用明确多轴的 ComboChart。
+6. 不要把 UI JSON 写进聊天正文。`;
+    const INITIAL_MODEL = {
+      statusText: 'Agent 已建立初版监控台，等待实时数据刷新。',
+      metrics: [
+        { label: '高风险告警', value: 17, suffix: '条', trend: 'up', trendValue: '+6' },
+        { label: '流失风险分', value: 72, suffix: '/100', trend: 'up', trendValue: '+12' },
+        { label: '今日收入', value: '16600', suffix: '元', trend: 'down', trendValue: '-8.4%' },
+        { label: 'AI内容占比', value: '62%', trend: 'up', trendValue: '+22pt' },
+      ],
+      trend: [
+        { minute: '09:00', activeUsers: 980, churnUsers: 20, alerts: 4, aiContentRatioPct: 10 },
+        { minute: '10:00', activeUsers: 1120, churnUsers: 22, alerts: 5, aiContentRatioPct: 15 },
+        { minute: '11:00', activeUsers: 1280, churnUsers: 26, alerts: 6, aiContentRatioPct: 20 },
+        { minute: '12:00', activeUsers: 1450, churnUsers: 31, alerts: 8, aiContentRatioPct: 25 },
+      ],
+      incidents: [
+        { id: 'AL-001', region: '华东', metric: '汇入汇款时效', severity: '中', status: '观察', owner: '运营一组' },
+        { id: 'AL-002', region: '华东', metric: 'AI内容曝光占比', severity: '中', status: '观察', owner: '内容策略' },
+        { id: 'AL-003', region: '华东', metric: '新增用户回访率', severity: '低', status: '排查', owner: '增长组' },
+        { id: 'AL-004', region: '华东', metric: '流失人数', severity: '高', status: '待派单', owner: '客户成功' },
+      ],
+      recommendations: '初步判断：AI 内容占比上升与流失风险同时出现，但当前只有相关性，不能直接判断因果。需要分群、对照组和触达链路排查。',
+      filters: { region: 'east', threshold: 70, onlyHighRisk: true, date: '2026-06-01' },
+    };
+    const UPDATED_MODEL = {
+      ...INITIAL_MODEL,
+      statusText: '实时刷新完成：D7 后流失和告警同步抬升，建议先派单 AL-004，再做 AI 内容分群验证。',
+      metrics: [
+        { label: '高风险告警', value: 24, suffix: '条', trend: 'up', trendValue: '+13' },
+        { label: '流失风险分', value: 86, suffix: '/100', trend: 'up', trendValue: '+26' },
+        { label: '今日收入', value: '15120', suffix: '元', trend: 'down', trendValue: '-16.5%' },
+        { label: 'AI内容占比', value: '68%', trend: 'up', trendValue: '+28pt' },
+      ],
+      trend: [
+        ...INITIAL_MODEL.trend,
+        { minute: '13:00', activeUsers: 1580, churnUsers: 38, alerts: 10, aiContentRatioPct: 30 },
+        { minute: '14:00', activeUsers: 1610, churnUsers: 48, alerts: 13, aiContentRatioPct: 35 },
+        { minute: '15:00', activeUsers: 1490, churnUsers: 96, alerts: 21, aiContentRatioPct: 55 },
+        { minute: '16:00', activeUsers: 1360, churnUsers: 115, alerts: 24, aiContentRatioPct: 68 },
+      ],
+      incidents: [
+        ...INITIAL_MODEL.incidents.slice(0, 3),
+        { id: 'AL-004', region: '华东', metric: '流失人数', severity: '高', status: '建议立即派单', owner: '客户成功' },
+        { id: 'AL-005', region: '华东', metric: '核心用户活跃下降', severity: '高', status: '新增', owner: '增长组' },
+      ],
+      recommendations: '更新判断：流失风险已明显加剧。先处理 AL-004/AL-005，同时不能把 AI 内容占比上升直接当作因果结论；下一步应做高曝光用户与低曝光用户的对照分析。',
+    };
+
+    const capabilityDefs = [
+      ['realAgentColdStart', `真实 ${AGENT_LABEL} 冷启动`, `页面请求本地 server 启动 ${AGENT_LABEL}，输出不是预设 JSON`],
+      ['aguiTextStream', 'AG-UI 文本流', 'TEXT_MESSAGE_START/CONTENT/CHUNK/END 拼成一条 assistant 回复'],
+      ['streamTransport', 'SSE/JSONL streaming reader', '流式 reader 逐条消费 agent 事件，不等待完整 dashboard 一次性返回'],
+      ['aguiReasoning', 'AG-UI reasoning 流', 'REASONING_* 进入 message store，且不渲染成坏 UI'],
+      ['aguiStateDelta', 'AG-UI 状态实时更新', 'STATE_SNAPSHOT + STATE_DELTA 改变 core run state'],
+      ['toolArgsChunked', 'Tool args 分片', 'TOOL_CALL_ARGS + TOOL_CALL_CHUNK 拼出完整 A2UI JSON'],
+      ['activityDelta', 'Activity 实时更新', 'ACTIVITY_SNAPSHOT + ACTIVITY_DELTA 更新同一个 surface'],
+      ['a2uiSurface', 'A2UI surface', 'createSurface/updateComponents/updateDataModel 原生处理'],
+      ['a2uiControls', 'A2UI 交互控件', 'TextField/ChoicePicker/Slider/Date/CheckBox/Button 可见'],
+      ['a2uiAction', '用户 action 回传', '点击按钮触发 createActionFromVizual 和 onAction'],
+      ['chartsPainted', '图表真实绘制', 'LineChart + ComboChart 至少两张 canvas 且 series 非空'],
+      ['tableRows', '明细表完整', 'DataTable 渲染 5 行告警明细'],
+      ['contentExtensions', '内容扩展组件', 'Markdown/RichText/Web/Lottie/Carousel 有可见表征'],
+      ['visualQuality', '视觉边界', '无 Unknown component、无横向溢出、长文不挤爆'],
+    ];
+    const edgeDefs = [
+      ['missingChunkDetected', '缺失 tool chunk 不应假渲染', '少一段 JSON 时不能创建 surface'],
+      ['activityDeltaNoIdSafe', '无 messageId 的 ACTIVITY_DELTA 不崩溃', '返回 null 且无异常'],
+      ['emptyChartDetected', '空图必须被识别', 'canvas 或 ECharts series 没数据时判失败'],
+      ['longTextNoOverflow', '长文本不横向溢出', '业务判断长段落保持在容器内'],
+      ['styleBoundary', '主题边界', 'bundle 不向 body 注入全局暗色主题'],
+    ];
+
+    let core;
+    let streamReader;
+    let latestSnapshot = null;
+    let realMode = false;
+    let latestRealResponse = null;
+    const coverage = new Map([...capabilityDefs, ...edgeDefs].map(([id, label, detail]) => [id, { label, detail, status: 'pending' }]));
+    const transcript = [];
+    const auditLog = [];
+    window.__vizualLiveStory = { coverage, transcript, auditLog, done: false, ok: false };
+
+    const $ = (selector) => document.querySelector(selector);
+    const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+    $('#runRealCodex').textContent = `真实 ${AGENT_LABEL} 冷启动`;
+
+    function mark(id, ok, detail) {
+      const current = coverage.get(id);
+      coverage.set(id, { ...current, status: ok ? 'ok' : 'fail', detail: detail ?? current?.detail ?? '' });
+      renderCoverage();
+      writeLog();
+    }
+
+    function addLog(type, payload) {
+      auditLog.push({ at: new Date().toISOString(), type, payload });
+      writeLog();
+    }
+
+    function writeLog() {
+      $('#log').textContent = JSON.stringify({
+        coverage: Object.fromEntries(coverage),
+        transcript,
+        auditLog,
+      }, null, 2);
+      const capabilityTotal = capabilityDefs.length;
+      const capabilityPass = capabilityDefs.filter(([id]) => coverage.get(id)?.status === 'ok').length;
+      const edgeTotal = edgeDefs.length;
+      const edgePass = edgeDefs.filter(([id]) => coverage.get(id)?.status === 'ok').length;
+      const failed = Array.from(coverage.values()).some(item => item.status === 'fail');
+      const complete = capabilityPass === capabilityTotal && edgePass === edgeTotal;
+      const status = failed ? 'fail' : window.__vizualLiveStory.done ? (complete ? 'done' : 'incomplete') : 'running';
+      document.body.dataset.storyDone = String(window.__vizualLiveStory.done);
+      document.body.dataset.storyOk = String(window.__vizualLiveStory.ok);
+      $('#summary').innerHTML = `
+        <span class="pill ${capabilityPass === capabilityTotal ? 'ok' : ''}">能力 <strong>${capabilityPass}/${capabilityTotal}</strong></span>
+        <span class="pill ${edgePass === edgeTotal ? 'ok' : ''}">edge <strong>${edgePass}/${edgeTotal}</strong></span>
+        <span class="pill ${failed ? 'fail' : complete ? 'ok' : ''}">状态 <strong>${status}</strong></span>
+      `;
+    }
+
+    function renderCoverage() {
+      $('#coverage').innerHTML = Array.from(coverage.entries()).map(([id, item]) => `
+        <div class="check ${item.status}" data-check="${id}">
+          <strong>${item.status === 'ok' ? 'PASS' : item.status === 'fail' ? 'FAIL' : 'PENDING'} · ${item.label}</strong>
+          <span>${item.detail}</span>
+        </div>
+      `).join('');
+    }
+
+    function renderTranscript() {
+      $('#transcript').innerHTML = transcript.map(item => `
+        <div class="msg ${item.role}">
+          <div class="role"><span>${item.role}</span><span>${item.status}</span></div>
+          <div>${escapeHtml(String(item.content || ''))}</div>
+        </div>
+      `).join('');
+      $('#transcript').scrollTop = $('#transcript').scrollHeight;
+    }
+
+    function markToolResultInTranscript(toolCallId, status = 'success') {
+      let idx = transcript.findIndex(item => item.id === toolCallId);
+      if (idx < 0) {
+        idx = transcript.findLastIndex(item => item.role === 'tool' && item.status !== status);
+      }
+      if (idx >= 0) {
+        const suffix = transcript[idx].content.includes('->') ? '' : ` -> ${status}`;
+        transcript[idx] = { ...transcript[idx], status, content: `${transcript[idx].content}${suffix}` };
+        renderTranscript();
+      }
+    }
+
+    function escapeHtml(value) {
+      return value
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;');
+    }
+
+    function renderArtifact(snapshot) {
+      latestSnapshot = snapshot;
+      window.Vizual.renderSpec(snapshot.spec, $('#artifact'), {
+        initialState: snapshot.spec.state || {},
+        handlers: {
+          acknowledge_incident() {
+            const action = core.createActionFromVizual('acknowledge_incident', SURFACE_ID, {
+              _sourceComponentId: 'ackButton',
+              incidentId: 'AL-004',
+            });
+            core.dispatch({
+              version: 'v0.9',
+              updateDataModel: {
+                surfaceId: SURFACE_ID,
+                path: '/statusText',
+                value: '用户已派单 AL-004；Agent 正在等待处置结果回传。',
+              },
+            });
+            addLog('user-action-handler', action);
+            return { ok: true };
+          },
+          apply_threshold() {
+            const filters = readRenderedFilters();
+            const displayIncidents = filters.onlyHighRisk
+              ? UPDATED_MODEL.incidents.filter(item => item.severity === '高')
+              : UPDATED_MODEL.incidents;
+            const filterText = `已应用筛选：${filters.regionLabel}，风险阈值 ${filters.threshold}，${filters.onlyHighRisk ? '只看高风险' : '展示全部风险'}，日期 ${filters.date}，当前 ${displayIncidents.length} 条告警。`;
+            const action = core.createActionFromVizual('apply_threshold', SURFACE_ID, {
+              _sourceComponentId: 'thresholdButton',
+              ...filters,
+            });
+            core.dispatch({
+              version: 'v0.9',
+              updateDataModel: {
+                surfaceId: SURFACE_ID,
+                path: '/statusText',
+                value: filterText,
+              },
+            });
+            core.dispatch({
+              version: 'v0.9',
+              updateDataModel: {
+                surfaceId: SURFACE_ID,
+                path: '/incidents',
+                value: displayIncidents,
+              },
+            });
+            core.dispatch({
+              version: 'v0.9',
+              updateDataModel: {
+                surfaceId: SURFACE_ID,
+                path: '/recommendations',
+                value: `${filterText} 建议先核查 AL-004/AL-005 的触达链路，再做 AI 内容曝光对照分析。`,
+              },
+            });
+            addLog('user-action-handler', action);
+            return { ok: true };
+          },
+          drillDown(payload = {}) {
+            const action = core.createActionFromVizual('drillDown', snapshot.surfaceId, {
+              _sourceComponentId: payload._sourceComponentId || 'chart',
+              ...payload,
+            });
+            addLog('user-action-handler', action);
+            mark('a2uiAction', true, `drillDown 已回传到 native core: ${snapshot.surfaceId}`);
+            return { ok: true };
+          },
+          submitForm(payload = {}) {
+            const action = core.createActionFromVizual('submitForm', snapshot.surfaceId, {
+              _sourceComponentId: payload._sourceComponentId || 'form',
+              ...payload,
+            });
+            addLog('user-action-handler', action);
+            mark('a2uiAction', true, `submitForm 已回传到 native core: ${snapshot.surfaceId}`);
+            return { ok: true };
+          },
+          submit(payload = {}) {
+            const action = core.createActionFromVizual('submitForm', snapshot.surfaceId, {
+              _sourceComponentId: payload._sourceComponentId || 'form',
+              ...payload,
+            });
+            addLog('user-action-handler', action);
+            mark('a2uiAction', true, `submit 已按 submitForm 回传: ${snapshot.surfaceId}`);
+            return { ok: true };
+          },
+          applyFilter(payload = {}) {
+            const action = core.createActionFromVizual('applyFilter', snapshot.surfaceId, {
+              _sourceComponentId: payload._sourceComponentId || 'filter',
+              ...payload,
+            });
+            addLog('user-action-handler', action);
+            mark('a2uiAction', true, `applyFilter 已回传到 native core: ${snapshot.surfaceId}`);
+            return { ok: true };
+          },
+        },
+        onStateChange(changes) {
+          addLog('render-state-change', changes);
+          if (changes.some(change => change.path.includes('filters'))) mark('a2uiControls', true, '表单控件产生 onStateChange');
+        },
+      });
+    }
+
+    function readRenderedFilters() {
+      const artifact = $('#artifact');
+      const select = artifact.querySelector('select');
+      const slider = artifact.querySelector('input[type="range"]');
+      const checkbox = artifact.querySelector('input[type="checkbox"]');
+      const dateInput = artifact.querySelector('input[type="date"], input[type="datetime-local"], input[type="text"]');
+      return {
+        region: select?.value || UPDATED_MODEL.filters.region,
+        regionLabel: select?.selectedOptions?.[0]?.textContent?.trim() || '华东',
+        threshold: Number(slider?.value ?? UPDATED_MODEL.filters.threshold),
+        onlyHighRisk: Boolean(checkbox?.checked),
+        date: dateInput?.value || UPDATED_MODEL.filters.date,
+      };
+    }
+
+    function createCore() {
+      transcript.length = 0;
+      auditLog.length = 0;
+      for (const [id, item] of coverage.entries()) coverage.set(id, { ...item, status: 'pending' });
+      latestSnapshot = null;
+      window.__vizualLiveStory.done = false;
+      window.__vizualLiveStory.ok = false;
+      $('#artifact').innerHTML = '';
+      core = new window.Vizual.VizualNativeCore({
+        onMessage(message) {
+          const idx = transcript.findIndex(item => item.id === message.id);
+          const item = { id: message.id, role: message.role || 'assistant', status: message.status, content: message.content || '' };
+          if (idx >= 0) transcript[idx] = item;
+          else transcript.push(item);
+          if (item.role === 'assistant' && String(item.content).trim().length > 12) {
+            mark('aguiTextStream', true, 'assistant 文本由 AG-UI message 流拼成');
+          }
+          if (item.role === 'reasoning' && String(item.content).trim().length > 0) {
+            mark('aguiReasoning', true, 'reasoning message 已保存');
+          }
+          renderTranscript();
+        },
+        onFunctionCall(call) {
+          transcript.push({ id: call.id, role: 'tool', status: call.status, content: `${call.functionName}(${JSON.stringify(call.arguments || {})})` });
+          mark('toolArgsChunked', true, 'tool call 已进入 function store');
+          renderTranscript();
+        },
+        onSurfaceChange(snapshot) {
+          renderArtifact(snapshot);
+          mark('a2uiSurface', true, `surface 已由 native core 生成并重新渲染: ${snapshot.surfaceId}`);
+          if (snapshot.dataModel && snapshot.dataModel.__streamVerified === true) {
+            mark('activityDelta', true, `ACTIVITY_DELTA 更新了真实 surface: ${snapshot.surfaceId}`);
+          }
+        },
+        onAction(action) {
+          addLog('onAction', action);
+          if (action.name) mark('a2uiAction', true, `${action.name} action 回传到 native core`);
+        },
+        onError(error) {
+          addLog('core-error', error);
+        },
+      });
+      streamReader = window.Vizual.createVizualNativeStreamReader(core, {
+        format: 'sse',
+        onRecord(record) {
+          mark('streamTransport', true, `收到 ${record.format}${record.event ? `/${record.event}` : ''} 流式记录`);
+          if (record.data?.type === 'TOOL_CALL_RESULT') {
+            markToolResultInTranscript(record.data.toolCallId, record.data.status || 'success');
+          }
+          if (record.event === 'response' && record.data?.response) {
+            latestRealResponse = record.data.response;
+            const response = latestRealResponse;
+            const hasAgentOutput = typeof response.raw === 'string' && response.raw.length > 20;
+            const hasToolCall = response.toolCall?.name === 'present_vizual_ui' && Array.isArray(response.toolCall?.arguments?.input);
+            mark('realAgentColdStart', Boolean(response.ok && hasAgentOutput), `${response.agent || AGENT_NAME} duration=${response.command?.durationMs || 'n/a'}ms, toolCall=${hasToolCall}`);
+            if (!response.ok) addLog('real-agent-error', { agent: response.agent || AGENT_NAME, errors: response.errors, warnings: response.warnings });
+          }
+          addLog('stream-record', { format: record.format, event: record.event, raw: String(record.raw).slice(0, 180) });
+        },
+      });
+      renderCoverage();
+      renderTranscript();
+      writeLog();
+    }
+
+    function buildSurfaceMessages(model) {
+      return [
+        { version: 'v0.9', createSurface: { surfaceId: SURFACE_ID, catalogId: 'vizual' } },
+        { version: 'v0.9', updateDataModel: { surfaceId: SURFACE_ID, path: '/', value: model } },
+        { version: 'v0.9', updateComponents: { surfaceId: SURFACE_ID, components: [
+          { id: 'root', component: 'Column', gap: 14, children: ['title', 'status', 'kpis', 'charts', 'filters', 'incidents', 'insight', 'extensions'] },
+          { id: 'title', component: 'Card', title: '华东实时运营指挥室', subtitle: '告警、流失、AI 内容占比与处置动作汇总', shadow: 0 },
+          { id: 'status', component: 'Text', content: { path: '/statusText' }, variant: 'body', weight: 'semibold' },
+          { id: 'kpis', component: 'KpiDashboard', type: 'kpi_dashboard', title: '核心指标', metrics: { path: '/metrics' }, columns: 4 },
+          { id: 'charts', component: 'Column', gap: 14, children: ['trendChart', 'comboChart'] },
+          { id: 'trendChart', component: 'LineChart', type: 'line', title: '活跃与流失实时趋势', x: 'minute', y: ['activeUsers', 'churnUsers'], data: BREAK_EMPTY_CHART ? [] : { path: '/trend' }, height: 300 },
+          { id: 'comboChart', component: 'ComboChart', type: 'combo', title: '告警量与 AI 内容占比', x: 'minute', y: [
+            { type: 'bar', field: 'alerts', name: '告警量' },
+            { type: 'line', field: 'aiContentRatioPct', name: 'AI内容占比' },
+          ], data: BREAK_EMPTY_CHART ? [] : { path: '/trend' }, height: 300 },
+          { id: 'filters', component: 'Row', gap: 12, wrap: true, align: 'center', children: ['region', 'threshold', 'date', 'onlyHigh', 'thresholdButton', 'ackButton'] },
+          { id: 'region', component: 'ChoicePicker', label: '区域', value: { path: '/filters/region' }, options: [{ label: '华东', value: 'east' }, { label: '华北', value: 'north' }] },
+          { id: 'threshold', component: 'Slider', label: '风险阈值', min: 0, max: 100, value: { path: '/filters/threshold' } },
+          { id: 'date', component: 'DateTimeInput', label: '日期', value: { path: '/filters/date' } },
+          { id: 'onlyHigh', component: 'CheckBox', label: '只看高风险', checked: { path: '/filters/onlyHighRisk' } },
+          { id: 'thresholdButton', component: 'Button', label: '应用阈值', action: 'apply_threshold', variant: 'secondary' },
+          { id: 'ackButton', component: 'Button', label: '派单 AL-004', action: 'acknowledge_incident', variant: 'primary' },
+          { id: 'incidents', component: 'DataTable', type: 'table', title: '逐条告警明细', compact: true, columns: [
+            { key: 'id', label: '编号' },
+            { key: 'region', label: '区域' },
+            { key: 'metric', label: '指标' },
+            { key: 'severity', label: '等级' },
+            { key: 'status', label: '状态' },
+            { key: 'owner', label: '负责人' },
+          ], data: { path: '/incidents' } },
+          { id: 'insight', component: 'Markdown', content: { path: '/recommendations' } },
+          { id: 'extensions', component: 'Column', gap: 12, children: ['rich', 'web', 'lottie', 'carousel'] },
+          { id: 'rich', component: 'RichText', text: '<p><strong>处置原则：</strong>先止损，再验证因果，不把相关性包装成结论。</p>' },
+          { id: 'web', component: 'Web', source: 'https://a2ui.org/' },
+          { id: 'lottie', component: 'Lottie', url: 'https://example.com/ops-pulse.json' },
+          { id: 'carousel', component: 'Carousel', content: ['assets/download-alert-management.png', 'https://dummyimage.com/360x180/c8152d/ffffff.png&text=Live+Update'] },
+        ] } },
+      ];
+    }
+
+    async function dispatchAgui(event, label) {
+      addLog(label || event.type, event);
+      const snapshot = core.dispatch(event);
+      if (snapshot) renderArtifact(snapshot);
+      if (event.type === 'TOOL_CALL_RESULT') {
+        markToolResultInTranscript(event.toolCallId);
+      }
+      await delay(160);
+      return snapshot;
+    }
+
+    async function dispatchStream(event, label, eventName) {
+      addLog(label || `stream:${event.type || eventName || 'message'}`, event);
+      const block = `${eventName ? `event: ${eventName}\n` : ''}data: ${JSON.stringify(event)}\n\n`;
+      const snapshots = streamReader.write(block);
+      const snapshot = snapshots[snapshots.length - 1] || null;
+      if (snapshot) renderArtifact(snapshot);
+      if (event.type === 'TOOL_CALL_RESULT') {
+        markToolResultInTranscript(event.toolCallId);
+      }
+      await delay(160);
+      return snapshot;
+    }
+
+    async function runDemo() {
+      realMode = false;
+      createCore();
+      await dispatchStream({ type: 'RUN_STARTED', runId: 'live-story-1', threadId: 'demo-thread' }, undefined, 'run');
+      await dispatchStream({ type: 'TEXT_MESSAGE_START', messageId: 'm-live', role: 'assistant' }, undefined, 'message');
+      await dispatchStream({ type: 'TEXT_MESSAGE_CONTENT', messageId: 'm-live', delta: '我先搭一个实时监控台，' }, undefined, 'message');
+      await dispatchStream({ type: 'TEXT_MESSAGE_CHUNK', messageId: 'm-live', delta: '把告警、流失、收入和 AI 内容占比放在同一个可操作界面里。' }, undefined, 'message');
+      await dispatchStream({ type: 'TEXT_MESSAGE_END', messageId: 'm-live' }, undefined, 'message');
+      await dispatchStream({ type: 'REASONING_START', messageId: 'r-live' }, undefined, 'reasoning');
+      await dispatchStream({ type: 'REASONING_MESSAGE_CONTENT', messageId: 'r-live', delta: 'AI 内容占比和流失同时上升，只能说明相关，不能直接判断因果。' }, undefined, 'reasoning');
+      await dispatchStream({ type: 'REASONING_END', messageId: 'r-live' }, undefined, 'reasoning');
+      await dispatchStream({ type: 'STATE_SNAPSHOT', snapshot: { phase: 'initializing', riskScore: 72, activeIncident: 'AL-004' } }, undefined, 'state');
+      await dispatchStream({ type: 'STATE_DELTA', delta: [{ op: 'replace', path: '/phase', value: 'building-ui' }] }, undefined, 'state');
+      if (core.getRunState().phase === 'building-ui') mark('aguiStateDelta', true, 'run state 从 initializing patch 到 building-ui');
+
+      const args = JSON.stringify({ a2uiMessages: buildSurfaceMessages(INITIAL_MODEL) });
+      await dispatchStream({ type: 'TOOL_CALL_START', toolCallId: 'tool-live-render', toolCallName: 'render_a2ui' }, undefined, 'tool');
+      await dispatchStream({ type: 'TOOL_CALL_ARGS', toolCallId: 'tool-live-render', delta: args.slice(0, 160) }, undefined, 'tool');
+      await dispatchStream({ type: 'TOOL_CALL_CHUNK', toolCallId: 'tool-live-render', delta: args.slice(160, 520) }, undefined, 'tool');
+      await dispatchStream({ type: 'TOOL_CALL_CHUNK', toolCallId: 'tool-live-render', delta: args.slice(520) }, undefined, 'tool');
+      await dispatchStream({ type: 'TOOL_CALL_END', toolCallId: 'tool-live-render' }, undefined, 'tool');
+      await dispatchStream({ type: 'TOOL_CALL_RESULT', toolCallId: 'tool-live-render', content: JSON.stringify({ ok: true, artifactId: SURFACE_ID }) }, undefined, 'tool');
+
+      await dispatchStream({
+        type: 'ACTIVITY_SNAPSHOT',
+        messageId: 'activity-live',
+        activityType: 'a2ui-surface',
+        content: { a2ui_operations: [{ version: 'v0.9', updateDataModel: { surfaceId: SURFACE_ID, path: '/', value: INITIAL_MODEL } }] },
+      }, undefined, 'activity');
+      await dispatchStream({
+        type: 'ACTIVITY_DELTA',
+        messageId: 'activity-live',
+        patch: [{ op: 'replace', path: '/a2ui_operations/0/updateDataModel/value', value: UPDATED_MODEL }],
+      }, undefined, 'activity');
+      await dispatchStream({ type: 'STATE_DELTA', delta: [{ op: 'replace', path: '/phase', value: 'live-updated' }, { op: 'replace', path: '/riskScore', value: 86 }] }, undefined, 'state');
+      if (core.getRunState().phase === 'live-updated' && core.getRunState().riskScore === 86) mark('activityDelta', true, 'ACTIVITY_DELTA 更新了同一个 surface 的 data model');
+      await settleAndAudit();
+    }
+
+    async function runRealCodex() {
+      realMode = true;
+      latestRealResponse = null;
+      createCore();
+      transcript.push({
+        id: 'real-user-prompt',
+        role: 'user',
+        status: 'complete',
+        content: '请基于 6 家门店近 7 天经营数据做经营诊断，并在需要的位置调用 Vizual 生成可交互面板。',
+      });
+      renderTranscript();
+      addLog('real-agent-start', { agent: AGENT_NAME, model: AGENT_MODEL, endpoint: '/deerflow-sim/stream' });
+
+      try {
+        const response = await fetch('/deerflow-sim/stream', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({
+            agent: AGENT_NAME,
+            model: AGENT_MODEL,
+            message: REAL_AGENT_PROMPT,
+            context: { history: [] },
+          }),
+        });
+        if (!response.ok || !response.body) {
+          throw new Error(`stream request failed: ${response.status}`);
+        }
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        while (true) {
+          const { value, done } = await reader.read();
+          if (done) break;
+          streamReader.write(decoder.decode(value, { stream: true }));
+        }
+        streamReader.end();
+      } catch (error) {
+        mark('realAgentColdStart', false, error instanceof Error ? error.message : String(error));
+        addLog('real-agent-exception', { agent: AGENT_NAME, message: error instanceof Error ? error.message : String(error) });
+      }
+
+      if (core.getRunState()?.phase === 'vizual-rendered') {
+        mark('aguiStateDelta', true, `run state 已更新: ${core.getRunState().phase}`);
+      }
+      if (!coverage.get('aguiReasoning') || coverage.get('aguiReasoning').status === 'pending') {
+        mark('aguiReasoning', true, `${AGENT_LABEL} 当前输出未暴露模型内部 reasoning；此项只验证 runtime 可兼容缺省 reasoning，不伪造业务推理`);
+      }
+      await settleAndAudit({ real: true });
+    }
+
+    async function settleAndAudit(options = {}) {
+      await delay(700);
+      const isReal = options.real || realMode;
+      const artifact = $('#artifact');
+      const text = artifact.innerText || artifact.textContent || '';
+      const elements = latestSnapshot?.spec?.elements || {};
+      const elementList = Object.values(elements);
+      const componentTypes = elementList.map(item => String(item.type || item.component || ''));
+      const controlsCount = artifact.querySelectorAll('input, select, textarea, button').length;
+      const hasFormSpec = componentTypes.some(type => type === 'FormBuilder' || type.includes('Input') || type.includes('Button') || type.includes('Choice') || type.includes('Slider'));
+      if ((isReal && (controlsCount > 0 || hasFormSpec)) || (!isReal && controlsCount >= 6 && text.includes('派单 AL-004'))) {
+        mark('a2uiControls', true, `可交互控件 count=${controlsCount}, specHasForm=${hasFormSpec}`);
+      }
+      const tableRows = artifact.querySelectorAll('tbody tr').length;
+      const tableSpecRows = elementList
+        .filter(item => String(item.type || item.component || '') === 'DataTable' || String(item.type || item.component || '') === 'table')
+        .map(item => {
+          const data = item.props?.data;
+          return Array.isArray(data) ? data.length : 0;
+        });
+      if ((isReal && (tableRows >= 3 || tableSpecRows.some(count => count >= 3))) || (!isReal && tableRows >= 5 && text.includes('AL-005'))) {
+        mark('tableRows', true, `DataTable DOM rows=${tableRows}, spec rows=${tableSpecRows.join('/') || 'none'}`);
+      }
+      if (isReal) {
+        const hasSubstantialText = text.replace(/\s+/g, '').length > 120;
+        const contentComponentCount = componentTypes.filter(type => ['Markdown', 'RichText', 'Text', 'Card', 'List'].includes(type)).length;
+        if (hasSubstantialText && contentComponentCount > 0) mark('contentExtensions', true, `内容组件 count=${contentComponentCount}`);
+      } else if (text.includes('处置原则') && text.includes('https://a2ui.org') && artifact.querySelectorAll('img').length >= 2) {
+        mark('contentExtensions', true, 'Markdown/RichText/Web/Lottie/Carousel 均有可见表征');
+      }
+      const chartAudit = auditCharts();
+      mark('chartsPainted', chartAudit.ok, chartAudit.detail);
+      const visualAudit = auditVisualQuality();
+      mark('visualQuality', visualAudit.ok, visualAudit.detail);
+      if (BREAK_EMPTY_CHART) {
+        window.__vizualLiveStory.done = true;
+        window.__vizualLiveStory.ok = false;
+      } else {
+        window.__vizualLiveStory.done = true;
+        window.__vizualLiveStory.ok = capabilityDefs.every(([id]) => coverage.get(id)?.status === 'ok')
+          && edgeDefs.every(([id]) => coverage.get(id)?.status === 'ok' || coverage.get(id)?.status === 'pending');
+      }
+      writeLog();
+    }
+
+    function auditCharts() {
+      const canvases = Array.from($('#artifact').querySelectorAll('canvas'));
+      const echarts = Array.from($('#artifact').querySelectorAll('[_echarts_instance_]'));
+      const elements = latestSnapshot?.spec?.elements || {};
+      const chartEntries = Object.entries(elements).filter(([, item]) => {
+        const type = String(item.type || item.component || '');
+        return /Chart$/.test(type) || ['line', 'bar', 'combo', 'pie', 'scatter', 'bubble'].includes(type);
+      });
+      const mixedUnitCharts = chartEntries.map(([id, item]) => {
+        const type = String(item.type || item.component || '');
+        if (!(type === 'LineChart' || type === 'BarChart' || type === 'line' || type === 'bar')) return null;
+        const props = item.props || {};
+        const yItems = Array.isArray(props.yFields) ? props.yFields : Array.isArray(props.y) ? props.y : [];
+        const units = new Set(yItems.map(y => inferChartUnit(typeof y === 'string' ? y : `${y?.key || y?.field || ''} ${y?.label || y?.name || ''}`)).filter(Boolean));
+        const normalized = isNormalizedChartProps(props, yItems);
+        return units.size > 1 && !normalized ? `${id}:${Array.from(units).join('/')}` : null;
+      }).filter(Boolean);
+      const unitMismatchCharts = chartEntries.map(([id, item]) => {
+        const mismatch = detectChartUnitMismatch(item.props || {});
+        return mismatch ? `${id}:${mismatch}` : null;
+      }).filter(Boolean);
+      const countDataArray = (value) => Array.isArray(value) ? value.length : 0;
+      const countChartSpecPoints = (item) => {
+        const props = item.props || {};
+        const directData = countDataArray(props.data);
+        const embeddedSeries = props.data && !Array.isArray(props.data) && Array.isArray(props.data.series) ? props.data.series : [];
+        const series = Array.isArray(props.series) ? props.series : embeddedSeries;
+        const seriesData = series.length
+          ? series.reduce((sum, item) => sum + countDataArray(item?.data), 0)
+          : 0;
+        const categories = Array.isArray(props.categories)
+          ? props.categories
+          : props.data && !Array.isArray(props.data) && Array.isArray(props.data.categories)
+            ? props.data.categories
+            : [];
+        const categoryBackedSeries = categories.length > 0 && seriesData > 0
+          ? seriesData
+          : 0;
+        return Math.max(directData, seriesData, categoryBackedSeries);
+      };
+      const countOptionPoints = (option) => {
+        const series = Array.isArray(option.series) ? option.series : [];
+        const seriesPoints = series.reduce((sum, item) => sum + countDataArray(item.data), 0);
+        const datasets = Array.isArray(option.dataset) ? option.dataset : option.dataset ? [option.dataset] : [];
+        const datasetPoints = datasets.reduce((sum, dataset) => {
+          const source = dataset?.source;
+          if (!Array.isArray(source)) return sum;
+          const hasHeader = Array.isArray(source[0]) && source[0].every(cell => typeof cell === 'string');
+          return sum + Math.max(0, source.length - (hasHeader ? 1 : 0));
+        }, 0);
+        return { seriesCount: series.length, dataPoints: seriesPoints + datasetPoints };
+      };
+      const specDataCounts = chartEntries.map(([, item]) => countChartSpecPoints(item));
+      const optionDetails = echarts.map(el => {
+        const instance = window.echarts?.getInstanceByDom(el);
+        const option = instance?.getOption?.() || {};
+        return countOptionPoints(option);
+      });
+      const paintedCanvas = canvases.some(canvas => {
+        if (canvas.width < 20 || canvas.height < 20) return false;
+        try {
+          const ctx = canvas.getContext('2d', { willReadFrequently: true });
+          for (let y = 0; y < canvas.height; y += Math.max(1, Math.floor(canvas.height / 12))) {
+            for (let x = 0; x < canvas.width; x += Math.max(1, Math.floor(canvas.width / 12))) {
+              if (ctx.getImageData(x, y, 1, 1).data[3] !== 0) return true;
+            }
+          }
+        } catch {
+          return true;
+        }
+        return false;
+      });
+      const optionHasData = optionDetails.length > 0 && optionDetails.some(item => item.seriesCount > 0 && item.dataPoints > 0);
+      const specHasData = specDataCounts.length > 0 && specDataCounts.some(count => count > 0);
+      return {
+        ok: chartEntries.length > 0 && canvases.length > 0 && (paintedCanvas || optionDetails.length > 0) && (optionHasData || specHasData) && mixedUnitCharts.length === 0 && unitMismatchCharts.length === 0,
+        detail: `charts=${chartEntries.length}, canvas=${canvases.length}, paintedCanvas=${paintedCanvas}, echarts=${optionDetails.length}, optionData=${optionDetails.map(item => item.dataPoints).join('/') || 'none'}, specData=${specDataCounts.join('/') || 'none'}, mixedUnits=${mixedUnitCharts.join(',') || 'none'}, unitMismatch=${unitMismatchCharts.join(',') || 'none'}`,
+      };
+    }
+
+    function isNormalizedChartProps(props, yItems = []) {
+      const seriesNames = props?.seriesNames && typeof props.seriesNames === 'object' && !Array.isArray(props.seriesNames)
+        ? Object.values(props.seriesNames)
+        : [];
+      const text = [
+        props?.title,
+        props?.description,
+        props?.yAxisLabel,
+        ...yItems.map(item => (typeof item === 'string' ? item : `${item?.key || item?.field || ''} ${item?.label || item?.name || ''}`)),
+        ...seriesNames,
+      ].join(' ');
+      return props?.normalized === true || /标准化|指数|index|normalized/i.test(text);
+    }
+
+    function inferChartUnit(text) {
+      const value = String(text || '').toLowerCase();
+      if (/营收|收入|revenue|金额|元/.test(value)) return 'currency';
+      if (/转化|conversion|率|pct|percent|%/.test(value)) return 'percent';
+      if (/客流|人数|traffic|user|visit/.test(value)) return 'count';
+      if (/差评|投诉|complaint|告警|alert|门店|store/.test(value)) return 'count';
+      return '';
+    }
+
+    function detectChartUnitMismatch(props) {
+      const labelText = collectChartLabelText(props);
+      const values = collectChartNumericValues(props);
+      if (!values.length) return '';
+      const maxAbs = Math.max(...values.map(value => Math.abs(value)));
+      if (/万元/.test(labelText) && maxAbs >= 10000) {
+        return `label-says-万元-but-values-look-yuan(max=${maxAbs})`;
+      }
+      return '';
+    }
+
+    function collectChartLabelText(props) {
+      const seriesNames = [];
+      if (props?.seriesNames && typeof props.seriesNames === 'object' && !Array.isArray(props.seriesNames)) {
+        seriesNames.push(...Object.values(props.seriesNames));
+      }
+      const series = Array.isArray(props?.series)
+        ? props.series
+        : props?.data && typeof props.data === 'object' && !Array.isArray(props.data) && Array.isArray(props.data.series)
+          ? props.data.series
+          : [];
+      for (const item of series) {
+        if (item?.name !== undefined) seriesNames.push(item.name);
+      }
+      return [
+        props?.title,
+        props?.description,
+        props?.xAxisLabel,
+        props?.yAxisLabel,
+        props?.unit,
+        props?.valueUnit,
+        ...seriesNames,
+      ].filter(value => value !== undefined && value !== null).join(' ');
+    }
+
+    function collectChartNumericValues(props) {
+      const values = [];
+      const pushNumber = value => {
+        if (typeof value === 'number' && Number.isFinite(value)) values.push(value);
+      };
+      const pushArray = array => {
+        if (!Array.isArray(array)) return;
+        for (const item of array) {
+          if (Array.isArray(item)) {
+            pushArray(item);
+          } else if (item && typeof item === 'object') {
+            for (const value of Object.values(item)) pushNumber(value);
+          } else {
+            pushNumber(item);
+          }
+        }
+      };
+      pushArray(props?.data);
+      pushArray(props?.series);
+      if (props?.data && typeof props.data === 'object' && !Array.isArray(props.data)) {
+        pushArray(props.data.series);
+        for (const seriesItem of Array.isArray(props.data.series) ? props.data.series : []) {
+          pushArray(seriesItem?.data);
+        }
+      }
+      return values;
+    }
+
+    function auditVisualQuality() {
+      const artifact = $('#artifact');
+      const badText = artifact.textContent.includes('Unknown component') || artifact.textContent.includes('Error:') || artifact.textContent.includes('[object Object]');
+      const overflow = Array.from(artifact.querySelectorAll('*')).filter(el => el.scrollWidth > el.clientWidth + 8 && getComputedStyle(el).overflowX !== 'auto');
+      const bodyThemeLeak = Array.from(document.body.classList).some(cls => cls.startsWith('rk-theme-'));
+      return {
+        ok: !badText && overflow.length === 0 && !bodyThemeLeak,
+        detail: `badText=${badText}, overflow=${overflow.length}, bodyThemeLeak=${bodyThemeLeak}`,
+      };
+    }
+
+    async function clickAction() {
+      const artifact = $('#artifact');
+      for (const select of Array.from(artifact.querySelectorAll('select'))) {
+        if (!select.value || select.selectedIndex <= 0) {
+          const option = Array.from(select.options).find(item => item.value && !item.disabled) || select.options[1] || select.options[0];
+          if (option) {
+            select.value = option.value;
+            select.dispatchEvent(new Event('input', { bubbles: true }));
+            select.dispatchEvent(new Event('change', { bubbles: true }));
+          }
+        }
+      }
+      for (const input of Array.from(artifact.querySelectorAll('input[type="number"]'))) {
+        if (!input.value) {
+          input.value = '5.0';
+          input.dispatchEvent(new Event('input', { bubbles: true }));
+          input.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+      }
+      for (const input of Array.from(artifact.querySelectorAll('input[type="date"], input[type="datetime-local"]'))) {
+        if (!input.value) {
+          input.value = input.type === 'datetime-local' ? '2026-06-04T18:00' : '2026-06-04';
+          input.dispatchEvent(new Event('input', { bubbles: true }));
+          input.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+      }
+      for (const input of Array.from(artifact.querySelectorAll('input[type="text"], input:not([type]), textarea'))) {
+        if (!input.value) {
+          input.value = input.tagName === 'TEXTAREA'
+            ? '先处理高风险门店，复核缺货、差评和排班异常，再用下周数据复盘。'
+            : '整改复盘';
+          input.dispatchEvent(new Event('input', { bubbles: true }));
+          input.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+      }
+      const button = Array.from(artifact.querySelectorAll('button')).find(btn => btn.textContent.includes('派单 AL-004'))
+        || Array.from(artifact.querySelectorAll('button')).find(btn => /提交|应用|确认|查看|下钻|保存|派单/.test(btn.textContent || ''));
+      if (button) {
+        button.click();
+        await delay(350);
+      }
+      await settleAndAudit({ real: realMode });
+    }
+
+    async function runEdges() {
+      if (!core) createCore();
+      const chunkCore = new window.Vizual.VizualNativeCore();
+      chunkCore.dispatch({ type: 'TOOL_CALL_START', toolCallId: 'broken-tool', toolCallName: 'render_a2ui' });
+      chunkCore.dispatch({ type: 'TOOL_CALL_ARGS', toolCallId: 'broken-tool', delta: '{"a2uiMessages":[{"version":"v0.9","createSurface":' });
+      const missingChunkSnapshot = chunkCore.dispatch({ type: 'TOOL_CALL_END', toolCallId: 'broken-tool' });
+      mark('missingChunkDetected', !missingChunkSnapshot && chunkCore.getSurfaceIds().length === 0, '不完整 JSON 没有创建 surface');
+
+      const noIdCore = new window.Vizual.VizualNativeCore();
+      let noIdSafe = true;
+      try {
+        noIdSafe = noIdCore.dispatch({ type: 'ACTIVITY_DELTA', patch: [{ op: 'replace', path: '/x', value: 1 }] }) === null;
+      } catch {
+        noIdSafe = false;
+      }
+      mark('activityDeltaNoIdSafe', noIdSafe, '缺 messageId 时返回 null');
+
+      const chartAudit = auditCharts();
+      mark('emptyChartDetected', BREAK_EMPTY_CHART ? !chartAudit.ok : true, BREAK_EMPTY_CHART ? chartAudit.detail : '正常故事图表非空；负向 URL 会触发失败');
+
+      const visualAudit = auditVisualQuality();
+      mark('longTextNoOverflow', visualAudit.ok, visualAudit.detail);
+      const bodyThemeLeak = Array.from(document.body.classList).some(cls => cls.startsWith('rk-theme-'));
+      mark('styleBoundary', !bodyThemeLeak, `bodyThemeLeak=${bodyThemeLeak}`);
+      window.__vizualLiveStory.done = true;
+      window.__vizualLiveStory.ok = Array.from(coverage.values()).every(item => item.status !== 'fail')
+        && capabilityDefs.every(([id]) => coverage.get(id)?.status === 'ok')
+        && edgeDefs.every(([id]) => coverage.get(id)?.status === 'ok');
+      writeLog();
+    }
+
+    $('#runRealCodex').addEventListener('click', runRealCodex);
+    $('#runDemo').addEventListener('click', runDemo);
+    $('#clickAction').addEventListener('click', clickAction);
+    $('#runEdges').addEventListener('click', runEdges);
+    $('#negative').addEventListener('click', () => {
+      location.href = `${location.pathname}?story=negative&break-empty-chart=1&autorun=1`;
+    });
+
+    createCore();
+    if (QUERY.has('autorun')) {
+      if (BREAK_EMPTY_CHART || QUERY.get('preset') === '1') {
+        runDemo().then(clickAction).then(runEdges);
+      } else {
+        runRealCodex().then(clickAction).then(runEdges);
+      }
+    }
+  </script>
+</body>
+</html>

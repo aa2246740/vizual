@@ -355,35 +355,6 @@ export function extractRowsFromArtifact(artifact: VizualArtifact): Array<Record<
     if (directRows.length) return directRows
   }
 
-  for (const element of elements) {
-    const docRows = extractRowsFromDocViewElement(element)
-    if (docRows.length) return docRows
-  }
-
-  return []
-}
-
-function extractRowsFromDocViewElement(element: { type?: string; props?: Record<string, unknown> }): Array<Record<string, unknown>> {
-  const sections = element.type === 'DocView' && Array.isArray(element.props?.sections)
-    ? element.props.sections
-    : []
-  if (!sections.length) return []
-
-  for (const section of sections) {
-    if (!isPlainRecord(section) || section.type !== 'table') continue
-    const tableRows = normalizeTableRows(section.data)
-    if (tableRows.length) return tableRows
-  }
-
-  for (const section of sections) {
-    if (!isPlainRecord(section)) continue
-    const sectionData = isPlainRecord(section.data) ? section.data : null
-    const chartRows = normalizeRecordRows(sectionData?.data)
-    if (chartRows.length) return chartRows
-    const metricRows = normalizeRecordRows(sectionData?.metrics)
-    if (metricRows.length) return metricRows
-  }
-
   return []
 }
 

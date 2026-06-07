@@ -1,4 +1,6 @@
-/** A2UI message types — subset of A2UI v0.10 protocol used by Vizual bridge */
+/** A2UI message types used by the Vizual bridge. */
+
+export type A2UIProtocolVersion = 'v0.9' | 'v0.10'
 
 export type A2UIDynamicValue =
   | string
@@ -34,17 +36,37 @@ export type A2UIUpdateDataModel = {
   value?: unknown
 }
 
+export type A2UIAppendDataModel = {
+  surfaceId: string
+  path?: string
+  value?: unknown
+}
+
 export type A2UIDeleteSurface = {
   surfaceId: string
 }
 
-/** 更新 surface 的 theme 配置（运行时主题切换） */
+export type A2UICallFunction = {
+  surfaceId?: string
+  functionName: string
+  arguments?: Record<string, unknown>
+}
+
+export type A2UIActionResponse = {
+  surfaceId?: string
+  actionId?: string
+  status: 'success' | 'error' | 'cancelled'
+  result?: unknown
+  error?: string
+}
+
+/** Vizual extension: 更新 surface 的 theme 配置（运行时主题切换） */
 export type A2UIUpdateTheme = {
   surfaceId: string
   theme: Record<string, unknown>
 }
 
-/** A2UI 错误恢复消息 — Agent 可以指示前端如何恢复 */
+/** Vizual extension: Agent 可以指示前端如何恢复 */
 export type A2UIErrorRecovery = {
   surfaceId: string
   action: 'retry' | 'fallback' | 'reset'
@@ -52,13 +74,20 @@ export type A2UIErrorRecovery = {
   payload?: unknown
 }
 
-export type A2UIMessage =
-  | { version: 'v0.10'; createSurface: A2UICreateSurface }
-  | { version: 'v0.10'; updateComponents: A2UIUpdateComponents }
-  | { version: 'v0.10'; updateDataModel: A2UIUpdateDataModel }
-  | { version: 'v0.10'; deleteSurface: A2UIDeleteSurface }
-  | { version: 'v0.10'; updateTheme: A2UIUpdateTheme }
-  | { version: 'v0.10'; errorRecovery: A2UIErrorRecovery }
+export type A2UIStandardMessage =
+  | { version: A2UIProtocolVersion; createSurface: A2UICreateSurface }
+  | { version: A2UIProtocolVersion; updateComponents: A2UIUpdateComponents }
+  | { version: A2UIProtocolVersion; updateDataModel: A2UIUpdateDataModel }
+  | { version: A2UIProtocolVersion; appendDataModel: A2UIAppendDataModel }
+  | { version: A2UIProtocolVersion; deleteSurface: A2UIDeleteSurface }
+  | { version: 'v0.10'; callFunction: A2UICallFunction; functionCallId?: string }
+  | { version: 'v0.10'; actionResponse: A2UIActionResponse; actionId?: string }
+
+export type VizualA2UIExtensionMessage =
+  | { version: A2UIProtocolVersion; updateTheme: A2UIUpdateTheme }
+  | { version: A2UIProtocolVersion; errorRecovery: A2UIErrorRecovery }
+
+export type A2UIMessage = A2UIStandardMessage | VizualA2UIExtensionMessage
 
 export type A2UIAction = {
   name: string
@@ -69,7 +98,7 @@ export type A2UIAction = {
 
 export type A2UIError = {
   surfaceId: string
-  phase: 'create' | 'update' | 'data' | 'theme' | 'render'
+  phase: 'create' | 'update' | 'data' | 'theme' | 'function' | 'action' | 'render'
   message: string
   recoverable: boolean
   timestamp: number

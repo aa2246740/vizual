@@ -12,7 +12,7 @@ export type VizualSpec = {
   [key: string]: unknown
 }
 
-export type VizualArtifactKind = 'spec' | 'docview' | 'liveControl' | 'interactive'
+export type VizualArtifactKind = 'spec' | 'liveControl' | 'interactive'
 export type VizualArtifactStatus = 'draft' | 'rendered' | 'updated' | 'error' | 'exported'
 
 export type VizualArtifactSource = {
@@ -30,7 +30,6 @@ export type VizualArtifactTheme = {
 
 export type VizualTargetType =
   | 'element'
-  | 'section'
   | 'metric'
   | 'table-column'
   | 'table-cell'
@@ -411,7 +410,6 @@ function normalizeSpecElement(element: VizualSpecElement): VizualSpecElement {
   }
   delete normalized.component
   for (const key of Object.keys(looseProps)) delete normalized[key]
-  if (Object.keys(normalized.props || {}).length === 0) delete normalized.props
   return normalized
 }
 
@@ -428,9 +426,7 @@ function normalizeSpecShape(spec: VizualSpec): VizualSpec {
   return next
 }
 
-function inferArtifactKind(spec: VizualSpec): VizualArtifactKind {
-  const elements = Object.values(spec.elements || {})
-  if (elements.some(element => element?.type === 'DocView')) return 'docview'
+function inferArtifactKind(): VizualArtifactKind {
   return 'spec'
 }
 
@@ -465,26 +461,6 @@ export function extractTargetMap(spec: VizualSpec): VizualTarget[] {
       label: readLabel(props, elementId),
       summary: summarizeValue(props),
     })
-
-    if (componentType === 'DocView' && Array.isArray(props.sections)) {
-      props.sections.forEach((section, index) => {
-        if (!isRecord(section)) return
-        const sectionId = typeof section.id === 'string' && section.id
-          ? section.id
-          : String(index)
-        const sectionPath = pathJoin('elements', elementId, 'props', 'sections', index)
-        targets.push({
-          id: `section:${sectionId}`,
-          type: 'section',
-          path: sectionPath,
-          elementId,
-          componentType: typeof section.type === 'string' ? section.type : 'section',
-          label: readLabel(section, `Section ${index + 1}`),
-          summary: summarizeValue(section.content ?? section.data ?? section.title),
-          meta: { sectionId, sectionIndex: index },
-        })
-      })
-    }
 
     if (componentType === 'KpiDashboard' && Array.isArray(props.metrics)) {
       props.metrics.forEach((metric, index) => {
@@ -618,7 +594,7 @@ export function createArtifact(input: CreateVizualArtifactInput): VizualArtifact
   const id = input.id || createId('viz')
   return {
     id,
-    kind: input.kind || inferArtifactKind(spec),
+    kind: input.kind || inferArtifactKind(),
     status: input.status || 'draft',
     spec,
     data: cloneJson(input.data),
@@ -646,7 +622,7 @@ export function normalizeArtifact(
     artifact.state = artifact.state || artifact.spec.state || {}
     artifact.updatedAt = artifact.updatedAt || nowIso()
     artifact.createdAt = artifact.createdAt || artifact.updatedAt
-    artifact.kind = artifact.kind || inferArtifactKind(artifact.spec)
+    artifact.kind = artifact.kind || inferArtifactKind()
     artifact.status = artifact.status || 'draft'
     return artifact
   }
@@ -706,33 +682,6 @@ function normalizeChartType(chartType: string) {
   return CHART_TYPE_MAP[key] || chartType
 }
 
-function findDocViewElement(spec: VizualSpec): { elementId: string; element: VizualSpecElement } | undefined {
-  for (const [elementId, element] of Object.entries(spec.elements || {})) {
-    if (element?.type === 'DocView') return { elementId, element }
-  }
-  return undefined
-}
-
-function replaceDocViewSections(spec: VizualSpec, sections: unknown[]): VizualSpec {
-  const next = cloneJson(spec)
-  next.elements = next.elements || {}
-  const docView = findDocViewElement(next)
-  if (docView) {
-    docView.element.props = {
-      ...(isRecord(docView.element.props) ? docView.element.props : {}),
-      sections: cloneJson(sections),
-    }
-    next.elements[docView.elementId] = docView.element
-    return next
-  }
-  next.root = next.root || 'doc'
-  next.elements[next.root] = {
-    type: 'DocView',
-    props: { sections: cloneJson(sections) },
-  }
-  return next
-}
-
 function elementRecordToSpec(value: Record<string, unknown>): VizualSpec {
   const type = typeof value.type === 'string' ? value.type : undefined
   if (!type) throw new Error('replaceSpec element object requires a string type')
@@ -751,29 +700,12 @@ function elementRecordToSpec(value: Record<string, unknown>): VizualSpec {
   }
 }
 
-function coerceReplacementSpec(value: unknown, artifact: VizualArtifact): VizualSpec {
+function coerceReplacementSpec(value: unknown): VizualSpec {
   if (isVizualSpec(value)) return cloneJson(value)
-  if (Array.isArray(value)) return replaceDocViewSections(artifact.spec, value)
   if (isRecord(value)) {
-    if (Array.isArray(value.sections)) return replaceDocViewSections(artifact.spec, value.sections)
     if (typeof value.type === 'string') return elementRecordToSpec(value)
   }
-  throw new Error('replaceSpec requires a full Vizual spec. For DocView revisions pass { sections: [...] } or updateElementProps({ sections }).')
-}
-
-function patchDocViewChartSection(
-  artifact: VizualArtifact,
-  patch: Extract<VizualArtifactPatch, { type: 'changeChartType' }>,
-) {
-  if (!patch.targetId?.startsWith('section:')) return false
-  const target = resolveTarget(artifact, patch.targetId)
-  if (!target) return false
-  const section = getByPointer(artifact.spec, target.path)
-  if (!isRecord(section) || section.type !== 'chart') return false
-  const data = isRecord(section.data) ? { ...section.data } : {}
-  data.chartType = normalizeChartType(patch.chartType)
-  setByPointer(artifact.spec, `${target.path}/data`, data)
-  return true
+  throw new Error('replaceSpec requires a full Vizual spec or a single element object with a string type.')
 }
 
 function isJsonPatchOperation(
@@ -851,7 +783,7 @@ function applySinglePatch(artifact: VizualArtifact, patch: VizualArtifactPatch):
   }
 
   if (patch.type === 'replaceSpec') {
-    artifact.spec = normalizeSpecShape(coerceReplacementSpec(patch.spec, artifact))
+    artifact.spec = normalizeSpecShape(coerceReplacementSpec(patch.spec))
     artifact.state = cloneJson(artifact.spec.state || artifact.state || {})
     return artifact
   }
@@ -888,7 +820,6 @@ function applySinglePatch(artifact: VizualArtifact, patch: VizualArtifactPatch):
   }
 
   if (patch.type === 'changeChartType') {
-    if (patchDocViewChartSection(artifact, patch)) return artifact
     const elementId = resolveElementId(artifact, patch.targetId, patch.elementId)
     if (!elementId) throw new Error('changeChartType requires targetId or elementId')
     const element = artifact.spec.elements?.[elementId]

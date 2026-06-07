@@ -13,6 +13,8 @@ export const BarChartSchema = z.object({
   horizontal: z.boolean().optional(),
   theme: z.enum(['light', 'dark']).optional(),
   height: z.number().optional(),
+  action: z.string().optional(),
+  selectedPoint: z.unknown().optional(),
 })
 
 export type BarChartProps = z.infer<typeof BarChartSchema>

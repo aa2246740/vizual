@@ -2,7 +2,7 @@
  * Theme Colors — 主题颜色统一获取接口
  *
  * 所有 renderer 通过此模块获取颜色值，而非硬编码。
- * 当 setGlobalTheme() 被调用时，颜色缓存自动更新。
+ * 当 setGlobalTheme() 被调用时，颜色缓存自动更新。bundle 加载本身不注入全局主题。
  *
  * 两个获取函数：
  *   tc(varName)  → 解析后的具体值，如 '#c8152d'（仅用于 ECharts 等 JS-only 场景）
@@ -15,8 +15,6 @@
 
 import { defaultDarkTheme } from '../themes/default-dark'
 import { defaultLightTheme } from '../themes/default-light'
-import { claudeDarkTheme } from '../themes/claude-dark'
-import { claudeLightTheme } from '../themes/claude-light'
 import type { Theme } from '../themes'
 
 /** 暗色默认颜色表 */
@@ -25,8 +23,8 @@ const defaultDarkColors: Record<string, string> = { ...defaultDarkTheme.cssVaria
 /** 亮色默认颜色表 */
 const defaultLightColors: Record<string, string> = { ...defaultLightTheme.cssVariables }
 
-/** 当前生效的颜色缓存 — 初始化为 Claude Dark（全局默认主题） */
-let activeColors: Record<string, string> = { ...claudeDarkTheme.cssVariables }
+/** 当前显式主题颜色缓存；未设置主题时使用中性的 light fallback */
+let activeColors: Record<string, string> = { ...defaultLightColors }
 
 /**
  * 更新颜色缓存 — 在主题切换时由 themes/index.ts 调用
@@ -50,7 +48,7 @@ export function updateActiveColors(theme: Theme): void {
  * @returns 解析后的颜色值，如 '#0f1117'
  */
 export function tc(varName: string): string {
-  return activeColors[varName] || defaultDarkColors[varName] || ''
+  return activeColors[varName] || defaultLightColors[varName] || defaultDarkColors[varName] || ''
 }
 
 /**
@@ -64,7 +62,8 @@ export function tc(varName: string): string {
  * @returns CSS 变量引用，如 'var(--rk-bg-primary)'
  */
 export function tcss(varName: string): string {
-  return `var(${varName})`
+  const fallback = activeColors[varName] || defaultLightColors[varName] || defaultDarkColors[varName]
+  return fallback ? `var(${varName}, ${fallback})` : `var(${varName})`
 }
 
 /** 便捷方法：获取图表调色板（已解析值，用于 ECharts） */
@@ -78,5 +77,5 @@ export function chartColors(count: number): string[] {
 
 /** 重置为默认颜色（测试用） */
 export function resetColors(): void {
-  activeColors = { ...defaultDarkColors }
+  activeColors = { ...defaultLightColors }
 }

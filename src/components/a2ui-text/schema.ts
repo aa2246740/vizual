@@ -16,4 +16,4 @@ export const TextSchema = z.object({
   maxLines: z.number().optional(),
 })
 
-export type TextProps = z.infer<typeof TextSchema>
+export type TextProps = z.input<typeof TextSchema>

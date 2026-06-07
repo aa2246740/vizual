@@ -9,6 +9,7 @@ function finiteNumber(value: unknown, fallback = 0): number {
 export function buildScatterFallback(props: ScatterChartProps): Record<string, unknown> {
   const x = props.x ?? 'name'
   const yFields = Array.isArray(props.y) ? props.y : [props.y ?? 'value']
+  const labelField = props.label ?? props.groupField
   const xValues = props.data.map(d => d[x])
   const numericX = xValues.every(v => Number.isFinite(Number(v)))
   const sizeValues = props.size
@@ -44,7 +45,12 @@ export function buildScatterFallback(props: ScatterChartProps): Record<string, u
           finiteNumber(d[f]),
         ]
         if (props.size) point.push(finiteNumber(d[props.size]))
-        return point
+        if (!labelField) return point
+        return {
+          name: String(d[labelField] ?? ''),
+          value: point,
+          data: d,
+        }
       }),
       symbolSize: index === 0 ? (symbolSize ?? 10) : undefined,
       showSymbol: index === 0,

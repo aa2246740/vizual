@@ -1,15 +1,43 @@
 import { z } from 'zod'
 
 export const GanttChartSchema = z.object({
-      type: z.literal('gantt'),
-      title: z.string().optional(),
-      tasks: z.array(z.object({
-        id: z.string(), name: z.string(),
-        start: z.string(), end: z.string(),
-        progress: z.number().min(0).max(100).optional(),
-        color: z.string().optional(),
-        dependencies: z.array(z.string()).optional(),
-      })),
-    })
+  type: z.literal('gantt').optional(),
+  title: z.string().optional(),
+  tasks: z.array(z.object({
+    id: z.string().optional(),
+    key: z.string().optional(),
+    taskId: z.string().optional(),
+    name: z.string().optional(),
+    title: z.string().optional(),
+    label: z.string().optional(),
+    task: z.string().optional(),
+    activity: z.string().optional(),
+    milestone: z.string().optional(),
+    start: z.union([z.string(), z.number(), z.date()]).optional(),
+    startDate: z.union([z.string(), z.number(), z.date()]).optional(),
+    begin: z.union([z.string(), z.number(), z.date()]).optional(),
+    from: z.union([z.string(), z.number(), z.date()]).optional(),
+    date: z.union([z.string(), z.number(), z.date()]).optional(),
+    end: z.union([z.string(), z.number(), z.date()]).optional(),
+    endDate: z.union([z.string(), z.number(), z.date()]).optional(),
+    finish: z.union([z.string(), z.number(), z.date()]).optional(),
+    due: z.union([z.string(), z.number(), z.date()]).optional(),
+    to: z.union([z.string(), z.number(), z.date()]).optional(),
+    duration: z.union([z.string(), z.number()]).optional(),
+    days: z.union([z.string(), z.number()]).optional(),
+    length: z.union([z.string(), z.number()]).optional(),
+    progress: z.union([z.string(), z.number()]).optional(),
+    percent: z.union([z.string(), z.number()]).optional(),
+    completion: z.union([z.string(), z.number()]).optional(),
+    status: z.string().optional(),
+    color: z.string().optional(),
+    dependencies: z.array(z.string()).optional(),
+    dependency: z.string().optional(),
+    dependsOn: z.string().optional(),
+  }).passthrough()).optional(),
+  data: z.array(z.record(z.unknown())).optional(),
+  items: z.array(z.record(z.unknown())).optional(),
+  rows: z.array(z.record(z.unknown())).optional(),
+}).passthrough()
 
 export type GanttChartProps = z.infer<typeof GanttChartSchema>

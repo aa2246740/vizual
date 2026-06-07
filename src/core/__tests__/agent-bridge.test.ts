@@ -52,8 +52,8 @@ describe('VizualAgentBridge', () => {
       chartType: 'LineChart',
     })
 
-    expect(updated?.spec.elements.chart.type).toBe('LineChart')
-    expect(bridge.getArtifact('msg-1')?.spec.elements.chart.type).toBe('LineChart')
+    expect(updated?.spec.elements?.chart?.type).toBe('LineChart')
+    expect(bridge.getArtifact('msg-1')?.spec.elements?.chart?.type).toBe('LineChart')
     expect(bridge.getMessageIdForArtifactRef(updated?.id)).toBe('msg-1')
   })
 
@@ -155,7 +155,7 @@ describe('VizualAgentBridge', () => {
 
     expect(comment?.body).toBe('只保留华东区')
     expect(applied?.status).toBe('applied')
-    expect(bridge.getArtifact('msg-1')?.spec.elements.chart.type).toBe('LineChart')
+    expect(bridge.getArtifact('msg-1')?.spec.elements?.chart?.type).toBe('LineChart')
     expect(bridge.snapshot().reviewThreads[0].status).toBe('resolved')
     expect(bridge.snapshot().revisionProposals[0].id).toBe(proposal.id)
   })

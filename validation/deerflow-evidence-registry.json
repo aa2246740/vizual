@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "evidenceRoot": "/Users/wu/Documents/CC/deer-flow-vizual-clean/validation-artifacts/cdp",
+  "current": {
+    "deerflow.n2-concept-interaction-current": {
+      "expectation": "n2",
+      "status": "candidate",
+      "target": "/Users/wu/Documents/CC/deer-flow-vizual-clean/validation-artifacts/cdp/manual-n2-ab-test-interactive-2026-06-04T1205Z/result.json",
+      "note": "Manual Computer Use visible Chrome run: AB-test sample-size playground rendered real controls, screenshots captured, submitForm returned to Agent and updated same surface.",
+      "registeredAt": "2026-06-04T12:07:21.724Z"
+    },
+    "deerflow.n5-explicit-web-current": {
+      "expectation": "n5",
+      "status": "candidate",
+      "target": "/Users/wu/Documents/CC/deer-flow-vizual-clean/validation-artifacts/cdp/manual-n5-quiet-systems-html-2026-06-04T1210Z/result.json",
+      "note": "Manual Computer Use visible Chrome run: explicit single-file HTML landing-page request used write_file/present_files artifact path, rendered real HTML preview, present_vizual_ui count stayed zero.",
+      "registeredAt": "2026-06-04T12:11:09.990Z"
+    },
+    "deerflow.n6-failure-absorption": {
+      "expectation": "n6",
+      "status": "candidate",
+      "target": "/Users/wu/Documents/CC/deer-flow-vizual-clean/validation-artifacts/cdp/manual-n6-launch-dependency-absorption-2026-06-04T1213Z/result.json",
+      "note": "Manual Computer Use visible Chrome run: complex dependency request triggered two ok:false Vizual payloads, frontend hid blank surfaces, final readable fallback analysis remained visible and audit passed.",
+      "registeredAt": "2026-06-04T12:15:41.871Z"
+    },
+    "deerflow.agui-natural-activity": {
+      "expectation": "activity",
+      "status": "candidate",
+      "target": "/Users/wu/Documents/CC/deer-flow-vizual-clean/validation-artifacts/cdp/manual-activity-release-readiness-2026-06-04T1221Z/result.json",
+      "note": "Manual Computer Use visible Chrome run: natural release-readiness task showed staged Vizual surface, real screenshot evidence, and thread progression human -> present_vizual_ui -> ai.",
+      "registeredAt": "2026-06-04T12:23:45.019Z"
+    },
+    "deerflow.stream-natural-incremental": {
+      "expectation": "stream",
+      "status": "candidate",
+      "target": "/Users/wu/Documents/CC/deer-flow-vizual-clean/validation-artifacts/cdp/manual-stream-incident-timeline-2026-06-04T1225Z/result.json",
+      "note": "Manual Computer Use visible Chrome run: natural incident timeline showed incremental state growth and visible restored Vizual timeline; captured pre-fix expected-controls-missing failure and post-fix screenshot.",
+      "registeredAt": "2026-06-04T12:36:54.933Z"
+    }
+  }
+}

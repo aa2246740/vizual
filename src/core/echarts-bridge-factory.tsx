@@ -1,10 +1,14 @@
 import { useEffect, useRef } from 'react'
 import * as echarts from 'echarts'
+import { useBoundProp } from '@json-render/react'
 import { tc } from './theme-colors'
-import { useAnnotationContext } from '../docview/annotation-context'
-import type { AnnotationTarget, ChartDataPoint } from '../docview/types'
 
 type ChartProps = Record<string, unknown>
+const normalizedColorCache = new Map<string, string>()
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return !!value && typeof value === 'object' && !Array.isArray(value)
+}
 
 function stableStringify(value: unknown): string {
   const seen = new WeakSet<object>()
@@ -24,10 +28,61 @@ function stableStringify(value: unknown): string {
 
 function themeValue(varName: string, host?: HTMLElement | null): string {
   if (host && typeof getComputedStyle !== 'undefined') {
-    const scoped = getComputedStyle(host).getPropertyValue(varName).trim()
-    if (scoped) return scoped
+    const computed = getComputedStyle(host)
+    const scoped = computed.getPropertyValue(varName).trim()
+    if (scoped) return normalizeCssColor(scoped)
+    if (varName.startsWith('--rk-text-')) {
+      const inheritedColor = computed.color.trim()
+      if (inheritedColor) return normalizeCssColor(inheritedColor)
+    }
+    if (varName.startsWith('--rk-bg-')) {
+      const inheritedBackground = nearestOpaqueBackground(host)
+      if (inheritedBackground) return normalizeCssColor(inheritedBackground)
+    }
+    if (varName.startsWith('--rk-border')) {
+      const borderColor = computed.borderColor.trim()
+      if (borderColor) return normalizeCssColor(borderColor)
+    }
   }
   return tc(varName)
+}
+
+function normalizeCssColor(color: string): string {
+  if (!color || typeof document === 'undefined') return color
+  const lower = color.toLowerCase()
+  if (lower.startsWith('#') || lower.startsWith('rgb(') || lower.startsWith('rgba(')) return color
+  const cached = normalizedColorCache.get(color)
+  if (cached) return cached
+  const canvas = document.createElement('canvas')
+  canvas.width = 1
+  canvas.height = 1
+  const ctx = canvas.getContext('2d', { willReadFrequently: true })
+  if (!ctx) return color
+  try {
+    ctx.clearRect(0, 0, 1, 1)
+    ctx.fillStyle = color
+    ctx.fillRect(0, 0, 1, 1)
+    const [r, g, b, alpha] = Array.from(ctx.getImageData(0, 0, 1, 1).data)
+    const normalized = alpha === 255
+      ? `rgb(${r}, ${g}, ${b})`
+      : `rgba(${r}, ${g}, ${b}, ${(alpha / 255).toFixed(3)})`
+    normalizedColorCache.set(color, normalized)
+    return normalized
+  } catch {
+    return color
+  }
+}
+
+function nearestOpaqueBackground(host: HTMLElement): string | undefined {
+  let node: HTMLElement | null = host
+  while (node) {
+    const background = getComputedStyle(node).backgroundColor.trim()
+    if (background && background !== 'transparent' && background !== 'rgba(0, 0, 0, 0)') {
+      return background
+    }
+    node = node.parentElement
+  }
+  return undefined
 }
 
 function chartColorsFromHost(count: number, host?: HTMLElement | null): string[] {
@@ -57,20 +112,29 @@ export function createEChartsBridge(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   buildFallbackOption: (props: any) => Record<string, unknown>,
 ) {
-  function BridgeComponent({ props }: { props: ChartProps }) {
+  function BridgeComponent({
+    props,
+    bindings,
+    emit = () => undefined,
+  }: {
+    props: ChartProps
+    bindings?: Record<string, string>
+    emit?: (event: string) => void
+  }) {
     const containerRef = useRef<HTMLDivElement>(null)
     const chartRef = useRef<echarts.ECharts | null>(null)
     const observerRef = useRef<ResizeObserver | null>(null)
     const dataPointClickedRef = useRef(false)
+    const [, setSelectedPoint] = useBoundProp<Record<string, unknown> | undefined>(
+      undefined,
+      bindings?.selectedPoint,
+    )
 
-    // 批注上下文 — 在 DocView 内时有值，独立渲染时为 null
-    const annotationCtx = useAnnotationContext()
-
-    // Keep the expensive ECharts option stable across annotation popup state
-    // changes. Parent DocView renders can recreate props objects even when the
-    // chart data has not changed; rebuilding then calling setOption replays
-    // ECharts animations.
+    // Keep the expensive ECharts option stable across parent re-renders.
     const propsKey = stableStringify(props)
+    const actionName = typeof props.action === 'string' && props.action.trim()
+      ? props.action.trim()
+      : undefined
     // Init chart on mount, dispose on unmount
     useEffect(() => {
       if (!containerRef.current) return
@@ -116,74 +180,41 @@ export function createEChartsBridge(
       return () => document.removeEventListener('vizual-theme-change', handler)
     }, [propsKey])
 
-    // 注册 ECharts 点击事件 — 数据点钻取批注
+    // 注册 ECharts 点击事件 — host/Agent 钻取回流
     useEffect(() => {
       const chart = chartRef.current
-      if (!chart || !annotationCtx?.onTargetClick) return
+      if (!chart || !actionName) return
 
       const handler = (params: any) => {
         if (params.componentType === 'series' && params.seriesIndex !== undefined && params.dataIndex !== undefined) {
           dataPointClickedRef.current = true
-          const dp: ChartDataPoint = {
+          setSelectedPoint({
+            chartType,
             seriesIndex: params.seriesIndex,
             dataIndex: params.dataIndex,
+            seriesName: params.seriesName ?? '',
             name: params.name || '',
             value: params.value ?? '',
-          }
-          const si = annotationCtx.sectionIndex
-          const targetId = `chart-${si}-${params.seriesIndex}-${params.dataIndex}`
-          const label = `${annotationCtx.title || annotationCtx.componentType} › ${dp.name}: ${dp.value}`
-          const target: AnnotationTarget = {
-            sectionIndex: si,
-            targetType: 'chart',
-            label,
-            targetId,
-            chartDataPoint: dp,
-          }
-          annotationCtx.onTargetClick?.(target, containerRef.current!)
+            data: params.data ?? undefined,
+          })
+          emit(actionName)
         }
       }
       chart.on('click', handler)
       return () => { chart.off('click', handler) }
-    }, [annotationCtx])
-
-    // 高亮已批注的数据点
-    useEffect(() => {
-      const chart = chartRef.current
-      if (!chart || !annotationCtx?.annotations) return
-
-      chart.dispatchAction({ type: 'downplay' })
-      const chartAnns = annotationCtx.annotations.filter(a =>
-        a.target?.targetType === 'chart' &&
-        a.target?.sectionIndex === annotationCtx.sectionIndex &&
-        a.target?.chartDataPoint &&
-        a.status !== 'orphaned' &&
-        a.status !== 'resolved'
-      )
-      for (const ann of chartAnns) {
-        const dp = ann.target!.chartDataPoint!
-        chart.dispatchAction({
-          type: 'highlight',
-          seriesIndex: dp.seriesIndex,
-          dataIndex: dp.dataIndex,
-        })
-      }
-    }, [annotationCtx?.annotations, annotationCtx?.sectionIndex])
+    }, [emit, actionName, setSelectedPoint])
 
     // 整体图表点击 fallback（点击空白区域）
-    const handleContainerClick = (e: React.MouseEvent) => {
+    const handleContainerClick = (e: React.MouseEvent<HTMLElement>) => {
       if (dataPointClickedRef.current) {
         dataPointClickedRef.current = false
         return
       }
-      if (annotationCtx?.onTargetClick) {
-        const si = annotationCtx.sectionIndex
-        annotationCtx.onTargetClick({
-          sectionIndex: si,
-          targetType: 'chart',
-          label: (annotationCtx.title || annotationCtx.componentType || chartType) as string,
-          targetId: `chart-${si}`,
-        }, e.currentTarget as HTMLElement)
+      if (actionName) {
+        const fallbackPoint = inferNearestPointFromClick(chartRef.current, e, chartType)
+        if (fallbackPoint) setSelectedPoint(fallbackPoint)
+        emit(actionName)
+        return
       }
     }
 
@@ -198,12 +229,9 @@ export function createEChartsBridge(
           margin: '0 auto',
           display: 'block',
           height,
-          ...(annotationCtx ? { cursor: 'pointer' } : {}),
+          ...(actionName ? { cursor: 'pointer' } : {}),
         }}
-        {...(annotationCtx ? {
-          'data-docview-target': `chart-${annotationCtx.sectionIndex}`,
-          'data-section-index': annotationCtx.sectionIndex,
-          'data-target-type': 'chart',
+        {...(actionName ? {
           onClick: handleContainerClick,
         } : {})}
       />
@@ -211,6 +239,94 @@ export function createEChartsBridge(
   }
   BridgeComponent.displayName = chartType
   return BridgeComponent
+}
+
+function inferNearestPointFromClick(
+  chart: echarts.ECharts | null,
+  event: React.MouseEvent<HTMLElement>,
+  chartType: string,
+): Record<string, unknown> | undefined {
+  if (!chart) return undefined
+
+  const option = chart.getOption() as Record<string, unknown>
+  const rawSeries = option.series
+  const seriesList = Array.isArray(rawSeries)
+    ? rawSeries.filter(isRecord)
+    : isRecord(rawSeries)
+      ? [rawSeries]
+      : []
+  if (!seriesList.length) return undefined
+
+  const seriesIndex = 0
+  const series = seriesList[seriesIndex]
+  const seriesData = Array.isArray(series.data) ? series.data : []
+  if (!seriesData.length) return undefined
+
+  const rect = event.currentTarget.getBoundingClientRect()
+  const pixel: [number, number] = [
+    Math.max(0, Math.min(rect.width, event.clientX - rect.left)),
+    Math.max(0, Math.min(rect.height, event.clientY - rect.top)),
+  ]
+
+  let dataIndex: number | undefined
+  try {
+    const converted = chart.convertFromPixel({ seriesIndex }, pixel) as unknown
+    const xValue = Array.isArray(converted) ? converted[0] : converted
+    if (typeof xValue === 'number' && Number.isFinite(xValue)) dataIndex = Math.round(xValue)
+    else if (typeof xValue === 'string') {
+      const axisData = getAxisData(option, 'xAxis')
+      const index = axisData.findIndex(item => String(item) === xValue)
+      if (index >= 0) dataIndex = index
+    }
+  } catch {
+    dataIndex = undefined
+  }
+
+  if (dataIndex === undefined) {
+    const leftPad = rect.width * 0.08
+    const rightPad = rect.width * 0.04
+    const plotWidth = Math.max(1, rect.width - leftPad - rightPad)
+    const ratio = Math.max(0, Math.min(1, (pixel[0] - leftPad) / plotWidth))
+    dataIndex = Math.round(ratio * Math.max(0, seriesData.length - 1))
+  }
+  dataIndex = Math.max(0, Math.min(seriesData.length - 1, dataIndex))
+
+  const rawPoint = seriesData[dataIndex]
+  const axisData = getAxisData(option, 'xAxis')
+  const name = inferPointName(rawPoint, axisData[dataIndex], dataIndex)
+  const value = inferPointValue(rawPoint)
+
+  return {
+    chartType,
+    seriesIndex,
+    dataIndex,
+    seriesName: typeof series.name === 'string' ? series.name : '',
+    name,
+    value,
+    data: rawPoint,
+  }
+}
+
+function getAxisData(option: Record<string, unknown>, key: 'xAxis' | 'yAxis'): unknown[] {
+  const axis = option[key]
+  const firstAxis = Array.isArray(axis) ? axis.find(isRecord) : axis
+  if (!isRecord(firstAxis) || !Array.isArray(firstAxis.data)) return []
+  return firstAxis.data
+}
+
+function inferPointName(rawPoint: unknown, axisValue: unknown, dataIndex: number): string {
+  if (isRecord(rawPoint)) {
+    const rawName = rawPoint.name ?? rawPoint.x ?? rawPoint.category ?? rawPoint.label
+    if (rawName !== undefined) return String(rawName)
+  }
+  if (axisValue !== undefined) return String(axisValue)
+  return String(dataIndex)
+}
+
+function inferPointValue(rawPoint: unknown): unknown {
+  if (isRecord(rawPoint) && 'value' in rawPoint) return rawPoint.value
+  if (Array.isArray(rawPoint)) return rawPoint[rawPoint.length - 1]
+  return rawPoint
 }
 
 /**

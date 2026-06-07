@@ -28,25 +28,18 @@ import { DataTableSchema } from './charts/table/schema'
 
 // Custom business component schemas
 import { TimelineSchema } from './components/timeline/schema'
-import { KanbanSchema } from './components/kanban/schema'
 import { GanttChartSchema } from './components/gantt/schema'
 import { OrgChartSchema } from './components/org-chart/schema'
 import { KpiDashboardSchema } from './components/kpi-dashboard/schema'
-import { AuditLogSchema } from './components/audit-log/schema'
 
 // Interactive input component schemas
 import { FormBuilderSchema } from './inputs/form-builder/schema'
 
-// DocView schema
-import { DocViewSchema } from './docview/schema'
-
 // Layout component schemas
-import { GridLayoutSchema } from './components/grid-layout/schema'
-import { SplitLayoutSchema } from './components/split-layout/schema'
 import { HeroLayoutSchema } from './components/hero-layout/schema'
 
-// Freeform HTML rendering
-import { FreeformHtmlSchema } from './components/freeform-html/schema'
+import { MarkdownSchema } from './components/markdown/schema'
+import { ContainerSchema } from './components/container/schema'
 
 // A2UI basic catalog primitives
 import { RowSchema } from './components/a2ui-row/schema'
@@ -64,14 +57,12 @@ import { ChoicePickerSchema } from './components/a2ui-choicepicker/schema'
 import { SliderSchema } from './components/a2ui-slider/schema'
 import { DateTimeInputSchema } from './components/a2ui-datetime/schema'
 import { TabsSchema } from './components/a2ui-tabs/schema'
-import { ModalSchema } from './components/a2ui-modal/schema'
 import { VideoSchema } from './components/a2ui-video/schema'
 import { AudioPlayerSchema } from './components/a2ui-audio/schema'
 
 /**
- * Vizual catalog — 31 components registered as json-render visualization catalog
+ * Vizual catalog — 45 components registered as json-render visualization catalog
  * Use host bridges such as renderLiveControlInMsg for liveControl parameter exploration.
- * (15 components removed — AI uses freeform HTML via DocView instead)
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const renderKitCatalog = defineCatalog(schema, {
@@ -160,14 +151,10 @@ export const renderKitCatalog = defineCatalog(schema, {
       description: 'Data table with column definitions and formatting.',
     },
 
-    // Custom business components — 6
+    // Custom business components — 4
     Timeline: {
       props: TimelineSchema as any,
       description: 'Vertical timeline of events with dates.',
-    },
-    Kanban: {
-      props: KanbanSchema as any,
-      description: 'Kanban board with columns and draggable cards.',
     },
     GanttChart: {
       props: GanttChartSchema as any,
@@ -181,41 +168,26 @@ export const renderKitCatalog = defineCatalog(schema, {
       props: KpiDashboardSchema as any,
       description: 'Multi-metric KPI dashboard cards.',
     },
-    AuditLog: {
-      props: AuditLogSchema as any,
-      description: 'Operation log with timestamps and severity.',
-    },
 
     // Interactive input components — 1
     FormBuilder: {
       props: FormBuilderSchema as any,
-      description: 'Dynamic form builder with validation, cascading fields, and grid layout. Use $bindState to capture form data.',
+      description: 'Dynamic form builder for collecting structured user input and returning submitted data to the host Agent.',
     },
 
-    // DocView — Document annotation component — 1
-    DocView: {
-      props: DocViewSchema as any,
-      description: 'Interactive document with sections (text, headings, charts, KPIs, tables, callouts, markdown, freeform, embedded components) and annotation support. Supports aiContext for semantic annotation enrichment and layout variants per section.',
-    },
-
-    // Layout components — 3
-    GridLayout: {
-      props: GridLayoutSchema as any,
-      description: 'CSS Grid container for composing child components into multi-column layouts.',
-    },
-    SplitLayout: {
-      props: SplitLayoutSchema as any,
-      description: 'Two-pane split layout with configurable direction and ratio.',
-    },
+    // Historical layout compatibility — not agent-facing
     HeroLayout: {
       props: HeroLayoutSchema as any,
       description: 'Large prominent hero section with gradient, solid, or transparent background.',
     },
 
-    // Freeform HTML — escape hatch for arbitrary agent UI
-    FreeformHtml: {
-      props: FreeformHtmlSchema as any,
-      description: 'Render arbitrary HTML/CSS content. Agent escape hatch for custom UI, personal homepages, creative widgets. DOMPurify sanitized, theme-aware.',
+    Markdown: {
+      props: MarkdownSchema as any,
+      description: 'Render plain Markdown content.',
+    },
+    Container: {
+      props: ContainerSchema as any,
+      description: 'Native flex container for agent-composed UI, including spacing, wrapping, background, border, and simple sizing.',
     },
 
     // A2UI basic catalog primitives — 17 components
@@ -269,7 +241,7 @@ export const renderKitCatalog = defineCatalog(schema, {
     },
     Slider: {
       props: SliderSchema as any,
-      description: 'Range slider with min/max/step configuration.',
+      description: 'Range slider with min/max/step configuration and A2UI v0.10 steps divisions.',
     },
     DateTimeInput: {
       props: DateTimeInputSchema as any,
@@ -278,10 +250,6 @@ export const renderKitCatalog = defineCatalog(schema, {
     Tabs: {
       props: TabsSchema as any,
       description: 'Tab navigation with labeled tabs and content panels.',
-    },
-    Modal: {
-      props: ModalSchema as any,
-      description: 'Modal dialog overlay with title and content area.',
     },
     Video: {
       props: VideoSchema as any,
@@ -298,26 +266,41 @@ export const renderKitCatalog = defineCatalog(schema, {
         formId: z.string().optional(),
         data: z.record(z.unknown()),
       }) as any,
-      description: 'Submit form data collected from FormBuilder or input components. Host app receives form data and can process it (save, validate server-side, trigger AI workflow).',
+      description: 'Submit form data collected from FormBuilder or input components and return it to the host Agent.',
     },
-    requestRevision: {
+    applyFilter: {
       params: z.object({
-        annotationId: z.string(),
-        text: z.string(),
-        note: z.string(),
+        filterId: z.string().optional(),
+        filters: z.record(z.unknown()).optional(),
+        source: z.string().optional(),
       }) as any,
-      description: 'Legacy compatibility event for requesting AI revision for a single annotation. New hosts should prefer DocView onReviewAction/controllerRef.',
+      description: 'Apply a host-visible filter selected inside a Vizual surface, such as risk level, region, time range, or category.',
     },
-    batchSubmit: {
+    drillDown: {
       params: z.object({
-        annotations: z.array(z.object({
-          id: z.string(),
-          text: z.string(),
-          note: z.string(),
-          color: z.string(),
-        })),
+        chartId: z.string().optional(),
+        point: z.unknown().optional(),
+        row: z.record(z.unknown()).optional(),
+        targetId: z.string().optional(),
       }) as any,
-      description: 'Legacy compatibility event for batch annotation submission. New hosts should prefer DocView threadsSubmitted review events and RevisionProposal patches.',
+      description: 'Request deeper analysis for a selected chart point, table row, map marker, or other focused data item.',
+    },
+    selectLocation: {
+      params: z.object({
+        id: z.string().optional(),
+        label: z.string().optional(),
+        value: z.unknown().optional(),
+      }) as any,
+      description: 'Select a location-like entity from an interactive geography, branch, store, or region surface.',
+    },
+    updatePlan: {
+      params: z.object({
+        actionId: z.string().optional(),
+        status: z.string().optional(),
+        comment: z.string().optional(),
+        data: z.record(z.unknown()).optional(),
+      }) as any,
+      description: 'Update an action-plan item from an interactive Vizual surface and return the change to the host Agent.',
     },
   },
 })

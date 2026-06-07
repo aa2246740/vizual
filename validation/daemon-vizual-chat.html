@@ -3,337 +3,838 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Vizual × Daemon — A2UI 对话</title>
+<title>Vizual × 本地 Agent 真实验收</title>
 <script src="../dist/vizual.standalone.js"></script>
 <style>
   :root {
-    --bg: #0a0a0a; --surface: #141414; --surface2: #1e1e1e;
-    --border: #2a2a2a; --text: #e5e5e5; --text-dim: #888;
-    --accent: #6366f1; --accent-hover: #818cf8;
-    --success: #22c55e; --error: #ef4444;
+    color-scheme: light;
+    --bg: #f4f5f7;
+    --surface: #ffffff;
+    --surface-2: #f9fafb;
+    --border: #d8dde6;
+    --text: #20242c;
+    --muted: #667085;
+    --accent: #2563eb;
+    --ok: #35d07f;
+    --warn: #f5b84b;
+    --error: #b42318;
     --radius: 8px;
   }
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, sans-serif; height: 100vh; display: flex; flex-direction: column; }
-
-  .topbar { background: var(--surface); border-bottom: 1px solid var(--border); padding: 12px 20px; display: flex; align-items: center; justify-content: space-between; }
-  .topbar h1 { font-size: 16px; font-weight: 600; }
-  .topbar .tags { display: flex; gap: 8px; }
-  .badge { padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
-  .badge-daemon { background: #6366f120; color: #818cf8; }
-  .badge-a2ui { background: #3b82f620; color: #60a5fa; }
-  .badge-vizual { background: #22c55e20; color: #4ade80; }
-  .status { font-size: 12px; color: var(--text-dim); display: flex; align-items: center; gap: 6px; }
-  .dot { width: 8px; height: 8px; border-radius: 50%; }
-  .dot.ok { background: var(--success); }
-  .dot.err { background: var(--error); }
-  .dot.wait { background: #f59e0b; animation: pulse 1s infinite; }
-  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
-
-  .messages { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 16px; }
-  .msg { max-width: 900px; width: 100%; margin: 0 auto; }
-  .msg-header { font-size: 12px; color: var(--text-dim); margin-bottom: 6px; display: flex; align-items: center; gap: 8px; }
-  .msg-header .role { font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
-  .msg-header .role.user { color: var(--accent); }
-  .msg-header .role.assistant { color: var(--success); }
-  .msg-body { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; line-height: 1.7; font-size: 14px; white-space: pre-wrap; word-break: break-word; }
-
-  .vizual-render { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px; margin: 8px 0; min-height: 100px; overflow: hidden; }
-  .vizual-render .viz-label { font-size: 11px; color: var(--success); margin-bottom: 8px; font-weight: 600; }
-
-  .input-area { background: var(--surface); border-top: 1px solid var(--border); padding: 16px 20px; }
-  .input-row { display: flex; gap: 10px; max-width: 900px; margin: 0 auto; }
-  .input-row textarea { flex: 1; background: var(--surface2); color: var(--text); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px; font-size: 14px; resize: none; outline: none; min-height: 48px; max-height: 200px; font-family: inherit; }
-  .input-row textarea:focus { border-color: var(--accent); }
-  .input-row button { background: var(--accent); color: white; border: none; border-radius: var(--radius); padding: 12px 24px; cursor: pointer; font-size: 14px; font-weight: 600; white-space: nowrap; }
-  .input-row button:hover { background: var(--accent-hover); }
-  .input-row button:disabled { opacity: 0.5; cursor: not-allowed; }
-
-  .empty { text-align: center; color: var(--text-dim); margin-top: 15vh; }
-  .empty h2 { font-size: 20px; margin-bottom: 8px; color: var(--text); }
-  .empty p { font-size: 14px; margin-bottom: 4px; }
-  .empty .hint { font-size: 12px; color: var(--text-dim); margin-top: 12px; background: var(--surface2); padding: 12px; border-radius: var(--radius); text-align: left; white-space: pre-wrap; line-height: 1.6; }
-
-  .loading::after { content: ''; animation: dots 1.5s infinite; }
-  @keyframes dots { 0%{content:''} 25%{content:'.'} 50%{content:'..'} 75%{content:'...'} }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 12px 18px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+  }
+  h1 { margin: 0; font-size: 16px; font-weight: 650; letter-spacing: 0; }
+  .meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .pill {
+    border: 1px solid var(--border);
+    background: var(--surface-2);
+    color: var(--muted);
+    border-radius: 999px;
+    padding: 4px 8px;
+    font-size: 12px;
+    line-height: 1;
+  }
+  .status { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 12px; min-width: 280px; justify-content: flex-end; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--warn); }
+  .dot.ok { background: var(--ok); }
+  .dot.error { background: var(--error); }
+  .messages {
+    flex: 1;
+    overflow: auto;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .message {
+    width: min(1100px, 100%);
+    margin: 0 auto;
+  }
+  .role {
+    margin: 0 0 6px;
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+  .bubble {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    font-size: 14px;
+    line-height: 1.65;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+  .bubble.error { color: var(--error); border-color: rgba(180,35,24,.45); background: #fff6f5; }
+  .render-shell {
+    margin-top: 12px;
+    background: #ffffff;
+    color: var(--text);
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    padding: 16px;
+    overflow: auto;
+    --rk-bg-primary: #ffffff;
+    --rk-bg-secondary: #f8fafc;
+    --rk-bg-tertiary: #eef2f6;
+    --rk-surface: #ffffff;
+    --rk-border: #d8dde6;
+    --rk-border-subtle: #e6eaf0;
+    --rk-text-primary: #20242c;
+    --rk-text-secondary: #667085;
+    --rk-text-tertiary: #8a94a6;
+    --rk-accent: #2563eb;
+    --rk-success: #4f9f6f;
+    --rk-error: #b42318;
+    --rk-radius-md: 8px;
+    --rk-font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --rk-font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --rk-font-ui: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --rk-font-display: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --rk-text-xs: 11px;
+    --rk-text-sm: 12px;
+    --rk-text-base: 14px;
+    --rk-text-md: 16px;
+    --rk-text-lg: 18px;
+    --rk-text-xl: 22px;
+    --rk-text-2xl: 28px;
+    --rk-weight-semibold: 650;
+    --rk-weight-bold: 750;
+  }
+  .render-label {
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 700;
+    margin-bottom: 12px;
+  }
+  .action-log {
+    margin-top: 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface-2);
+    color: var(--muted);
+    padding: 10px 12px;
+    font-size: 12px;
+    line-height: 1.45;
+  }
+  .action-log strong { color: var(--text); }
+  .json-inspector {
+    margin-top: 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: #fff;
+    color: var(--text);
+    padding: 10px 12px;
+    font-size: 12px;
+    line-height: 1.55;
+  }
+  .json-inspector summary {
+    cursor: pointer;
+    font-weight: 700;
+    color: var(--text);
+  }
+  .json-inspector dl {
+    display: grid;
+    grid-template-columns: 120px minmax(0, 1fr);
+    gap: 6px 12px;
+    margin: 10px 0;
+  }
+  .json-inspector dt { color: var(--muted); }
+  .json-inspector dd { margin: 0; overflow-wrap: anywhere; }
+  .json-inspector pre {
+    max-height: 260px;
+    overflow: auto;
+    margin: 10px 0 0;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    background: #f8fafc;
+    padding: 10px;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+  .empty {
+    width: min(760px, 100%);
+    margin: 18vh auto 0;
+    color: var(--muted);
+    text-align: center;
+  }
+  .empty strong { display: block; color: var(--text); font-size: 20px; margin-bottom: 8px; }
+  .empty p { margin: 6px 0; line-height: 1.5; }
+  .input-area {
+    border-top: 1px solid var(--border);
+    background: var(--surface);
+    padding: 14px 18px;
+  }
+  .input-row {
+    width: min(1100px, 100%);
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 10px;
+  }
+  textarea {
+    width: 100%;
+    min-height: 52px;
+    max-height: 180px;
+    resize: vertical;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface-2);
+    color: var(--text);
+    padding: 12px;
+    outline: none;
+    font: inherit;
+    line-height: 1.45;
+  }
+  textarea:focus { border-color: var(--accent); }
+  button {
+    border: 0;
+    border-radius: var(--radius);
+    background: var(--accent);
+    color: #fff;
+    padding: 0 20px;
+    min-width: 94px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  button:disabled { opacity: .55; cursor: not-allowed; }
+  code { color: #c7d2fe; }
 </style>
 </head>
 <body>
-
-<div class="topbar">
-  <div style="display:flex;align-items:center;gap:12px;">
-    <h1>Vizual × Daemon</h1>
-    <div class="tags">
-      <span class="badge badge-daemon">CLI Daemon</span>
-      <span class="badge badge-a2ui">A2UI v0.10</span>
-      <span class="badge badge-vizual">Vizual Runtime</span>
+  <div class="topbar">
+    <div>
+      <h1>Vizual × 本地 Agent 真实验收</h1>
+      <div class="meta">
+        <span class="pill" id="daemonPill">runner: checking</span>
+        <span class="pill" id="agentPill">agent: codex</span>
+        <span class="pill" id="modelPill">model: gpt-5.3-codex</span>
+        <span class="pill" id="promptModePill">prompt: raw user message</span>
+        <span class="pill">no fallback</span>
+      </div>
+    </div>
+    <div class="status">
+      <span class="dot" id="dot"></span>
+      <span id="statusText">正在检查本地 runner...</span>
     </div>
   </div>
-  <div class="status">
-    <span class="dot wait" id="dot"></span>
-    <span id="statusText">Connecting...</span>
-  </div>
-</div>
 
-<div class="messages" id="messages">
-  <div class="empty">
-    <h2>Agent 视觉对话 Demo</h2>
-    <p>输入自然语言，Agent 输出 A2UI JSON，自动渲染为 Vizual 图表</p>
-    <div class="hint">示例输入:
-  "画一个柱状图，展示四个区域的销售数据"
-  "创建一个 KPI 仪表板，包含营收、用户数、转化率"
-  "画一个柱状图对比 Q3 和 Q4 的数据"</div>
+  <div class="messages" id="messages">
+    <div class="empty" id="empty">
+      <strong>在这里做真实验收</strong>
+      <p>你输入自然语言，页面会调用 OD daemon 的 <code>/api/runs</code>，让本地 Agent 真实回复。</p>
+      <p>默认不注入固定组件脚本；需要旧诊断脚手架时加 <code>?guided=1</code>。</p>
+    </div>
   </div>
-</div>
 
-<div class="input-area">
-  <div class="input-row">
-    <textarea id="input" placeholder="输入消息... (Shift+Enter 换行)" rows="1"></textarea>
-    <button id="sendBtn" onclick="send()">发送</button>
+  <div class="input-area">
+    <div class="input-row">
+      <textarea id="input" placeholder="例如：这是本周增长数据……帮我看哪里异常、怎么继续判断。"></textarea>
+      <button id="sendBtn" type="button">发送</button>
+    </div>
   </div>
-</div>
 
 <script>
-const DAEMON = 'http://localhost:7456';
-const SYSTEM_PROMPT = `你是一个全能 AI 助手（类似 Jarvis）。你可以输出文字和 A2UI v0.10 JSON 来展示数据可视化、图表、仪表板、文档、表格、看板、甘特图等。
+const params = new URLSearchParams(location.search);
+const DAEMON = params.get('daemon') || '/od-daemon';
+const AGENT = params.get('agent') || 'codex-cli';
+const MODEL = params.get('model') || 'gpt-5.3-codex';
+const REASONING = params.get('reasoning') || 'medium';
+const RUN_TIMEOUT_MS = Number(params.get('timeoutMs') || 120000);
+const conversationId = 'vizual-daemon-page-' + Date.now().toString(36);
+const USE_GUIDED_DIAGNOSTIC_PROMPT = params.get('guided') === '1';
 
-规则：
-1. 根据用户需求，输出 A2UI JSON（用 \`\`\`json 包裹）或纯文字，或两者混合
-2. A2UI 格式：JSON 数组，包含 createSurface + updateComponents + updateDataModel
-3. version 固定为 "v0.10"
-4. catalogId 固定为 "https://vizual.org/catalog/v0_1/vizual_catalog.json"
-5. 数据放在 updateDataModel 里，组件中用 {path: "/..."} 引用
-6. 尽量生成真实有意义的数据，模拟真实场景
-7. 使用 GridLayout 可以组合多个组件形成仪表板
+document.getElementById('daemonPill').textContent = 'daemon: ' + DAEMON;
+document.getElementById('agentPill').textContent = 'agent: ' + AGENT;
+document.getElementById('modelPill').textContent = 'model: ' + MODEL;
+document.getElementById('promptModePill').textContent = USE_GUIDED_DIAGNOSTIC_PROMPT
+  ? 'prompt: guided diagnostic scaffold'
+  : 'prompt: raw user message';
 
-全部 31 个可用组件及其 props：
+const GUIDED_DIAGNOSTIC_PROMPT = `你是 Vizual runtime 的诊断 Agent。只返回一个 JSON object，不要 markdown，不要代码围栏，不要额外解释。
+任务：把用户数据填入下面同形结构。可以改中文文案、字段名、rows、KPI、列名和按钮 label；不要新增复杂组件，不要输出 placeholder 或空数组。
+{
+  "answerText": "一句中文业务判断",
+  "a2uiMessages": [
+    {"type":"createSurface","version":"v0.10","surfaceId":"s1","catalogId":"vizual"},
+    {"type":"updateDataModel","surfaceId":"s1","data":{"rows":[{"time":"09:00","metric":10,"risk":20}]}},
+    {"type":"updateComponents","surfaceId":"s1","components":[
+      {"id":"root","component":"Column","gap":12,"children":["summary","trend","table","filter","note","action"]},
+      {"id":"summary","component":"KpiDashboard","metrics":[{"label":"关键指标","value":"68%","trend":"up","trendValue":"+58pt"}]},
+      {"id":"trend","component":"LineChart","title":"趋势","x":"time","y":["metric","risk"],"data":{"path":"/rows"}},
+      {"id":"table","component":"DataTable","data":{"path":"/rows"},"columns":[{"key":"time","label":"时间"},{"key":"metric","label":"指标"},{"key":"risk","label":"风险"}]},
+      {"id":"filter","component":"ChoicePicker","label":"筛选","options":["全部","高风险"],"value":"全部"},
+      {"id":"note","component":"Text","variant":"body","content":"基于数据的判断"},
+      {"id":"action","component":"Button","label":"聚焦高风险","action":"focus_risk_item"}
+    ]}
+  ]
+}
 
-【图表类 19 个】
-- BarChart: title, x, y(字段或字段数组), data({path}), stacked, horizontal, height
-- LineChart: title, x, y, data({path}), smooth, height
-- AreaChart: title, x, y, data({path}), stacked, smooth, height
-- PieChart: title, name, value, data({path}), roseType, height
-- ScatterChart: title, x, y, data({path}), symbolSize, height
-- BubbleChart: title, x, y, size, data({path}), height
-- BoxplotChart: title, data({path}), data格式=[{category,min,q1,median,q3,max}], height
-- HistogramChart: title, x, data({path}), data格式=[{value:数字}] 或原始数字数组, bins, height
-- WaterfallChart: title, x, y, data({path}), height
-- XmrChart: title, data({path}), height
-- SankeyChart: title, data({path}), data格式=[{source,target,value}] 自动推断nodes, height
-- FunnelChart: title, name, value, data({path}), height
-- HeatmapChart: title, data({path}), height
-- CalendarChart: title, data({path}), height
-- SparklineChart: title, data({path}), height
-- ComboChart: title, x, series(数组[{type,x,y}]), data({path}), height
-- DumbbellChart: title, x, start, end, data({path}), height
-- RadarChart: title, indicators, data({path}), height
-- MermaidDiagram: code(mermaid语法字符串), height
+规则：root、updateDataModel、updateComponents 必须保留；DataTable 必须保留用户逐行数据；LineChart 必须引用 rows；ChoicePicker 和 Button 必须产生本地状态或 action 反馈，不声称调用外部业务系统。
 
-【业务组件 6 个】
-- KpiDashboard: metrics({path:"/kpiMetrics"}), metrics=[{label,value,change,trend}]
-- Kanban: title, columns({path}), columns=[{id,title,cards:[{id,title,description,tags,assignee}]}]
-- GanttChart: title, tasks({path}), tasks=[{id,name,start,end,progress,group}]
-- OrgChart: title, data({path}), data=[{id,name,title,parentId}]
-- Timeline: title, events({path}), events=[{id,date,title,description,type}]
-- AuditLog: title, entries({path}), entries=[{id,timestamp,actor,action,target,status}]
+注意：这是旧诊断脚手架，不是冷启动验收成功条件。`;
 
-【表格】
-- DataTable: title, columns([{key,label,type}]), data({path}), height
-
-【文档】
-- DocView: title, sections({path:"/sections"}), sections=[{id,type,content,level?}]
-  section types: heading, text, chart, callout, table, image
-
-【输入】
-- FormBuilder: title, schema({path:"/formSchema"}), value({path:"/formValue"})
-
-【布局 3 个】
-- GridLayout: columns, gap, children(子组件ID数组)
-- SplitLayout: direction("horizontal"|"vertical"), ratio, left(子ID), right(子ID)
-- HeroLayout: hero(子ID), body(子ID)
-
-示例输出：
-\`\`\`json
-[
-  {"version":"v0.10","createSurface":{"surfaceId":"chart-1","catalogId":"https://vizual.org/catalog/v0_1/vizual_catalog.json"}},
-  {"version":"v0.10","updateComponents":{"surfaceId":"chart-1","components":[{"id":"root","component":"BarChart","title":"销售数据","x":"region","y":"sales","data":{"path":"/chartData"}}]}},
-  {"version":"v0.10","updateDataModel":{"surfaceId":"chart-1","path":"/chartData","value":[{"region":"华东","sales":320},{"region":"华南","sales":280}]}}
-]
-\`\`\`
-`;
-
-let sessionId = null;
 let streaming = false;
 const input = document.getElementById('input');
-
-input.addEventListener('input', () => { input.style.height = 'auto'; input.style.height = Math.min(input.scrollHeight, 200) + 'px'; });
-input.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } });
-
-// Check daemon health
-fetch(DAEMON + '/api/health').then(r => r.json()).then(d => {
-  const dot = document.getElementById('dot');
-  const text = document.getElementById('statusText');
-  if (d.agent?.available) {
-    dot.className = 'dot ok';
-    text.textContent = 'Claude Code ' + (d.agent.version || '') + ' ready';
-  } else {
-    dot.className = 'dot err';
-    text.textContent = 'Daemon running, but Claude Code not found';
+const sendBtn = document.getElementById('sendBtn');
+sendBtn.addEventListener('click', send);
+input.addEventListener('keydown', event => {
+  if (event.key === 'Enter' && !event.shiftKey) {
+    event.preventDefault();
+    send();
   }
-}).catch(() => {
-  document.getElementById('dot').className = 'dot err';
-  document.getElementById('statusText').textContent = 'Daemon not running (start: node daemon.mjs)';
 });
+
+function setStatus(kind, text) {
+  const dot = document.getElementById('dot');
+  dot.className = 'dot' + (kind ? ' ' + kind : '');
+  document.getElementById('statusText').textContent = text;
+}
+
+async function checkDaemon() {
+  try {
+    window.Vizual?.applyTheme?.(document.body, 'default-light');
+    const health = await fetchJson(DAEMON + '/api/health');
+    const agentsBody = await fetchJson(DAEMON + '/api/agents');
+    const agent = (agentsBody.agents || []).find(item => item.id === AGENT);
+    if (!agent?.available) throw new Error('daemon 已启动，但 agent 不可用: ' + AGENT);
+    setStatus('ok', `daemon ${health.version || ''} ready · ${agent.label || agent.id} ${agent.version || ''}`);
+  } catch (error) {
+    setStatus('error', error.message || String(error));
+  }
+}
+
+async function fetchJson(url, init) {
+  const response = await fetch(url, init);
+  if (!response.ok) throw new Error(`${response.status} ${response.statusText}: ${await response.text()}`);
+  return response.json();
+}
+
+function parseSseFrames(text) {
+  const frames = [];
+  for (const raw of text.split(/\n\n+/)) {
+    const lines = raw.split(/\n/);
+    let event = 'message';
+    const dataLines = [];
+    for (const line of lines) {
+      if (line.startsWith('event:')) event = line.slice(6).trim();
+      else if (line.startsWith('data:')) dataLines.push(line.slice(5).trimStart());
+    }
+    if (!dataLines.length) continue;
+    let data = dataLines.join('\n');
+    try { data = JSON.parse(data); } catch {}
+    frames.push({ event, data });
+  }
+  return frames;
+}
+
+async function collectRun(runId, onText) {
+  const response = await fetch(`${DAEMON}/api/runs/${encodeURIComponent(runId)}/events`);
+  if (!response.ok) throw new Error(`events stream failed: ${response.status} ${response.statusText}`);
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+  let text = '';
+  let rawStdout = '';
+  let stderr = '';
+  let end = null;
+  let completedResult = null;
+  const errors = [];
+
+  while (true) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const parts = buffer.split(/\n\n/);
+    buffer = parts.pop() || '';
+    for (const part of parts) {
+      for (const frame of parseSseFrames(part)) {
+        const eventData = frame.data?.data || frame.data || {};
+        if (frame.event === 'agent') {
+          const payload = eventData;
+          if (payload?.type === 'text_delta' && typeof payload.delta === 'string') {
+            text += payload.delta;
+            onText(text);
+          } else if (payload?.type === 'error') {
+            errors.push(payload.message || JSON.stringify(payload));
+          }
+        } else if (frame.event === 'stdout' && typeof eventData?.chunk === 'string') {
+          rawStdout += eventData.chunk;
+        } else if (frame.event === 'stderr' && typeof eventData?.chunk === 'string') {
+          stderr += eventData.chunk;
+        } else if (frame.event === 'agent.stdout' && typeof eventData?.text === 'string') {
+          rawStdout += eventData.text;
+        } else if (frame.event === 'agent.stderr' && typeof eventData?.text === 'string') {
+          stderr += eventData.text;
+        } else if (frame.event === 'error') {
+          errors.push(eventData?.message || eventData?.error || JSON.stringify(eventData));
+        } else if (frame.event === 'end') {
+          end = eventData;
+        } else if (frame.event === 'run.completed') {
+          completedResult = eventData?.result || null;
+          end = { status: 'succeeded' };
+        } else if (frame.event === 'run.failed') {
+          errors.push(eventData?.error || JSON.stringify(eventData));
+          end = { status: 'failed' };
+        }
+      }
+    }
+    if (rawStdout && !text) onText(`已接收 Agent 输出 ${rawStdout.length} 字节，等待 daemon 归一化结果...`);
+    if (end) break;
+  }
+
+  if (!end) throw new Error('daemon run 没有正常结束');
+  if (end.status !== 'succeeded') throw new Error(`daemon run ${end.status}: ${errors.join(' | ')} ${stderr.slice(0, 400)}`);
+  if (errors.length) throw new Error(errors.join(' | '));
+  const normalized = typeof completedResult?.text === 'string' && completedResult.text.trim()
+    ? completedResult.text
+    : (text.trim() ? text : normalizeAgentStdout(rawStdout));
+  if (!normalized.trim()) throw new Error('daemon run 成功但没有可展示正文');
+  return normalized || text;
+}
+
+function normalizeAgentStdout(raw) {
+  const trimmed = String(raw || '').trim();
+  if (!trimmed) return '';
+  const whole = parseJsonMaybe(trimmed);
+  if (whole) {
+    const direct = extractTextFromStructuredEvent(whole);
+    if (direct) return direct;
+    for (const key of ['result', 'text', 'message', 'content', 'output']) {
+      if (typeof whole[key] === 'string' && whole[key].trim()) return whole[key].trim();
+    }
+  }
+  let last = '';
+  for (const line of trimmed.split(/\r?\n/).filter(Boolean)) {
+    const event = parseJsonMaybe(line);
+    if (!event) {
+      if (!line.trim().startsWith('{')) last = line.trim();
+      continue;
+    }
+    const candidate = extractTextFromStructuredEvent(event);
+    if (candidate) last = candidate;
+  }
+  return last;
+}
+
+function parseJsonMaybe(value) {
+  try { return JSON.parse(value); } catch { return null; }
+}
+
+function extractTextFromStructuredEvent(event) {
+  if (typeof event?.result === 'string') return event.result.trim();
+  if (typeof event?.text === 'string') return event.text.trim();
+  if (typeof event?.message === 'string') return event.message.trim();
+  if (typeof event?.content === 'string') return event.content.trim();
+  if (Array.isArray(event?.content)) {
+    const joined = event.content.map(item => item?.text || item?.content || '').filter(Boolean).join('\n').trim();
+    if (joined) return joined;
+  }
+  if (Array.isArray(event?.message?.content)) {
+    const joined = event.message.content.map(item => item?.text || item?.content || '').filter(Boolean).join('\n').trim();
+    if (joined) return joined;
+  }
+  if (Array.isArray(event?.item?.content)) {
+    const joined = event.item.content.map(item => item?.text || item?.content || '').filter(Boolean).join('\n').trim();
+    if (joined) return joined;
+  }
+  return '';
+}
+
+function extractJson(text) {
+  const trimmed = text.trim();
+  try { return JSON.parse(trimmed); } catch {}
+  const fenced = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/);
+  if (fenced) {
+    try { return JSON.parse(fenced[1]); } catch {}
+  }
+  for (const line of trimmed.split(/\r?\n/).filter(Boolean)) {
+    try {
+      const event = JSON.parse(line);
+      const payload = extractPayloadFromCodexJsonEvent(event);
+      if (payload) return payload;
+    } catch {}
+  }
+  const answerStart = trimmed.indexOf('{"answerText"');
+  if (answerStart >= 0) {
+    const answerEnd = trimmed.lastIndexOf('}');
+    if (answerEnd > answerStart) {
+      try { return JSON.parse(trimmed.slice(answerStart, answerEnd + 1)); } catch {}
+    }
+  }
+  const start = trimmed.indexOf('{');
+  const end = trimmed.lastIndexOf('}');
+  if (start >= 0 && end > start) return JSON.parse(trimmed.slice(start, end + 1));
+  throw new Error('Agent 回复中没有可解析 JSON object');
+}
+
+function extractPayloadFromCodexJsonEvent(event) {
+  const candidates = [
+    event?.item?.text,
+    event?.text,
+    event?.message,
+    event?.content,
+  ];
+  if (Array.isArray(event?.item?.content)) {
+    candidates.push(event.item.content.map(item => item?.text || item?.content || '').join('\n'));
+  }
+  if (Array.isArray(event?.message?.content)) {
+    candidates.push(event.message.content.map(item => item?.text || item?.content || '').join('\n'));
+  }
+  for (const candidate of candidates) {
+    if (typeof candidate !== 'string') continue;
+    const parsed = parsePayloadCandidate(candidate);
+    if (parsed) return parsed;
+  }
+  return null;
+}
+
+function parsePayloadCandidate(candidate) {
+  const trimmed = candidate.trim();
+  if (!trimmed) return null;
+  const fenced = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/);
+  const variants = fenced ? [fenced[1], trimmed] : [trimmed];
+  for (const variant of variants) {
+    try {
+      const parsed = JSON.parse(variant);
+      if (isRenderablePayload(parsed)) return parsed;
+    } catch {}
+  }
+  return null;
+}
+
+function isRenderablePayload(value) {
+  return !!value && typeof value === 'object'
+    && (Array.isArray(value.a2uiMessages) || Array.isArray(value.aguiEvents) || Array.isArray(value.agui_events) || value.spec || typeof value.answerText === 'string');
+}
+
+function addMessage(role, text = '') {
+  document.getElementById('empty')?.remove();
+  const wrap = document.createElement('div');
+  wrap.className = 'message';
+  const roleEl = document.createElement('div');
+  roleEl.className = 'role';
+  roleEl.textContent = role;
+  const bubble = document.createElement('div');
+  bubble.className = 'bubble';
+  bubble.textContent = text;
+  wrap.append(roleEl, bubble);
+  document.getElementById('messages').appendChild(wrap);
+  wrap.scrollIntoView({ block: 'end' });
+  return bubble;
+}
+
+function auditRenderedSurface(target, spec, surfaceId) {
+  const findings = [];
+  const rect = target.getBoundingClientRect();
+  const text = (target.innerText || '').trim();
+  const hasVisualPrimitive = !!target.querySelector('canvas, svg, table, input, textarea, select, button, img, video, audio');
+  if (!target.childElementCount) {
+    findings.push({ severity: 'error', code: 'blank-render', message: '渲染目标没有任何 DOM 子元素。' });
+  }
+  if (!text && !hasVisualPrimitive) {
+    findings.push({ severity: 'error', code: 'no-visible-content', message: '渲染结果没有可见文字或视觉组件。' });
+  }
+  if (rect.width > 0 && target.scrollWidth > rect.width + 6) {
+    findings.push({
+      severity: 'error',
+      code: 'horizontal-overflow',
+      message: '渲染结果出现水平溢出。',
+      evidence: { scrollWidth: target.scrollWidth, clientWidth: Math.round(rect.width) },
+    });
+  }
+  const meaningfulNodes = Array.from(target.querySelectorAll('canvas, svg, table, input, textarea, select, button, img, video, audio, [class], h1, h2, h3, h4, p, span, div'))
+    .map(node => node.getBoundingClientRect())
+    .filter(nodeRect => nodeRect.width > 4 && nodeRect.height > 4);
+  const usedBottom = meaningfulNodes.reduce((max, nodeRect) => Math.max(max, nodeRect.bottom - rect.top), 0);
+  if (rect.height > 260 && usedBottom > 0) {
+    const blankBottomRatio = Math.max(0, rect.height - usedBottom) / rect.height;
+    if (blankBottomRatio > 0.45) {
+      findings.push({
+        severity: 'warning',
+        code: 'blank-bottom',
+        message: '渲染结果下半部分留白过多。',
+        evidence: { blankBottomRatio: Number(blankBottomRatio.toFixed(2)), height: Math.round(rect.height) },
+      });
+    }
+  }
+  const colorAlpha = color => {
+    const match = String(color || '').match(/rgba?\(([^)]+)\)/);
+    if (!match) return 1;
+    const parts = match[1].split(',').map(part => part.trim());
+    return parts.length >= 4 ? Number(parts[3]) : 1;
+  };
+  const invisibleButtons = Array.from(target.querySelectorAll('button')).filter(button => {
+    const style = getComputedStyle(button);
+    const buttonRect = button.getBoundingClientRect();
+    return style.visibility === 'hidden'
+      || style.display === 'none'
+      || Number(style.opacity) < 0.3
+      || buttonRect.width <= 4
+      || buttonRect.height <= 4;
+  });
+  if (invisibleButtons.length) {
+    findings.push({
+      severity: 'error',
+      code: 'invisible-controls',
+      message: '存在不可见或近似透明的按钮控件。',
+      evidence: { count: invisibleButtons.length },
+    });
+  }
+  const unlabeledButtons = Array.from(target.querySelectorAll('button')).filter(button => {
+    const style = getComputedStyle(button);
+    const text = (button.innerText || button.getAttribute('aria-label') || button.title || '').trim();
+    return !text || colorAlpha(style.color) < 0.3;
+  });
+  if (unlabeledButtons.length) {
+    findings.push({
+      severity: 'error',
+      code: 'unlabeled-controls',
+      message: '存在没有可见文字或可访问名称的按钮控件。',
+      evidence: { count: unlabeledButtons.length },
+    });
+  }
+  if (spec && (!spec.elements || !Object.keys(spec.elements).length)) {
+    findings.push({ severity: 'error', code: 'empty-spec', message: 'VizualSpec 没有 elements。' });
+  }
+  return {
+    surfaceId,
+    width: Math.round(rect.width),
+    height: Math.round(rect.height),
+    visibleTextLength: text.length,
+    findings,
+  };
+}
+
+function waitForRenderFrame() {
+  return new Promise(resolve => {
+    requestAnimationFrame(() => requestAnimationFrame(resolve));
+  });
+}
+
+async function waitForRenderedContent(target) {
+  for (let attempt = 0; attempt < 20; attempt += 1) {
+    await waitForRenderFrame();
+    if (target.children.length || target.querySelector('canvas, svg, table, input, textarea, select, button, img, video, audio')) return;
+    await new Promise(resolve => setTimeout(resolve, 50));
+  }
+}
+
+async function renderPayload(bubble, payload) {
+  let answerText = payload?.answerText || '';
+  let spec = payload?.spec || null;
+  let a2uiMessages = payload?.a2uiMessages || null;
+  let aguiEvents = payload?.aguiEvents || payload?.agui_events || null;
+  let runtime = null;
+  let snapshot = null;
+  if (Array.isArray(payload)) {
+    a2uiMessages = payload;
+    answerText = 'Agent 返回了 A2UI 消息，已渲染。';
+  }
+  bubble.textContent = answerText || 'Agent 返回了可渲染内容。';
+
+  if (!spec && (Array.isArray(a2uiMessages) || Array.isArray(aguiEvents))) {
+    const NativeCore = window.Vizual.VizualNativeCore || window.Vizual.VizualFusionRuntime;
+    runtime = new NativeCore();
+    if (Array.isArray(aguiEvents)) snapshot = runtime.dispatch ? runtime.dispatch(aguiEvents) : runtime.processAGUIEvents(aguiEvents);
+    if (!snapshot && Array.isArray(a2uiMessages)) snapshot = runtime.dispatch ? runtime.dispatch(a2uiMessages) : runtime.processA2UIMessages(a2uiMessages);
+    spec = snapshot?.spec || null;
+  }
+  if (!spec) throw new Error('Agent JSON 中没有 spec，也没有可转换的 a2uiMessages');
+
+  const shell = document.createElement('div');
+  shell.className = 'render-shell';
+  const label = document.createElement('div');
+  label.className = 'render-label';
+  label.textContent = 'Native Core 渲染结果';
+  const target = document.createElement('div');
+  const actionLog = document.createElement('div');
+  actionLog.className = 'action-log';
+  actionLog.textContent = 'Action log: waiting for user click';
+  const jsonInspector = document.createElement('details');
+  jsonInspector.className = 'json-inspector';
+  jsonInspector.open = true;
+  const surfaceId = snapshot?.surfaceId || 'direct-spec';
+  target.dataset.vizContainer = 'true';
+  target.dataset.fusionSurfaceId = surfaceId;
+  target.dataset.vizualSurfaceId = surfaceId;
+  shell.append(label, target, actionLog, jsonInspector);
+  bubble.appendChild(shell);
+  bubble.style.whiteSpace = 'normal';
+  const actionEvents = [];
+  const actionHandlers = Object.fromEntries(collectSpecActions(spec).map(actionName => [
+    actionName,
+    async (params = {}) => {
+      const event = { action: actionName, params, at: new Date().toISOString() };
+      actionEvents.push(event);
+      actionLog.innerHTML = `<strong>Action dispatched:</strong> ${escapeHtml(actionName)} · ${new Date(event.at).toLocaleTimeString('zh-CN')}`;
+    },
+  ]));
+  window.Vizual.renderSpec(spec, target, { handlers: actionHandlers });
+  await waitForRenderedContent(target);
+  jsonInspector.innerHTML = buildJsonInspectorHtml(payload, spec, snapshot);
+  const audit = auditRenderedSurface(target, spec, surfaceId);
+  if (runtime) {
+    for (const finding of audit.findings) {
+      runtime.reportQualityFinding({ surfaceId, ...finding });
+    }
+  }
+  const blocking = audit.findings.filter(finding => finding.severity === 'error');
+  window.__daemonVizualLast = { payload, spec, runtime, snapshot, audit, actionEvents, renderedAt: new Date().toISOString() };
+  if (blocking.length) {
+    throw new Error('视觉 QA 失败：' + blocking.map(finding => `${finding.code}: ${finding.message}`).join(' | '));
+  }
+}
+
+function collectSpecActions(spec) {
+  const actions = new Set();
+  const elements = spec?.elements && typeof spec.elements === 'object' ? spec.elements : {};
+  for (const element of Object.values(elements)) {
+    const action = element?.props?.action ?? element?.action;
+    if (typeof action === 'string' && action.trim()) actions.add(action.trim());
+  }
+  return [...actions];
+}
+
+function escapeHtml(value) {
+  return String(value)
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
+}
+
+function buildJsonInspectorHtml(payload, spec, snapshot) {
+  const messages = Array.isArray(payload?.a2uiMessages) ? payload.a2uiMessages : [];
+  const messageTypes = messages.map(message => message?.type).filter(Boolean);
+  const rows = messages
+    .filter(message => message?.type === 'updateDataModel')
+    .flatMap(message => {
+      const data = message?.data || {};
+      if (Array.isArray(data.rows)) return data.rows;
+      return Object.values(data).find(Array.isArray) || [];
+    });
+  const elements = spec?.elements && typeof spec.elements === 'object' ? spec.elements : {};
+  const components = Object.entries(elements)
+    .map(([id, element]) => `${id}:${element?.component || element?.type || 'unknown'}`)
+    .slice(0, 20);
+  const charts = Object.entries(elements)
+    .filter(([, element]) => String(element?.component || element?.type || '').toLowerCase().includes('chart'))
+    .map(([id, element]) => {
+      const props = element?.props || element || {};
+      const y = Array.isArray(props.y) ? props.y.join(',') : props.y || props.value || '';
+      return `${id}:${element?.component || element?.type}${y ? ` y=${y}` : ''}`;
+    });
+  const summary = [
+    ['answerText', payload?.answerText || ''],
+    ['A2UI 消息', messageTypes.join(', ') || '无'],
+    ['数据行数', String(rows.length)],
+    ['首行数据', rows[0] ? JSON.stringify(rows[0]) : '无'],
+    ['组件', components.join(' | ') || '无'],
+    ['图表', charts.join(' | ') || '无'],
+    ['surfaceId', snapshot?.surfaceId || 'direct-spec'],
+  ];
+  return `<summary>Agent 返回 JSON / Spec 摘要</summary>
+    <dl>${summary.map(([key, value]) => `<dt>${escapeHtml(key)}</dt><dd>${escapeHtml(value)}</dd>`).join('')}</dl>
+    <pre>${escapeHtml(JSON.stringify(payload, null, 2))}</pre>`;
+}
 
 async function send() {
   if (streaming) return;
-  const prompt = input.value.trim();
-  if (!prompt) return;
+  const message = input.value.trim();
+  if (!message) return;
   input.value = '';
-  input.style.height = 'auto';
   streaming = true;
-  document.getElementById('sendBtn').disabled = true;
+  sendBtn.disabled = true;
+  setStatus('', 'agent run running...');
 
-  const msgs = document.getElementById('messages');
-  const empty = msgs.querySelector('.empty');
-  if (empty) empty.remove();
-
-  addMsg('user', prompt);
-  const assistantEl = addMsg('assistant', '', true);
-  const body = assistantEl.querySelector('.msg-body');
+  addMessage('user', message);
+  const assistant = addMessage('assistant', '等待本地 Agent 真实回复...');
 
   try {
-    const req = { prompt: SYSTEM_PROMPT + '\n\n用户需求：' + prompt };
-    if (sessionId) req.sessionId = sessionId;
-
-    const resp = await fetch(DAEMON + '/api/chat', {
+    const prompt = USE_GUIDED_DIAGNOSTIC_PROMPT
+      ? `${GUIDED_DIAGNOSTIC_PROMPT}\n\n用户当前输入：\n${message}`
+      : message;
+    const created = await fetchJson(DAEMON + '/api/runs', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(req),
+      body: JSON.stringify({
+        agent: AGENT,
+        prompt,
+        model: MODEL,
+        timeoutMs: RUN_TIMEOUT_MS,
+        reasoning: REASONING,
+        conversationId,
+        assistantMessageId: 'assistant-' + Date.now().toString(36),
+        clientRequestId: 'vizual-daemon-page-' + Date.now().toString(36),
+      }),
     });
-
-    const reader = resp.body.getReader();
-    const decoder = new TextDecoder();
-    let buffer = '';
-    let fullText = '';
-
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      buffer += decoder.decode(value, { stream: true });
-      const lines = buffer.split('\n');
-      buffer = lines.pop();
-      for (const line of lines) {
-        if (!line.startsWith('data: ')) continue;
-        try {
-          const ev = JSON.parse(line.slice(6));
-          if (ev.type === 'session') sessionId = ev.sessionId;
-          else if (ev.type === 'text_delta') { fullText += ev.text; }
-          else if (ev.type === 'done') { /* stream end */ }
-        } catch {}
-      }
-    }
-
-    // Try to parse response as A2UI JSON
-    renderResponse(body, fullText);
-
-  } catch (err) {
-    body.textContent = 'Error: ' + err.message;
-    body.style.color = 'var(--error)';
+    assistant.textContent = `runId: ${created.runId}\n\n正在接收 Agent 输出...`;
+    const raw = await collectRun(created.runId, partial => {
+      assistant.textContent = `runId: ${created.runId}\n\n` + partial.slice(0, 1200);
+    });
+    const payload = extractJson(raw);
+    await renderPayload(assistant, payload);
+    setStatus('ok', `run succeeded: ${created.runId}`);
+  } catch (error) {
+    assistant.classList.add('error');
+    assistant.textContent = error.stack || error.message || String(error);
+    setStatus('error', error.message || String(error));
   } finally {
-    body.classList.remove('loading');
     streaming = false;
-    document.getElementById('sendBtn').disabled = false;
+    sendBtn.disabled = false;
     input.focus();
   }
 }
 
-function repairJSON(str) {
-  // Remove trailing commas before } or ]
-  let s = str.replace(/,\s*([}\]])/g, '$1');
-  // Remove comments
-  s = s.replace(/\/\/.*$/gm, '');
-  // Remove trailing commas in objects/arrays (second pass)
-  s = s.replace(/,\s*([}\]])/g, '$1');
-  return s;
-}
+async function replayRunFromParam() {
+  const runId = params.get('run');
+  if (!runId || streaming) return;
+  streaming = true;
+  sendBtn.disabled = true;
+  setStatus('', `replaying run ${runId}...`);
 
-function renderResponse(body, text) {
-  // Try extracting A2UI JSON from the response
-  let a2uiMessages = null;
+  addMessage('user', `回放真实 daemon run：${runId}`);
+  const assistant = addMessage('assistant', `runId: ${runId}\n\n正在读取已完成 Agent 输出...`);
 
-  // 1. Try direct JSON parse
-  try { a2uiMessages = JSON.parse(text); } catch {}
-
-  // 2. Try extracting from ```json...``` block
-  if (!a2uiMessages) {
-    const m = text.match(/```(?:json)?\s*\n?([\s\S]*?)```/);
-    if (m) {
-      try { a2uiMessages = JSON.parse(m[1]); } catch {
-        try { a2uiMessages = JSON.parse(repairJSON(m[1])); } catch {}
-      }
-    }
-  }
-
-  // 3. Try finding JSON array in text
-  if (!a2uiMessages) {
-    const m = text.match(/\[[\s\S]*\]/);
-    if (m) {
-      try { a2uiMessages = JSON.parse(m[0]); } catch {
-        try { a2uiMessages = JSON.parse(repairJSON(m[0])); } catch {}
-      }
-    }
-  }
-
-  if (a2uiMessages && Array.isArray(a2uiMessages) && a2uiMessages.length > 0 && a2uiMessages[0].version === 'v0.10') {
-    // Render as Vizual via A2UI bridge
-    try {
-      const bridge = new Vizual.A2UIBridge();
-      const spec = bridge.processMessages(a2uiMessages);
-
-      if (spec) {
-        const container = document.createElement('div');
-        container.className = 'vizual-render';
-
-        const label = document.createElement('div');
-        label.className = 'viz-label';
-        label.textContent = 'A2UI → Vizual Rendered (' + a2uiMessages.length + ' messages)';
-        container.appendChild(label);
-
-        const renderArea = document.createElement('div');
-        container.appendChild(renderArea);
-        body.appendChild(container);
-
-        Vizual.renderSpec(spec, renderArea);
-        body.style.whiteSpace = 'normal';
-      } else {
-        body.textContent = text;
-      }
-    } catch (e) {
-      body.textContent = text + '\n\n[Render error: ' + e.message + ']';
-    }
-  } else {
-    // Plain text response
-    body.textContent = text;
+  try {
+    const raw = await collectRun(runId, partial => {
+      assistant.textContent = `runId: ${runId}\n\n` + partial.slice(0, 1200);
+    });
+    const payload = extractJson(raw);
+    await renderPayload(assistant, payload);
+    setStatus('ok', `run replayed: ${runId}`);
+  } catch (error) {
+    assistant.classList.add('error');
+    assistant.textContent = error.stack || error.message || String(error);
+    setStatus('error', error.message || String(error));
+  } finally {
+    streaming = false;
+    sendBtn.disabled = false;
+    input.focus();
   }
 }
 
-function addMsg(role, content, isLoading = false) {
-  const msgs = document.getElementById('messages');
-  const div = document.createElement('div');
-  div.className = 'msg';
-  const header = document.createElement('div');
-  header.className = 'msg-header';
-  header.innerHTML = '<span class="role ' + role + '">' + role + '</span>';
-  const body = document.createElement('div');
-  body.className = 'msg-body' + (isLoading ? ' loading' : '');
-  if (content) body.textContent = content;
-  div.appendChild(header);
-  div.appendChild(body);
-  msgs.appendChild(div);
-  msgs.scrollTop = msgs.scrollHeight;
-  return div;
-}
+checkDaemon().then(replayRunFromParam);
 </script>
 </body>
 </html>

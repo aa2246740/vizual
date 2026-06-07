@@ -81,6 +81,7 @@ import type {
   VizualArtifactPatch,
   VizualSpec,
 } from './core/artifact'
+import { assertNoCyclicChildren, withDefaultElementProps } from './core/spec-validation'
 
 // All components
 import { BarChart, BarChartSchema } from './charts/bar-chart'
@@ -104,16 +105,12 @@ import { RadarChart, RadarChartSchema } from './charts/radar'
 import { MermaidChart, MermaidSchema } from './charts/mermaid'
 import { DataTable, DataTableSchema } from './charts/table'
 import { Timeline, TimelineSchema } from './components/timeline'
-import { Kanban, KanbanSchema } from './components/kanban'
 import { GanttChart, GanttChartSchema } from './components/gantt'
 import { OrgChart, OrgChartSchema } from './components/org-chart'
 import { KpiDashboard, KpiDashboardSchema } from './components/kpi-dashboard'
-import { AuditLog, AuditLogSchema } from './components/audit-log'
 import { FormBuilder, FormBuilderSchema } from './inputs/form-builder'
-import { GridLayout, GridLayoutSchema } from './components/grid-layout'
-import { SplitLayout, SplitLayoutSchema } from './components/split-layout'
 import { HeroLayout, HeroLayoutSchema } from './components/hero-layout'
-import { DocView } from './docview/container'
+import { Markdown, MarkdownSchema } from './components/markdown'
 
 type RenderSpecOptions = {
   initialState?: Record<string, unknown>
@@ -166,8 +163,11 @@ function createStoreBackedSetState(store: ReturnType<typeof createStateStore>) {
 
 // renderSpec function
 function renderSpec(spec: any, container: HTMLElement, options: RenderSpecOptions = {}) {
+  assertNoCyclicChildren(spec)
+  const rendererSpec = withDefaultElementProps(spec)
+
   const initialState = {
-    ...((spec?.state as StateModel | undefined) ?? {}),
+    ...((rendererSpec?.state as StateModel | undefined) ?? {}),
     ...(options.initialState ?? {}),
   }
   const store = createObservableStateStore(initialState, options.onStateChange)
@@ -189,7 +189,7 @@ function renderSpec(spec: any, container: HTMLElement, options: RenderSpecOption
       functions: options.functions,
       onStateChange: options.onStateChange,
     } as any,
-      React.createElement(Renderer, { spec, registry })
+      React.createElement(Renderer, { spec: rendererSpec as any, registry })
     )
   )
   return root
@@ -260,6 +260,37 @@ function updateArtifact(
 
 // A2UI protocol bridge
 import { A2UIBridge, a2uiToVizualSpec } from './a2ui'
+import {
+  VizualNativeCore,
+  VizualNativeStreamReader,
+  createVizualNativeStreamReader,
+  nativeInputsToVizualSnapshot,
+  normalizeVizualNativeInput,
+  previewVizualNativeInput,
+  validateVizualNativeInput,
+  VIZUAL_NATIVE_PREVIEW_MIME,
+} from './native-core'
+import { VizualFusionRuntime, a2uiMessagesToVizualSnapshot } from './fusion'
+import {
+  createVizualAgentEnvelope,
+  createVizualAgentToolDefinition,
+  isVizualAgentEnvelope,
+  renderVizualAgentInput,
+  vizualEnvelopeToMcpEmbeddedResource,
+  vizualPreviewToMcpEmbeddedResource,
+  VIZUAL_AGENT_ENVELOPE_MIME,
+  VIZUAL_AGENT_TOOL_NAME,
+  VIZUAL_NATIVE_MIME,
+} from './agent-helper'
+import {
+  createVizualActionDefinitions,
+  createVizualAgentPromptExamples,
+  createVizualCatalogManifest,
+  createVizualToolInputSchema,
+  VIZUAL_CATALOG_ID,
+  VIZUAL_CATALOG_MANIFEST_SCHEMA,
+  VIZUAL_CATALOG_VERSION,
+} from './catalog-manifest'
 
 // === Expose to window ===
 declare global {
@@ -392,29 +423,48 @@ const vizual = {
   DataTableSchema,
   Timeline,
   TimelineSchema,
-  Kanban,
-  KanbanSchema,
   GanttChart,
   GanttChartSchema,
   OrgChart,
   OrgChartSchema,
   KpiDashboard,
   KpiDashboardSchema,
-  AuditLog,
-  AuditLogSchema,
   FormBuilder,
   FormBuilderSchema,
-  GridLayout,
-  GridLayoutSchema,
-  SplitLayout,
-  SplitLayoutSchema,
   HeroLayout,
   HeroLayoutSchema,
-  DocView,
+  Markdown,
+  MarkdownSchema,
 
   // A2UI protocol bridge
   A2UIBridge,
   a2uiToVizualSpec,
+  VizualNativeCore,
+  VizualNativeStreamReader,
+  createVizualNativeStreamReader,
+  nativeInputsToVizualSnapshot,
+  normalizeVizualNativeInput,
+  previewVizualNativeInput,
+  validateVizualNativeInput,
+  VIZUAL_NATIVE_PREVIEW_MIME,
+  VizualFusionRuntime,
+  a2uiMessagesToVizualSnapshot,
+  createVizualAgentEnvelope,
+  createVizualAgentToolDefinition,
+  createVizualActionDefinitions,
+  createVizualAgentPromptExamples,
+  createVizualCatalogManifest,
+  createVizualToolInputSchema,
+  isVizualAgentEnvelope,
+  renderVizualAgentInput,
+  vizualEnvelopeToMcpEmbeddedResource,
+  vizualPreviewToMcpEmbeddedResource,
+  VIZUAL_AGENT_ENVELOPE_MIME,
+  VIZUAL_AGENT_TOOL_NAME,
+  VIZUAL_NATIVE_MIME,
+  VIZUAL_CATALOG_ID,
+  VIZUAL_CATALOG_MANIFEST_SCHEMA,
+  VIZUAL_CATALOG_VERSION,
 }
 
 // Expose to window for <script> tag usage

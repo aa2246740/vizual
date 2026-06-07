@@ -1,0 +1,814 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Vizual Scenario Acceptance Harness</title>
+<script defer src="../dist/vizual.standalone.js"></script>
+<style>
+  :root {
+    color-scheme: light;
+    --bg: #f4f6f8;
+    --panel: #ffffff;
+    --soft: #f8fafc;
+    --line: #d7dee8;
+    --text: #182230;
+    --muted: #667085;
+    --blue: #2563eb;
+    --green: #0f8b62;
+    --amber: #b54708;
+    --red: #b42318;
+    --radius: 8px;
+    font: 14px/1.5 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background: var(--bg);
+    color: var(--text);
+  }
+  header {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 14px 18px;
+    background: rgba(255, 255, 255, .96);
+    border-bottom: 1px solid var(--line);
+    backdrop-filter: blur(12px);
+  }
+  h1 { margin: 0; font-size: 18px; letter-spacing: 0; }
+  .sub { margin-top: 3px; color: var(--muted); font-size: 12px; }
+  .controls {
+    display: flex;
+    align-items: end;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+  label {
+    display: grid;
+    gap: 4px;
+    color: var(--muted);
+    font-size: 11px;
+    font-weight: 700;
+  }
+  input, select, textarea {
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: #fff;
+    color: var(--text);
+    font: inherit;
+    letter-spacing: 0;
+  }
+  input, select { min-height: 34px; padding: 0 10px; }
+  input[type="checkbox"] { min-height: 0; }
+  button {
+    min-height: 34px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: #fff;
+    color: var(--text);
+    padding: 0 12px;
+    font: inherit;
+    font-weight: 750;
+    cursor: pointer;
+  }
+  button.primary { border-color: transparent; background: var(--blue); color: #fff; }
+  button:disabled { opacity: .55; cursor: not-allowed; }
+  main {
+    display: grid;
+    grid-template-columns: 340px minmax(0, 1fr);
+    gap: 16px;
+    padding: 16px;
+  }
+  .panel {
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: var(--panel);
+    overflow: hidden;
+  }
+  .panel-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--line);
+    background: var(--soft);
+  }
+  .panel-head strong { font-size: 13px; }
+  .scenario-list {
+    display: grid;
+    gap: 8px;
+    padding: 10px;
+    max-height: calc(100vh - 120px);
+    overflow: auto;
+  }
+  .scenario-button {
+    display: grid;
+    gap: 4px;
+    width: 100%;
+    min-height: 0;
+    padding: 10px;
+    text-align: left;
+    border-color: var(--line);
+    background: #fff;
+  }
+  .scenario-button.active { border-color: var(--blue); box-shadow: inset 3px 0 0 var(--blue); }
+  .scenario-button small { color: var(--muted); font-weight: 500; }
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    padding: 2px 7px;
+    width: fit-content;
+    color: var(--muted);
+    background: var(--soft);
+    font-size: 11px;
+    font-weight: 750;
+  }
+  .badge.pass { color: var(--green); border-color: #a8dbc8; background: #ecfdf3; }
+  .badge.fail { color: var(--red); border-color: #fecdca; background: #fef3f2; }
+  .badge.review { color: var(--amber); border-color: #f2cc8f; background: #fffaeb; }
+  .work {
+    display: grid;
+    gap: 16px;
+  }
+  .scenario-card { padding: 14px; display: grid; gap: 12px; }
+  .prompt-box {
+    width: 100%;
+    min-height: 150px;
+    resize: vertical;
+    padding: 12px;
+    white-space: pre-wrap;
+  }
+  .checklist {
+    margin: 0;
+    padding-left: 18px;
+    color: var(--muted);
+  }
+  .checklist li { margin: 4px 0; }
+  .result-grid {
+    display: grid;
+    grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr);
+    gap: 16px;
+  }
+  .side-body { padding: 12px 14px; }
+  .evidence {
+    display: grid;
+    gap: 8px;
+  }
+  .evidence-item {
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 9px 10px;
+    background: #fff;
+  }
+  .evidence-item.pass { border-color: #a8dbc8; background: #f6fef9; }
+  .evidence-item.fail { border-color: #fecdca; background: #fffafa; color: var(--red); }
+  .evidence-item.review { border-color: #f2cc8f; background: #fffaf0; color: var(--amber); }
+  .evidence-item strong { display: block; font-size: 12px; color: var(--text); }
+  .evidence-item.fail strong { color: var(--red); }
+  .evidence-item.review strong { color: var(--amber); }
+  .render-host {
+    min-height: 240px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 14px;
+    background: #fff;
+    overflow: auto;
+    --rk-bg-primary: #ffffff;
+    --rk-bg-secondary: #f8fafc;
+    --rk-bg-tertiary: #eef2f6;
+    --rk-surface: #ffffff;
+    --rk-border: #d8dee8;
+    --rk-border-subtle: #e7ebf0;
+    --rk-text-primary: #182230;
+    --rk-text-secondary: #667085;
+    --rk-text-tertiary: #8a94a6;
+    --rk-accent: #2563eb;
+    --rk-success: #0f8b62;
+    --rk-error: #b42318;
+    --rk-radius-md: 8px;
+    --rk-font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
+    --rk-font-body: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
+    --rk-font-ui: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
+    --rk-font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", sans-serif;
+    --rk-text-xs: 11px;
+    --rk-text-sm: 12px;
+    --rk-text-base: 14px;
+    --rk-text-md: 16px;
+    --rk-text-lg: 18px;
+    --rk-text-xl: 22px;
+    --rk-text-2xl: 28px;
+    --rk-weight-semibold: 650;
+    --rk-weight-bold: 750;
+  }
+  .render-empty {
+    color: var(--muted);
+    min-height: 210px;
+    display: grid;
+    place-items: center;
+    text-align: center;
+  }
+  pre {
+    margin: 0;
+    max-height: 360px;
+    overflow: auto;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    font: 12px/1.45 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  }
+  @media (max-width: 1040px) {
+    header { align-items: flex-start; flex-direction: column; }
+    main, .result-grid { grid-template-columns: 1fr; }
+    .scenario-list { max-height: none; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>Vizual Scenario Acceptance Harness</h1>
+    <div class="sub">Clean-agent natural-language scenarios; browser evidence is visible UI plus interaction logs.</div>
+  </div>
+  <div class="controls">
+    <label>Agent
+      <select id="agent">
+        <option value="pi-agent">pi-agent</option>
+        <option value="codex">codex</option>
+        <option value="claude-code">claude-code</option>
+      </select>
+    </label>
+    <label>Model
+      <input id="model" value="" placeholder="default" />
+    </label>
+    <label>Runtime
+      <select id="runtimeMode">
+        <option value="skill">skill</option>
+        <option value="mcp">mcp</option>
+        <option value="bare">bare</option>
+        <option value="guided">guided diagnostics</option>
+      </select>
+    </label>
+    <label>Force CLI
+      <input id="forceAgent" type="checkbox" checked />
+    </label>
+    <button id="runSelected" class="primary" type="button">Run Selected</button>
+    <button id="runAll" type="button">Run All</button>
+  </div>
+</header>
+
+<main>
+  <aside class="panel">
+    <div class="panel-head">
+      <strong>Scenario Tree</strong>
+      <span class="badge" id="runSummary">idle</span>
+    </div>
+    <div class="scenario-list" id="scenarioList"></div>
+  </aside>
+
+  <section class="work">
+    <section class="panel scenario-card">
+      <div class="panel-head">
+        <strong id="scenarioTitle">Scenario</strong>
+        <span class="badge" id="scenarioMode">mode</span>
+      </div>
+      <textarea class="prompt-box" id="prompt"></textarea>
+      <ul class="checklist" id="checklist"></ul>
+    </section>
+
+    <section class="result-grid">
+      <section class="panel">
+        <div class="panel-head">
+          <strong>Acceptance Evidence</strong>
+          <span class="badge" id="status">not run</span>
+        </div>
+        <div class="side-body">
+          <div class="evidence" id="evidence"></div>
+        </div>
+      </section>
+      <section class="panel">
+        <div class="panel-head">
+          <strong>Browser Render</strong>
+          <button id="exercise" type="button">Exercise Controls</button>
+        </div>
+        <div class="side-body">
+          <div class="render-host" id="renderHost"><div class="render-empty">Run a scenario to render browser-visible evidence.</div></div>
+        </div>
+      </section>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head"><strong>Raw Response</strong></div>
+      <div class="side-body"><pre id="raw">{}</pre></div>
+    </section>
+  </section>
+</main>
+
+<script type="module">
+  import { scenarioAcceptanceFixtures } from './scenario-acceptance-fixtures.mjs';
+
+  const params = new URLSearchParams(location.search);
+  const apiBase = (params.get('apiBase') || defaultAcceptanceApiBase()).replace(/\/$/, '');
+  const state = {
+    selectedId: params.get('scenario') || scenarioAcceptanceFixtures[0]?.id,
+    results: new Map(),
+    currentResponse: null,
+    actionLog: [],
+  };
+
+  const $ = selector => document.querySelector(selector);
+  const scenarioList = $('#scenarioList');
+  const promptEl = $('#prompt');
+  const checklistEl = $('#checklist');
+  const renderHost = $('#renderHost');
+  const rawEl = $('#raw');
+  const evidenceEl = $('#evidence');
+  const statusEl = $('#status');
+
+  $('#agent').value = params.get('agent') || 'pi-agent';
+  $('#model').value = params.get('model') || '';
+  $('#runtimeMode').value = params.get('runtimeMode') || 'skill';
+  $('#forceAgent').checked = params.get('forceAgent') !== '0';
+
+  $('#runSelected').addEventListener('click', () => runScenario(selectedScenario()));
+  $('#runAll').addEventListener('click', runAllScenarios);
+  $('#exercise').addEventListener('click', () => exerciseControls(renderHost));
+
+  renderScenarioList();
+  selectScenario(state.selectedId);
+
+  function apiUrl(path) {
+    return `${apiBase}${path}`;
+  }
+
+  function defaultAcceptanceApiBase() {
+    if (
+      (location.protocol === 'http:' || location.protocol === 'https:')
+      && /^(127\.0\.0\.1|localhost|\[::1\])(?::8794)?$/i.test(location.host)
+    ) {
+      return location.origin;
+    }
+    return 'http://127.0.0.1:8794';
+  }
+
+  function renderScenarioList() {
+    scenarioList.innerHTML = '';
+    for (const scenario of scenarioAcceptanceFixtures) {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'scenario-button';
+      button.dataset.scenarioId = scenario.id;
+      button.innerHTML = `
+        <span>${escapeHtml(scenario.title)}</span>
+        <small>${escapeHtml(scenario.id)}</small>
+        <span class="badge ${badgeClass(state.results.get(scenario.id)?.status)}">${escapeHtml(state.results.get(scenario.id)?.status || scenario.group)}</span>
+      `;
+      button.addEventListener('click', () => selectScenario(scenario.id));
+      scenarioList.appendChild(button);
+    }
+    markActiveScenario();
+  }
+
+  function selectScenario(id) {
+    const scenario = scenarioAcceptanceFixtures.find(item => item.id === id) || scenarioAcceptanceFixtures[0];
+    state.selectedId = scenario.id;
+    $('#scenarioTitle').textContent = scenario.title;
+    $('#scenarioMode').textContent = scenario.expectation.mode;
+    promptEl.value = scenario.prompt;
+    checklistEl.innerHTML = scenario.evidenceChecklist.map(item => `<li>${escapeHtml(item)}</li>`).join('');
+    const existing = state.results.get(scenario.id);
+    if (existing) renderResult(existing);
+    else resetResult();
+    markActiveScenario();
+  }
+
+  function markActiveScenario() {
+    for (const button of scenarioList.querySelectorAll('.scenario-button')) {
+      button.classList.toggle('active', button.dataset.scenarioId === state.selectedId);
+    }
+  }
+
+  function selectedScenario() {
+    return scenarioAcceptanceFixtures.find(item => item.id === state.selectedId) || scenarioAcceptanceFixtures[0];
+  }
+
+  async function runAllScenarios() {
+    $('#runAll').disabled = true;
+    $('#runSelected').disabled = true;
+    try {
+      for (const scenario of scenarioAcceptanceFixtures) {
+        selectScenario(scenario.id);
+        await runScenario(scenario);
+      }
+    } finally {
+      $('#runAll').disabled = false;
+      $('#runSelected').disabled = false;
+      updateRunSummary();
+    }
+  }
+
+  async function runScenario(scenario) {
+    statusEl.textContent = 'running';
+    statusEl.className = 'badge review';
+    renderHost.innerHTML = '<div class="render-empty">Waiting for clean-agent response...</div>';
+    const endpoint = apiUrl('/deerflow-sim/run');
+    evidenceEl.innerHTML = evidenceItem('review', 'Run started', `Calling ${endpoint} with the scenario prompt as the user message.`);
+    rawEl.textContent = '{}';
+    state.actionLog = [];
+
+    const requestBody = {
+      message: promptEl.value,
+      agent: $('#agent').value,
+      model: $('#model').value || undefined,
+      runtimeMode: $('#runtimeMode').value,
+      forceAgent: $('#forceAgent').checked,
+      source: 'scenario-acceptance-harness',
+      scenarioId: scenario.id,
+    };
+
+    let response;
+    const controller = new AbortController();
+    const requestTimeoutMs = 360000;
+    const timeout = setTimeout(() => controller.abort(), requestTimeoutMs);
+    try {
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(requestBody),
+        signal: controller.signal,
+      });
+      response = await res.json().catch(() => ({ ok: false, errors: [`HTTP ${res.status} ${res.statusText}`] }));
+      if (!res.ok) response = { ...response, ok: false, errors: response.errors || [response.error || `${res.status} ${res.statusText}`] };
+    } catch (error) {
+      const aborted = controller.signal.aborted || error.name === 'AbortError';
+      const message = aborted
+        ? `request timed out after ${Math.round(requestTimeoutMs / 1000)}s`
+        : (error.message || String(error));
+      response = {
+        ok: false,
+        errors: [message === 'Load failed' ? 'browser request failed before the server response completed' : message],
+      };
+    } finally {
+      clearTimeout(timeout);
+    }
+
+    rawEl.textContent = JSON.stringify(response, null, 2);
+    state.currentResponse = response;
+
+    let renderEvidence = { rendered: false, metrics: {}, errors: [] };
+    if (response.preview?.spec) {
+      renderEvidence = await renderSpec(response.preview.spec, response);
+    } else {
+      renderHost.innerHTML = '<div class="render-empty">No Vizual surface rendered for this scenario.</div>';
+    }
+
+    if (scenario.expectation.usefulInteraction && renderEvidence.rendered) {
+      await exerciseControls(renderHost);
+      renderEvidence = collectRenderEvidence(renderHost);
+    }
+
+    const result = {
+      scenarioId: scenario.id,
+      response,
+      renderEvidence,
+      actionLog: [...state.actionLog],
+      evidence: evaluateScenario(scenario, response, renderEvidence),
+    };
+    result.status = summarizeStatus(result.evidence);
+    state.results.set(scenario.id, result);
+    renderResult(result);
+    renderScenarioList();
+    updateRunSummary();
+    return result;
+  }
+
+  async function renderSpec(spec, response) {
+    renderHost.innerHTML = '';
+    const mount = document.createElement('div');
+    mount.dataset.scenarioVizMount = 'true';
+    renderHost.appendChild(mount);
+    const actionNames = collectSpecActionNames(spec);
+    const handlers = Object.fromEntries(actionNames.map(action => [
+      action,
+      params => {
+        const event = { action, params, at: new Date().toISOString() };
+        state.actionLog.push(event);
+        return { ok: true, event };
+      },
+    ]));
+    const defaultHandlers = ['drillDown', 'applyFilter', 'selectLocation', 'updatePlan', 'submit', 'submitForm', 'select', 'focus'];
+    for (const action of defaultHandlers) {
+      if (!handlers[action]) {
+        handlers[action] = params => {
+          const event = { action, params, at: new Date().toISOString() };
+          state.actionLog.push(event);
+          return { ok: true, event };
+        };
+      }
+    }
+    try {
+      await waitForVizualRuntime();
+      window.Vizual.renderSpec(spec, mount, {
+        handlers,
+        onStateChange: changes => state.actionLog.push({ action: 'stateChange', params: changes, at: new Date().toISOString() }),
+      });
+      await waitForPaint();
+      const evidence = await waitForVisibleRenderEvidence(renderHost);
+      evidence.specSummary = summarizeSpec(spec, response);
+      return evidence;
+    } catch (error) {
+      renderHost.innerHTML = `<div class="render-empty">Render failed: ${escapeHtml(error.message || String(error))}</div>`;
+      return { rendered: false, metrics: {}, errors: [error.message || String(error)] };
+    }
+  }
+
+  async function exerciseControls(host) {
+    const before = host.innerText;
+    const controls = Array.from(host.querySelectorAll('button, input, textarea, select'))
+      .filter(el => el.offsetParent !== null && !el.closest('header'));
+    if (!controls.length) {
+      state.actionLog.push({ action: 'exerciseControls', params: { foundControls: 0 }, at: new Date().toISOString() });
+      return;
+    }
+    const control = controls[0];
+    if (control.tagName === 'SELECT') {
+      control.selectedIndex = Math.min(1, control.options.length - 1);
+      control.dispatchEvent(new Event('change', { bubbles: true }));
+    } else if (control.tagName === 'INPUT' || control.tagName === 'TEXTAREA') {
+      control.value = control.type === 'range' ? String(Number(control.max || 100) * 0.75) : 'browser acceptance input';
+      control.dispatchEvent(new Event('input', { bubbles: true }));
+      control.dispatchEvent(new Event('change', { bubbles: true }));
+    } else {
+      control.click();
+    }
+    await waitForPaint();
+    state.actionLog.push({
+      action: 'browserExercise',
+      params: {
+        control: control.tagName.toLowerCase(),
+        label: (control.textContent || control.getAttribute('aria-label') || control.name || '').trim().slice(0, 80),
+        changedText: before !== host.innerText,
+      },
+      at: new Date().toISOString(),
+    });
+    rawEl.textContent = JSON.stringify({ lastResponse: state.currentResponse, actionLog: state.actionLog }, null, 2);
+    renderResult(state.results.get(state.selectedId) || {
+      status: 'review',
+      response: state.currentResponse || {},
+      renderEvidence: collectRenderEvidence(renderHost),
+      actionLog: state.actionLog,
+      evidence: [{ status: 'review', label: 'Manual exercise', detail: 'Control exercise has been recorded.' }],
+    });
+  }
+
+  function collectRenderEvidence(host) {
+    const mount = host.querySelector('[data-scenario-viz-mount="true"]') || host;
+    const rect = mount.getBoundingClientRect();
+    const text = (mount.innerText || '').trim();
+    const visibleBox = el => {
+      const itemRect = el.getBoundingClientRect();
+      return itemRect.width > 4 && itemRect.height > 4;
+    };
+    const controls = Array.from(mount.querySelectorAll('button, input, textarea, select')).filter(visibleBox).length;
+    const canvasCount = Array.from(mount.querySelectorAll('canvas, [_echarts_instance_]')).filter(visibleBox).length;
+    const svgCount = Array.from(mount.querySelectorAll('svg')).filter(visibleBox).length;
+    const imageCount = Array.from(mount.querySelectorAll('img, [role="img"], video, audio')).filter(visibleBox).length;
+    const tableRows = Array.from(mount.querySelectorAll('tbody tr, table tr')).filter(visibleBox).length;
+    const metrics = {
+      width: Math.round(rect.width),
+      height: Math.round(rect.height),
+      textLength: text.length,
+      canvasCount,
+      svgCount,
+      imageCount,
+      tableRows,
+      controlCount: controls,
+      fallbackCount: mount.querySelectorAll('[data-fallback="true"]').length,
+      overflowCount: Array.from(mount.querySelectorAll('*')).filter(el => {
+        if (!(el instanceof HTMLElement)) return false;
+        if (el.getBoundingClientRect().width < 24) return false;
+        return el.scrollWidth > el.clientWidth + 8 && getComputedStyle(el).overflowX !== 'auto';
+      }).length,
+    };
+    const visiblePrimitive = Boolean(
+      rect.width > 40 &&
+      rect.height > 24 &&
+      (text.length || metrics.canvasCount || metrics.svgCount || metrics.imageCount || metrics.tableRows || metrics.controlCount)
+    );
+    return {
+      rendered: visiblePrimitive,
+      domMounted: mount.childElementCount > 0,
+      visiblePrimitive,
+      metrics,
+      errors: [],
+      actionLog: [...state.actionLog],
+    };
+  }
+
+  function evaluateScenario(scenario, response, renderEvidence) {
+    const expectation = scenario.expectation;
+    const items = [];
+    const promptAudit = response.promptAudit || {};
+    const hasToolCall = Boolean(response.toolCall?.name);
+    const hasSpec = Boolean(response.preview?.spec);
+    const promptInjected = promptAudit.promptInjected === true || response.decision?.promptInjected === true;
+    const creativeParseBoundary = expectation.mode === 'creative'
+      && !hasToolCall
+      && (response.errors || []).some(error => /JSON parse|assistantText missing/i.test(String(error)));
+
+    items.push({
+      status: promptInjected ? 'fail' : 'pass',
+      label: 'Prompt Boundary',
+      detail: promptAudit.promptMode ? `${promptAudit.promptMode}; injected=${Boolean(promptInjected)}` : 'No guided prompt reported.',
+    });
+
+    if (expectation.mode === 'text') {
+      items.push({
+        status: !hasToolCall && !hasSpec ? 'pass' : 'fail',
+        label: 'Text-Only Boundary',
+        detail: hasToolCall || hasSpec ? 'Unexpected Vizual surface was produced.' : 'No native surface rendered.',
+      });
+    } else if (expectation.mode === 'creative') {
+      items.push({
+        status: !hasToolCall ? (creativeParseBoundary ? 'review' : 'pass') : 'fail',
+        label: 'Creative Request Boundary',
+        detail: hasToolCall
+          ? 'Explicit creative request was forced into Vizual Native.'
+          : creativeParseBoundary
+            ? 'No native toolCall; endpoint needs manual freeform-artifact inspection.'
+            : 'No native toolCall was produced.',
+      });
+    } else {
+      items.push({
+        status: hasToolCall || hasSpec ? 'pass' : 'fail',
+        label: 'Inline Surface Decision',
+        detail: hasToolCall || hasSpec ? 'Agent produced a renderable native surface.' : 'No renderable surface returned.',
+      });
+      items.push({
+        status: renderEvidence.rendered && renderEvidence.visiblePrimitive ? 'pass' : 'fail',
+        label: 'Browser Visible Render',
+        detail: JSON.stringify(renderEvidence.metrics || {}),
+      });
+    }
+
+    if (expectation.usefulInteraction) {
+      const actionCount = state.actionLog.length || renderEvidence.actionLog?.length || 0;
+      const controlCount = renderEvidence.metrics?.controlCount || 0;
+      items.push({
+        status: controlCount > 0 && actionCount > 0 ? 'pass' : 'review',
+        label: 'Useful Interaction Evidence',
+        detail: `${controlCount} visible controls; ${actionCount} captured action/state events.`,
+      });
+    }
+
+    if (expectation.catalogGapOptional) {
+      const gap = findCatalogGap(response);
+      items.push({
+        status: 'pass',
+        label: 'Catalog Gap Metadata',
+        detail: gap ? `Found non-blocking gap metadata: ${JSON.stringify(gap).slice(0, 240)}` : 'No gap metadata found; this is optional and non-blocking.',
+      });
+    }
+
+    if (response.errors?.length && !creativeParseBoundary) {
+      items.push({
+        status: 'fail',
+        label: 'Server Validation',
+        detail: response.errors.join('; '),
+      });
+    } else if (response.warnings?.length) {
+      const blockingWarnings = response.warnings.filter(warning => !/^native input normalized\b/i.test(String(warning)));
+      items.push({
+        status: blockingWarnings.length ? 'review' : 'pass',
+        label: blockingWarnings.length ? 'Server Warnings' : 'Server Normalization',
+        detail: (blockingWarnings.length ? blockingWarnings : response.warnings).join('; '),
+      });
+    } else if (response.ok) {
+      items.push({
+        status: 'pass',
+        label: 'Server Validation',
+        detail: 'No blocking validation errors.',
+      });
+    }
+    return items;
+  }
+
+  function renderResult(result) {
+    const status = result.status || summarizeStatus(result.evidence || []);
+    statusEl.textContent = status;
+    statusEl.className = `badge ${badgeClass(status)}`;
+    evidenceEl.innerHTML = (result.evidence || []).map(item => evidenceItem(item.status, item.label, item.detail)).join('');
+    rawEl.textContent = JSON.stringify({
+      response: result.response,
+      renderEvidence: result.renderEvidence,
+      actionLog: result.actionLog,
+    }, null, 2);
+  }
+
+  function resetResult() {
+    statusEl.textContent = 'not run';
+    statusEl.className = 'badge';
+    evidenceEl.innerHTML = '';
+    rawEl.textContent = '{}';
+    renderHost.innerHTML = '<div class="render-empty">Run a scenario to render browser-visible evidence.</div>';
+  }
+
+  function updateRunSummary() {
+    const counts = { pass: 0, fail: 0, review: 0 };
+    for (const result of state.results.values()) counts[result.status] = (counts[result.status] || 0) + 1;
+    $('#runSummary').textContent = `${counts.pass} pass · ${counts.review} review · ${counts.fail} fail`;
+  }
+
+  function summarizeStatus(items) {
+    if (items.some(item => item.status === 'fail')) return 'fail';
+    if (items.some(item => item.status === 'review')) return 'review';
+    return 'pass';
+  }
+
+  function badgeClass(status) {
+    if (status === 'pass') return 'pass';
+    if (status === 'fail') return 'fail';
+    if (status === 'review' || status === 'running') return 'review';
+    return '';
+  }
+
+  function evidenceItem(status, label, detail) {
+    return `<div class="evidence-item ${badgeClass(status)}"><strong>${escapeHtml(label)}</strong><div>${escapeHtml(detail || '')}</div></div>`;
+  }
+
+  function collectSpecActionNames(spec) {
+    const actions = new Set();
+    for (const element of Object.values(spec?.elements || {})) {
+      for (const candidate of [element?.action, element?.props?.action, element?.props?.onClick, element?.props?.onSubmit]) {
+        if (typeof candidate === 'string' && candidate.trim()) actions.add(candidate.trim());
+      }
+    }
+    return [...actions];
+  }
+
+  function summarizeSpec(spec, response) {
+    const components = Object.values(spec?.elements || {})
+      .map(element => element?.component || element?.type)
+      .filter(Boolean);
+    return {
+      surfaceId: response.preview?.surfaceId,
+      root: spec?.root,
+      components,
+    };
+  }
+
+  function findCatalogGap(value) {
+    const seen = new Set();
+    const stack = [value];
+    while (stack.length) {
+      const item = stack.pop();
+      if (!item || typeof item !== 'object' || seen.has(item)) continue;
+      seen.add(item);
+      for (const [key, child] of Object.entries(item)) {
+        if (/catalog.?gap/i.test(key)) return child;
+        if (child && typeof child === 'object') stack.push(child);
+      }
+    }
+    return null;
+  }
+
+  function waitForPaint() {
+    return new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+  }
+
+  async function waitForVisibleRenderEvidence(host) {
+    let evidence = collectRenderEvidence(host);
+    for (let attempt = 0; attempt < 20 && !evidence.visiblePrimitive; attempt += 1) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+      evidence = collectRenderEvidence(host);
+    }
+    return evidence;
+  }
+
+  async function waitForVizualRuntime() {
+    for (let attempt = 0; attempt < 100; attempt += 1) {
+      if (window.Vizual?.renderSpec) return;
+      await new Promise(resolve => setTimeout(resolve, 50));
+    }
+    throw new Error('Vizual standalone runtime did not become ready');
+  }
+
+  function escapeHtml(value) {
+    return String(value ?? '')
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;')
+      .replaceAll("'", '&#39;');
+  }
+</script>
+</body>
+</html>

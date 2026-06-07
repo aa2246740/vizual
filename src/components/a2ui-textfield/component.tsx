@@ -1,9 +1,69 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
+import { useBoundProp } from '@json-render/react'
 import { tcss } from '../../core/theme-colors'
 import type { TextFieldProps } from './schema'
 
-export function TextField({ props }: { props: TextFieldProps }) {
+type TextFieldArgs = {
+  props: TextFieldProps
+  bindings?: Record<string, string>
+}
+
+export function TextField(args: TextFieldArgs) {
+  if (args.bindings?.value) return <BoundTextField {...args} />
+  return <UnboundTextField {...args} />
+}
+
+function BoundTextField({ props, bindings }: TextFieldArgs) {
   const { placeholder = '', value = '', label, type = 'text', disabled = false } = props
+  const [current, setCurrent] = useBoundProp<string>(String(value ?? ''), bindings!.value)
+
+  return (
+    <TextFieldInput
+      label={label}
+      type={type}
+      placeholder={placeholder}
+      disabled={disabled}
+      value={String(current ?? '')}
+      onChange={setCurrent}
+    />
+  )
+}
+
+function UnboundTextField({ props }: TextFieldArgs) {
+  const { placeholder = '', value = '', label, type = 'text', disabled = false } = props
+  const [current, setCurrent] = useState(value)
+
+  useEffect(() => {
+    setCurrent(value)
+  }, [value])
+
+  return (
+    <TextFieldInput
+      label={label}
+      type={type}
+      placeholder={placeholder}
+      disabled={disabled}
+      value={String(current ?? '')}
+      onChange={setCurrent}
+    />
+  )
+}
+
+function TextFieldInput({
+  label,
+  type,
+  placeholder,
+  disabled,
+  value,
+  onChange,
+}: {
+  label?: string
+  type: NonNullable<TextFieldProps['type']>
+  placeholder: string
+  disabled: boolean
+  value: string
+  onChange: (value: string) => void
+}) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
       {label && (
@@ -16,7 +76,7 @@ export function TextField({ props }: { props: TextFieldProps }) {
         value={value}
         placeholder={placeholder}
         disabled={disabled}
-        readOnly
+        onChange={(event) => onChange(event.currentTarget.value)}
         style={{
           padding: '8px 12px',
           border: `1px solid ${tcss('--rk-border')}`,

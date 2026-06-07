@@ -25,11 +25,11 @@
 | echarts | ^5.6.0 | Apache-2.0 | ✅ | 图表引擎 |
 | @json-render/core | ^0.17.0 | Apache-2.0 | ✅ | Catalog 注册 |
 | @json-render/react | ^0.17.0 | Apache-2.0 | Registry + Renderer |
-| dompurify | ^3.4.0 | Apache-2.0 | ✅ | HTML 消毒，用于 DocView |
+| dompurify | ^3.4.0 | Apache-2.0 | ✅ | Markdown 渲染后的 HTML 消毒 |
 | html2canvas | ^1.4.1 | MIT | ✅ | PNG 导出 |
 | jspdf | ^4.2.1 | MIT | ✅ | PDF 导出 |
 | jszip | ^3.10.1 | MIT | ✅ | XLSX 导出 |
-| marked | ^15.0.12 | MIT | ✅ | Markdown 渲染，用于 DocView |
+| marked | ^15.0.12 | MIT | ✅ | Markdown 解析与渲染 |
 | mermaid | ^11.14.0 | MIT | ✅ | 图表渲染（MermaidDiagram 组件） |
 
 ### Peer 依赖

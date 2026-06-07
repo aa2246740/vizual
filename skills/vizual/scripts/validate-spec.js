@@ -3,19 +3,17 @@
 /**
  * Vizual Spec Validator
  *
- * Validates a JSON spec against the 31-component catalog + 3 layout components.
+ * Validates a flat Vizual JSON spec against the current native core catalog.
  * Usage:
  *   node scripts/validate-spec.js < spec.json
  *   node scripts/validate-spec.js path/to/spec.json
- *   echo '{"root":"main","elements":{...}}' | node scripts/validate-spec.js
  */
 
 const fs = require('fs')
 const path = require('path')
 
-// Component type → props type literal mapping
-// Matches the 31 registered components in src/catalog.ts
-const COMPONENT_TYPES = {
+// Components with a required props.type literal.
+const TYPED_COMPONENTS = {
   // Charts (19)
   BarChart: 'bar',
   LineChart: 'line',
@@ -36,46 +34,102 @@ const COMPONENT_TYPES = {
   DumbbellChart: 'dumbbell',
   MermaidDiagram: 'mermaid',
   RadarChart: 'radar',
-  // UI (1)
+
+  // Data, business, input
   DataTable: 'table',
-  // Business components (6)
   Timeline: 'timeline',
-  Kanban: 'kanban',
   GanttChart: 'gantt',
   OrgChart: 'org_chart',
   KpiDashboard: 'kpi_dashboard',
-  AuditLog: 'audit_log',
-  // Input components (1)
   FormBuilder: 'form_builder',
-  // DocView (1)
-  DocView: 'doc_view',
 }
 
-// Layout components (no type literal in props)
-const LAYOUT_TYPES = ['GridLayout', 'SplitLayout', 'HeroLayout']
+// Components without a props.type literal.
+const UNTYPED_COMPONENTS = new Set([
+  'Markdown',
+  'Container',
+  'Row',
+  'Column',
+  'Card',
+  'Text',
+  'Image',
+  'Icon',
+  'List',
+  'Divider',
+  'Button',
+  'CheckBox',
+  'TextField',
+  'ChoicePicker',
+  'Slider',
+  'DateTimeInput',
+  'Tabs',
+  'Video',
+  'AudioPlayer',
+])
 
-const ALL_TYPES = new Set([...Object.keys(COMPONENT_TYPES), ...LAYOUT_TYPES])
+// Runtime compatibility only. Do not generate for new Agent UI.
+const COMPATIBILITY_COMPONENTS = new Set(['HeroLayout'])
+
+const REMOVED_COMPONENTS = new Set([
+  'DocView',
+  'GridLayout',
+  'SplitLayout',
+  'FreeformHtml',
+  'Modal',
+  'Kanban',
+  'AuditLog',
+])
+
+const ALL_TYPES = new Set([
+  ...Object.keys(TYPED_COMPONENTS),
+  ...UNTYPED_COMPONENTS,
+  ...COMPATIBILITY_COMPONENTS,
+])
+
+const DATA_COMPONENTS = new Set([
+  'BarChart',
+  'LineChart',
+  'AreaChart',
+  'ScatterChart',
+  'BubbleChart',
+  'BoxplotChart',
+  'HistogramChart',
+  'HeatmapChart',
+  'CalendarChart',
+  'RadarChart',
+])
 
 function validate(spec) {
   const errors = []
   const warnings = []
 
-  // Check top-level structure
+  if (!spec || typeof spec !== 'object' || Array.isArray(spec)) {
+    return { errors: ['Spec must be a JSON object'], warnings }
+  }
+
   if (!spec.root) errors.push('Missing "root" field')
-  if (!spec.elements || typeof spec.elements !== 'object') {
+  if (!spec.elements || typeof spec.elements !== 'object' || Array.isArray(spec.elements)) {
     errors.push('Missing or invalid "elements" object')
     return { errors, warnings }
   }
 
-  // Check root element exists
   if (spec.root && !spec.elements[spec.root]) {
     errors.push(`Root element "${spec.root}" not found in elements`)
   }
 
-  // Check each element
   for (const [id, el] of Object.entries(spec.elements)) {
+    if (!el || typeof el !== 'object' || Array.isArray(el)) {
+      errors.push(`Element "${id}": must be an object`)
+      continue
+    }
+
     if (!el.type) {
       errors.push(`Element "${id}": missing "type" field`)
+      continue
+    }
+
+    if (REMOVED_COMPONENTS.has(el.type)) {
+      errors.push(`Element "${id}": "${el.type}" was removed from native core and is not supported`)
       continue
     }
 
@@ -84,19 +138,19 @@ function validate(spec) {
       continue
     }
 
-    // Check props type literal for non-layout components
-    if (COMPONENT_TYPES[el.type]) {
-      const expectedType = COMPONENT_TYPES[el.type]
-      if (!el.props) {
-        errors.push(`Element "${id}": missing "props"`)
+    if (COMPATIBILITY_COMPONENTS.has(el.type)) {
+      warnings.push(`Element "${id}": ${el.type} is runtime compatibility only; do not generate it for new Agent UI`)
+    }
+
+    const expectedType = TYPED_COMPONENTS[el.type]
+    if (expectedType) {
+      if (!el.props || typeof el.props !== 'object' || Array.isArray(el.props)) {
+        errors.push(`Element "${id}": missing or invalid "props"`)
       } else if (el.props.type !== expectedType) {
-        errors.push(
-          `Element "${id}": props.type should be "${expectedType}" for ${el.type}, got "${el.props.type}"`
-        )
+        errors.push(`Element "${id}": props.type should be "${expectedType}" for ${el.type}, got "${el.props.type}"`)
       }
     }
 
-    // Check children
     if (!Array.isArray(el.children)) {
       errors.push(`Element "${id}": "children" must be an array`)
     } else {
@@ -107,13 +161,8 @@ function validate(spec) {
       }
     }
 
-    // Chart-specific checks
-    if (['BarChart', 'LineChart', 'AreaChart', 'ScatterChart', 'BubbleChart',
-         'BoxplotChart', 'HistogramChart', 'HeatmapChart', 'CalendarChart',
-         'RadarChart'].includes(el.type)) {
-      if (el.props && !el.props.data) {
-        warnings.push(`Element "${id}": ${el.type} usually needs a "data" array`)
-      }
+    if (DATA_COMPONENTS.has(el.type) && el.props && !el.props.data) {
+      warnings.push(`Element "${id}": ${el.type} usually needs a "data" array`)
     }
   }
 
@@ -124,8 +173,7 @@ function main() {
   let input
 
   if (process.argv.length > 2) {
-    const filePath = path.resolve(process.argv[2])
-    input = fs.readFileSync(filePath, 'utf-8')
+    input = fs.readFileSync(path.resolve(process.argv[2]), 'utf-8')
   } else {
     input = fs.readFileSync(0, 'utf-8')
   }
@@ -134,26 +182,26 @@ function main() {
   try {
     spec = JSON.parse(input)
   } catch (e) {
-    console.error('❌ Invalid JSON:', e.message)
+    console.error('Invalid JSON:', e.message)
     process.exit(1)
   }
 
   const { errors, warnings } = validate(spec)
 
   if (warnings.length > 0) {
-    console.log('⚠️  Warnings:')
-    warnings.forEach(w => console.log(`   ${w}`))
+    console.log('Warnings:')
+    warnings.forEach(w => console.log(`  ${w}`))
     console.log()
   }
 
   if (errors.length === 0) {
     const componentNames = Object.values(spec.elements)
       .map(el => el.type)
-      .filter(t => COMPONENT_TYPES[t])
-    console.log(`✅ Valid spec! ${componentNames.length} component(s): ${componentNames.join(', ')}`)
+      .filter(type => ALL_TYPES.has(type))
+    console.log(`Valid spec. ${componentNames.length} component(s): ${componentNames.join(', ')}`)
   } else {
-    console.error('❌ Validation failed:')
-    errors.forEach(e => console.error(`   ${e}`))
+    console.error('Validation failed:')
+    errors.forEach(e => console.error(`  ${e}`))
     process.exit(1)
   }
 }

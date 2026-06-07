@@ -7,4 +7,4 @@ export const IconSchema = z.object({
   color: z.string().optional(),
 })
 
-export type IconProps = z.infer<typeof IconSchema>
+export type IconProps = z.input<typeof IconSchema>

@@ -137,66 +137,10 @@ describe('Vizual artifact runtime model', () => {
     expect(() => applyArtifactPatch(artifact, { foo: 'bar' } as any)).toThrow(/Unsupported Vizual artifact patch/)
   })
 
-  it('supports DocView section targets and chart section patches', () => {
-    const docSpec = {
-      root: 'doc',
-      elements: {
-        doc: {
-          type: 'DocView',
-          props: {
-            type: 'doc_view',
-            sections: [
-              { id: 'intro', type: 'text', content: 'Intro text' },
-              {
-                id: 'trend',
-                type: 'chart',
-                title: 'Trend',
-                data: { chartType: 'BarChart', x: ['D1'], y: [10] },
-              },
-            ],
-          },
-          children: [],
-        },
-      },
-    }
+  it('rejects section-only replacement patches instead of recreating a document product surface', () => {
+    const artifact = createArtifact({ id: 'artifact-1', spec: chartSpec })
 
-    const artifact = createArtifact({ id: 'doc-1', spec: docSpec })
-    expect(extractTargetMap(docSpec)).toContainEqual(expect.objectContaining({
-      id: 'section:trend',
-      type: 'section',
-      componentType: 'chart',
-      label: 'Trend',
-    }))
-
-    const updated = applyArtifactPatch(artifact, {
-      type: 'changeChartType',
-      targetId: 'section:trend',
-      chartType: 'LineChart',
-    })
-    const section = (updated.spec.elements?.doc?.props?.sections as any[])[1]
-    expect(section.data.chartType).toBe('LineChart')
-  })
-
-  it('accepts DocView section replacement patches without requiring a full spec', () => {
-    const docSpec = {
-      root: 'doc',
-      elements: {
-        doc: {
-          type: 'DocView',
-          props: {
-            type: 'doc_view',
-            showPanel: true,
-            sections: [
-              { id: 'intro', type: 'text', content: 'Old intro' },
-            ],
-          },
-          children: [],
-        },
-      },
-    }
-
-    const artifact = createArtifact({ id: 'doc-1', spec: docSpec })
-    const updated = applyArtifactPatch(artifact, {
+    expect(() => applyArtifactPatch(artifact, {
       type: 'replaceSpec',
       spec: {
         sections: [
@@ -204,16 +148,7 @@ describe('Vizual artifact runtime model', () => {
           { id: 'next', type: 'markdown', content: '## Next steps' },
         ],
       },
-    })
-
-    expect(updated.spec.root).toBe('doc')
-    expect(updated.spec.elements?.doc?.type).toBe('DocView')
-    expect(updated.spec.elements?.doc?.props?.showPanel).toBe(true)
-    expect((updated.spec.elements?.doc?.props?.sections as any[])[0].content).toBe('New intro')
-    expect(updated.targetMap).toContainEqual(expect.objectContaining({
-      id: 'section:next',
-      type: 'section',
-    }))
+    })).toThrow(/replaceSpec requires a full Vizual spec/)
   })
 
   it('locates an element by element id or target id', () => {

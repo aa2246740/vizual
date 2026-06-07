@@ -9,6 +9,8 @@ export const LineChartSchema = z.object({
   smooth: z.boolean().optional(), multiSeries: z.boolean().optional(),
   theme: z.enum(['light', 'dark']).optional(),
   height: z.number().optional(),
+  action: z.string().optional(),
+  selectedPoint: z.unknown().optional(),
 })
 
 export type LineChartProps = z.infer<typeof LineChartSchema>

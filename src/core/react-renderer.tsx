@@ -9,6 +9,7 @@ import {
 import type { ComputedFunction } from '@json-render/core'
 import { registry, handlers as createVizualHandlers } from '../registry'
 import type { VizualArtifact, VizualSpec } from './artifact'
+import { assertNoCyclicChildren, withDefaultElementProps } from './spec-validation'
 
 export type VizualStateChange = { path: string; value: unknown }
 
@@ -120,12 +121,15 @@ export function VizualRenderer({
   onStateChange,
   fallback,
 }: VizualRendererProps) {
+  assertNoCyclicChildren(spec)
+  const rendererSpec = React.useMemo(() => withDefaultElementProps(spec), [spec])
+
   const mergedInitialState = React.useMemo(
     () => ({
-      ...((spec.state as StateModel | undefined) ?? {}),
+      ...((rendererSpec.state as StateModel | undefined) ?? {}),
       ...(initialState ?? {}),
     }),
-    [initialState, spec],
+    [initialState, rendererSpec],
   )
 
   const store = React.useMemo(
@@ -149,7 +153,7 @@ export function VizualRenderer({
       functions={functions}
       onStateChange={onStateChange}
     >
-      <Renderer spec={spec as any} registry={registry} fallback={fallback} />
+      <Renderer spec={rendererSpec as any} registry={registry} fallback={fallback} />
     </JSONUIProvider>
   )
 }

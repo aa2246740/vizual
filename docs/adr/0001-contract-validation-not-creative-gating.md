@@ -1,0 +1,3 @@
+# Contract Validation, Not Creative Gating
+
+Vizual follows A2UI's agent-driven direction: agents receive a catalog/schema/action/runtime capability and decide when and how to create inline visual or interactive UI. Vizual Core and runtime hard failures are limited to contract, safety, renderability, persistence, and real action-loop problems; creative choices such as whether a response should include KPI cards, which chart is most expressive, or whether a form is the right next step are QA and acceptance concerns, not Core rejection rules. This preserves agent autonomy while still giving hosts a testable, secure, native UI runtime.

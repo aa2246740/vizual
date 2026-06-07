@@ -1,382 +1,107 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="zh-CN">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Vizual × A2UI Protocol Bridge Test</title>
-  <link rel="icon" href="data:,">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Vizual A2UI Current Catalog Smoke Test</title>
   <style>
-    :root {
-      --bg: #0f1117;
-      --bg-card: #1e293b;
-      --border: #2d3148;
-      --text: #e2e8f0;
-      --text-dim: #94a3b8;
-      --accent: #667eea;
-      --success: #22c55e;
-      --error: #ef4444;
-      --warning: #eab308;
-    }
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: -apple-system, 'SF Pro Text', system-ui, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      min-height: 100vh;
-    }
-    .header {
-      padding: 16px 24px;
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-    .header h1 { font-size: 18px; font-weight: 600; }
-    .badge {
-      padding: 2px 8px;
-      border-radius: 4px;
-      font-size: 11px;
-      font-weight: 600;
-    }
-    .badge-a2ui { background: #3b82f620; color: #60a5fa; }
-    .badge-vizual { background: #22c55e20; color: #4ade80; }
-    .main { padding: 24px; max-width: 1200px; margin: 0 auto; }
-    .section {
-      margin-bottom: 32px;
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      overflow: hidden;
-    }
-    .section-header {
-      padding: 12px 16px;
-      background: var(--bg-card);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      border-bottom: 1px solid var(--border);
-    }
-    .section-title { font-size: 14px; font-weight: 500; }
-    .section-status { font-size: 12px; display: flex; align-items: center; gap: 6px; }
-    .dot { width: 8px; height: 8px; border-radius: 50%; }
-    .dot.pending { background: var(--warning); }
-    .dot.pass { background: var(--success); }
-    .dot.fail { background: var(--error); }
-    .render-area {
-      padding: 16px;
-      min-height: 200px;
-    }
-    .messages-panel {
-      padding: 12px 16px;
-      background: #0d1017;
-      border-top: 1px solid var(--border);
-      max-height: 200px;
-      overflow-y: auto;
-    }
-    .msg-label { font-size: 11px; color: var(--text-dim); margin-bottom: 4px; font-weight: 600; }
-    .msg-json {
-      font-family: 'SF Mono', 'Menlo', monospace;
-      font-size: 11px;
-      color: #a5b4fc;
-      white-space: pre-wrap;
-      word-break: break-all;
-      line-height: 1.5;
-    }
-    .spec-output {
-      padding: 12px 16px;
-      background: #0d1017;
-      border-top: 1px solid var(--border);
-      max-height: 250px;
-      overflow-y: auto;
-    }
-    .spec-label { font-size: 11px; color: var(--success); margin-bottom: 4px; font-weight: 600; }
-    .summary-bar {
-      margin-top: 24px;
-      padding: 16px 24px;
-      background: var(--bg-card);
-      border-radius: 12px;
-      border: 1px solid var(--border);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-    .summary-stat { text-align: center; }
-    .summary-stat .num { font-size: 28px; font-weight: 700; }
-    .summary-stat .label { font-size: 12px; color: var(--text-dim); }
+    body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #f8fafc; color: #0f172a; }
+    main { max-width: 1120px; margin: 0 auto; padding: 24px; }
+    h1 { font-size: 24px; margin: 0 0 8px; }
+    p { color: #475569; }
+    .panel { background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin-top: 16px; }
+    #status { font-size: 13px; color: #475569; margin-top: 8px; }
   </style>
 </head>
 <body>
-  <div class="header">
-    <h1>Vizual × A2UI Protocol Bridge</h1>
-    <span class="badge badge-a2ui">A2UI v0.10</span>
-    <span class="badge badge-vizual">Vizual Runtime</span>
-  </div>
-
-  <div class="main">
-    <!-- Scenario 1: BarChart -->
-    <div class="section" id="section-1">
-      <div class="section-header">
-        <span class="section-title">Scenario 1: BarChart (A2UI JSON → Vizual)</span>
-        <span class="section-status" id="status-1"><span class="dot pending"></span>Pending</span>
-      </div>
-      <div class="render-area" id="render-1"></div>
-      <div class="spec-output">
-        <div class="spec-label">Generated VizualSpec:</div>
-        <pre class="msg-json" id="spec-1"></pre>
-      </div>
-      <div class="messages-panel">
-        <div class="msg-label">A2UI Messages:</div>
-        <pre class="msg-json" id="msgs-1"></pre>
-      </div>
-    </div>
-
-    <!-- Scenario 2: GridLayout + children -->
-    <div class="section" id="section-2">
-      <div class="section-header">
-        <span class="section-title">Scenario 2: GridLayout + KpiDashboard + BarChart</span>
-        <span class="section-status" id="status-2"><span class="dot pending"></span>Pending</span>
-      </div>
-      <div class="render-area" id="render-2"></div>
-      <div class="spec-output">
-        <div class="spec-label">Generated VizualSpec:</div>
-        <pre class="msg-json" id="spec-2"></pre>
-      </div>
-      <div class="messages-panel">
-        <div class="msg-label">A2UI Messages:</div>
-        <pre class="msg-json" id="msgs-2"></pre>
-      </div>
-    </div>
-
-    <!-- Scenario 3: DocView -->
-    <div class="section" id="section-3">
-      <div class="section-header">
-        <span class="section-title">Scenario 3: DocView with sections</span>
-        <span class="section-status" id="status-3"><span class="dot pending"></span>Pending</span>
-      </div>
-      <div class="render-area" id="render-3"></div>
-      <div class="spec-output">
-        <div class="spec-label">Generated VizualSpec:</div>
-        <pre class="msg-json" id="spec-3"></pre>
-      </div>
-      <div class="messages-panel">
-        <div class="msg-label">A2UI Messages:</div>
-        <pre class="msg-json" id="msgs-3"></pre>
-      </div>
-    </div>
-
-    <div class="summary-bar">
-      <div class="summary-stat"><div class="num" id="pass-count">0</div><div class="label">Passed</div></div>
-      <div class="summary-stat"><div class="num">3</div><div class="label">Total</div></div>
-      <div class="summary-stat"><div class="num" id="a2ui-msg-count">0</div><div class="label">A2UI Messages</div></div>
-    </div>
-  </div>
+  <main>
+    <h1>Vizual A2UI Current Catalog Smoke Test</h1>
+    <p>Exercises current A2UI primitives, FormBuilder, KPI, chart, table, and Markdown composition.</p>
+    <div id="status">Waiting for runtime...</div>
+    <div id="app" class="panel"></div>
+  </main>
 
   <script src="../dist/vizual.standalone.js"></script>
   <script>
-    // Wait for Vizual to load
-    (function() {
-      if (!window.Vizual) {
-        document.body.innerHTML = '<div style="padding:40px;color:#ef4444;">Error: Vizual standalone build not loaded. Run <code>npm run build</code> first.</div>';
-        return;
-      }
-
-      const { A2UIBridge, renderSpec } = window.Vizual;
-      let passCount = 0;
-      let msgCount = 0;
-
-      function setStatus(id, status) {
-        const el = document.getElementById('status-' + id);
-        if (!el) return;
-        const dotClass = status === 'pass' ? 'pass' : status === 'fail' ? 'fail' : 'pending';
-        const label = status === 'pass' ? 'Rendered' : status === 'fail' ? 'Failed' : 'Pending';
-        el.innerHTML = '<span class="dot ' + dotClass + '"></span>' + label;
-      }
-
-      function renderScenario(id, messages) {
-        const bridge = new A2UIBridge();
-        let spec = null;
-        try {
-          spec = bridge.processMessages(messages);
-        } catch (e) {
-          console.error('A2UI bridge error:', e);
-          setStatus(id, 'fail');
-          document.getElementById('spec-' + id).textContent = 'Error: ' + e.message;
-          return;
-        }
-
-        if (!spec) {
-          setStatus(id, 'fail');
-          document.getElementById('spec-' + id).textContent = 'No spec generated';
-          return;
-        }
-
-        // Show generated VizualSpec
-        document.getElementById('spec-' + id).textContent = JSON.stringify(spec, null, 2);
-
-        // Show A2UI messages
-        document.getElementById('msgs-' + id).textContent = JSON.stringify(messages, null, 2);
-
-        // Render with Vizual
-        try {
-          const container = document.getElementById('render-' + id);
-          renderSpec(spec, container);
-          setStatus(id, 'pass');
-          passCount++;
-          document.getElementById('pass-count').textContent = passCount;
-        } catch (e) {
-          console.error('Render error:', e);
-          setStatus(id, 'fail');
-          document.getElementById('render-' + id).innerHTML =
-            '<div style="color:#ef4444;padding:12px;">Render error: ' + e.message + '</div>';
-        }
-
-        msgCount += messages.length;
-        document.getElementById('a2ui-msg-count').textContent = msgCount;
-      }
-
-      // === Scenario 1: BarChart ===
-      renderScenario('1', [
-        {
-          version: 'v0.10',
-          createSurface: {
-            surfaceId: 'q3-sales-chart',
-            catalogId: 'https://vizual.org/catalog/v0_1/vizual_catalog.json',
-            theme: { primaryColor: '#5B8FF9' }
-          }
+    const spec = {
+      root: 'root',
+      elements: {
+        root: { type: 'Column', props: { gap: 16 }, children: ['intro', 'kpis', 'body', 'form'] },
+        intro: { type: 'Markdown', props: { content: '### 当前 A2UI 验收\n这页只覆盖当前 native core 组件。' }, children: [] },
+        kpis: {
+          type: 'KpiDashboard',
+          props: {
+            type: 'kpi_dashboard',
+            title: '核心指标',
+            metrics: [
+              { label: 'Agent-facing', value: '44', trend: 'up' },
+              { label: 'Runtime registered', value: '45', trend: 'flat' },
+              { label: 'Actions', value: '5', trend: 'flat' },
+            ],
+          },
+          children: [],
         },
-        {
-          version: 'v0.10',
-          updateComponents: {
-            surfaceId: 'q3-sales-chart',
-            components: [{
-              id: 'root',
-              component: 'BarChart',
-              title: 'Q3 Sales by Region',
-              x: 'region',
-              y: ['q3_sales', 'q3_target'],
-              data: { path: '/chartData' },
-              stacked: false,
-              horizontal: false,
-              height: 400
-            }]
-          }
+        body: { type: 'Row', props: { gap: 16, wrap: true }, children: ['chart', 'table', 'note'] },
+        chart: {
+          type: 'BarChart',
+          props: {
+            type: 'bar',
+            title: '组件分组',
+            x: 'group',
+            y: 'count',
+            data: [
+              { group: 'Charts', count: 19 },
+              { group: 'Business', count: 4 },
+              { group: 'Input', count: 1 },
+              { group: 'A2UI', count: 20 },
+            ],
+            height: 300,
+          },
+          children: [],
         },
-        {
-          version: 'v0.10',
-          updateDataModel: {
-            surfaceId: 'q3-sales-chart',
-            path: '/chartData',
-            value: [
-              { region: 'North', q3_sales: 320, q3_target: 300 },
-              { region: 'South', q3_sales: 280, q3_target: 290 },
-              { region: 'East', q3_sales: 350, q3_target: 330 },
-              { region: 'West', q3_sales: 290, q3_target: 310 }
-            ]
-          }
-        }
-      ]);
+        table: {
+          type: 'DataTable',
+          props: {
+            type: 'table',
+            title: '动作',
+            data: [
+              { action: 'submitForm', purpose: '回传表单' },
+              { action: 'applyFilter', purpose: '筛选' },
+              { action: 'drillDown', purpose: '深入分析' },
+            ],
+            columns: [
+              { key: 'action', label: 'Action' },
+              { key: 'purpose', label: '用途' },
+            ],
+          },
+          children: [],
+        },
+        note: { type: 'Card', props: {}, children: ['noteText'] },
+        noteText: { type: 'Text', props: { content: '交互必须有业务意义；没有宿主能力时不承诺外部动作。' }, children: [] },
+        form: {
+          type: 'FormBuilder',
+          props: {
+            type: 'form_builder',
+            title: '提交给 Agent 的结构化输入',
+            submitLabel: '提交',
+            fields: [
+              { name: 'focus', type: 'select', label: '关注方向', options: ['数据质量', '渲染', '交互回传'] },
+              { name: 'note', type: 'textarea', label: '备注' },
+            ],
+          },
+          children: [],
+        },
+      },
+    };
 
-      // === Scenario 2: GridLayout + children ===
-      renderScenario('2', [
-        {
-          version: 'v0.10',
-          createSurface: {
-            surfaceId: 'dashboard-1',
-            catalogId: 'https://vizual.org/catalog/v0_1/vizual_catalog.json'
-          }
-        },
-        {
-          version: 'v0.10',
-          updateComponents: {
-            surfaceId: 'dashboard-1',
-            components: [
-              {
-                id: 'root',
-                component: 'GridLayout',
-                columns: 2,
-                gap: 16,
-                children: ['kpi1', 'chart1']
-              },
-              {
-                id: 'kpi1',
-                component: 'KpiDashboard',
-                metrics: { path: '/kpiMetrics' }
-              },
-              {
-                id: 'chart1',
-                component: 'BarChart',
-                title: 'Monthly Revenue',
-                x: 'month',
-                y: 'revenue',
-                data: { path: '/chartData' },
-                height: 350
-              }
-            ]
-          }
-        },
-        {
-          version: 'v0.10',
-          updateDataModel: {
-            surfaceId: 'dashboard-1',
-            path: '/',
-            value: {
-              kpiMetrics: [
-                { label: 'Revenue', value: '$2.4M', change: '+12.3%', trend: 'up' },
-                { label: 'Users', value: '45.2K', change: '+8.1%', trend: 'up' },
-                { label: 'Churn', value: '2.1%', change: '-0.3%', trend: 'down' },
-                { label: 'NPS', value: '72', change: '+5', trend: 'up' }
-              ],
-              chartData: [
-                { month: 'Jan', revenue: 42000 },
-                { month: 'Feb', revenue: 48000 },
-                { month: 'Mar', revenue: 51000 },
-                { month: 'Apr', revenue: 46000 },
-                { month: 'May', revenue: 55000 },
-                { month: 'Jun', revenue: 62000 }
-              ]
-            }
-          }
-        }
-      ]);
-
-      // === Scenario 3: DocView ===
-      renderScenario('3', [
-        {
-          version: 'v0.10',
-          createSurface: {
-            surfaceId: 'doc-q3-review',
-            catalogId: 'https://vizual.org/catalog/v0_1/vizual_catalog.json'
-          }
-        },
-        {
-          version: 'v0.10',
-          updateComponents: {
-            surfaceId: 'doc-q3-review',
-            components: [{
-              id: 'root',
-              component: 'DocView',
-              title: 'Q3 Business Review',
-              showPanel: false,
-              sections: { path: '/sections' }
-            }]
-          }
-        },
-        {
-          version: 'v0.10',
-          updateDataModel: {
-            surfaceId: 'doc-q3-review',
-            path: '/sections',
-            value: [
-              { id: 's1', type: 'heading', content: 'Q3 Business Review', level: 1 },
-              { id: 's2', type: 'text', content: 'Q3 showed strong growth across all regions. Total revenue increased 12.3% year-over-year, driven primarily by expansion in the East region.' },
-              { id: 's3', type: 'chart', componentType: 'BarChart', title: 'Revenue by Region', data: { x: 'region', y: 'revenue', data: [{ region: 'North', revenue: 320 }, { region: 'South', revenue: 280 }, { region: 'East', revenue: 350 }, { region: 'West', revenue: 290 }] } },
-              { id: 's4', type: 'callout', content: 'East region exceeded targets by 6% — consider increasing Q4 allocation.', variant: 'success' },
-              { id: 's5', type: 'text', content: 'Key takeaway: Focus on scaling what works in the East region to other territories.' }
-            ]
-          }
-        }
-      ]);
-
-    })();
+    try {
+      if (!window.Vizual) throw new Error('dist/vizual.standalone.js not loaded. Run npm run build first.');
+      window.Vizual.renderSpec(spec, document.getElementById('app'));
+      document.getElementById('status').textContent = 'Rendered current A2UI catalog smoke test.';
+    } catch (error) {
+      document.getElementById('status').textContent = error.message;
+      throw error;
+    }
   </script>
 </body>
 </html>

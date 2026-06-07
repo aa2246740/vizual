@@ -12,13 +12,13 @@ describe('theme-colors — tc() / tcss() 单元测试', () => {
   describe('tcss()', () => {
     it('返回 var() 引用格式', () => {
       const result = tcss('--rk-accent')
-      expect(result).toBe('var(--rk-accent)')
+      expect(result).toMatch(/^var\(--rk-accent, .+\)$/)
     })
 
     it('对任意变量名返回正确的 var() 格式', () => {
-      expect(tcss('--rk-bg-primary')).toBe('var(--rk-bg-primary)')
-      expect(tcss('--rk-text-secondary')).toBe('var(--rk-text-secondary)')
-      expect(tcss('--rk-radius-md')).toBe('var(--rk-radius-md)')
+      expect(tcss('--rk-bg-primary')).toMatch(/^var\(--rk-bg-primary, .+\)$/)
+      expect(tcss('--rk-text-secondary')).toMatch(/^var\(--rk-text-secondary, .+\)$/)
+      expect(tcss('--rk-radius-md')).toMatch(/^var\(--rk-radius-md, .+\)$/)
     })
 
     it('返回值在 React inline style 中可用（是合法 CSS 值）', () => {
@@ -31,6 +31,11 @@ describe('theme-colors — tc() / tcss() 单元测试', () => {
 
   // ── tc() 返回已解析的具体值 ──────────────────────────────────────────
   describe('tc()', () => {
+    it('未显式设置主题时使用中性的 light fallback', () => {
+      expect(tc('--rk-bg-primary')).toBe('#ffffff')
+      expect(tc('--rk-text-primary')).toBe('#0f172a')
+    })
+
     it('返回具体的颜色值（非 var() 格式）', () => {
       const result = tc('--rk-accent')
       expect(result).not.toBe('')
@@ -39,7 +44,7 @@ describe('theme-colors — tc() / tcss() 单元测试', () => {
 
     it('返回的值可直接用于 ECharts option（hex 或 rgba）', () => {
       const bg = tc('--rk-bg-primary')
-      // 暗色主题默认值应该是 # 开头的 hex 值
+      // 默认 fallback 应该是可直接用于 ECharts 的颜色值
       expect(bg).toMatch(/^#|^rgba?|^hsl/)
     })
 
@@ -66,9 +71,9 @@ describe('theme-colors — tc() / tcss() 单元测试', () => {
 
     it('tcss() 应直接用于 CSS 属性，不需要 parseInt', () => {
       const val = tcss('--rk-text-sm')
-      // 正确用法：fontSize: tcss('--rk-text-sm') → 'var(--rk-text-sm)'
+      // 正确用法：fontSize: tcss('--rk-text-sm') → 'var(--rk-text-sm, 12px)'
       // 浏览器在 paint 时解析 CSS 变量，得到实际字号
-      expect(val).toBe('var(--rk-text-sm)')
+      expect(val).toMatch(/^var\(--rk-text-sm, .+\)$/)
     })
 
     it('parseInt(tc()) 能正确解析（tc 返回具体值）', () => {
@@ -136,7 +141,7 @@ describe('theme-colors — tc() / tcss() 单元测试', () => {
 
     it('tcss() 始终返回 var() 引用，不受主题切换影响', () => {
       const before = tcss('--rk-accent')
-      expect(before).toBe('var(--rk-accent)')
+      expect(before).toMatch(/^var\(--rk-accent, .+\)$/)
 
       // 即使切换主题，tcss() 仍然返回 var() 引用
       registerTheme('test-theme-2', {
@@ -149,7 +154,7 @@ describe('theme-colors — tc() / tcss() 单元测试', () => {
       })
 
       const after = tcss('--rk-accent')
-      expect(after).toBe('var(--rk-accent)')
+      expect(after).toMatch(/^var\(--rk-accent, .+\)$/)
     })
 
     it('不同容器应用不同主题时保留各自的 CSS 变量规则', () => {
@@ -192,17 +197,17 @@ describe('theme-colors — tc() / tcss() 单元测试', () => {
         fontWeight: tcss('--rk-weight-semibold'),
       }
 
-      // 所有值都是 var() 引用，浏览器在 paint 时解析
-      expect(styleObj.fontSize).toBe('var(--rk-text-sm)')
-      expect(styleObj.borderRadius).toBe('var(--rk-radius-md)')
-      expect(styleObj.fontWeight).toBe('var(--rk-weight-semibold)')
+      // 所有值都是带安全 fallback 的 var() 引用，浏览器在 paint 时解析
+      expect(styleObj.fontSize).toMatch(/^var\(--rk-text-sm, .+\)$/)
+      expect(styleObj.borderRadius).toMatch(/^var\(--rk-radius-md, .+\)$/)
+      expect(styleObj.fontWeight).toMatch(/^var\(--rk-weight-semibold, .+\)$/)
     })
 
     it('旧模式 parseInt(tc()) 会冻结值，新模式 tcss() 不会', () => {
       // 旧模式（有 bug）：parseInt(tc('--rk-text-sm')) → 14（冻结的数字）
-      // 新模式：tcss('--rk-text-sm') → 'var(--rk-text-sm)'（动态引用）
+      // 新模式：tcss('--rk-text-sm') → 'var(--rk-text-sm, 12px)'（动态引用 + standalone fallback）
       const newVal = tcss('--rk-text-sm')
-      expect(newVal).toBe('var(--rk-text-sm)')
+      expect(newVal).toMatch(/^var\(--rk-text-sm, .+\)$/)
       // CSS 变量由浏览器在 paint 时解析，主题切换后自动生效
     })
   })

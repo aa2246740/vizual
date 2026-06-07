@@ -1,0 +1,652 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Vizual Real Agent Chat</title>
+<script src="../dist/vizual.standalone.js"></script>
+<style>
+  :root {
+    color-scheme: light;
+    --bg: #f5f6f8;
+    --panel: #ffffff;
+    --soft: #f8fafc;
+    --line: #d8dee8;
+    --text: #182230;
+    --muted: #667085;
+    --blue: #2563eb;
+    --ok: #039855;
+    --bad: #b42318;
+    --warn: #b54708;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font: 14px/1.5 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
+  }
+  header {
+    position: sticky;
+    top: 0;
+    z-index: 3;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 14px 22px;
+    background: rgba(255, 255, 255, .96);
+    border-bottom: 1px solid var(--line);
+    backdrop-filter: blur(12px);
+  }
+  h1 { margin: 0; font-size: 18px; letter-spacing: 0; }
+  .sub { margin-top: 2px; color: var(--muted); font-size: 12px; }
+  .pills { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+  .pill {
+    border: 1px solid var(--line);
+    background: var(--soft);
+    color: var(--muted);
+    border-radius: 999px;
+    padding: 4px 10px;
+    white-space: nowrap;
+  }
+  .pill.ok { color: var(--ok); border-color: #abefc6; background: #ecfdf3; }
+  .pill.bad { color: var(--bad); border-color: #fecdca; background: #fef3f2; }
+  main {
+    max-width: 1440px;
+    margin: 0 auto;
+    padding: 18px 22px 22px;
+    display: grid;
+    grid-template-columns: minmax(420px, 1fr) minmax(360px, 430px);
+    gap: 16px;
+  }
+  .panel {
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--panel);
+    min-width: 0;
+    overflow: hidden;
+  }
+  .panel-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--line);
+    background: var(--soft);
+  }
+  .panel-head strong { font-size: 14px; }
+  .messages {
+    min-height: calc(100vh - 220px);
+    max-height: calc(100vh - 220px);
+    overflow: auto;
+    padding: 14px;
+    display: grid;
+    align-content: start;
+    gap: 12px;
+  }
+  .msg {
+    display: grid;
+    gap: 6px;
+  }
+  .role {
+    color: var(--muted);
+    font-size: 11px;
+    font-weight: 750;
+    letter-spacing: .02em;
+    text-transform: uppercase;
+  }
+  .bubble {
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: #fff;
+    padding: 12px 14px;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+  .msg.user .bubble { background: #eef4ff; border-color: #c7d7fe; }
+  .msg.assistant .bubble { border-left: 3px solid var(--blue); }
+  .msg.tool .bubble { border-left: 3px solid #f79009; background: #fffbeb; }
+  .composer {
+    border-top: 1px solid var(--line);
+    padding: 12px 14px;
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    gap: 10px;
+    background: #fff;
+  }
+  textarea {
+    width: 100%;
+    min-height: 58px;
+    max-height: 160px;
+    resize: vertical;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 10px 12px;
+    font: inherit;
+    color: var(--text);
+    background: var(--soft);
+    outline: none;
+  }
+  textarea:focus { border-color: var(--blue); background: #fff; }
+  button {
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: #fff;
+    color: var(--text);
+    padding: 0 14px;
+    min-width: 86px;
+    font-weight: 750;
+    cursor: pointer;
+  }
+  button.primary { border-color: transparent; color: #fff; background: var(--blue); }
+  button:disabled { cursor: not-allowed; opacity: .55; }
+  .side {
+    display: grid;
+    gap: 16px;
+    align-content: start;
+  }
+  .side-body { padding: 12px 14px; }
+  dl {
+    display: grid;
+    grid-template-columns: 120px minmax(0, 1fr);
+    gap: 7px 10px;
+    margin: 0;
+  }
+  dt { color: var(--muted); }
+  dd { margin: 0; overflow-wrap: anywhere; }
+  pre {
+    margin: 0;
+    max-height: 430px;
+    overflow: auto;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    font: 12px/1.45 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  .viz-shell {
+    margin-top: 10px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+    background: #fff;
+    overflow: auto;
+    --rk-bg-primary: #ffffff;
+    --rk-bg-secondary: #f8fafc;
+    --rk-bg-tertiary: #eef2f6;
+    --rk-surface: #ffffff;
+    --rk-border: #d8dee8;
+    --rk-border-subtle: #e7ebf0;
+    --rk-text-primary: #182230;
+    --rk-text-secondary: #667085;
+    --rk-text-tertiary: #8a94a6;
+    --rk-accent: #2563eb;
+    --rk-success: #039855;
+    --rk-error: #b42318;
+    --rk-radius-md: 8px;
+    --rk-font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
+    --rk-font-body: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
+    --rk-font-ui: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
+    --rk-font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", sans-serif;
+    --rk-font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    --rk-text-xs: 11px;
+    --rk-text-sm: 12px;
+    --rk-text-base: 14px;
+    --rk-text-md: 16px;
+    --rk-text-lg: 18px;
+    --rk-text-xl: 22px;
+    --rk-text-2xl: 28px;
+    --rk-weight-semibold: 650;
+    --rk-weight-bold: 750;
+  }
+  .audit-list {
+    display: grid;
+    gap: 8px;
+  }
+  .audit-item {
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 9px 10px;
+    background: #fff;
+  }
+  .audit-item.ok { border-color: #abefc6; background: #f6fef9; }
+  .audit-item.bad { border-color: #fecdca; background: #fffafa; color: var(--bad); }
+  .empty {
+    color: var(--muted);
+    text-align: center;
+    padding: 16vh 18px;
+  }
+  @media (max-width: 980px) {
+    header { align-items: flex-start; flex-direction: column; }
+    main { grid-template-columns: 1fr; padding: 14px; }
+    .messages { min-height: 460px; max-height: none; }
+    .composer { grid-template-columns: 1fr; }
+    button { min-height: 42px; }
+  }
+</style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>Vizual Real Agent Chat</h1>
+      <div class="sub">自由输入、真实 CLI、按需 Vizual、无自动脚本</div>
+    </div>
+    <div class="pills">
+      <span class="pill" id="agentPill">agent</span>
+      <span class="pill" id="modelPill">model</span>
+      <span class="pill" id="sessionPill">new session</span>
+      <span class="pill" id="statusPill">idle</span>
+    </div>
+  </header>
+
+  <main>
+    <section class="panel">
+      <div class="panel-head">
+        <strong>真实对话</strong>
+        <span class="sub">每次刷新都是新的本页会话</span>
+      </div>
+      <div class="messages" id="messages">
+        <div class="empty" id="empty">请输入任意问题。页面不会预先发送消息。</div>
+      </div>
+      <div class="composer">
+        <textarea id="prompt" placeholder="例如：你好"></textarea>
+        <button class="primary" id="send" type="button">发送</button>
+        <button id="newSession" type="button">新会话</button>
+      </div>
+    </section>
+
+    <aside class="side">
+      <section class="panel">
+        <div class="panel-head"><strong>运行时检查</strong></div>
+        <div class="side-body">
+          <dl id="summary">
+            <dt>状态</dt><dd>等待输入</dd>
+            <dt>Vizual</dt><dd>未调用</dd>
+            <dt>真实 CLI</dt><dd>待验证</dd>
+          </dl>
+        </div>
+      </section>
+      <section class="panel">
+        <div class="panel-head"><strong>视觉 QA</strong></div>
+        <div class="side-body"><div class="audit-list" id="audit"></div></div>
+      </section>
+      <section class="panel">
+        <div class="panel-head"><strong>Raw Response</strong></div>
+        <div class="side-body"><pre id="raw">{}</pre></div>
+      </section>
+    </aside>
+  </main>
+
+<script>
+  const params = new URLSearchParams(location.search);
+  const agent = params.get('agent') || 'pi-agent';
+  const model = params.get('model') || (agent === 'pi-agent' ? 'xiaomi-token-plan-cn/mimo-v2.5-pro' : agent === 'claude-code' ? 'sonnet' : 'gpt-5.3-codex-spark');
+  const forceAgent = params.get('forceAgent') !== '0';
+  const runtimeMode = params.get('runtimeMode') || params.get('coldStart') || 'skill';
+  const apiBase = resolveApiBase();
+  let sessionId = newSessionId();
+  let running = false;
+  const state = { messages: [], lastResponse: null, actionLog: [] };
+
+  window.addEventListener('error', event => showBootstrapError(event.error || event.message));
+  window.addEventListener('unhandledrejection', event => showBootstrapError(event.reason || event));
+
+  const $ = selector => document.querySelector(selector);
+  const messagesEl = $('#messages');
+  const promptEl = $('#prompt');
+  const rawEl = $('#raw');
+  const auditEl = $('#audit');
+
+  $('#agentPill').textContent = `agent: ${agent}`;
+  $('#modelPill').textContent = `model: ${model}`;
+  const subtitleEl = document.querySelector('header .sub');
+  if (subtitleEl) subtitleEl.textContent = `自由输入、真实 CLI、按需 Vizual、无自动脚本 · ${runtimeMode} · API ${apiBase || 'same-origin'}`;
+  $('#sessionPill').textContent = `session: ${sessionId}`;
+  $('#statusPill').textContent = 'idle';
+
+  const bootRuntimeAudit = runtimeReadyAudit();
+  if (bootRuntimeAudit.ok && window.Vizual?.applyTheme) window.Vizual.applyTheme(document.body, 'default-light');
+  writeAudit([bootRuntimeAudit]);
+
+  $('#send').addEventListener('click', () => sendMessage());
+  promptEl.addEventListener('keydown', event => {
+    if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') sendMessage();
+  });
+  $('#newSession').addEventListener('click', () => resetSession());
+
+  function newSessionId() {
+    return `live-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
+  }
+
+  function showBootstrapError(error) {
+    const text = error?.stack || error?.message || String(error);
+    const raw = document.querySelector('#raw');
+    const audit = document.querySelector('#audit');
+    const status = document.querySelector('#statusPill');
+    if (status) {
+      status.textContent = 'boot error';
+      status.classList.add('bad');
+    }
+    if (raw) raw.textContent = JSON.stringify({ ok: false, bootstrapError: text }, null, 2);
+    if (audit) {
+      audit.innerHTML = '';
+      const item = document.createElement('div');
+      item.className = 'audit-item bad';
+      item.innerHTML = `<strong>页面初始化失败</strong><br>${escapeHtml(text)}`;
+      audit.appendChild(item);
+    }
+  }
+
+  function resetSession() {
+    sessionId = newSessionId();
+    state.messages = [];
+    state.lastResponse = null;
+    state.actionLog = [];
+    messagesEl.innerHTML = '<div class="empty" id="empty">请输入任意问题。页面不会预先发送消息。</div>';
+    rawEl.textContent = '{}';
+    auditEl.innerHTML = '';
+    $('#sessionPill').textContent = `session: ${sessionId}`;
+    writeSummary({ status: '新会话已创建', vizual: '未调用', cli: '待验证' });
+    promptEl.focus();
+  }
+
+  function resolveApiBase() {
+    const explicit = params.get('apiBase') || params.get('daemonUrl');
+    if (explicit) return explicit.replace(/\/$/, '');
+    if (
+      (location.protocol === 'http:' || location.protocol === 'https:')
+      && /^(127\.0\.0\.1|localhost|\[::1\])(?::8794)?$/i.test(location.host)
+    ) {
+      return '';
+    }
+    return 'http://127.0.0.1:8794';
+  }
+
+  function apiUrl(path) {
+    return `${apiBase}${path}`;
+  }
+
+  function addMessage(role, text, className = role) {
+    $('#empty')?.remove();
+    const node = document.createElement('div');
+    node.className = `msg ${className}`;
+    const roleNode = document.createElement('div');
+    roleNode.className = 'role';
+    roleNode.textContent = role;
+    const bubble = document.createElement('div');
+    bubble.className = 'bubble';
+    bubble.textContent = text;
+    node.append(roleNode, bubble);
+    messagesEl.appendChild(node);
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+    return bubble;
+  }
+
+  async function sendMessage(overrideMessage, options = {}) {
+    if (running) return;
+    const message = String(overrideMessage ?? promptEl.value).trim();
+    if (!message) return;
+    running = true;
+    $('#send').disabled = true;
+    $('#newSession').disabled = true;
+    $('#statusPill').textContent = 'running';
+    if (overrideMessage === undefined) promptEl.value = '';
+    addMessage('user', message, 'user');
+    state.messages.push({ role: 'user', content: message });
+    const pending = addMessage('assistant', '正在调用真实 Agent CLI...', 'assistant');
+    writeSummary({ status: '运行中', vizual: '等待模型决定', cli: '调用中' });
+    auditEl.innerHTML = '';
+
+    const history = state.messages.slice(0, -1).slice(-8);
+    const previousToolCall = previousToolContext(state.lastResponse);
+    try {
+      const response = await fetch(apiUrl('/deerflow-sim/run'), {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          message,
+          agent,
+          model,
+          history,
+          previousToolCall,
+          forceAgent,
+          sessionId,
+          source: options.source || 'manual-chat',
+          runtimeMode,
+        }),
+      }).then(async res => {
+        const payload = await res.json().catch(() => null);
+        if (!res.ok) throw new Error(payload?.error || `${res.status} ${res.statusText}`);
+        return payload;
+      });
+
+      state.lastResponse = response;
+      pending.textContent = response.assistantText || 'Agent 没有返回正文。';
+      state.messages.push({ role: 'assistant', content: response.assistantText || '' });
+      rawEl.textContent = JSON.stringify(response, null, 2);
+      writeSummary({
+        status: response.ok ? '完成' : '失败',
+        vizual: response.toolCall?.name ? `${response.toolCall.name} / ${response.preview?.surfaceId || 'surface'}` : '未调用',
+        cli: response.command?.skipped ? '未调用：shortcut' : `${response.command?.model || model} / ${Math.round((response.command?.durationMs || 0) / 1000)}s`,
+        prompt: summarizePromptAudit(response.promptAudit),
+      });
+
+      if (shouldRenderTool(response)) renderTool(response);
+      else {
+        const auditItems = [runtimeReadyAudit(), promptBoundaryAudit(response)];
+        if (response.toolCall?.name) {
+          auditItems.push({
+            ok: false,
+            label: 'Vizual Gap',
+            detail: response.errors?.join('; ')
+              || explicitArtifactCoverage(response)?.message
+              || response.preview?.issues?.map(issue => `${issue.code}: ${issue.message}`).join('; ')
+              || 'Agent called Vizual, but no renderable preview was produced.',
+          });
+        } else {
+          auditItems.push({ ok: true, label: '普通对话未渲染 Vizual', detail: '本轮没有 toolCall。' });
+        }
+        auditItems.push(...(response.warnings || []).map(warning => ({ ok: true, label: '兼容记录', detail: warning })));
+        if (!response.ok) {
+          auditItems.push(...(response.errors || ['response not ok']).map(error => ({ ok: false, label: '服务端校验失败', detail: error })));
+        }
+        writeAudit(auditItems);
+      }
+    } catch (error) {
+      pending.textContent = error.stack || error.message || String(error);
+      pending.classList.add('error');
+      rawEl.textContent = JSON.stringify({ ok: false, error: error.message || String(error) }, null, 2);
+    writeSummary({ status: '失败', vizual: '未完成', cli: '失败' });
+      writeAudit([{ ok: false, label: '请求失败', detail: error.message || String(error) }]);
+    } finally {
+      running = false;
+      $('#send').disabled = false;
+      $('#newSession').disabled = false;
+      $('#statusPill').textContent = 'idle';
+      promptEl.focus();
+    }
+  }
+
+  function explicitArtifactCoverage(response) {
+    const issues = Array.isArray(response?.coverage?.issues) ? response.coverage.issues : [];
+    return issues.find(issue => issue?.code === 'vizual.agent.explicit_artifact_forced_native') || null;
+  }
+
+  function shouldRenderTool(response) {
+    return Boolean(response.ok && response.toolCall?.name && response.preview?.spec && !explicitArtifactCoverage(response));
+  }
+
+  function renderTool(response) {
+    const bubble = addMessage('tool', response.toolCall.name, 'tool');
+    const shell = document.createElement('div');
+    shell.className = 'viz-shell';
+    const mount = document.createElement('div');
+    mount.dataset.vizMount = 'true';
+    shell.appendChild(mount);
+    bubble.appendChild(shell);
+    try {
+      const runtimeAudit = runtimeReadyAudit();
+      if (!runtimeAudit.ok) {
+        writeAudit([runtimeAudit]);
+        mount.textContent = '渲染失败：Vizual runtime 未加载。';
+        return;
+      }
+      window.Vizual.renderSpec(response.preview.spec, mount, {
+        handlers: {
+          drillDown: params => returnInteractionToAgent('drillDown', params),
+          applyFilter: params => returnInteractionToAgent('applyFilter', params),
+          selectLocation: params => returnInteractionToAgent('selectLocation', params),
+          updatePlan: params => returnInteractionToAgent('updatePlan', params),
+          submit: params => returnInteractionToAgent('submitForm', params),
+          submitForm: params => returnInteractionToAgent('submitForm', params),
+        },
+        onStateChange: changes => logAction({ action: 'stateChange', params: changes }),
+      });
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        const audit = auditRendered(mount, response);
+        const domAudit = audit.find(item => item.label === 'DOM 已渲染');
+        if (domAudit && !domAudit.ok) {
+          mount.textContent = '渲染失败：Vizual 输出没有可见 DOM。';
+          mount.classList.add('error');
+        }
+        writeAudit(audit);
+      }));
+    } catch (error) {
+      writeAudit([{ ok: false, label: 'Vizual 渲染异常', detail: error.message || String(error) }]);
+      mount.textContent = `渲染失败：${error.message || error}`;
+    }
+  }
+
+  function returnInteractionToAgent(action, params = {}) {
+    const payload = {
+      action,
+      params,
+      surfaceId: state.lastResponse?.preview?.surfaceId || state.lastResponse?.toolCall?.arguments?.surfaceId,
+      at: new Date().toISOString(),
+    };
+    logAction(payload);
+    const message = `Vizual 交互数据（必须引用，不可忽略）：\n\`\`\`json\n${JSON.stringify(payload, null, 2)}\n\`\`\``;
+    sendMessage(message, { source: 'vizual-action' });
+    return { ok: true, returnedToAgent: true };
+  }
+
+  function logAction(event) {
+    state.actionLog.push(event);
+    rawEl.textContent = JSON.stringify({ lastResponse: state.lastResponse, actionLog: state.actionLog }, null, 2);
+  }
+
+  function previousToolContext(response) {
+    if (!response?.toolCall?.arguments) return null;
+    return {
+      name: response.toolCall.name,
+      arguments: response.toolCall.arguments,
+      previewSummary: response.preview?.summary,
+    };
+  }
+
+  function writeSummary(values) {
+    $('#summary').innerHTML = `
+      <dt>状态</dt><dd>${escapeHtml(values.status)}</dd>
+      <dt>Vizual</dt><dd>${escapeHtml(values.vizual)}</dd>
+      <dt>真实 CLI</dt><dd>${escapeHtml(values.cli)}</dd>
+      <dt>提示边界</dt><dd>${escapeHtml(values.prompt || `${runtimeMode} / 待验证`)}</dd>
+    `;
+  }
+
+  function writeAudit(items) {
+    auditEl.innerHTML = items.map(item => `
+      <div class="audit-item ${item.ok ? 'ok' : 'bad'}">
+        <strong>${escapeHtml(item.label)}</strong>
+        <div>${escapeHtml(item.detail || '')}</div>
+      </div>
+    `).join('');
+  }
+
+  function auditRendered(mount, response) {
+    const spec = response.preview?.spec || {};
+    const text = (mount.innerText || '').trim();
+    const rect = mount.getBoundingClientRect();
+    const components = Object.values(spec.elements || {}).map(item => item?.component || item?.type).filter(Boolean);
+    const chartValues = collectChartValues(spec);
+    const chartComponents = components.filter(name => /Chart$/i.test(name || ''));
+    const items = [
+      promptBoundaryAudit(response),
+      { ok: mount.childElementCount > 0 || !!text, label: 'DOM 已渲染', detail: `${mount.childElementCount} child nodes, text ${text.length} chars` },
+      { ok: !response.errors?.length, label: '服务端校验', detail: response.errors?.join('; ') || '无错误' },
+      { ok: components.length > 0, label: '原生组件', detail: components.join(', ') || '无组件' },
+      { ok: true, label: '表单按需', detail: components.includes('FormBuilder') ? 'FormBuilder present' : '未输出表单' },
+      { ok: chartComponents.length > 0, label: '图表组件', detail: chartComponents.join(', ') || '未找到' },
+      { ok: chartValues.length === 0 || chartValues.some(value => Math.abs(value) > 0), label: '图表非全零', detail: chartValues.length ? chartValues.slice(0, 12).join(', ') : '未抽取到数值' },
+      { ok: rect.width <= 0 || mount.scrollWidth <= rect.width + 6, label: '无横向溢出', detail: `scroll ${mount.scrollWidth}, width ${Math.round(rect.width)}` },
+    ];
+    return items;
+  }
+
+  function runtimeReadyAudit() {
+    const hasRuntime = typeof window.Vizual === 'object' && window.Vizual !== null;
+    const hasRenderSpec = typeof window.Vizual?.renderSpec === 'function';
+    const hasApplyTheme = typeof window.Vizual?.applyTheme === 'function';
+    return {
+      ok: hasRuntime && hasRenderSpec,
+      label: 'Vizual Runtime',
+      detail: hasRuntime && hasRenderSpec
+        ? `standalone SDK ready; renderSpec yes; applyTheme ${hasApplyTheme ? 'yes' : 'no'}`
+        : 'window.Vizual.renderSpec missing; check /dist/vizual.standalone.js and page script loading.',
+    };
+  }
+
+  function summarizePromptAudit(audit) {
+    if (!audit) return `${runtimeMode} / 未返回审计`;
+    const boundary = audit.promptInjected ? '有 guided 注入' : '无提示词注入';
+    const source = Array.isArray(audit.capabilitySource) && audit.capabilitySource.length
+      ? audit.capabilitySource.join(' + ')
+      : '无额外能力';
+    return `${audit.promptMode} / ${boundary} / ${source}`;
+  }
+
+  function promptBoundaryAudit(response) {
+    const audit = response?.promptAudit;
+    if (!audit) {
+      return { ok: false, label: '冷启动提示边界', detail: '服务端没有返回 promptAudit。' };
+    }
+    return {
+      ok: audit.promptInjected === false,
+      label: '冷启动提示边界',
+      detail: summarizePromptAudit(audit),
+    };
+  }
+
+  function collectChartValues(spec) {
+    const values = [];
+    for (const element of Object.values(spec.elements || {})) {
+      const type = String(element?.component || element?.type || '');
+      if (!/Chart$/i.test(type)) continue;
+      const props = element.props || {};
+      const data = props.data;
+      if (Array.isArray(data)) {
+        for (const row of data) {
+          if (!row || typeof row !== 'object') continue;
+          for (const value of Object.values(row)) if (typeof value === 'number') values.push(value);
+        }
+      } else if (data && typeof data === 'object') {
+        if (Array.isArray(data.series)) {
+          for (const series of data.series) {
+            for (const value of series?.data || []) if (typeof value === 'number') values.push(value);
+          }
+        }
+      }
+    }
+    return values;
+  }
+
+  function escapeHtml(value) {
+    return String(value ?? '')
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;')
+      .replaceAll("'", '&#39;');
+  }
+</script>
+</body>
+</html>

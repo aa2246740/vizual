@@ -1,14 +1,19 @@
 {
   "name": "vizual",
   "version": "1.1.0",
-  "description": "Vizual — AI Agent visual runtime for JSON specs, editable artifacts, charts, dashboards, liveControl, DocView review loops, and export.",
+  "description": "Vizual — AI Agent native visual runtime for charts, dashboards, editable artifacts, useful interactions, and export.",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
   "files": [
     "dist",
-    "src"
+    "src",
+    "mcp",
+    "skills/vizual"
   ],
+  "bin": {
+    "vizual-core-mcp": "mcp/vizual-core-server/server.mjs"
+  },
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -18,12 +23,14 @@
   },
   "scripts": {
     "test": "vitest run",
+    "test:upstream": "node validation/upstream-compatibility.mjs",
     "test:watch": "vitest",
     "build": "node build.js && npm run build:types && node build.js --standalone",
     "build:esm": "esbuild src/index.ts --bundle --format=esm --outfile=dist/index.mjs --target=es2020 --external:react --external:react-dom --external:echarts",
     "build:cjs": "esbuild src/index.ts --bundle --format=cjs --outfile=dist/index.js --target=es2020 --external:react --external:react-dom --external:echarts",
     "build:types": "tsc -p tsconfig.build.json --emitDeclarationOnly",
     "build:standalone": "node build.js --standalone",
+    "mcp": "node mcp/vizual-core-server/server.mjs",
     "typecheck": "tsc -p tsconfig.build.json --noEmit",
     "prepare": "npm run build",
     "prepublishOnly": "npm test && npm run typecheck && npm run build"
@@ -41,8 +48,8 @@
     "catalog",
     "generative-ui",
     "data-viz",
-    "kanban",
-    "gantt"
+    "gantt",
+    "agent-ui"
   ],
   "author": "",
   "license": "MIT",

@@ -9,6 +9,9 @@ export const RowSchema = z.object({
   gap: z.number().optional().default(8),
   /** 是否换行 */
   wrap: z.boolean().optional().default(false),
+  action: z.string().optional(),
+  actionParams: z.record(z.unknown()).optional(),
+  disabled: z.boolean().optional().default(false),
 })
 
 export type RowProps = z.input<typeof RowSchema>

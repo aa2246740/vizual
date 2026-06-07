@@ -6,7 +6,7 @@ export const BubbleChartSchema = z.object({
   x: z.string().optional(),
   y: z.union([z.string(), z.array(z.string())]).optional(),
   data: z.array(z.record(z.unknown())),
-  size: z.string().optional(), groupField: z.string().optional(),
+  size: z.string().optional(), label: z.string().optional(), groupField: z.string().optional(),
   theme: z.enum(['light', 'dark']).optional(),
   height: z.number().optional(),
 })

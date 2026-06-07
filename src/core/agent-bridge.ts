@@ -31,7 +31,6 @@ export type AgentBridgeRenderKind =
   | 'update-new-message'
   | 'liveControl'
   | 'interactive'
-  | 'docview'
   | string
 
 export type AgentBridgeRenderRecord = {

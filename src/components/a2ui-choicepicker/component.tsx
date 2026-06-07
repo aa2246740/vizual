@@ -1,11 +1,79 @@
-import React from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
+import { useBoundProp } from '@json-render/react'
 import { tcss } from '../../core/theme-colors'
 import type { ChoicePickerProps } from './schema'
 
-export function ChoicePicker({ props }: { props: ChoicePickerProps }) {
-  const { label, options = [], value, mode = 'dropdown' } = props
-  const normalized = options.map(o => typeof o === 'string' ? { label: o, value: o } : o)
+type ChoicePickerArgs = {
+  props: ChoicePickerProps
+  bindings?: Record<string, string>
+}
 
+type NormalizedOption = { label: string; value: string }
+
+function normalizeOptions(options: ChoicePickerProps['options']): NormalizedOption[] {
+  return (options ?? []).map(o => typeof o === 'string' ? { label: o, value: o } : o)
+}
+
+export function ChoicePicker(args: ChoicePickerArgs) {
+  if (args.bindings?.value) return <BoundChoicePicker {...args} />
+  return <UnboundChoicePicker {...args} />
+}
+
+function BoundChoicePicker({ props, bindings }: ChoicePickerArgs) {
+  const { label, options = [], value, mode = 'dropdown', disabled = false } = props
+  const normalized = useMemo(() => normalizeOptions(options), [options])
+  const fallbackValue = normalized[0]?.value ?? ''
+  const [current, setCurrent] = useBoundProp<string>(value ?? fallbackValue, bindings!.value)
+
+  return (
+    <ChoicePickerInput
+      label={label}
+      normalized={normalized}
+      current={current ?? fallbackValue}
+      mode={mode}
+      disabled={disabled}
+      onChange={setCurrent}
+    />
+  )
+}
+
+function UnboundChoicePicker({ props }: ChoicePickerArgs) {
+  const { label, options = [], value, mode = 'dropdown', disabled = false } = props
+  const normalized = useMemo(() => normalizeOptions(options), [options])
+  const fallbackValue = normalized[0]?.value ?? ''
+  const [current, setCurrent] = useState(value ?? fallbackValue)
+
+  useEffect(() => {
+    setCurrent(value ?? fallbackValue)
+  }, [fallbackValue, value])
+
+  return (
+    <ChoicePickerInput
+      label={label}
+      normalized={normalized}
+      current={current}
+      mode={mode}
+      disabled={disabled}
+      onChange={setCurrent}
+    />
+  )
+}
+
+function ChoicePickerInput({
+  label,
+  normalized,
+  current,
+  mode,
+  disabled,
+  onChange,
+}: {
+  label?: string
+  normalized: NormalizedOption[]
+  current: string
+  mode: NonNullable<ChoicePickerProps['mode']>
+  disabled: boolean
+  onChange: (value: string) => void
+}) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
       {label && (
@@ -17,13 +85,19 @@ export function ChoicePicker({ props }: { props: ChoicePickerProps }) {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
           {normalized.map(opt => (
             <label key={opt.value} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 14, color: tcss('--rk-text-primary') }}>
-              <input type="radio" checked={value === opt.value} readOnly style={{ accentColor: tcss('--rk-accent') }} />
+              <input
+                type="radio"
+                checked={current === opt.value}
+                disabled={disabled}
+                onChange={() => onChange(opt.value)}
+                style={{ accentColor: tcss('--rk-accent') }}
+              />
               {opt.label}
             </label>
           ))}
         </div>
       ) : (
-        <select value={value} disabled style={{
+        <select value={current} disabled={disabled} onChange={(event) => onChange(event.currentTarget.value)} style={{
           padding: '8px 12px',
           border: `1px solid ${tcss('--rk-border')}`,
           borderRadius: 8,

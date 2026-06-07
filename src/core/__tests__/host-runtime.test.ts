@@ -64,59 +64,14 @@ describe('VizualHostRuntime', () => {
     expect(await result.blob.text()).toContain('华东')
   })
 
-  it('exports DocView table section data instead of an empty file', async () => {
-    const runtime = createHostRuntime()
-    const artifact = await runtime.saveArtifact({
-      root: 'doc',
-      elements: {
-        doc: {
-          type: 'DocView',
-          props: {
-            title: '风险报告',
-            sections: [
-              { id: 'summary', type: 'text', content: '摘要' },
-              {
-                id: 'branch-table',
-                type: 'table',
-                content: '',
-                data: {
-                  columns: ['Branch', 'Risk score', 'Open items'],
-                  rows: [
-                    ['Wuhan', 82, 6],
-                    ['Hangzhou', 71, 5],
-                  ],
-                },
-              },
-            ],
-          },
-          children: [],
-        },
-      },
-    })
-
-    const result = await runtime.exportArtifact({
-      ref: artifact.id,
-      format: 'csv',
-      filename: 'docview-risk',
-    })
-
-    const text = await result.blob.text()
-    expect(result.record.status).toBe('success')
-    expect(result.record.meta?.rowCount).toBe(2)
-    expect(text).toContain('Branch,Risk score,Open items')
-    expect(text).toContain('Wuhan,82,6')
-  })
-
   it('records a data export error when no tabular rows are available', async () => {
     const runtime = createHostRuntime()
     const artifact = await runtime.saveArtifact({
       root: 'title',
       elements: {
         title: {
-          type: 'DocView',
-          props: {
-            sections: [{ id: 'summary', type: 'text', content: '无表格数据' }],
-          },
+          type: 'Markdown',
+          props: { content: '无表格数据' },
           children: [],
         },
       },

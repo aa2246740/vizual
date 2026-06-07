@@ -2,10 +2,13 @@ import React from 'react'
 import type { VideoProps } from './schema'
 
 export function Video({ props }: { props: VideoProps }) {
-  const { src, width = '100%', height, autoplay = false, muted = false } = props
+  const { width = '100%', height, autoplay = false, muted = false } = props
+  const src = props.src ?? props.url ?? ''
+  const poster = props.poster ?? props.posterUrl
   return (
     <video
       src={src}
+      poster={poster}
       autoPlay={autoplay}
       muted={muted}
       controls

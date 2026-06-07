@@ -5,7 +5,9 @@ coverage/
 *.log
 .planning/
 .gstack/
+.agent-backend/
 .env
+validation/artifacts/
 
 # Internal docs (not for open source)
 API.md

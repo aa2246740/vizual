@@ -28,25 +28,18 @@ import { DataTable } from './charts/table/component'
 
 // Custom business components
 import { Timeline } from './components/timeline/component'
-import { Kanban } from './components/kanban/component'
 import { GanttChart } from './components/gantt/component'
 import { OrgChart } from './components/org-chart/component'
 import { KpiDashboard } from './components/kpi-dashboard/component'
-import { AuditLog } from './components/audit-log/component'
 
 // Interactive input components — only FormBuilder retained
 import { FormBuilder } from './inputs/form-builder/component'
 
-// DocView
-import { DocView } from './docview/container'
-
 // Layout components
-import { GridLayout } from './components/grid-layout/component'
-import { SplitLayout } from './components/split-layout/component'
 import { HeroLayout } from './components/hero-layout/component'
 
-// Freeform HTML
-import { FreeformHtml } from './components/freeform-html/component'
+import { Markdown } from './components/markdown/component'
+import { Container } from './components/container/component'
 
 // A2UI basic catalog primitives
 import { Row } from './components/a2ui-row/component'
@@ -64,45 +57,11 @@ import { ChoicePicker } from './components/a2ui-choicepicker/component'
 import { Slider } from './components/a2ui-slider/component'
 import { DateTimeInput } from './components/a2ui-datetime/component'
 import { Tabs } from './components/a2ui-tabs/component'
-import { Modal } from './components/a2ui-modal/component'
 import { Video } from './components/a2ui-video/component'
 import { AudioPlayer } from './components/a2ui-audio/component'
 
-/** 不需要 wrapper 的组件 — 布局类、容器类和 DocView 自身管理背景 */
-const NO_WRAP = new Set([
-  'GridLayout', 'SplitLayout', 'HeroLayout', 'DocView',
-  'Row', 'Column', 'Card', 'Tabs', 'Modal',
-  'FreeformHtml',
-])
-const CHART_COMPONENTS = new Set([
-  'BarChart', 'AreaChart', 'LineChart', 'PieChart', 'ScatterChart', 'BubbleChart',
-  'BoxplotChart', 'HistogramChart', 'WaterfallChart', 'XmrChart', 'SankeyChart',
-  'FunnelChart', 'HeatmapChart', 'CalendarChart', 'SparklineChart', 'ComboChart',
-  'DumbbellChart', 'RadarChart', 'MermaidDiagram',
-])
-
 /**
- * 包装组件函数：给需要背景的组件套上自包含的容器。
- * 这样组件在任何宿主页面里都能正确显示，不依赖外部背景色。
- */
-function withBackgroundWrap(name: string, componentFn: React.ComponentType<any>) {
-  return (props: any) => {
-    const inner = React.createElement(componentFn, props)
-    const isChart = CHART_COMPONENTS.has(name)
-    return React.createElement('div', {
-      style: {
-        background: 'var(--rk-bg-secondary)',
-        borderRadius: 'var(--rk-radius-md)',
-        padding: isChart ? 0 : '12px',
-        minWidth: 0,
-        width: '100%',
-      },
-    }, inner)
-  }
-}
-
-/**
- * Vizual registry — 31 React components + action handlers
+ * Vizual registry — 45 React components + action handlers
  */
 // @ts-ignore
 export const { registry, handlers, executeAction } = defineRegistry(renderKitCatalog, {
@@ -112,16 +71,14 @@ export const { registry, handlers, executeAction } = defineRegistry(renderKitCat
     FunnelChart, HeatmapChart, CalendarChart, SparklineChart, ComboChart,
     DumbbellChart, RadarChart, MermaidDiagram: MermaidChart,
     DataTable,
-    Timeline, Kanban, GanttChart, OrgChart, KpiDashboard,
-    AuditLog,
+    Timeline, GanttChart, OrgChart, KpiDashboard,
     FormBuilder,
-    DocView,
-    GridLayout, SplitLayout, HeroLayout,
-    FreeformHtml,
+    HeroLayout,
+    Markdown, Container,
     Row, Column, Card,
     Text, Image, Icon, List, Divider,
     Button, CheckBox, TextField, ChoicePicker, Slider, DateTimeInput,
-    Tabs, Modal, Video, AudioPlayer,
+    Tabs, Video, AudioPlayer,
   } as any,
   actions: {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -139,38 +96,66 @@ export const { registry, handlers, executeAction } = defineRegistry(renderKitCat
     },
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    requestRevision: async (params: any, setState: any) => {
-      const request = {
-        annotationId: params?.annotationId ?? '',
-        text: params?.text ?? '',
-        note: params?.note ?? '',
-        requestedAt: new Date().toISOString(),
+    applyFilter: async (params: any, setState: any) => {
+      const event = {
+        filterId: params?.filterId,
+        filters: params?.filters ?? {},
+        source: params?.source,
+        appliedAt: new Date().toISOString(),
       }
       setState((prev: any) => ({
         ...prev,
-        _revisionRequests: [...(Array.isArray(prev._revisionRequests) ? prev._revisionRequests : []), request],
-        _lastRevisionRequest: request,
+        _filterEvents: [...(Array.isArray(prev._filterEvents) ? prev._filterEvents : []), event],
+        _lastFilterEvent: event,
       }))
     },
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    batchSubmit: async (params: any, setState: any) => {
-      const batch = {
-        annotations: params?.annotations ?? [],
-        submittedAt: new Date().toISOString(),
+    drillDown: async (params: any, setState: any) => {
+      const event = {
+        chartId: params?.chartId,
+        point: params?.point,
+        row: params?.row,
+        targetId: params?.targetId,
+        requestedAt: new Date().toISOString(),
       }
       setState((prev: any) => ({
         ...prev,
-        _batchSubmissions: [...(Array.isArray(prev._batchSubmissions) ? prev._batchSubmissions : []), batch],
-        _lastBatchSubmission: batch,
+        _drillDownEvents: [...(Array.isArray(prev._drillDownEvents) ? prev._drillDownEvents : []), event],
+        _lastDrillDownEvent: event,
       }))
     },
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    selectLocation: async (params: any, setState: any) => {
+      const event = {
+        id: params?.id,
+        label: params?.label,
+        value: params?.value,
+        selectedAt: new Date().toISOString(),
+      }
+      setState((prev: any) => ({
+        ...prev,
+        _locationSelections: [...(Array.isArray(prev._locationSelections) ? prev._locationSelections : []), event],
+        _lastLocationSelection: event,
+      }))
+    },
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    updatePlan: async (params: any, setState: any) => {
+      const event = {
+        actionId: params?.actionId,
+        status: params?.status,
+        comment: params?.comment,
+        data: params?.data ?? {},
+        updatedAt: new Date().toISOString(),
+      }
+      setState((prev: any) => ({
+        ...prev,
+        _planUpdates: [...(Array.isArray(prev._planUpdates) ? prev._planUpdates : []), event],
+        _lastPlanUpdate: event,
+      }))
+    },
+
   },
 })
-
-// 给非布局组件套上背景容器，让它们在任何宿主环境自包含
-for (const [name, componentFn] of Object.entries(registry)) {
-  if (!NO_WRAP.has(name) && typeof componentFn === 'function') {
-    registry[name] = withBackgroundWrap(name, componentFn)
-  }
-}

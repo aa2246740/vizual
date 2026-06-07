@@ -8,7 +8,7 @@ DocView should be an SDK surface for AI-agent document review, not a hard-coded 
 
 Vizual gives AI agents stronger visual and interaction capabilities. DocView is the document-review part of that system:
 
-- Use GridLayout and charts for ordinary dashboards and chat analysis.
+- Use host text plus semantic Vizual surfaces for ordinary dashboards and chat analysis: KpiDashboard, charts, DataTable, Markdown, and simple Column/Row composition.
 - Use DocView only when the artifact is meant to be reviewed, annotated, revised, exported, or versioned.
 - The agent should be able to read the Vizual skill and integrate DocView without reading source code.
 

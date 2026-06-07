@@ -24,7 +24,7 @@ const spec: VizualSpec = {
 }
 
 describe('Vizual generic review primitives', () => {
-  it('creates target-aware review threads without depending on DocView', () => {
+  it('creates target-aware review threads without depending on a document-view product', () => {
     const artifact = normalizeArtifact(spec)
     const thread = createReviewThread({
       artifactId: artifact.id,
