@@ -162,10 +162,6 @@ export type { KpiDashboardProps } from './components/kpi-dashboard'
 export { FormBuilder, FormBuilderSchema } from './inputs/form-builder'
 export type { FormBuilderProps } from './inputs/form-builder'
 
-// Historical layout compatibility
-export { HeroLayout, HeroLayoutSchema } from './components/hero-layout'
-export type { HeroLayoutProps } from './components/hero-layout'
-
 export { Markdown, MarkdownSchema } from './components/markdown'
 export type { MarkdownProps } from './components/markdown'
 
@@ -341,11 +337,29 @@ export {
   VizualArtifactView,
   VizualRenderer,
 } from './core/react-renderer'
+export {
+  collectVizualRenderEvidence,
+} from './core/render-evidence'
 export type {
   VizualArtifactViewProps,
   VizualRendererProps,
   VizualStateChange,
 } from './core/react-renderer'
+export type {
+  VizualCanvasEvidence,
+  VizualRenderEvidenceMetrics,
+  VizualRenderReceipt,
+} from './core/render-evidence'
+export {
+  buildVizualActionMessage,
+  extractVizualPresentations,
+  isInternalVizualActionMessage,
+  selectVisibleVizualPresentations,
+} from './chat-adapter'
+export type {
+  VizualChatAdapterMessage,
+  VizualChatPresentation,
+} from './chat-adapter'
 export {
   downloadBlob,
   downloadExport,

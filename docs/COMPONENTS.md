@@ -4,7 +4,7 @@ This document describes the current native core component catalog. The live Zod 
 
 [中文版本](COMPONENTS.zh-CN.md)
 
-Runtime registers 45 components. The Agent-facing catalog has 44 components because `HeroLayout` is kept only for historical runtime compatibility.
+Runtime registers 44 native core components. The runtime catalog and Agent-facing catalog use the same component set.
 
 ## Charts (19)
 
@@ -120,15 +120,9 @@ Composition guidance:
 - Use `Container` only when spacing/sizing/background details matter.
 - Keep layout lightweight; the host page owns page-level design.
 
-## Compatibility-Only Runtime Component
-
-### HeroLayout
-
-`HeroLayout` may still be registered so old artifacts do not break immediately, but it is not Agent-facing. New Agent outputs should not generate hero/page sections through native core.
-
 ## Removed From Native Core
 
-The former document editor, page-layout, free HTML, modal, board, and log surfaces have been removed from native core. New specs must use the current catalog above. Old payloads using removed component names should fail with stable unsupported-component errors instead of rendering a fake fallback.
+The former document editor, page-layout, hero layout, free HTML, modal, board, and log surfaces have been removed from native core. New specs must use the current catalog above. Old payloads using removed component names should fail with stable unsupported-component errors instead of rendering a fake fallback.
 
 ## Actions
 

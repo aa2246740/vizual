@@ -21,9 +21,7 @@ Agent-facing catalog:
 - FormBuilder。
 - Markdown, Container, Row, Column, Card, Text, Image, Icon, List, Divider, Button, CheckBox, TextField, ChoicePicker, Slider, DateTimeInput, Tabs, Video, AudioPlayer。
 
-Runtime 仍保留一个历史兼容组件 `HeroLayout`，但它不是 Agent-facing 输出方式。
-
-已移出 native core 的产品/页面层组件不再作为验收目标，也不能在新示例里被 Agent 使用。
+已移出 native core 的产品/页面层组件不再作为验收目标，也不能在新示例里被 Agent 使用；这包括 `HeroLayout`。
 
 ## 3. 验收入口
 

@@ -74,6 +74,8 @@ integrates the Vizual runtime.
 
 For a concrete step-by-step retrofit of an existing chatbot, read
 [CHATBOT-INTEGRATION.md](CHATBOT-INTEGRATION.md).
+For an existing DeerFlow integration that used an older Vizual prototype, read
+[DEERFLOW-UPGRADE.md](DEERFLOW-UPGRADE.md).
 
 ## Render A Normal Spec
 
@@ -188,8 +190,8 @@ dispatch, create tickets, write databases, or call external systems by itself.
 
 ## Current Agent-Facing Catalog
 
-See [COMPONENTS.md](COMPONENTS.md). Historical compatibility components are not
-part of agent-facing guidance.
+See [COMPONENTS.md](COMPONENTS.md). Native core does not keep separate
+runtime-only page-layout components.
 
 Removed native-core components should produce stable unsupported-component
 errors and should not appear in new agent output.

@@ -40,6 +40,7 @@ Native Catalog 是组件、action/function、data binding、theme token、artifa
 Vizual 可以接入自有 SaaS 小聊天窗、完整 ChatGPT-like 对话页、DeerFlow 类 Agent 平台或 B 端工作台；但不能直接在 ChatGPT / Claude.ai 这类封闭消费级聊天界面里渲染，除非平台方集成 Vizual runtime。
 
 把一个现有 chatbot 逐步改造成支持 Vizual，见 [CHATBOT-INTEGRATION.zh-CN.md](CHATBOT-INTEGRATION.zh-CN.md)。
+已经接入过旧版 Vizual 原型的 DeerFlow 项目，见 [DEERFLOW-UPGRADE.zh-CN.md](DEERFLOW-UPGRADE.zh-CN.md)。
 
 ## Agent Bridge 契约
 
@@ -124,7 +125,7 @@ liveControl 不是纯 JSON spec。宿主需要提供 bridge：FormBuilder 控件
 
 ## 当前 Agent-Facing Catalog
 
-详见 [COMPONENTS.zh-CN.md](COMPONENTS.zh-CN.md)。运行时注册的组件中，历史兼容组件不进入 Agent-facing guidance。
+详见 [COMPONENTS.zh-CN.md](COMPONENTS.zh-CN.md)。Native core 不保留单独的 runtime-only 页面布局组件。
 
 已从 native core 移除的旧组件会被视为 unsupported input，不应出现在新输出里。
 

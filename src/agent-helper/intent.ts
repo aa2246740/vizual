@@ -553,7 +553,6 @@ export function assertVizualAgentToolCoverage(options: {
   const inputHasKpiCandidate = hasKpiCandidate(options.input)
   const hasKpiSurface = componentSet.has('KpiDashboard') || (!options.preview && inputHasKpiCandidate)
   const hasNarrativeSurface = componentTypes.some(type => ['Markdown', 'DataTable', 'Timeline'].includes(type))
-  const nonAgentFacingLayout = componentTypes.filter(type => ['HeroLayout'].includes(type))
 
   if (intent.wantsExplicitCreativeArtifact && componentTypes.length > 0) {
     issues.push({
@@ -561,14 +560,6 @@ export function assertVizualAgentToolCoverage(options: {
       code: 'vizual.agent.explicit_artifact_forced_native',
       message: 'User explicitly asked for a creative/code artifact, but the answer also rendered Vizual native UI. The Agent should honor the requested artifact path and keep Vizual unused unless the user asks to embed it.',
       evidence: { componentTypes },
-    })
-  }
-
-  if (nonAgentFacingLayout.length) {
-    issues.push({
-      severity: 'error',
-      code: 'vizual.agent.non_agent_facing_layout',
-      message: `Agent UI used non-agent-facing layout component(s): ${Array.from(new Set(nonAgentFacingLayout)).join(', ')}. Use semantic components with Column/Row composition instead.`,
     })
   }
 

@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vizual Chart Family Visual Audit</title>
+  <link rel="icon" href="data:,">
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f6f8fb;
+      --panel: #ffffff;
+      --ink: #172033;
+      --muted: #617089;
+      --line: #dbe4ef;
+      --soft: #eef4fb;
+      --good: #0f8b5f;
+      --bad: #c62828;
+      --warn: #a86100;
+      --accent: #2563eb;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 18px;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", system-ui, sans-serif;
+    }
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 16px;
+      align-items: center;
+      margin: -18px -18px 18px;
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(246, 248, 251, 0.95);
+      backdrop-filter: blur(10px);
+    }
+    h1 {
+      margin: 0;
+      font-size: 20px;
+      line-height: 1.25;
+      letter-spacing: 0;
+    }
+    .note {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+    #summary {
+      min-width: 220px;
+      padding: 9px 12px;
+      border-radius: 8px;
+      background: #fff7ed;
+      color: var(--warn);
+      text-align: right;
+      font-weight: 700;
+      font-size: 13px;
+    }
+    #summary.pass {
+      background: #dcfce7;
+      color: var(--good);
+    }
+    #summary.fail {
+      background: #fee2e2;
+      color: var(--bad);
+    }
+    #grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
+      gap: 14px;
+    }
+    .case {
+      min-width: 0;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      overflow: hidden;
+    }
+    .case-head {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 12px;
+      align-items: start;
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--line);
+      background: var(--soft);
+    }
+    .title {
+      min-width: 0;
+      font-size: 13px;
+      font-weight: 700;
+      line-height: 1.35;
+    }
+    .kind {
+      margin-top: 3px;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 500;
+    }
+    .badge {
+      white-space: nowrap;
+      color: var(--warn);
+      font-size: 12px;
+      font-weight: 750;
+    }
+    .badge.pass { color: var(--good); }
+    .badge.fail { color: var(--bad); }
+    .metrics {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 11px;
+    }
+    .pill {
+      padding: 3px 6px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #fff;
+    }
+    .render-area {
+      min-height: 260px;
+      max-height: 420px;
+      padding: 12px;
+      overflow: auto;
+    }
+    .case.small .render-area { min-height: 180px; }
+    pre.error {
+      margin: 0;
+      padding: 10px;
+      border: 1px solid #fecaca;
+      border-radius: 8px;
+      background: #fff1f2;
+      color: #991b1b;
+      white-space: pre-wrap;
+      font-size: 11px;
+      line-height: 1.45;
+    }
+    #raw-results {
+      margin: 18px 0 0;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      color: #334155;
+      white-space: pre-wrap;
+      font-size: 11px;
+      line-height: 1.45;
+      max-height: 340px;
+      overflow: auto;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>Vizual Chart Family Visual Audit</h1>
+      <div class="note">真实浏览器渲染。覆盖 Chart.js / ECharts / tool wrapper / AG-UI / A2UI / 裸 components 输入形态；PASS 必须有可见 canvas 像素证据。</div>
+    </div>
+    <div id="summary">Loading...</div>
+  </header>
+  <main id="grid"></main>
+  <pre id="raw-results">Waiting for render evidence...</pre>
+
+  <script src="../dist/vizual.standalone.js"></script>
+  <script>
+    const bankRows = [
+      { branch: '东城支行', profit: 1280, deposits: 92000, loans: 51000, npl: 1.2, score: 91, wait: 6, low: 74, high: 91, channel: '柜面', amount: 420, date: '2026-06-01', product: '存款' },
+      { branch: '西城支行', profit: 860, deposits: 78000, loans: 62000, npl: 2.9, score: 74, wait: 18, low: 66, high: 78, channel: '手机银行', amount: 610, date: '2026-06-02', product: '贷款' },
+      { branch: '南湖支行', profit: 1120, deposits: 84000, loans: 57000, npl: 1.8, score: 83, wait: 9, low: 70, high: 84, channel: '客户经理', amount: 530, date: '2026-06-03', product: '理财' },
+      { branch: '北园支行', profit: 650, deposits: 61000, loans: 69000, npl: 4.1, score: 62, wait: 24, low: 58, high: 71, channel: '网点自助', amount: 290, date: '2026-06-04', product: '代发' }
+    ];
+
+    function chartJsData(label, values) {
+      return {
+        labels: bankRows.map(row => row.branch),
+        datasets: [{ label, data: values }]
+      };
+    }
+
+    function echartsData() {
+      return {
+        xAxis: { data: bankRows.map(row => row.branch) },
+        series: [
+          { name: '利润', data: bankRows.map(row => row.profit) },
+          { name: '等待分钟', data: bankRows.map(row => row.wait) }
+        ]
+      };
+    }
+
+    function nativeSpecFromComponents(id, components, data) {
+      return {
+        type: 'vizual_native',
+        version: '1.0',
+        surfaceId: id,
+        data,
+        components
+      };
+    }
+
+    function previewToSpec(input) {
+      const preview = window.Vizual.previewVizualNativeInput(input, { defaultSurfaceId: 'browser-audit' });
+      if (!preview || !preview.ok || !preview.spec) {
+        const issues = preview?.issues?.map(issue => `${issue.code}: ${issue.message}`).join('\n') || 'No preview result';
+        throw new Error(issues);
+      }
+      return { spec: preview.spec, issues: preview.issues || [] };
+    }
+
+    function aguiSpec() {
+      const core = new window.Vizual.VizualNativeCore();
+      const snapshot = core.processAGUIEvents([
+        { type: 'TOOL_CALL_START', toolCallId: 'tool-1', toolCallName: 'present_vizual_ui' },
+        {
+          type: 'TOOL_CALL_ARGS',
+          toolCallId: 'tool-1',
+          delta: JSON.stringify({
+            input: {
+              components: [
+                {
+                  type: 'BarChart',
+                  title: 'AG-UI 缺 surfaceId 也要能画图',
+                  data: chartJsData('办理量', [42, 58, 49, 33])
+                }
+              ]
+            }
+          })
+        },
+        { type: 'TOOL_CALL_END', toolCallId: 'tool-1' }
+      ]);
+      if (!snapshot?.spec) throw new Error('AG-UI snapshot missing');
+      return { spec: snapshot.spec, issues: [] };
+    }
+
+    function a2uiSpec() {
+      const snapshot = window.Vizual.a2uiMessagesToVizualSnapshot([
+        {
+          version: 'v0.10',
+          createSurface: { surfaceId: 'a2ui-chart', catalogId: 'vizual' }
+        },
+        {
+          version: 'v0.10',
+          updateComponents: {
+            surfaceId: 'a2ui-chart',
+            components: [
+              { id: 'root', component: 'Column', children: ['trend'] },
+              {
+                id: 'trend',
+                component: 'LineChart',
+                title: 'A2UI LineChart ECharts 形态',
+                data: echartsData()
+              }
+            ]
+          }
+        }
+      ]);
+      if (!snapshot?.spec) throw new Error('A2UI snapshot missing');
+      return { spec: snapshot.spec, issues: [] };
+    }
+
+    const chartJsCases = [
+      ['AreaChart', '利润', [1280, 860, 1120, 650]],
+      ['BarChart', '等待分钟', [6, 18, 9, 24]],
+      ['ComboChart', '利润', [1280, 860, 1120, 650]],
+      ['LineChart', '存款规模', [92000, 78000, 84000, 61000]],
+      ['PieChart', '利润贡献', [1280, 860, 1120, 650]],
+      ['RadarChart', '综合评分', [91, 74, 83, 62]],
+      ['ScatterChart', '不良率', [1.2, 2.9, 1.8, 4.1]],
+      ['SparklineChart', '利润', [1280, 860, 1120, 650]],
+      ['WaterfallChart', '净变化', [1000, 260, -180, -90]],
+      ['XmrChart', '等待分钟', [6, 18, 9, 24]]
+    ];
+
+    const echartsCases = ['AreaChart', 'BarChart', 'ComboChart', 'LineChart'];
+
+    const bareSemanticCases = [
+      ['BoxplotChart', { title: 'Boxplot 裸组件识别', data: [
+        { branch: '东城支行', min: 60, q1: 70, median: 82, q3: 90, max: 96 },
+        { branch: '西城支行', min: 48, q1: 58, median: 68, q3: 78, max: 86 }
+      ], x: 'branch', y: 'median' }],
+      ['FunnelChart', { title: 'Funnel 裸组件识别', data: [
+        { stage: '到店客户', value: 100 },
+        { stage: '有效咨询', value: 72 },
+        { stage: '成功签约', value: 38 }
+      ], x: 'stage', y: 'value' }],
+      ['SankeyChart', { title: 'Sankey 裸组件识别', data: [
+        { source: '柜面', target: '存款', value: 42 },
+        { source: '手机银行', target: '理财', value: 28 },
+        { source: '客户经理', target: '贷款', value: 18 }
+      ] }],
+      ['DumbbellChart', { title: 'Dumbbell 裸组件识别', data: [
+        { branch: '东城支行', low: 66, high: 88 },
+        { branch: '西城支行', low: 52, high: 74 },
+        { branch: '南湖支行', low: 61, high: 83 }
+      ], x: 'branch', y: ['low', 'high'] }],
+      ['XmrChart', { title: 'XMR 裸组件识别', data: chartJsData('等待分钟', [6, 18, 9, 24]) }]
+    ];
+
+    const cases = [
+      {
+        id: 'tool-wrapper-chartjs',
+        title: 'present_vizual_ui tool wrapper + Chart.js BarChart + DataTable',
+        kind: 'tool wrapper',
+        build: () => previewToSpec({
+          type: 'tool',
+          tool: 'present_vizual_ui',
+          input: {
+            components: [
+              {
+                type: 'BarChart',
+                title: '各网点等待时长',
+                xLabel: '网点',
+                yLabel: '分钟',
+                data: chartJsData('等待分钟', [6, 18, 9, 24])
+              },
+              {
+                type: 'DataTable',
+                columns: [{ key: 'branch', label: '网点' }, { key: 'wait', label: '等待分钟' }],
+                rows: bankRows.map(({ branch, wait }) => ({ branch, wait }))
+              }
+            ]
+          }
+        })
+      },
+      {
+        id: 'bare-components-no-id',
+        title: '裸 components 无 id + hyphen alias',
+        kind: 'bare components',
+        build: () => previewToSpec({
+          components: [
+            {
+              component: 'bar-chart',
+              title: '裸 components 归一化柱状图',
+              data: chartJsData('利润', [1280, 860, 1120, 650])
+            }
+          ]
+        })
+      },
+      {
+        id: 'agui-missing-surface',
+        title: 'AG-UI TOOL_CALL_ARGS 缺 surfaceId',
+        kind: 'AG-UI',
+        build: aguiSpec
+      },
+      {
+        id: 'a2ui-message',
+        title: 'A2UI message + ECharts nested data',
+        kind: 'A2UI',
+        build: a2uiSpec
+      },
+      {
+        id: 'native-data-path-all-chart-family',
+        title: 'Native dataPath dashboard: KPI + chart + table + form',
+        kind: 'native stream',
+        build: () => previewToSpec([
+          { type: 'surface.create', surfaceId: 'branch-dashboard', catalogId: 'vizual' },
+          { type: 'surface.updateData', surfaceId: 'branch-dashboard', path: '/', value: { rows: bankRows } },
+          {
+            type: 'surface.updateComponents',
+            surfaceId: 'branch-dashboard',
+            components: [
+              { id: 'root', component: 'Column', children: ['kpi', 'trend', 'risk', 'table', 'form'] },
+              { id: 'kpi', component: 'KpiDashboard', metrics: [
+                { label: '利润最高', value: '1280万', trend: 'up' },
+                { label: '等待最长', value: '24分钟', trend: 'down' }
+              ] },
+              { id: 'trend', component: 'LineChart', dataPath: '/rows', xField: 'branch', yField: 'profit', title: '利润排行趋势' },
+              { id: 'risk', component: 'ScatterChart', dataPath: '/rows', xField: 'npl', yField: 'profit', sizeField: 'wait', labelField: 'branch', title: '风险收益散点' },
+              { id: 'table', component: 'DataTable', dataPath: '/rows', columns: [{ field: 'branch', header: '网点' }, { field: 'profit', header: '利润' }, { field: 'npl', header: '不良率' }] },
+              { id: 'form', component: 'FormBuilder', submitLabel: '提交关注网点', fields: [{ name: 'branch', label: '关注网点', type: 'select', options: bankRows.map(row => row.branch) }] }
+            ]
+          }
+        ])
+      },
+      ...chartJsCases.map(([type, label, values]) => ({
+        id: `chartjs-${type.toLowerCase()}`,
+        title: `Chart.js labels/datasets -> ${type}`,
+        kind: 'Chart.js input',
+        build: () => previewToSpec(nativeSpecFromComponents(`chartjs-${type}`, [
+          {
+            type,
+            title: `${type} Chart.js 形态`,
+            xLabel: '网点',
+            yLabel: label,
+            data: chartJsData(label, values)
+          }
+        ]))
+      })),
+      ...echartsCases.map(type => ({
+        id: `echarts-${type.toLowerCase()}`,
+        title: `ECharts xAxis.data/series -> ${type}`,
+        kind: 'ECharts input',
+        build: () => previewToSpec(nativeSpecFromComponents(`echarts-${type}`, [
+          {
+            type,
+            title: `${type} ECharts 形态`,
+            data: echartsData()
+          }
+        ]))
+      })),
+      ...bareSemanticCases.map(([type, props]) => ({
+        id: `bare-semantic-${String(type).toLowerCase()}`,
+        title: `Bare semantic no-id -> ${type}`,
+        kind: 'semantic input',
+        build: () => previewToSpec({
+          components: [
+            {
+              type,
+              ...props
+            }
+          ]
+        })
+      }))
+    ];
+
+    function createCard(testCase) {
+      const card = document.createElement('section');
+      card.className = testCase.kind === 'native stream' ? 'case' : 'case small';
+      card.id = testCase.id;
+      card.innerHTML = [
+        '<div class="case-head">',
+        '<div><div class="title"></div><div class="kind"></div></div>',
+        '<div class="badge">Pending</div>',
+        '</div>',
+        '<div class="metrics"></div>',
+        '<div class="render-area"></div>'
+      ].join('');
+      card.querySelector('.title').textContent = testCase.title;
+      card.querySelector('.kind').textContent = testCase.kind;
+      return card;
+    }
+
+    function setMetrics(card, receipt, issues) {
+      const m = receipt?.evidence?.metrics || {};
+      const parts = [
+        `status=${receipt?.status || 'missing'}`,
+        `expected=${m.expectedEChartsCount ?? 0}`,
+        `canvas=${m.visibleCanvasCount ?? 0}`,
+        `painted=${m.nonEmptyCanvasCount ?? 0}`,
+        `controls=${m.visibleControlCount ?? 0}`,
+        `issues=${issues?.length || 0}`
+      ];
+      card.querySelector('.metrics').innerHTML = parts.map(part => `<span class="pill">${part}</span>`).join('');
+    }
+
+    function failCard(card, error) {
+      const badge = card.querySelector('.badge');
+      badge.textContent = 'FAIL';
+      badge.className = 'badge fail';
+      const area = card.querySelector('.render-area');
+      area.innerHTML = '<pre class="error"></pre>';
+      area.firstChild.textContent = error?.stack || error?.message || String(error);
+    }
+
+    function passCard(card) {
+      const badge = card.querySelector('.badge');
+      badge.textContent = 'PASS';
+      badge.className = 'badge pass';
+    }
+
+    async function waitForPaint(area, spec) {
+      let receipt = null;
+      for (let attempt = 0; attempt < 8; attempt += 1) {
+        await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+        await new Promise(resolve => setTimeout(resolve, attempt < 2 ? 250 : 500));
+        receipt = window.Vizual.collectVizualRenderEvidence(area, spec);
+        if (receipt.errors.length === 0) break;
+      }
+      return receipt;
+    }
+
+    async function run() {
+      const grid = document.getElementById('grid');
+      const summary = document.getElementById('summary');
+      const raw = document.getElementById('raw-results');
+
+      if (!window.Vizual?.renderSpec || !window.Vizual?.previewVizualNativeInput || !window.Vizual?.collectVizualRenderEvidence) {
+        summary.textContent = '0 pass / 1 fail — Vizual API missing';
+        summary.className = 'fail';
+        raw.textContent = Object.keys(window.Vizual || {}).sort().join('\n');
+        return;
+      }
+
+      const mounted = [];
+      for (const testCase of cases) {
+        const card = createCard(testCase);
+        grid.appendChild(card);
+        const area = card.querySelector('.render-area');
+        try {
+          const result = testCase.build();
+          window.Vizual.renderSpec(result.spec, area);
+          mounted.push({ testCase, card, area, spec: result.spec, issues: result.issues });
+        } catch (error) {
+          setMetrics(card, null, []);
+          failCard(card, error);
+          mounted.push({ testCase, card, area, spec: null, error });
+        }
+      }
+
+      const results = [];
+      for (const item of mounted) {
+        if (!item.spec) {
+          results.push({
+            id: item.testCase.id,
+            title: item.testCase.title,
+            ok: false,
+            errors: [item.error?.message || String(item.error)]
+          });
+          continue;
+        }
+        const receipt = await waitForPaint(item.area, item.spec);
+        setMetrics(item.card, receipt, item.issues);
+        const ok = receipt.errors.length === 0;
+        if (ok) {
+          passCard(item.card);
+        } else {
+          failCard(item.card, new Error(receipt.errors.join('\n')));
+        }
+        results.push({
+          id: item.testCase.id,
+          title: item.testCase.title,
+          kind: item.testCase.kind,
+          ok,
+          errors: receipt.errors,
+          warnings: receipt.warnings,
+          metrics: receipt.evidence.metrics,
+          canvases: receipt.evidence.canvases.map(canvas => ({
+            width: canvas.width,
+            height: canvas.height,
+            sampleCount: canvas.sampleCount,
+            nonEmpty: canvas.nonEmpty,
+            nonUniformSampleCount: canvas.nonUniformSampleCount,
+            nonBackgroundSampleCount: canvas.nonBackgroundSampleCount,
+            error: canvas.error
+          }))
+        });
+      }
+
+      const pass = results.filter(result => result.ok).length;
+      const fail = results.length - pass;
+      summary.textContent = `${pass} pass / ${fail} fail / ${results.length} total`;
+      summary.className = fail ? 'fail' : 'pass';
+      window.__vizualChartFamilyResults = results;
+      raw.textContent = JSON.stringify(results, null, 2);
+      console.log('Vizual chart family visual audit', results);
+    }
+
+    run().catch(error => {
+      const summary = document.getElementById('summary');
+      summary.textContent = `Fatal: ${error.message}`;
+      summary.className = 'fail';
+      document.getElementById('raw-results').textContent = error.stack || error.message;
+      console.error(error);
+    });
+  </script>
+</body>
+</html>

@@ -116,10 +116,6 @@ Vizual 的组件不是页面模板，而是 Agent 可以组合使用的语义表
 - 只有需要明确间距、尺寸、背景时使用 `Container`。
 - 页面级设计交给宿主产品，不放进 native core。
 
-## 历史兼容组件
-
-`HeroLayout` 可能仍然注册，以避免旧 artifact 立即损坏，但它不是 Agent-facing 组件。新的 Agent 输出不应通过 native core 生成 hero/page section。
-
 ## 已移出 Native Core
 
 以下旧组件不再属于 native core：
@@ -128,6 +124,7 @@ Vizual 的组件不是页面模板，而是 Agent 可以组合使用的语义表
 - GridLayout
 - SplitLayout
 - FreeformHtml
+- HeroLayout
 - Modal
 - Kanban
 - AuditLog

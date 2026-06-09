@@ -19,4 +19,16 @@ describe('ScatterChart option builder', () => {
     expect(series[0].data).toEqual([[155, 45], [180, 72]])
     expect(series[0].symbolSize).toBe(10)
   })
+
+  it('builds an empty series instead of throwing when data is missing', () => {
+    const option = buildScatterFallback({
+      type: 'scatter',
+      x: 'risk',
+      y: 'return',
+    } as any)
+
+    const series = option.series as Array<{ data: unknown[] }>
+    expect(series).toHaveLength(1)
+    expect(series[0].data).toEqual([])
+  })
 })

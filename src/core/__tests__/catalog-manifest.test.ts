@@ -41,10 +41,7 @@ describe('catalog manifest', () => {
       kind: 'input',
       emits: expect.arrayContaining([{ event: 'submit', description: 'Submits bound form data through submitForm.' }]),
     })
-    expect(manifest.components.HeroLayout).toMatchObject({
-      agentRole: 'host-compatibility',
-      agentFacing: false,
-    })
+    expect(manifest.components.HeroLayout).toBeUndefined()
   })
 
   it('keeps capabilities and tool schema derived from catalog components and functions', () => {
@@ -72,7 +69,7 @@ describe('catalog manifest', () => {
     })
     expect(manifest.functions.requestRevision).toBeUndefined()
     expect(manifest.functions.batchSubmit).toBeUndefined()
-    for (const removed of ['DocView', 'Kanban', 'AuditLog', 'GridLayout', 'SplitLayout', 'FreeformHtml', 'Modal']) {
+    for (const removed of ['DocView', 'Kanban', 'AuditLog', 'GridLayout', 'SplitLayout', 'FreeformHtml', 'Modal', 'HeroLayout']) {
       expect(manifest.components[removed], `${removed} should not be in native core manifest`).toBeUndefined()
     }
 

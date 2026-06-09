@@ -4,10 +4,11 @@ import { createEChartsBridge } from '../../core/echarts-bridge-factory'
 /**
  * Build ECharts bar option from schema props.
  */
-function buildBarFallback(props: BarChartProps): Record<string, unknown> {
+export function buildBarFallback(props: BarChartProps): Record<string, unknown> {
   const { x = 'name', y = 'value', data, title, stacked, horizontal } = props
+  const rows = Array.isArray(data) ? data : []
   const yFields = Array.isArray(y) ? y : [y]
-  const categoryData = (data ?? []).map((d: Record<string, unknown>) => String(d[x] ?? ''))
+  const categoryData = rows.map((d: Record<string, unknown>) => String(d[x] ?? ''))
 
   const hasTitle = !!title
   const hasLegend = yFields.length > 1
@@ -33,7 +34,7 @@ function buildBarFallback(props: BarChartProps): Record<string, unknown> {
       type: 'bar',
       name: field,
       stack: stacked ? 'total' : undefined,
-      data: (data ?? []).map((d: Record<string, unknown>) => Number(d[field]) || 0),
+      data: rows.map((d: Record<string, unknown>) => Number(d[field]) || 0),
     })),
   }
 }

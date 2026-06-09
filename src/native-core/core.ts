@@ -400,14 +400,6 @@ function normalizeDirectSpecElement(element: VizualSpecElement): VizualSpecEleme
     case 'Container':
       next.type = firstString(props.direction)?.toLowerCase() === 'row' ? 'Row' : 'Column'
       break
-    case 'HeroLayout':
-      next.type = 'Column'
-      delete props.columns
-      delete props.columnWidths
-      delete props.height
-      delete props.background
-      delete props.align
-      break
     case 'Table':
     case 'DataGrid':
       next.type = 'DataTable'
@@ -765,6 +757,8 @@ const SEMANTIC_COMPONENT_TARGETS: Record<string, SemanticTarget> = {
   columnchart: { component: 'BarChart', propsType: 'bar' },
   bubble: { component: 'BubbleChart', propsType: 'bubble' },
   bubblechart: { component: 'BubbleChart', propsType: 'bubble' },
+  boxplot: { component: 'BoxplotChart', propsType: 'boxplot' },
+  boxplotchart: { component: 'BoxplotChart', propsType: 'boxplot' },
   calendar: { component: 'CalendarChart', propsType: 'calendar' },
   calendarheatmap: { component: 'CalendarChart', propsType: 'calendar' },
   chart: { component: 'BarChart', propsType: 'bar' },
@@ -782,6 +776,8 @@ const SEMANTIC_COMPONENT_TARGETS: Record<string, SemanticTarget> = {
   form: { component: 'FormBuilder', propsType: 'form_builder' },
   formbuilder: { component: 'FormBuilder', propsType: 'form_builder' },
   inputform: { component: 'FormBuilder', propsType: 'form_builder' },
+  funnel: { component: 'FunnelChart', propsType: 'funnel' },
+  funnelchart: { component: 'FunnelChart', propsType: 'funnel' },
   heatmap: { component: 'HeatmapChart', propsType: 'heatmap' },
   heatmapchart: { component: 'HeatmapChart', propsType: 'heatmap' },
   histogram: { component: 'HistogramChart', propsType: 'histogram' },
@@ -839,6 +835,8 @@ const SEMANTIC_COMPONENT_TARGETS: Record<string, SemanticTarget> = {
   radar: { component: 'RadarChart', propsType: 'radar' },
   radarchart: { component: 'RadarChart', propsType: 'radar' },
   row: { component: 'Row' },
+  sankey: { component: 'SankeyChart', propsType: 'sankey' },
+  sankeychart: { component: 'SankeyChart', propsType: 'sankey' },
   scatter: { component: 'ScatterChart', propsType: 'scatter' },
   scatterchart: { component: 'ScatterChart', propsType: 'scatter' },
   sparkline: { component: 'SparklineChart', propsType: 'sparkline' },
@@ -846,6 +844,11 @@ const SEMANTIC_COMPONENT_TARGETS: Record<string, SemanticTarget> = {
   text: { component: 'Text' },
   waterfall: { component: 'WaterfallChart', propsType: 'waterfall' },
   waterfallchart: { component: 'WaterfallChart', propsType: 'waterfall' },
+  dumbbell: { component: 'DumbbellChart', propsType: 'dumbbell' },
+  dumbbellchart: { component: 'DumbbellChart', propsType: 'dumbbell' },
+  xmr: { component: 'XmrChart', propsType: 'xmr' },
+  xmrchart: { component: 'XmrChart', propsType: 'xmr' },
+  controlchart: { component: 'XmrChart', propsType: 'xmr' },
 }
 
 const SEMANTIC_WRAPPER_KEYS = new Set([
@@ -1633,13 +1636,6 @@ function normalizeComponentAlias(component: VizualNativeComponentDef): VizualNat
       delete next.layout
       break
     }
-    case 'HeroLayout':
-      next.component = 'Column'
-      delete next.height
-      delete next.background
-      delete next.align
-      delete next.layout
-      break
     case 'Table':
     case 'DataGrid':
       next.component = 'DataTable'
@@ -1831,6 +1827,12 @@ function extractA2UIMessages(value: unknown, depth = 0): A2UIMessage[] {
     parsed.a2uiMessages,
     parsed.messages,
     parsed.operations,
+    parsed.input,
+    parsed.arguments,
+    parsed.args,
+    parsed.payload,
+    parsed.result,
+    parsed.output,
   ]
   for (const candidate of candidates) {
     const messages = extractA2UIMessages(candidate, depth + 1)
@@ -1902,7 +1904,11 @@ function normalizeMessageShape(message: A2UIMessage, fallbackSurfaceId = 'surfac
   const catalogId = firstString(record.catalogId, payload.catalogId, isRecord(record.catalog) ? record.catalog.id : undefined) ?? 'vizual'
   const surfaceId = normalizeSurfaceId(record, fallbackSurfaceId)
   const normalizeComponents = (items: unknown): A2UIComponentDef[] => {
-    const components = Array.isArray(items) ? items as A2UIComponentDef[] : []
+    const rawComponents = Array.isArray(items) ? items.filter(isRecord) : []
+    const hasMissingIds = rawComponents.some(component => !firstString(component.id, component.componentId))
+    const components = hasMissingIds && looksLikeBareComponentArray(rawComponents)
+      ? normalizeBareComponentTree(rawComponents) as A2UIComponentDef[]
+      : rawComponents as A2UIComponentDef[]
     const rootId = firstString(record.rootId, payload.rootId) ?? 'root'
     if (!components.length || components.some(component => component?.id === 'root')) return components
     if (components.some(component => component?.id === rootId)) {
@@ -2126,6 +2132,40 @@ function a2uiMessageToOperations(message: A2UIMessage, fallbackSurfaceId: string
   return []
 }
 
+function looksLikeRenderableNestedInput(value: unknown): boolean {
+  const parsed = parseJsonMaybe(value)
+  if (Array.isArray(parsed)) {
+    if (looksLikeBareComponentArray(parsed) || looksLikeSemanticComponentArray(parsed)) return true
+    return parsed.some(item => looksLikeNativeOperation(item) || looksLikeA2UIMessage(item))
+  }
+  if (!isRecord(parsed)) return false
+  if (looksLikeNativeOperation(parsed) || looksLikeA2UIMessage(parsed) || 'elements' in parsed) return true
+  if (semanticComponentArrayFromWrapper(parsed)) return true
+  return false
+}
+
+function extractRenderableToolPayload(record: Record<string, unknown>, depth = 0): unknown | null {
+  if (depth > 4) return null
+  const candidates = [
+    record.input,
+    record.arguments,
+    record.args,
+    record.payload,
+    record.result,
+    record.output,
+  ]
+  for (const candidate of candidates) {
+    if (candidate == null) continue
+    const parsed = parseJsonMaybe(candidate)
+    if (looksLikeRenderableNestedInput(parsed)) return parsed
+    if (isRecord(parsed)) {
+      const nested = extractRenderableToolPayload(parsed, depth + 1)
+      if (nested) return nested
+    }
+  }
+  return null
+}
+
 export class VizualNativeCore {
   private surfaces = new Map<string, VizualNativeSurfaceState>()
   private artifacts = new Map<string, VizualArtifact>()
@@ -2187,6 +2227,10 @@ export class VizualNativeCore {
       return this.reduceOperation({ type: 'artifact.ingest', surfaceId, catalogId: 'vizual', spec: normalizeDirectVizualSpec(input as VizualSpec), raw: input })
     }
     if (isRecord(input)) {
+      const nestedRenderablePayload = extractRenderableToolPayload(input)
+      if (nestedRenderablePayload) {
+        return this.dispatch(nestedRenderablePayload as VizualNativeInput, normalizeSurfaceId(input, surfaceId))
+      }
       const wrappedComponents = semanticComponentArrayFromWrapper(input)
       if (wrappedComponents) {
         const semanticSpec = normalizeSemanticComponentArray(wrappedComponents)
@@ -2605,18 +2649,36 @@ export class VizualNativeCore {
   }
 
   private a2uiMessagesFromRenderToolArgs(args: Record<string, unknown>): A2UIMessage[] {
-    const surfaceId = firstString(args.surfaceId, args.surface_id, args.id)
-    const components = Array.isArray(args.components) ? args.components.filter(isRecord) : []
-    if (!surfaceId || components.length === 0) return []
-    const catalogId = this.options.defaultCatalogId ?? firstString(args.catalogId, args.catalog_id) ?? 'vizual'
+    const nestedInput = isRecord(args.input)
+      ? args.input
+      : isRecord(args.arguments)
+        ? args.arguments
+        : isRecord(args.args)
+          ? args.args
+          : isRecord(args.payload)
+            ? args.payload
+            : {}
+    const surfaceId = firstString(args.surfaceId, args.surface_id, args.id, nestedInput.surfaceId, nestedInput.surface_id, nestedInput.id) ?? this.defaultSurfaceId()
+    const components = Array.isArray(args.components)
+      ? args.components.filter(isRecord)
+      : Array.isArray(nestedInput.components)
+        ? nestedInput.components.filter(isRecord)
+        : []
+    if (components.length === 0) return []
+    const hasMissingIds = components.some(component => !firstString(component.id, component.componentId))
+    const normalizedComponents = hasMissingIds && looksLikeBareComponentArray(components)
+      ? normalizeBareComponentTree(components) as A2UIComponentDef[]
+      : components as A2UIComponentDef[]
+    const catalogId = this.options.defaultCatalogId ?? firstString(args.catalogId, args.catalog_id, nestedInput.catalogId, nestedInput.catalog_id) ?? 'vizual'
     const messages: A2UIMessage[] = [
       { version: 'v0.10', createSurface: { surfaceId, catalogId } } as A2UIMessage,
-      { version: 'v0.10', updateComponents: { surfaceId, components: components as A2UIComponentDef[] } } as A2UIMessage,
+      { version: 'v0.10', updateComponents: { surfaceId, components: normalizedComponents } } as A2UIMessage,
     ]
-    if (isRecord(args.data)) {
+    const data = isRecord(args.data) ? args.data : isRecord(nestedInput.data) ? nestedInput.data : null
+    if (data) {
       messages.splice(1, 0, {
         version: 'v0.10',
-        updateDataModel: { surfaceId, path: '/', value: args.data },
+        updateDataModel: { surfaceId, path: '/', value: data },
       } as A2UIMessage)
     }
     return messages

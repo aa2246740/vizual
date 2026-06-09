@@ -9,14 +9,16 @@ import { tcss, tc } from '../../core/theme-colors'
  * 1. indicators + series — direct mapping to ECharts radar config
  * 2. data + x + y — auto-extract dimensions and values from flat table
  */
-function buildRadarFallback(props: RadarChartProps): Record<string, unknown> {
+export function buildRadarFallback(props: RadarChartProps): Record<string, unknown> {
   // Mode 1: indicators + series provided directly
-  if (props.indicators && props.indicators.length > 0) {
-    const indicators = props.indicators.map(ind => ({
+  const directIndicators = Array.isArray(props.indicators) ? props.indicators : []
+  const directSeries = Array.isArray(props.series) ? props.series : []
+  if (directIndicators.length > 0) {
+    const indicators = directIndicators.map(ind => ({
       name: ind.name,
       max: ind.max ?? 100,
     }))
-    const seriesData = (props.series ?? []).map(s => ({
+    const seriesData = directSeries.map(s => ({
       value: s.values,
       name: s.name ?? '',
     }))

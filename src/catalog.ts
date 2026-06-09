@@ -35,9 +35,6 @@ import { KpiDashboardSchema } from './components/kpi-dashboard/schema'
 // Interactive input component schemas
 import { FormBuilderSchema } from './inputs/form-builder/schema'
 
-// Layout component schemas
-import { HeroLayoutSchema } from './components/hero-layout/schema'
-
 import { MarkdownSchema } from './components/markdown/schema'
 import { ContainerSchema } from './components/container/schema'
 
@@ -61,7 +58,7 @@ import { VideoSchema } from './components/a2ui-video/schema'
 import { AudioPlayerSchema } from './components/a2ui-audio/schema'
 
 /**
- * Vizual catalog — 45 components registered as json-render visualization catalog
+ * Vizual catalog — 44 components registered as json-render visualization catalog
  * Use host bridges such as renderLiveControlInMsg for liveControl parameter exploration.
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -173,12 +170,6 @@ export const renderKitCatalog = defineCatalog(schema, {
     FormBuilder: {
       props: FormBuilderSchema as any,
       description: 'Dynamic form builder for collecting structured user input and returning submitted data to the host Agent.',
-    },
-
-    // Historical layout compatibility — not agent-facing
-    HeroLayout: {
-      props: HeroLayoutSchema as any,
-      description: 'Large prominent hero section with gradient, solid, or transparent background.',
     },
 
     Markdown: {

@@ -35,9 +35,6 @@ import { KpiDashboard } from './components/kpi-dashboard/component'
 // Interactive input components — only FormBuilder retained
 import { FormBuilder } from './inputs/form-builder/component'
 
-// Layout components
-import { HeroLayout } from './components/hero-layout/component'
-
 import { Markdown } from './components/markdown/component'
 import { Container } from './components/container/component'
 
@@ -61,7 +58,7 @@ import { Video } from './components/a2ui-video/component'
 import { AudioPlayer } from './components/a2ui-audio/component'
 
 /**
- * Vizual registry — 45 React components + action handlers
+ * Vizual registry — 44 React components + action handlers
  */
 // @ts-ignore
 export const { registry, handlers, executeAction } = defineRegistry(renderKitCatalog, {
@@ -73,7 +70,6 @@ export const { registry, handlers, executeAction } = defineRegistry(renderKitCat
     DataTable,
     Timeline, GanttChart, OrgChart, KpiDashboard,
     FormBuilder,
-    HeroLayout,
     Markdown, Container,
     Row, Column, Card,
     Text, Image, Icon, List, Divider,

@@ -9,6 +9,7 @@ import {
 import type { ComputedFunction } from '@json-render/core'
 import { registry, handlers as createVizualHandlers } from '../registry'
 import type { VizualArtifact, VizualSpec } from './artifact'
+import { collectVizualRenderEvidence, type VizualRenderReceipt } from './render-evidence'
 import { assertNoCyclicChildren, withDefaultElementProps } from './spec-validation'
 
 export type VizualStateChange = { path: string; value: unknown }
@@ -19,6 +20,8 @@ export type VizualRendererProps = {
   handlers?: Record<string, (params: Record<string, unknown>) => Promise<unknown> | unknown>
   functions?: Record<string, ComputedFunction>
   onStateChange?: (changes: VizualStateChange[]) => void
+  onRenderReceipt?: (receipt: VizualRenderReceipt) => void
+  renderEvidenceDelayMs?: number
   fallback?: ComponentRenderer
 }
 
@@ -119,9 +122,13 @@ export function VizualRenderer({
   handlers,
   functions,
   onStateChange,
+  onRenderReceipt,
+  renderEvidenceDelayMs = 450,
   fallback,
 }: VizualRendererProps) {
   assertNoCyclicChildren(spec)
+  const rootRef = React.useRef<HTMLDivElement | null>(null)
+  const [receipt, setReceipt] = React.useState<VizualRenderReceipt | null>(null)
   const rendererSpec = React.useMemo(() => withDefaultElementProps(spec), [spec])
 
   const mergedInitialState = React.useMemo(
@@ -145,16 +152,68 @@ export function VizualRenderer({
     }
   }, [handlers, store])
 
+  const auditRender = React.useCallback(() => {
+    const next = collectVizualRenderEvidence(rootRef.current, rendererSpec)
+    setReceipt(next)
+    onRenderReceipt?.(next)
+    return next
+  }, [onRenderReceipt, rendererSpec])
+
+  React.useEffect(() => {
+    let cancelled = false
+    const timers = new Set<number>()
+    const frames = new Set<number>()
+    const maxAttempts = 4
+    const scheduleAudit = (delay: number, attempt = 0) => {
+      const timer = window.setTimeout(() => {
+        timers.delete(timer)
+        if (cancelled) return
+        const frame = requestAnimationFrame(() => {
+          frames.delete(frame)
+          if (cancelled) return
+          const next = auditRender()
+          const expectedCharts = next.evidence.metrics.expectedEChartsCount
+          if (!next.painted && expectedCharts > 0 && attempt < maxAttempts - 1) {
+            scheduleAudit(Math.max(renderEvidenceDelayMs, 250), attempt + 1)
+          }
+        })
+        frames.add(frame)
+      }, delay)
+      timers.add(timer)
+    }
+    const run = () => scheduleAudit(50)
+    scheduleAudit(renderEvidenceDelayMs)
+    const root = rootRef.current
+    root?.addEventListener('vizual-chart-finished', run)
+    root?.addEventListener('vizual-render-request-audit', run)
+    return () => {
+      cancelled = true
+      timers.forEach(timer => window.clearTimeout(timer))
+      frames.forEach(frame => cancelAnimationFrame(frame))
+      root?.removeEventListener('vizual-chart-finished', run)
+      root?.removeEventListener('vizual-render-request-audit', run)
+    }
+  }, [auditRender, renderEvidenceDelayMs])
+
   return (
-    <JSONUIProvider
-      registry={registry}
-      store={store}
-      handlers={actionHandlers}
-      functions={functions}
-      onStateChange={onStateChange}
+    <div
+      ref={rootRef}
+      data-vizual-render-root="true"
+      data-vizual-render-status={receipt?.status ?? 'mounted'}
+      data-vizual-render-painted={receipt?.painted ? 'true' : 'false'}
+      data-vizual-render-chart-painted={receipt?.chartPainted === undefined ? undefined : receipt.chartPainted ? 'true' : 'false'}
+      style={{ width: '100%', minWidth: 0 }}
     >
-      <Renderer spec={rendererSpec as any} registry={registry} fallback={fallback} />
-    </JSONUIProvider>
+      <JSONUIProvider
+        registry={registry}
+        store={store}
+        handlers={actionHandlers}
+        functions={functions}
+        onStateChange={onStateChange}
+      >
+        <Renderer spec={rendererSpec as any} registry={registry} fallback={fallback} />
+      </JSONUIProvider>
+    </div>
   )
 }
 

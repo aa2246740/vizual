@@ -130,7 +130,7 @@ type CatalogData = {
   }>
 }
 
-const DEFAULT_HIDDEN_AGENT_COMPONENTS = new Set(['HeroLayout'])
+const DEFAULT_HIDDEN_AGENT_COMPONENTS = new Set<string>()
 const AGENT_PRIMITIVE_COMPONENTS = new Set([
   'Row',
   'Column',
@@ -151,7 +151,7 @@ const AGENT_PRIMITIVE_COMPONENTS = new Set([
 const MEDIA_COMPONENTS = new Set(['Video', 'AudioPlayer'])
 const BUSINESS_COMPONENTS = new Set(['Timeline', 'GanttChart', 'OrgChart', 'KpiDashboard'])
 const INPUT_COMPONENTS = new Set(['FormBuilder', 'Button', 'CheckBox', 'TextField', 'ChoicePicker', 'Slider', 'DateTimeInput'])
-const LAYOUT_COMPONENTS = new Set(['Container', 'Row', 'Column', 'Card', 'HeroLayout', 'Tabs'])
+const LAYOUT_COMPONENTS = new Set(['Container', 'Row', 'Column', 'Card', 'Tabs'])
 const DOCUMENT_COMPONENTS = new Set(['Markdown'])
 const DATA_COMPONENTS = new Set(['DataTable'])
 const ESCAPE_HATCH_COMPONENTS = new Set<string>()
@@ -189,14 +189,7 @@ const ACTION_METADATA: Record<string, Pick<VizualCatalogActionManifest, 'kind' |
   },
 }
 
-function componentAgentMetadata(component: string): Pick<VizualCatalogComponentManifest, 'status' | 'agentFacing' | 'agentGuidance'> {
-  if (component === 'HeroLayout') {
-    return {
-      status: 'deprecated',
-      agentFacing: false,
-      agentGuidance: 'Runtime compatibility only. Do not use in agent-generated chat UI; let the host or design skill own hero/landing-page composition.',
-    }
-  }
+function componentAgentMetadata(_component: string): Pick<VizualCatalogComponentManifest, 'status' | 'agentFacing' | 'agentGuidance'> {
   return {}
 }
 
@@ -378,7 +371,7 @@ export function zodToJsonSchema(schema: unknown, seen: WeakSet<object> = new Wea
 }
 
 function inferChildrenKind(component: string): { kind: 'ids' | 'none' } {
-  return /^(Container|Row|Column|Card|HeroLayout|Tabs)$/u.test(component)
+  return /^(Container|Row|Column|Card|Tabs)$/u.test(component)
     ? { kind: 'ids' }
     : { kind: 'none' }
 }

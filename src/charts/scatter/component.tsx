@@ -10,10 +10,11 @@ export function buildScatterFallback(props: ScatterChartProps): Record<string, u
   const x = props.x ?? 'name'
   const yFields = Array.isArray(props.y) ? props.y : [props.y ?? 'value']
   const labelField = props.label ?? props.groupField
-  const xValues = props.data.map(d => d[x])
+  const data = Array.isArray(props.data) ? props.data : []
+  const xValues = data.map(d => d[x])
   const numericX = xValues.every(v => Number.isFinite(Number(v)))
   const sizeValues = props.size
-    ? props.data.map(d => Number(d[props.size!])).filter(Number.isFinite)
+    ? data.map(d => Number(d[props.size!])).filter(Number.isFinite)
     : []
   const maxSize = Math.max(...sizeValues, 1)
   const minSize = Math.min(...sizeValues, maxSize)
@@ -34,12 +35,12 @@ export function buildScatterFallback(props: ScatterChartProps): Record<string, u
     grid: { left: 50, right: 24, top: props.title ? 72 : 32, bottom: 40 },
     xAxis: numericX
       ? { type: 'value', name: x }
-      : { type: 'category', name: x, data: props.data.map(d => String(d[x] ?? '')) },
+      : { type: 'category', name: x, data: data.map(d => String(d[x] ?? '')) },
     yAxis: { type: 'value' },
     series: yFields.map((f, index) => ({
       type: index === 0 ? 'scatter' : 'line',
       name: f,
-      data: props.data.map(d => {
+      data: data.map(d => {
         const point: unknown[] = [
           numericX ? finiteNumber(d[x]) : String(d[x] ?? ''),
           finiteNumber(d[f]),

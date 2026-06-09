@@ -52,4 +52,19 @@ describe('DataTable', () => {
     expect(reasonCell.style.wordBreak).toBe('keep-all')
     expect(reasonCell.style.whiteSpace).toBe('normal')
   })
+
+  it('does not crash when a host passes a table without data', () => {
+    const { container } = render(
+      <DataTable
+        props={{
+          type: 'table',
+          title: '待补充明细',
+          columns: [{ key: 'name', label: '名称' }],
+        } as any}
+      />
+    )
+
+    expect(container.textContent).toContain('待补充明细')
+    expect(container.querySelectorAll('tbody tr')).toHaveLength(0)
+  })
 })

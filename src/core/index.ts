@@ -95,6 +95,14 @@ export type {
   VizualStateChange,
 } from './react-renderer'
 export {
+  collectVizualRenderEvidence,
+} from './render-evidence'
+export type {
+  VizualCanvasEvidence,
+  VizualRenderEvidenceMetrics,
+  VizualRenderReceipt,
+} from './render-evidence'
+export {
   downloadBlob,
   downloadExport,
   downloadPNG,

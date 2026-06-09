@@ -29,7 +29,7 @@ describe('native core coverage parity', () => {
     const renderableComponents = [...VIZUAL_RENDERABLE_COMPONENTS].sort()
     const fixtureComponents = galleryFixtureComponentNames()
 
-    expect(catalogComponents).toHaveLength(45)
+    expect(catalogComponents).toHaveLength(44)
     expect(manifestComponents).toEqual(catalogComponents)
     expect(registryComponents).toEqual(catalogComponents)
     expect(renderableComponents).toEqual(catalogComponents)

@@ -98,6 +98,46 @@ describe('VizualRenderer', () => {
     consoleError.mockRestore()
   })
 
+  it('emits a render receipt after visible content is mounted', async () => {
+    const rect = {
+      x: 0,
+      y: 0,
+      top: 0,
+      left: 0,
+      right: 320,
+      bottom: 120,
+      width: 320,
+      height: 120,
+      toJSON: () => undefined,
+    } as DOMRect
+    const rectSpy = vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockReturnValue(rect)
+    const onRenderReceipt = vi.fn()
+
+    render(
+      <VizualRenderer
+        spec={{
+          root: 'text',
+          elements: {
+            text: { type: 'Text', props: { text: 'Receipt visible' }, children: [] },
+          },
+        }}
+        onRenderReceipt={onRenderReceipt}
+        renderEvidenceDelayMs={0}
+      />,
+    )
+
+    await waitFor(() => {
+      expect(onRenderReceipt).toHaveBeenCalled()
+      expect(onRenderReceipt.mock.calls.at(-1)?.[0]).toMatchObject({
+        mounted: true,
+        painted: true,
+        status: 'painted',
+      })
+    })
+
+    rectSpy.mockRestore()
+  })
+
   it('hydrates direct spec Button actions and FormBuilder submissions for host callbacks', async () => {
     const submitForm = vi.fn()
     const submitNextMonthPlan = vi.fn()
@@ -628,6 +668,55 @@ describe('VizualRenderer', () => {
       expect(container.textContent).toContain('Agent dashboard title')
       expect(container.textContent).toContain('累计新增用户')
       expect(container.textContent).toContain('D1')
+    })
+    expect(consoleError).not.toHaveBeenCalled()
+    consoleError.mockRestore()
+  })
+
+  it('normalizes A2UI KPI cards into renderable metrics before rendering', async () => {
+    const spec: VizualSpec = {
+      root: 'dashboard',
+      elements: {
+        dashboard: { type: 'Column', props: { gap: 12 }, children: ['kpi'] },
+        kpi: {
+          type: 'KpiDashboard',
+          props: {
+            cards: [
+              {
+                title: '最高风险网点',
+                value: 'Airport',
+                subtitle: '综合风险评分 87.5',
+                color: 'red',
+              },
+              {
+                title: '总日均客流',
+                count: 3420,
+                subtitle: '5个网点 / 56名员工',
+                color: 'blue',
+              },
+            ],
+          },
+          children: [],
+        },
+      },
+    }
+
+    const normalized = withDefaultElementProps(spec)
+    expect(normalized.elements.kpi.props).toMatchObject({
+      type: 'kpi_dashboard',
+      metrics: [
+        { label: '最高风险网点', value: 'Airport', trendValue: '综合风险评分 87.5', color: 'red' },
+        { label: '总日均客流', value: 3420, trendValue: '5个网点 / 56名员工', color: 'blue' },
+      ],
+    })
+
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+    const { container } = render(<VizualRenderer spec={normalized} />)
+
+    await waitFor(() => {
+      expect(container.textContent).toContain('最高风险网点')
+      expect(container.textContent).toContain('Airport')
+      expect(container.textContent).toContain('综合风险评分 87.5')
     })
     expect(consoleError).not.toHaveBeenCalled()
     consoleError.mockRestore()

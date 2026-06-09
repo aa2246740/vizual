@@ -354,6 +354,7 @@ describe('FormBuilder component', () => {
             fields: [
               { name: 'actionPlan', label: 'Action plan', type: 'textarea' },
               { name: 'owner', label: 'Owner', type: 'text' },
+              { name: 'windows', label: 'Windows', type: 'number' },
               { name: 'expectedEffect', label: 'Expected effect', type: 'text' },
             ],
             onSubmit,
@@ -365,6 +366,7 @@ describe('FormBuilder component', () => {
     ;(container.querySelector('textarea[name="actionPlan"]') as HTMLTextAreaElement).value =
       'Fix B store stock within 48h'
     ;(container.querySelector('input[name="owner"]') as HTMLInputElement).value = 'Ops Manager Zhang'
+    ;(container.querySelector('input[name="windows"]') as HTMLInputElement).value = '8'
     ;(container.querySelector('input[name="expectedEffect"]') as HTMLInputElement).value =
       'Stockout below 5%'
 
@@ -373,6 +375,7 @@ describe('FormBuilder component', () => {
     expect(onSubmit).toHaveBeenCalledWith({
       actionPlan: 'Fix B store stock within 48h',
       owner: 'Ops Manager Zhang',
+      windows: 8,
       expectedEffect: 'Stockout below 5%',
     })
   })

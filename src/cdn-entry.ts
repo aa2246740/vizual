@@ -82,6 +82,7 @@ import type {
   VizualSpec,
 } from './core/artifact'
 import { assertNoCyclicChildren, withDefaultElementProps } from './core/spec-validation'
+import { collectVizualRenderEvidence } from './core/render-evidence'
 
 // All components
 import { BarChart, BarChartSchema } from './charts/bar-chart'
@@ -109,7 +110,6 @@ import { GanttChart, GanttChartSchema } from './components/gantt'
 import { OrgChart, OrgChartSchema } from './components/org-chart'
 import { KpiDashboard, KpiDashboardSchema } from './components/kpi-dashboard'
 import { FormBuilder, FormBuilderSchema } from './inputs/form-builder'
-import { HeroLayout, HeroLayoutSchema } from './components/hero-layout'
 import { Markdown, MarkdownSchema } from './components/markdown'
 
 type RenderSpecOptions = {
@@ -353,6 +353,7 @@ const vizual = {
   isVizualSpec,
   markArtifactError,
   markArtifactRendered,
+  collectVizualRenderEvidence,
   normalizeArtifact,
   summarizeSpec,
   createHostRuntime,
@@ -431,8 +432,6 @@ const vizual = {
   KpiDashboardSchema,
   FormBuilder,
   FormBuilderSchema,
-  HeroLayout,
-  HeroLayoutSchema,
   Markdown,
   MarkdownSchema,
 

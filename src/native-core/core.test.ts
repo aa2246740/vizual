@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
+import { buildBarFallback } from '../charts/bar-chart/component'
 import { withDefaultElementProps } from '../core/spec-validation'
 import { VizualNativeCore, nativeInputsToVizualSnapshot } from './core'
 import { normalizeVizualNativeInput } from './normalize'
@@ -618,6 +619,110 @@ describe('VizualNativeCore', () => {
       action: 'selectIssue',
       actionParams: { issue: 'no_production' },
     })
+  })
+
+  it('unwraps present_vizual_ui tool payloads before chart normalization', () => {
+    const preview = previewVizualNativeInput({
+      type: 'tool',
+      tool: 'present_vizual_ui',
+      input: {
+        components: [
+          {
+            type: 'BarChart',
+            title: '各区域响应超时情况（实际-目标）',
+            xLabel: '区域',
+            yLabel: '超时分钟数',
+            data: {
+              labels: ['Downtown', 'Westside', 'Northside', 'Eastside'],
+              datasets: [
+                { label: '平均超时(分钟)', data: [0.3, 10, -1, 4] },
+              ],
+            },
+          },
+          {
+            type: 'DataTable',
+            columns: [{ key: 'region', label: '区域' }],
+            rows: [{ region: 'Westside' }],
+          },
+        ],
+      },
+    } as any)
+
+    expect(preview.ok).toBe(true)
+    const chart = Object.values(preview.spec!.elements!).find(element => element.type === 'BarChart')
+    expect(chart?.props).toMatchObject({
+      x: 'label',
+      y: ['平均超时(分钟)'],
+      data: [
+        { label: 'Downtown', '平均超时(分钟)': 0.3 },
+        { label: 'Westside', '平均超时(分钟)': 10 },
+        { label: 'Northside', '平均超时(分钟)': -1 },
+        { label: 'Eastside', '平均超时(分钟)': 4 },
+      ],
+    })
+    const option = buildBarFallback(chart!.props as any)
+    expect(option.series).toEqual([
+      expect.objectContaining({ name: '平均超时(分钟)', data: [0.3, 10, -1, 4] }),
+    ])
+  })
+
+  it('renders AG-UI tool args with nested components even when the agent omits surfaceId', () => {
+    const core = new VizualNativeCore()
+    const snapshot = core.processAGUIEvents([
+      { type: 'TOOL_CALL_START', toolCallId: 'tool-1', toolCallName: 'present_vizual_ui' },
+      {
+        type: 'TOOL_CALL_ARGS',
+        toolCallId: 'tool-1',
+        delta: JSON.stringify({
+          input: {
+            components: [
+              {
+                type: 'BarChart',
+                data: {
+                  labels: ['A', 'B'],
+                  datasets: [{ label: '办理量', data: [12, 18] }],
+                },
+              },
+            ],
+          },
+        }),
+      },
+      { type: 'TOOL_CALL_END', toolCallId: 'tool-1' },
+    ] as any)
+
+    expect(snapshot!.surfaceId).toBe('surface-1')
+    const normalized = withDefaultElementProps(snapshot!.spec)
+    const chart = Object.values(normalized.elements!).find(element => element.type === 'BarChart')
+    expect(chart?.props).toMatchObject({
+      data: [
+        { label: 'A', '办理量': 12 },
+        { label: 'B', '办理量': 18 },
+      ],
+      x: 'label',
+      y: ['办理量'],
+    })
+  })
+
+  it.each([
+    ['BoxplotChart', { title: '箱线图裸组件', data: [{ branch: '东城', min: 60, q1: 70, median: 82, q3: 90, max: 96 }], x: 'branch', y: 'median' }],
+    ['FunnelChart', { title: '漏斗图裸组件', data: [{ stage: '线索', value: 100 }, { stage: '进件', value: 62 }], x: 'stage', y: 'value' }],
+    ['SankeyChart', { title: '桑基图裸组件', data: [{ source: '柜面', target: '存款', value: 42 }] }],
+    ['DumbbellChart', { title: '哑铃图裸组件', data: [{ branch: '东城', low: 66, high: 88 }], x: 'branch', y: ['low', 'high'] }],
+    ['XmrChart', { title: 'XMR 裸组件 Chart.js 形态', data: { labels: ['东城', '西城'], datasets: [{ label: '等待分钟', data: [6, 18] }] } }],
+  ])('accepts %s as a bare native component without an id', (componentType, props) => {
+    const preview = previewVizualNativeInput({
+      components: [
+        {
+          type: componentType,
+          ...props,
+        },
+      ],
+    } as any)
+
+    expect(preview.ok).toBe(true)
+    expect(preview.summary.componentTypes).toContain(componentType)
+    const chart = Object.values(preview.spec!.elements!).find(element => element.type === componentType)
+    expect(chart).toBeDefined()
   })
 
   it('rejects unsupported opaque direct-spec components instead of previewing an empty surface', () => {
@@ -2265,6 +2370,7 @@ describe('VizualNativeCore', () => {
     expect(validation.ok).toBe(false)
     expect(validation.issues).toEqual(expect.arrayContaining([
       expect.objectContaining({ code: 'vizual.unsupported_component', evidence: expect.objectContaining({ componentType: 'GridLayout' }) }),
+      expect.objectContaining({ code: 'vizual.unsupported_component', evidence: expect.objectContaining({ componentType: 'HeroLayout' }) }),
       expect.objectContaining({ code: 'vizual.unsupported_component', evidence: expect.objectContaining({ componentType: 'SplitLayout' }) }),
     ]))
   })

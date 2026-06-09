@@ -380,6 +380,87 @@ describe('chart field alias normalization', () => {
     ])
   })
 
+  it.each([
+    'AreaChart',
+    'BarChart',
+    'ComboChart',
+    'LineChart',
+    'PieChart',
+    'RadarChart',
+    'ScatterChart',
+    'SparklineChart',
+    'WaterfallChart',
+    'XmrChart',
+  ])(
+    'normalizes Chart.js labels and datasets nested under data for %s',
+    componentType => {
+      const normalized = normalizeChart(componentType, {
+        title: '各区域响应超时情况（实际-目标）',
+        xLabel: '区域',
+        yLabel: '超时分钟数',
+        data: {
+          labels: ['Downtown', 'Westside', 'Northside', 'Eastside'],
+          datasets: [
+            { label: '平均超时(分钟)', data: [0.3, 10, -1, 4] },
+          ],
+        },
+      })
+
+      expect(normalized).toMatchObject({
+        x: 'label',
+        y: ['平均超时(分钟)'],
+        data: [
+          { label: 'Downtown', '平均超时(分钟)': 0.3 },
+          { label: 'Westside', '平均超时(分钟)': 10 },
+          { label: 'Northside', '平均超时(分钟)': -1 },
+          { label: 'Eastside', '平均超时(分钟)': 4 },
+        ],
+      })
+    },
+  )
+
+  it.each(['AreaChart', 'BarChart', 'ComboChart', 'LineChart'])(
+    'normalizes ECharts xAxis.data and series nested under data for %s',
+    componentType => {
+      const normalized = normalizeChart(componentType, {
+        data: {
+          xAxis: { data: ['D1', 'D2'] },
+          series: [
+            { name: '超时', data: [3, 8] },
+            { name: '达标', data: [9, 4] },
+          ],
+        },
+      })
+
+      expect(normalized).toMatchObject({
+        x: 'label',
+        y: ['超时', '达标'],
+        data: [
+          { label: 'D1', 超时: 3, 达标: 9 },
+          { label: 'D2', 超时: 8, 达标: 4 },
+        ],
+      })
+    },
+  )
+
+  it('normalizes top-level ECharts xAxis.data and series', () => {
+    const normalized = normalizeChart('BarChart', {
+      xAxis: { data: ['D1', 'D2'] },
+      series: [
+        { name: '超时', data: [3, 8] },
+      ],
+    })
+
+    expect(normalized).toMatchObject({
+      x: 'label',
+      y: ['超时'],
+      data: [
+        { label: 'D1', 超时: 3 },
+        { label: 'D2', 超时: 8 },
+      ],
+    })
+  })
+
   it('normalizes chart-local label/value series and scatter points', () => {
     expect(normalizeChart('BarChart', {
       series: [

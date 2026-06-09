@@ -13,7 +13,7 @@ surface makes the answer clearer.
 [![license](https://img.shields.io/npm/l/vizual.svg)](https://github.com/aa2246740/vizual/blob/main/LICENSE)
 [![agent runtime](https://img.shields.io/badge/AI%20agent-native%20visual%20runtime-blue)](docs/AI-INTEGRATION.md)
 
-[中文](README.zh-CN.md) · [Getting Started](docs/GETTING-STARTED.md) · [Chatbot Integration](docs/CHATBOT-INTEGRATION.md) · [Agent Integration](docs/AI-INTEGRATION.md) · [Components](docs/COMPONENTS.md)
+[中文](README.zh-CN.md) · [Getting Started](docs/GETTING-STARTED.md) · [Chatbot Integration](docs/CHATBOT-INTEGRATION.md) · [Agent Integration](docs/AI-INTEGRATION.md) · [DeerFlow Upgrade](docs/DEERFLOW-UPGRADE.md) · [Components](docs/COMPONENTS.md)
 
 </div>
 
@@ -182,9 +182,9 @@ The current agent-facing catalog includes:
   Card, Text, Image, Icon, List, Divider, Button, CheckBox, TextField,
   ChoicePicker, Slider, DateTimeInput, Tabs, Video, AudioPlayer.
 
-Removed from native core: DocView, GridLayout, SplitLayout, FreeformHtml, Modal,
-Kanban, AuditLog. These are product-level surfaces or unsafe/freeform containers,
-not native core primitives.
+Removed from native core: DocView, GridLayout, SplitLayout, FreeformHtml,
+HeroLayout, Modal, Kanban, AuditLog. These are product-level surfaces,
+page-level layouts, or unsafe/freeform containers, not native core primitives.
 
 See [docs/COMPONENTS.md](docs/COMPONENTS.md) for the catalog.
 
@@ -276,6 +276,8 @@ async function presentVizualUi(args) {
 See [docs/AI-INTEGRATION.md](docs/AI-INTEGRATION.md) for the full agent contract.
 For a step-by-step retrofit guide for an existing chatbot, see
 [docs/CHATBOT-INTEGRATION.md](docs/CHATBOT-INTEGRATION.md).
+For projects that already integrated an older DeerFlow prototype, use
+[docs/DEERFLOW-UPGRADE.md](docs/DEERFLOW-UPGRADE.md).
 
 ## When Should An Agent Use Vizual?
 
@@ -317,6 +319,7 @@ natural-language tasks and inspect the rendered result visually:
 - [Getting Started](docs/GETTING-STARTED.md)
 - [Chatbot Integration](docs/CHATBOT-INTEGRATION.md)
 - [Agent Integration](docs/AI-INTEGRATION.md)
+- [DeerFlow Upgrade](docs/DEERFLOW-UPGRADE.md)
 - [Components](docs/COMPONENTS.md)
 - [Chinese README](README.zh-CN.md)
 - [中文接入指南](docs/AI-INTEGRATION.zh-CN.md)

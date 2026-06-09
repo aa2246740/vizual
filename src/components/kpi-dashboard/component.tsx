@@ -5,10 +5,11 @@ import { tcss } from '../../core/theme-colors'
  * Multi-metric KPI dashboard cards.
  */
 export function KpiDashboard({ props }: { props: KpiDashboardProps }) {
+  const metrics = Array.isArray(props.metrics) ? props.metrics : []
   return <div>
     {props.title && <h3 style={{fontFamily:tcss('--rk-font-display'),fontSize:tcss('--rk-text-md'),fontWeight:tcss('--rk-weight-semibold'),marginBottom:12}}>{props.title}</h3>}
     <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit, minmax(min(100%, 150px), 1fr))',gap:12,minWidth:0}}>
-      {props.metrics.map((m, i) => {
+      {metrics.map((m, i) => {
         const isUp = m.trend === 'up', isDown = m.trend === 'down'
         const valueText = `${m.prefix ?? ''}${String(m.value)}${m.suffix ?? ''}`
         const valueLength = valueText.replace(/\s/g, '').length

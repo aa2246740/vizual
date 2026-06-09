@@ -6,7 +6,7 @@
 
 Vizual 让 AI Agent 可以在对话中自然地产生图表、仪表盘、表格、表单、时间线、组织图、甘特图、流程图和可交互 UI。用户仍然正常提问；Agent 自己判断什么时候需要可视化或交互表达。
 
-[English](README.md) · [快速开始](docs/GETTING-STARTED.zh-CN.md) · [Chatbot 接入](docs/CHATBOT-INTEGRATION.zh-CN.md) · [Agent 接入](docs/AI-INTEGRATION.zh-CN.md) · [组件目录](docs/COMPONENTS.zh-CN.md)
+[English](README.md) · [快速开始](docs/GETTING-STARTED.zh-CN.md) · [Chatbot 接入](docs/CHATBOT-INTEGRATION.zh-CN.md) · [Agent 接入](docs/AI-INTEGRATION.zh-CN.md) · [DeerFlow 升级](docs/DEERFLOW-UPGRADE.zh-CN.md) · [组件目录](docs/COMPONENTS.zh-CN.md)
 
 </div>
 
@@ -131,7 +131,7 @@ Vizual 提供渲染结果和数据导出能力，也支持宿主或 Agent 定义
 - **输入**：FormBuilder。
 - **内容、媒体和 A2UI primitives**：Markdown、Container、Row、Column、Card、Text、Image、Icon、List、Divider、Button、CheckBox、TextField、ChoicePicker、Slider、DateTimeInput、Tabs、Video、AudioPlayer。
 
-已从 native core 移除：DocView、GridLayout、SplitLayout、FreeformHtml、Modal、Kanban、AuditLog。它们属于产品层、页面层或自由容器，不再作为 Agent-facing native core 组件。
+已从 native core 移除：DocView、GridLayout、SplitLayout、FreeformHtml、HeroLayout、Modal、Kanban、AuditLog。它们属于产品层、页面层或自由容器，不再作为 native core 组件。
 
 完整目录见 [docs/COMPONENTS.zh-CN.md](docs/COMPONENTS.zh-CN.md)。
 
@@ -223,6 +223,8 @@ async function presentVizualUi(args) {
 完整 Agent 契约见 [docs/AI-INTEGRATION.zh-CN.md](docs/AI-INTEGRATION.zh-CN.md)。
 把现有 chatbot 一步步改造成支持 Vizual，见
 [docs/CHATBOT-INTEGRATION.zh-CN.md](docs/CHATBOT-INTEGRATION.zh-CN.md)。
+已经接入过旧版 DeerFlow 原型的项目，见
+[docs/DEERFLOW-UPGRADE.zh-CN.md](docs/DEERFLOW-UPGRADE.zh-CN.md)。
 
 ## Agent 什么时候应该使用 Vizual？
 
@@ -263,6 +265,7 @@ npm run build
 - [快速开始](docs/GETTING-STARTED.zh-CN.md)
 - [Chatbot 接入](docs/CHATBOT-INTEGRATION.zh-CN.md)
 - [Agent 接入](docs/AI-INTEGRATION.zh-CN.md)
+- [DeerFlow 升级](docs/DEERFLOW-UPGRADE.zh-CN.md)
 - [组件目录](docs/COMPONENTS.zh-CN.md)
 - [English README](README.md)
 

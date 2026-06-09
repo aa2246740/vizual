@@ -700,7 +700,7 @@ describe('Vizual agent runtime harness', () => {
     const manifest = createVizualCatalogManifest({ includeExamples: true })
 
     expect(manifest.catalogId).toBe('vizual')
-    expect(Object.keys(manifest.components).length).toBeGreaterThanOrEqual(44)
+    expect(Object.keys(manifest.components)).toHaveLength(44)
     expect(manifest.components.HeroLayout).toBeUndefined()
     expect(manifest.components.GridLayout).toBeUndefined()
     expect(manifest.components.SplitLayout).toBeUndefined()
@@ -740,10 +740,7 @@ describe('Vizual agent runtime harness', () => {
     ]))
 
     const fullManifest = createVizualCatalogManifest({ includeCompatibilityComponents: true })
-    expect(fullManifest.components.HeroLayout).toMatchObject({
-      status: 'deprecated',
-      agentFacing: false,
-    })
+    expect(fullManifest.components.HeroLayout).toBeUndefined()
     expect(fullManifest.components.GridLayout).toBeUndefined()
     expect(fullManifest.components.SplitLayout).toBeUndefined()
   })

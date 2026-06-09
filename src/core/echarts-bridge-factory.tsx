@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import * as echarts from 'echarts'
 import { useBoundProp } from '@json-render/react'
 import { tc } from './theme-colors'
@@ -24,6 +24,21 @@ function stableStringify(value: unknown): string {
         return acc
       }, {})
   }) ?? ''
+}
+
+function summarizeOption(option: Record<string, unknown>): { seriesCount: number; pointCount: number } {
+  const rawSeries = option.series
+  const seriesList = Array.isArray(rawSeries)
+    ? rawSeries.filter(isRecord)
+    : isRecord(rawSeries)
+      ? [rawSeries]
+      : []
+  let pointCount = 0
+  for (const series of seriesList) {
+    const data = series.data
+    if (Array.isArray(data)) pointCount += data.length
+  }
+  return { seriesCount: seriesList.length, pointCount }
 }
 
 function themeValue(varName: string, host?: HTMLElement | null): string {
@@ -125,6 +140,9 @@ export function createEChartsBridge(
     const chartRef = useRef<echarts.ECharts | null>(null)
     const observerRef = useRef<ResizeObserver | null>(null)
     const dataPointClickedRef = useRef(false)
+    const [chartStatus, setChartStatus] = useState<'mounting' | 'mounted' | 'option-set' | 'finished' | 'error'>('mounting')
+    const [chartMeta, setChartMeta] = useState({ seriesCount: 0, pointCount: 0 })
+    const [chartError, setChartError] = useState('')
     const [, setSelectedPoint] = useBoundProp<Record<string, unknown> | undefined>(
       undefined,
       bindings?.selectedPoint,
@@ -140,12 +158,23 @@ export function createEChartsBridge(
       if (!containerRef.current) return
       const chart = echarts.init(containerRef.current)
       chartRef.current = chart
+      setChartStatus('mounted')
+
+      const finished = () => {
+        setChartStatus('finished')
+        containerRef.current?.dispatchEvent(new CustomEvent('vizual-chart-finished', {
+          bubbles: true,
+          detail: { chartType, ...chartMeta },
+        }))
+      }
+      chart.on('finished', finished)
 
       const observer = new ResizeObserver(() => chart.resize())
       observer.observe(containerRef.current)
       observerRef.current = observer
 
       return () => {
+        chart.off('finished', finished)
         observer.disconnect()
         observerRef.current = null
         chart.dispose()
@@ -156,8 +185,17 @@ export function createEChartsBridge(
     // Update chart option when props change
     useEffect(() => {
       if (chartRef.current) {
-        const option = buildOption(chartType, props, buildFallbackOption, containerRef.current)
-        chartRef.current.setOption(option, true)
+        try {
+          const option = buildOption(chartType, props, buildFallbackOption, containerRef.current)
+          const meta = summarizeOption(option)
+          setChartMeta(meta)
+          setChartError('')
+          setChartStatus('option-set')
+          chartRef.current.setOption(option, true)
+        } catch (error) {
+          setChartError(error instanceof Error ? error.message : String(error))
+          setChartStatus('error')
+        }
       }
     }, [propsKey])
 
@@ -173,8 +211,17 @@ export function createEChartsBridge(
           return
         }
         if (!chartRef.current) return
-        const newOption = buildOption(chartType, props, buildFallbackOption, containerRef.current)
-        chartRef.current.setOption(newOption, true)
+        try {
+          const newOption = buildOption(chartType, props, buildFallbackOption, containerRef.current)
+          const meta = summarizeOption(newOption)
+          setChartMeta(meta)
+          setChartError('')
+          setChartStatus('option-set')
+          chartRef.current.setOption(newOption, true)
+        } catch (error) {
+          setChartError(error instanceof Error ? error.message : String(error))
+          setChartStatus('error')
+        }
       }
       document.addEventListener('vizual-theme-change', handler)
       return () => document.removeEventListener('vizual-theme-change', handler)
@@ -222,6 +269,11 @@ export function createEChartsBridge(
     return (
       <div
         ref={containerRef}
+        data-vizual-chart={chartType}
+        data-vizual-chart-status={chartStatus}
+        data-vizual-chart-series-count={chartMeta.seriesCount}
+        data-vizual-chart-point-count={chartMeta.pointCount}
+        data-vizual-chart-error={chartError || undefined}
         style={{
           width: '100%',
           maxWidth: '100%',

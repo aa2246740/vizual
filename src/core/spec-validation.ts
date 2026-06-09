@@ -46,6 +46,15 @@ function axisField(value: unknown): string | undefined {
   return firstField(toRecord(value))
 }
 
+function axisData(value: unknown): unknown[] | null {
+  if (Array.isArray(value)) return value
+  const record = toRecord(value)
+  if (Array.isArray(record.data)) return record.data
+  if (Array.isArray(record.categories)) return record.categories
+  if (Array.isArray(record.labels)) return record.labels
+  return null
+}
+
 function setStringAlias(
   record: Record<string, unknown>,
   key: string,
@@ -375,7 +384,7 @@ function mapKpiDashboardProps(props: Record<string, unknown>) {
       ? record.trend
       : undefined
     const trendAsValue = trendDirection ? undefined : record.trend
-    const delta = record.trendValue ?? record.change ?? record.delta ?? trendAsValue
+    const delta = record.trendValue ?? record.trendLabel ?? record.subtitle ?? record.description ?? record.change ?? record.delta ?? trendAsValue
     const deltaRecord = toRecord(delta)
     const deltaValue = Object.keys(deltaRecord).length
       ? deltaRecord.value ?? deltaRecord.amount ?? deltaRecord.delta ?? deltaRecord.change
@@ -394,7 +403,8 @@ function mapKpiDashboardProps(props: Record<string, unknown>) {
         : undefined
     const valueWantsPercent = format === 'percent' || record.suffix === '%' || record.unit === '%'
     const valueWantsCny = format === 'currencyCNY' || (format === 'currency' && record.currency === 'CNY')
-    const value = valueWantsPercent ? formatPercentNumber(record.value ?? '') : record.value ?? ''
+    const rawValue = record.value ?? record.metric ?? record.amount ?? record.count ?? record.total ?? record.score ?? ''
+    const value = valueWantsPercent ? formatPercentNumber(rawValue) : rawValue
     const deltaWantsPercent = deltaValue != null && !deltaIsPercentagePoint && shouldFormatDeltaAsPercent(`${record.label ?? ''}${deltaLabel}`, deltaUnit, deltaValue, format)
     const formattedDeltaValue = deltaIsPercentagePoint ? formatPlainNumber(deltaValue) : deltaWantsPercent ? formatPercentNumber(deltaValue) : deltaValue
     const deltaSuffix = deltaValue != null && !hasExplicitUnit(formattedDeltaValue)
@@ -423,8 +433,13 @@ function mapKpiDashboardProps(props: Record<string, unknown>) {
   if (Array.isArray(next.metrics)) {
     next.metrics = next.metrics.map(mapMetric).filter(item => item.label)
   }
-  if (!Array.isArray(next.metrics) && Array.isArray(next.items)) {
-    next.metrics = next.items.map(mapMetric).filter(item => item.label)
+  if (!Array.isArray(next.metrics)) {
+    const metricSource = Array.isArray(next.items)
+      ? next.items
+      : Array.isArray(next.cards)
+        ? next.cards
+        : undefined
+    if (metricSource) next.metrics = metricSource.map(mapMetric).filter(item => item.label)
   }
   return next
 }
@@ -488,8 +503,8 @@ function mapChartProps(componentType: string, props: Record<string, unknown>) {
   const agenuiSeries = Array.isArray(agenuiData.series)
     ? agenuiData.series.map(toRecord).filter(series => Object.keys(series).length)
     : []
-  const agenuiXAxis = Array.isArray(agenuiData.xAxis) ? agenuiData.xAxis : null
-  const agenuiCategories = Array.isArray(agenuiData.categories) ? agenuiData.categories : null
+  const agenuiXAxis = axisData(agenuiData.xAxis)
+  const agenuiCategories = axisData(agenuiData.categories)
   if (agenuiSeries.length && componentType === 'PieChart') {
     const firstSeries = agenuiSeries[0]
     const seriesData = Array.isArray(firstSeries.data) ? firstSeries.data : []
@@ -514,6 +529,33 @@ function mapChartProps(componentType: string, props: Record<string, unknown>) {
       const row: Record<string, unknown> = { label }
       for (const [seriesIndex, series] of agenuiSeries.entries()) {
         const values = Array.isArray(series.data) ? series.data : []
+        const value = values[rowIndex]
+        const valueRecord = toRecord(value)
+        row[seriesNames[seriesIndex] ?? `series_${seriesIndex + 1}`] =
+          'value' in valueRecord ? valueRecord.value : value
+      }
+      return row
+    })
+    next.x = 'label'
+    next.y = seriesNames
+  }
+  const chartJsLabels = Array.isArray(agenuiData.labels) ? agenuiData.labels : null
+  const chartJsDatasets = Array.isArray(agenuiData.datasets)
+    ? agenuiData.datasets.map(toRecord).filter(dataset => Array.isArray(dataset.data))
+    : []
+  if (!Array.isArray(next.data) && chartJsLabels && chartJsDatasets.length) {
+    const seriesNames = chartJsDatasets.map((dataset, index) => {
+      const name = typeof dataset.label === 'string' && dataset.label.trim()
+        ? dataset.label.trim()
+        : typeof dataset.name === 'string' && dataset.name.trim()
+          ? dataset.name.trim()
+          : `series_${index + 1}`
+      return name
+    })
+    next.data = chartJsLabels.map((label, rowIndex) => {
+      const row: Record<string, unknown> = { label }
+      for (const [seriesIndex, dataset] of chartJsDatasets.entries()) {
+        const values = Array.isArray(dataset.data) ? dataset.data : []
         const value = values[rowIndex]
         const valueRecord = toRecord(value)
         row[seriesNames[seriesIndex] ?? `series_${seriesIndex + 1}`] =
@@ -574,6 +616,8 @@ function mapChartProps(componentType: string, props: Record<string, unknown>) {
   }
   const labelValues = Array.isArray(next.x)
     ? next.x
+    : axisData(next.xAxis)
+      ? axisData(next.xAxis)
     : Array.isArray(next.labels)
       ? next.labels
       : Array.isArray(next.xLabels)

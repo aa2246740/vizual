@@ -91,4 +91,17 @@ describe('KpiDashboard', () => {
     expect(trend.style.overflow).toBe('visible')
     expect(trend.style.fontSize).toBe('var(--rk-text-xs)')
   })
+
+  it('does not crash when a host passes partially normalized KPI props', () => {
+    const { container } = render(
+      <KpiDashboard
+        props={{
+          type: 'kpi_dashboard',
+          title: '处理中指标',
+        } as any}
+      />
+    )
+
+    expect(container.textContent).toContain('处理中指标')
+  })
 })

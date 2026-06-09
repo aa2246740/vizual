@@ -15,13 +15,13 @@ import { tc } from '../../core/theme-colors'
  * Connector lines (dashed) link each bar's endpoint to the next bar's start,
  * making the waterfall flow visually obvious.
  */
-function buildWaterfallFallback(props: WaterfallChartProps): Record<string, unknown> {
+export function buildWaterfallFallback(props: WaterfallChartProps): Record<string, unknown> {
   const category = props.x ?? props.label ?? 'name'
   const valueField = props.y ?? props.value ?? 'value'
   const yFields = Array.isArray(valueField) ? valueField : [valueField]
   const field = yFields[0]
 
-  const data = props.data
+  const data = Array.isArray(props.data) ? props.data : []
   const categories = data.map(d => String(d[category] ?? ''))
 
   const accentColor = tc('--rk-accent')

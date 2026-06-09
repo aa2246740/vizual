@@ -47,7 +47,6 @@ export const VIZUAL_RENDERABLE_COMPONENTS = [
   'FunnelChart',
   'GanttChart',
   'HeatmapChart',
-  'HeroLayout',
   'HistogramChart',
   'Icon',
   'Image',
