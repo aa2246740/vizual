@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Vizual Core — Review Acceptance</title>
+  <style>
+    body { font-family: -apple-system, system-ui, sans-serif; margin: 0; background: #0d1117; color: #e6edf3; }
+    header { padding: 16px 24px; border-bottom: 1px solid #30363d; position: sticky; top: 0; background: #0d1117; z-index: 10; }
+    h1 { font-size: 18px; margin: 0; }
+    .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; padding: 24px; }
+    .case { border: 1px solid #30363d; border-radius: 10px; overflow: hidden; background: #161b22; }
+    .case h2 { font-size: 14px; margin: 0; padding: 10px 14px; background: #21262d; border-bottom: 1px solid #30363d; }
+    .meta { padding: 8px 14px; font-size: 12px; font-family: ui-monospace, monospace; border-bottom: 1px solid #30363d; }
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 6px; font-weight: 600; margin-right: 6px; }
+    .ok-true { background: #1f6f3f; color: #fff; }
+    .ok-false { background: #8b2c2c; color: #fff; }
+    .paint-painted { background: #1f6f3f; color: #fff; }
+    .paint-blank { background: #b08800; color: #000; }
+    .verdict-good { color: #3fb950; }
+    .verdict-bug { color: #f85149; font-weight: 700; }
+    .surface { padding: 12px; min-height: 220px; background: #fff; color: #111; }
+    .expect { padding: 6px 14px; font-size: 12px; color: #8b949e; }
+  </style>
+</head>
+<body>
+  <header><h1>Vizual Core — Review Acceptance Harness</h1></header>
+  <div class="grid" id="grid"></div>
+  <script src="../dist/vizual.standalone.js"></script>
+  <script>
+    const V = window.Vizual;
+    // Each case: { name, input, expectVisible: bool, note }
+    const cases = [
+      {
+        name: '1. Data dashboard (KPI + Bar) — GOOD',
+        input: { root: 'r', elements: { r: { type: 'Column', props: { gap: 16 }, children: ['k', 'b'] },
+          k: { type: 'KpiDashboard', props: { type: 'kpi_dashboard', columns: 3, metrics: [
+            { label: '营收', value: '1,234万', trend: 'up', trendValue: '12%' },
+            { label: '订单', value: '8,901', trend: 'up', trendValue: '5%' },
+            { label: '退款率', value: '2.1%', trend: 'down', trendValue: '0.3pp' } ] } },
+          b: { type: 'BarChart', props: { title: '各网点营收', x: 'name', y: 'value', data: [
+            { name: '北京', value: '1,234' }, { name: '上海', value: '2,345' }, { name: '广州', value: '1,890' }, { name: '深圳', value: '2,100' } ] } } } },
+        expectVisible: true, note: '千分位数字 "1,234" 应渲染为真实柱子（修复前会全为 0）'
+      },
+      {
+        name: '2. Line + Pie + Combo — GOOD',
+        input: { root: 'r', elements: { r: { type: 'Column', props: { gap: 16 }, children: ['l', 'p'] },
+          l: { type: 'LineChart', props: { title: '月度趋势', x: 'month', y: ['plan', 'actual'], data: [
+            { month: '1月', plan: 100, actual: 90 }, { month: '2月', plan: 120, actual: 130 }, { month: '3月', plan: 140, actual: 150 } ] } },
+          p: { type: 'PieChart', props: { title: '渠道占比', label: 'name', value: 'value', data: [
+            { name: '直营', value: '1,200' }, { name: '加盟', value: '800' }, { name: '线上', value: '600' } ] } } } },
+        expectVisible: true, note: 'pie 千分位也应非空'
+      },
+      {
+        name: '3. Bank branch ranking (horizontal bar) — GOOD',
+        input: { type: 'bar', title: '网点营收排行', x: 'branch', y: 'revenue', horizontal: true, data: [
+          { branch: '中心支行', revenue: '5,200' }, { branch: '城东支行', revenue: '4,100' }, { branch: '高新支行', revenue: '3,800' } ] },
+        expectVisible: true, note: '语义输入(顶层 type) + 千分位'
+      },
+      {
+        name: '4. Form collection — GOOD',
+        input: { root: 'r', elements: { r: { type: 'FormBuilder', props: { title: '客户回访', fields: [
+          { name: 'name', label: '姓名', type: 'text' }, { name: 'score', label: '满意度', type: 'select', options: ['高', '中', '低'] } ], submitLabel: '提交' } } } },
+        expectVisible: true, note: '表单字段应可见'
+      },
+      {
+        name: '5. Timeline WITHOUT date — BUG→FIX',
+        input: { root: 'r', elements: { r: { type: 'Timeline', props: { title: '项目里程碑', events: [
+          { title: '立项', description: '完成立项评审' }, { title: '开发', description: '核心功能开发' }, { title: '上线', description: '正式发布' } ] } } } },
+        expectVisible: true, note: '无 date 的 roadmap：修复前整列空白，修复后应渲染'
+      },
+      {
+        name: '6. Org chart — GOOD',
+        input: { root: 'r', elements: { r: { type: 'OrgChart', props: { nodes: [
+          { id: 'ceo', label: 'CEO' }, { id: 'cto', label: 'CTO', parent: 'ceo' }, { id: 'cfo', label: 'CFO', parent: 'ceo' } ] } } } },
+        expectVisible: true, note: '组织架构应可见'
+      },
+      {
+        name: '7. EMPTY-DATA bar chart — must be ok:false',
+        input: { root: 'r', elements: { r: { type: 'BarChart', props: { title: '空数据', x: 'name', y: 'value', data: [] } } } },
+        expectVisible: false, note: '空数据图表：修复前 ok:true 却空白；修复后应 ok:false'
+      },
+      {
+        name: '8. EMPTY KpiDashboard — must be ok:false',
+        input: { root: 'r', elements: { r: { type: 'KpiDashboard', props: { type: 'kpi_dashboard', metrics: [] } } } },
+        expectVisible: false, note: '无 metrics：修复后应 ok:false'
+      },
+      {
+        name: '9. Raw HTML input — must be ok:false (fallback to text)',
+        input: '<div><h1>Hello</h1><script>alert(1)<\/script></div>',
+        expectVisible: false, note: '原始 HTML：应被拒绝，host 降级为文字'
+      },
+      {
+        name: '10. Combo (dual axis) — GOOD',
+        input: { root: 'r', elements: { r: { type: 'ComboChart', props: { title: '量价组合', x: 'month',
+          series: [ { field: 'volume', type: 'bar' }, { field: 'price', type: 'line', axis: 'right' } ], data: [
+          { month: '1月', volume: '1,000', price: 50 }, { month: '2月', volume: '1,500', price: 55 }, { month: '3月', volume: '1,200', price: 60 } ] } } } },
+        expectVisible: true, note: 'combo 千分位'
+      },
+    ];
+
+    const grid = document.getElementById('grid');
+    const results = [];
+    cases.forEach((c, i) => {
+      const el = document.createElement('div');
+      el.className = 'case';
+      const surfId = 'surf-' + i;
+      el.innerHTML = `<h2>${c.name}</h2><div class="meta" id="meta-${i}">…</div><div class="expect">期望: ${c.note}</div><div class="surface" id="${surfId}"></div>`;
+      grid.appendChild(el);
+
+      let preview, ok = false, paint = 'blank', err = '';
+      try { preview = V.previewVizualNativeInput(c.input, { requireRenderable: true }); ok = preview.ok; } catch (e) { err = String(e); }
+      const surface = document.getElementById(surfId);
+      if (ok && preview && preview.spec) {
+        try {
+          V.renderSpec(preview.spec, surface);
+        } catch (e) { err = 'render: ' + String(e); }
+      } else {
+        surface.innerHTML = '<div style="color:#8b2c2c;padding:8px">[no Vizual surface — host should show text fallback]</div>';
+      }
+      // measure paint after a tick (echarts async)
+      setTimeout(() => {
+        let ev = null;
+        try { ev = V.collectVizualRenderEvidence(surface); } catch (e) {}
+        paint = ev ? ev.status : 'unknown';
+        const visible = paint === 'painted';
+        // verdict: does ok+paint match expectation?
+        const matches = (c.expectVisible && ok && visible) || (!c.expectVisible && !ok);
+        const meta = document.getElementById('meta-' + i);
+        meta.innerHTML =
+          `<span class="badge ${ok ? 'ok-true' : 'ok-false'}">ok: ${ok}</span>` +
+          `<span class="badge ${visible ? 'paint-painted' : 'paint-blank'}">paint: ${paint}</span>` +
+          `<span class="${matches ? 'verdict-good' : 'verdict-bug'}">${matches ? '✓ 符合预期' : '✗ 不符（fake success / 空白）'}</span>` +
+          (err ? `<div style="color:#f85149">${err}</div>` : '');
+        results.push({ name: c.name, ok, paint, matches });
+        window.__vizualResults = results;
+      }, 600);
+    });
+  </script>
+</body>
+</html>

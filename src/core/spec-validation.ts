@@ -845,7 +845,41 @@ function mapChartProps(componentType: string, props: Record<string, unknown>) {
   if (componentType === 'ComboChart' && normalizedSeries.length) {
     next.series = normalizedSeries
   }
+  if (Array.isArray(next.data)) {
+    next.data = coerceGroupedNumericCells(next.data)
+  }
   return next
+}
+
+/**
+ * Thousands-separated numeric string, e.g. "1,234" or "-2,000.5". Agents very
+ * commonly emit pre-formatted numbers; chart builders coerce with `Number(x)`,
+ * which turns "1,234" into NaN→0 and silently produces an all-zero/empty chart.
+ * We strip the separators here, at the single chart-data normalization point,
+ * so every builder receives a real number. Plain category labels (e.g. "2024",
+ * "北京", "2.1%") never match this pattern and are left untouched.
+ */
+const GROUPED_NUMERIC_STRING = /^-?\d{1,3}(?:,\d{3})+(?:\.\d+)?$/
+
+function coerceGroupedNumericCells(data: unknown[]): unknown[] {
+  let changed = false
+  const next = data.map(item => {
+    if (!item || typeof item !== 'object' || Array.isArray(item)) return item
+    let rowChanged = false
+    const row = item as Record<string, unknown>
+    const out: Record<string, unknown> = {}
+    for (const [key, value] of Object.entries(row)) {
+      if (typeof value === 'string' && GROUPED_NUMERIC_STRING.test(value.trim())) {
+        out[key] = Number(value.trim().replace(/,/g, ''))
+        rowChanged = true
+      } else {
+        out[key] = value
+      }
+    }
+    if (rowChanged) changed = true
+    return rowChanged ? out : item
+  })
+  return changed ? next : data
 }
 
 function normalizeElementProps(

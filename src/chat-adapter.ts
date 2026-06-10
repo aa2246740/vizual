@@ -11,18 +11,39 @@ import {
   type VizualValidationIssue,
 } from './native-core'
 
+/**
+ * The single directive a host should act on for one Vizual tool call. A host
+ * must render exactly ONE of: the Vizual surface (`rendered`), the text
+ * fallback (`fallback`), or nothing (`suppressed`). This prevents showing a
+ * loader + error + fallback bubble all at once for the same turn.
+ */
+export type VizualPresentationOutcome = 'rendered' | 'fallback' | 'suppressed'
+
 export type VizualChatPresentation = {
   id: string
   toolCallId?: string
   surfaceId?: string
   accepted: boolean
   renderable: boolean
+  /** What the host should do for this tool call. See VizualPresentationOutcome. */
+  outcome: VizualPresentationOutcome
   input: unknown
   fallbackText?: string
   display?: VizualAgentDisplayHint & Record<string, unknown>
   result?: unknown
   preview?: VizualPreviewResult
+  /** Diagnostic issues for the agent-repair loop only — never a user-facing bubble. */
   issues?: unknown[]
+}
+
+function resolvePresentationOutcome(
+  accepted: boolean,
+  renderable: boolean,
+  fallbackText: string | undefined,
+): VizualPresentationOutcome {
+  if (accepted && renderable) return 'rendered'
+  if (typeof fallbackText === 'string' && fallbackText.trim().length > 0) return 'fallback'
+  return 'suppressed'
 }
 
 export type VizualChatAdapterMessage = Record<string, unknown>
@@ -185,6 +206,11 @@ export function extractVizualPresentations(
       const resultAccepted = resultRecord.ok === true || (result === undefined && isVizualAgentEnvelope(envelope))
       const renderable = preview.ok && Boolean(preview.spec)
       const accepted = resultAccepted && renderable
+      const fallbackText = [
+        envelope?.fallbackText,
+        args.fallbackText,
+        resultRecord.fallbackText,
+      ].find((value): value is string => typeof value === 'string')
 
       presentations.push({
         id: call.id ? `tool:${call.id}` : surfaceId ? `surface:${surfaceId}` : `vizual:${presentations.length}`,
@@ -192,12 +218,9 @@ export function extractVizualPresentations(
         surfaceId,
         accepted,
         renderable,
+        outcome: resolvePresentationOutcome(accepted, renderable, fallbackText),
         input,
-        fallbackText: [
-          envelope?.fallbackText,
-          args.fallbackText,
-          resultRecord.fallbackText,
-        ].find((value): value is string => typeof value === 'string'),
+        fallbackText,
         display: isRecord(display) ? display as VizualChatPresentation['display'] : undefined,
         result,
         preview,
@@ -219,6 +242,20 @@ export function selectVisibleVizualPresentations(
   presentations: VizualChatPresentation[],
 ): VizualChatPresentation[] {
   return selectRenderableVizualPresentations(presentations)
+}
+
+/**
+ * Fallback texts for presentations that did NOT render, so the host can show a
+ * single text bubble instead of a broken/empty Vizual card. Returns one entry
+ * per `outcome: 'fallback'` presentation; `suppressed` ones yield nothing.
+ */
+export function selectVizualFallbackTexts(
+  presentations: VizualChatPresentation[],
+): string[] {
+  return presentations
+    .filter(presentation => presentation.outcome === 'fallback')
+    .map(presentation => presentation.fallbackText)
+    .filter((text): text is string => typeof text === 'string' && text.trim().length > 0)
 }
 
 export function buildVizualActionMessage(options: {

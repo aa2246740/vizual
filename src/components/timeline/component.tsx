@@ -84,7 +84,9 @@ function normalizeEvents(props: TimelineProps | Record<string, unknown>): Array<
       const record = toRecord(item) as TimelineEvent
       const date = String(record.date ?? record.time ?? '').trim()
       const title = String(record.title ?? record.label ?? record.name ?? '').trim()
-      if (!date || !title) return null
+      // Agents frequently emit undated roadmaps/step lists. Render an event as
+      // long as it has a title; only drop entries that have neither.
+      if (!date && !title) return null
       const description = record.description ?? record.detail ?? record.content
       return {
         date,
