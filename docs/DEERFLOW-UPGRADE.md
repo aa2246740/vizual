@@ -137,7 +137,9 @@ updated.
 
 The frontend should not infer Vizual success from assistant prose or from
 `ok: true` alone. Extract accepted Vizual presentations from chat history and
-render only the accepted ones.
+render only presentations that pass the SDK renderability gate. In Vizual Core,
+`ok: true` is only a transport/tool result; a chat frontend must still require a
+successful native preview with a real spec.
 
 Recommended adapter flow:
 
@@ -145,12 +147,12 @@ Recommended adapter flow:
 import {
   VizualRenderer,
   extractVizualPresentations,
-  selectVisibleVizualPresentations,
+  selectRenderableVizualPresentations,
   previewVizualNativeInput,
   buildVizualActionMessage,
 } from 'vizual'
 
-const presentations = selectVisibleVizualPresentations(
+const presentations = selectRenderableVizualPresentations(
   extractVizualPresentations(messages),
 )
 

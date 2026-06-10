@@ -795,7 +795,7 @@ describe('VizualNativeCore', () => {
     expect(emptyElements.ok).toBe(false)
     expect(emptyElements.issues).toEqual(expect.arrayContaining([
       expect.objectContaining({
-        severity: 'warning',
+        severity: 'error',
         code: 'vizual.spec_empty_elements',
       }),
       expect.objectContaining({
@@ -822,6 +822,54 @@ describe('VizualNativeCore', () => {
     })
     expect(cyclic.ok).toBe(false)
     expect(cyclic.issues.map(issue => issue.code)).toContain('vizual.spec_cyclic_children')
+  })
+
+  it('rejects opaque external DSL shapes before any host can treat them as renderable', () => {
+    const cases = [
+      {
+        name: 'echarts',
+        input: {
+          title: { text: '团队能力 vs 行业标准' },
+          tooltip: {},
+          legend: {},
+          xAxis: { type: 'category', data: ['算法创新', '硬件品控'] },
+          yAxis: { type: 'value' },
+          series: [{ type: 'bar', data: [94, 70] }],
+        },
+      },
+      {
+        name: 'chartjs',
+        input: {
+          type: 'bar',
+          data: {
+            labels: ['东城', '西城'],
+            datasets: [{ label: '等待分钟', data: [6, 18] }],
+          },
+        },
+      },
+      {
+        name: 'html',
+        input: '<div class="dashboard"><canvas id="chart"></canvas></div>',
+      },
+      {
+        name: 'old-ui-dsl',
+        input: {
+          layout: 'dashboard',
+          widgets: [{ chartType: 'bar', data: [1, 2] }],
+        },
+      },
+    ]
+
+    for (const item of cases) {
+      const preview = previewVizualNativeInput(item.input as any)
+      expect(preview.ok, item.name).toBe(false)
+      expect(preview.issues).toEqual(expect.arrayContaining([
+        expect.objectContaining({
+          severity: 'error',
+          code: 'vizual.opaque_dsl_input',
+        }),
+      ]))
+    }
   })
 
   it('rejects chart fields that exist but are not numeric', () => {

@@ -78,6 +78,105 @@ function hasOwn(record: Record<string, unknown>, key: string): boolean {
   return Object.prototype.hasOwnProperty.call(record, key)
 }
 
+function parseJsonInputCandidate(input: unknown): unknown {
+  if (typeof input !== 'string') return input
+  const trimmed = input.trim()
+  if (!trimmed || !/^[\[{]/.test(trimmed)) return input
+  try {
+    return JSON.parse(trimmed)
+  } catch {
+    return input
+  }
+}
+
+function hasAnyOwn(record: Record<string, unknown>, keys: string[]): boolean {
+  return keys.some(key => hasOwn(record, key))
+}
+
+function firstOwnKey(record: Record<string, unknown>, keys: string[]): string | undefined {
+  return keys.find(key => hasOwn(record, key))
+}
+
+function collectOpaqueInputIssues(input: unknown, surfaceId: string): VizualValidationIssue[] {
+  const candidate = parseJsonInputCandidate(input)
+
+  if (typeof candidate === 'string') {
+    const trimmed = candidate.trim()
+    if (
+      /<\s*(?:!doctype|html|head|body|main|section|article|div|span|script|style|canvas|svg)\b/i.test(trimmed)
+      || /\b(?:React\.createElement|export\s+default|function\s+[A-Z]\w*\s*\(|const\s+[A-Z]\w*\s*=\s*\()/i.test(trimmed)
+    ) {
+      return [{
+        severity: 'error',
+        code: 'vizual.opaque_dsl_input',
+        message: 'Vizual native input cannot be raw HTML, React code, CSS, SVG, or app source. Return a native root/elements payload, supported native components, AG-UI, or A2UI messages.',
+        surfaceId,
+        evidence: { kind: 'raw-code-or-markup' },
+      }]
+    }
+    return []
+  }
+
+  if (!isRecord(candidate)) return []
+
+  if (Array.isArray(candidate.series) && hasAnyOwn(candidate, ['xAxis', 'yAxis', 'radar', 'angleAxis', 'radiusAxis', 'tooltip', 'legend', 'grid'])) {
+    return [{
+      severity: 'error',
+      code: 'vizual.opaque_dsl_input',
+      message: 'Vizual native input cannot be a raw ECharts option object. Use native chart components such as BarChart, LineChart, RadarChart, or ComboChart with data rows and field bindings.',
+      surfaceId,
+      evidence: { kind: 'echarts-option', keys: Object.keys(candidate).filter(key => ['xAxis', 'yAxis', 'series', 'tooltip', 'legend', 'grid', 'radar'].includes(key)) },
+    }]
+  }
+
+  const data = isRecord(candidate.data) ? candidate.data : {}
+  if (typeof candidate.type === 'string' && Array.isArray(data.datasets) && Array.isArray(data.labels)) {
+    return [{
+      severity: 'error',
+      code: 'vizual.opaque_dsl_input',
+      message: 'Vizual native input cannot be a raw Chart.js config. Use a native chart component inside components/root/elements and provide data rows or component-local chart data.',
+      surfaceId,
+      evidence: { kind: 'chartjs-config', type: candidate.type },
+    }]
+  }
+
+  const nativeHints = [
+    'root',
+    'elements',
+    'components',
+    'component',
+    'createSurface',
+    'updateComponents',
+    'updateDataModel',
+    'appendDataModel',
+    'deleteSurface',
+    'callFunction',
+    'actionResponse',
+    'updateTheme',
+    'errorRecovery',
+    'a2ui_operations',
+    'a2uiMessages',
+    'input',
+    'envelope',
+    'spec',
+    'surfaceUpdate',
+    'surfaceCreate',
+  ]
+  const semanticHints = ['type', 'kind', 'title', 'kpis', 'metrics', 'charts', 'visuals', 'tables', 'risks', 'actions', 'forms']
+  if (hasAnyOwn(candidate, nativeHints) || hasAnyOwn(candidate, semanticHints)) return []
+
+  const oldDslKey = firstOwnKey(candidate, ['widgets', 'layout', 'sections', 'panels', 'page', 'views', 'html', 'css'])
+  if (!oldDslKey) return []
+
+  return [{
+    severity: 'error',
+    code: 'vizual.opaque_dsl_input',
+    message: `Vizual native input cannot be an old opaque UI DSL keyed by "${oldDslKey}". Return supported native components, a Vizual root/elements spec, AG-UI, or A2UI messages.`,
+    surfaceId,
+    evidence: { kind: 'old-ui-dsl', key: oldDslKey },
+  }]
+}
+
 function stringField(value: unknown): string | undefined {
   return typeof value === 'string' && value.trim().length > 0 ? value.trim() : undefined
 }
@@ -343,6 +442,7 @@ export function validateVizualNativeInput(
   const requireRenderable = options.requireRenderable ?? true
   const normalized = normalizeVizualNativeInput(input, options)
   const issues: VizualValidationIssue[] = [
+    ...collectOpaqueInputIssues(input, normalized.surfaceId),
     ...normalized.errors.map(error => ({
       severity: 'error' as const,
       code: `native.${error.phase ?? 'error'}`,
@@ -382,7 +482,7 @@ export function validateVizualNativeInput(
     }
     if (!spec.elements || Object.keys(spec.elements).length === 0) {
       issues.push({
-        severity: 'warning',
+        severity: requireRenderable ? 'error' : 'warning',
         code: 'vizual.spec_empty_elements',
         message: 'Rendered Vizual spec has no elements. This can be valid while a surface is still streaming, but it cannot satisfy a visible UI preview.',
         surfaceId: snapshot.surfaceId,

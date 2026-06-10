@@ -171,76 +171,18 @@ type ChatMessage =
 ## Step 5. 前端从消息里提取 Vizual
 
 ```ts
-const VIZUAL_TOOL_NAME = 'present_vizual_ui'
+import {
+  extractVizualPresentations,
+  selectRenderableVizualPresentations,
+} from 'vizual'
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
-}
-
-function parseMaybeJson(value: unknown) {
-  if (typeof value !== 'string') return value
-  try {
-    return JSON.parse(value)
-  } catch {
-    return value
-  }
-}
-
-export function extractVizualPresentations(messages: ChatMessage[]) {
-  const toolResults = new Map<string, unknown>()
-  for (const message of messages) {
-    if (message.role === 'tool') {
-      toolResults.set(message.toolCallId, parseMaybeJson(message.content))
-    }
-  }
-
-  const presentations = []
-  for (const message of messages) {
-    if (message.role !== 'assistant') continue
-    for (const call of message.toolCalls ?? []) {
-      if (call.name !== VIZUAL_TOOL_NAME) continue
-      const args = isRecord(call.args) ? call.args : {}
-      const result = toolResults.get(call.id)
-      const resultRecord = isRecord(result) ? result : {}
-      const envelope = isRecord(resultRecord.envelope)
-        ? resultRecord.envelope
-        : isRecord(args.envelope)
-          ? args.envelope
-          : undefined
-
-      const input = envelope?.input ?? args.input
-      if (!input) continue
-
-      presentations.push({
-        toolCallId: call.id,
-        ok: resultRecord.ok === true,
-        surfaceId:
-          typeof envelope?.surfaceId === 'string'
-            ? envelope.surfaceId
-            : typeof args.surfaceId === 'string'
-              ? args.surfaceId
-              : undefined,
-        fallbackText:
-          typeof envelope?.fallbackText === 'string'
-            ? envelope.fallbackText
-            : typeof args.fallbackText === 'string'
-              ? args.fallbackText
-              : undefined,
-        display: envelope?.display ?? args.display,
-        input,
-        result,
-      })
-    }
-  }
-  return presentations
-}
+const visible = selectRenderableVizualPresentations(
+  extractVizualPresentations(messages),
+)
 ```
 
-只渲染被后端接受的 presentation：
-
-```ts
-const visible = extractVizualPresentations(messages).filter(item => item.ok)
-```
+不要手写 `filter(item => item.ok)`。`ok: true` 只代表 tool result 声称成功；
+SDK selector 还会要求 native preview 成功并拿到真实可渲染 spec。
 
 失败 tool attempt 是给 Agent 修复用的，不应该在用户可见聊天里变成错误卡片。
 
@@ -347,8 +289,10 @@ export function VizualInline({
 
 ```tsx
 function AssistantMessage({ message, allMessages }) {
-  const presentations = extractVizualPresentations(allMessages).filter(
-    item => item.ok && message.toolCalls?.some(call => call.id === item.toolCallId),
+  const presentations = selectRenderableVizualPresentations(
+    extractVizualPresentations(allMessages),
+  ).filter(
+    item => message.toolCalls?.some(call => call.id === item.toolCallId),
   )
 
   return (
@@ -412,10 +356,9 @@ npm run build
 - 后端返回 `ok`、`issues` 和 `envelope`。
 - 聊天历史保留 tool call 和 tool result。
 - 前端能从消息里提取 Vizual envelope。
-- 前端只渲染 `ok:true` presentation。
+- 前端只渲染 `selectRenderableVizualPresentations` 返回的 presentation。
 - 失败修复 attempt 不显示成错误卡片。
 - assistant 文本和 Vizual UI 能在同一轮混排。
 - Vizual action 能回传 Agent。
 - 内部 action message 对用户隐藏。
 - 浏览器验收看真实像素，不只看 JSON。
-

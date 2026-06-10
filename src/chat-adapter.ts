@@ -3,16 +3,25 @@ import {
   isVizualAgentEnvelope,
   type VizualAgentDisplayHint,
 } from './agent-helper'
+import {
+  VIZUAL_NATIVE_PREVIEW_MIME,
+  previewVizualNativeInput,
+  type VizualNativeInput,
+  type VizualPreviewResult,
+  type VizualValidationIssue,
+} from './native-core'
 
 export type VizualChatPresentation = {
   id: string
   toolCallId?: string
   surfaceId?: string
   accepted: boolean
+  renderable: boolean
   input: unknown
   fallbackText?: string
   display?: VizualAgentDisplayHint & Record<string, unknown>
   result?: unknown
+  preview?: VizualPreviewResult
   issues?: unknown[]
 }
 
@@ -110,6 +119,43 @@ function resultEnvelope(args: Record<string, unknown>, result: unknown): Record<
   return undefined
 }
 
+function previewPresentationInput(input: unknown, surfaceId?: string): VizualPreviewResult {
+  try {
+    return previewVizualNativeInput(input as VizualNativeInput, { surfaceId })
+  } catch (error) {
+    const issue: VizualValidationIssue = {
+      severity: 'error',
+      code: 'vizual.preview_failed',
+      message: error instanceof Error ? error.message : String(error),
+      surfaceId,
+      evidence: error,
+    }
+    return {
+      ok: false,
+      mimeType: VIZUAL_NATIVE_PREVIEW_MIME,
+      surfaceId: surfaceId ?? '',
+      snapshot: null,
+      spec: null,
+      artifact: null,
+      issues: [issue],
+      summary: {
+        elementCount: 0,
+        componentTypes: [],
+        functionCallCount: 0,
+        messageCount: 0,
+      },
+    }
+  }
+}
+
+function collectPresentationIssues(resultRecord: Record<string, unknown>, preview: VizualPreviewResult): unknown[] | undefined {
+  const issues = [
+    ...(Array.isArray(resultRecord.issues) ? resultRecord.issues : []),
+    ...preview.issues,
+  ]
+  return issues.length ? issues : undefined
+}
+
 export function extractVizualPresentations(
   messages: Array<VizualChatAdapterMessage | unknown>,
 ): VizualChatPresentation[] {
@@ -135,13 +181,17 @@ export function extractVizualPresentations(
         args.surfaceId,
         resultRecord.surfaceId,
       ].find((value): value is string => typeof value === 'string' && value.length > 0)
-      const accepted = resultRecord.ok === true || (result === undefined && isVizualAgentEnvelope(envelope))
+      const preview = previewPresentationInput(input, surfaceId)
+      const resultAccepted = resultRecord.ok === true || (result === undefined && isVizualAgentEnvelope(envelope))
+      const renderable = preview.ok && Boolean(preview.spec)
+      const accepted = resultAccepted && renderable
 
       presentations.push({
         id: call.id ? `tool:${call.id}` : surfaceId ? `surface:${surfaceId}` : `vizual:${presentations.length}`,
         toolCallId: call.id,
         surfaceId,
         accepted,
+        renderable,
         input,
         fallbackText: [
           envelope?.fallbackText,
@@ -150,7 +200,8 @@ export function extractVizualPresentations(
         ].find((value): value is string => typeof value === 'string'),
         display: isRecord(display) ? display as VizualChatPresentation['display'] : undefined,
         result,
-        issues: Array.isArray(resultRecord.issues) ? resultRecord.issues : undefined,
+        preview,
+        issues: collectPresentationIssues(resultRecord, preview),
       })
     }
   }
@@ -158,10 +209,16 @@ export function extractVizualPresentations(
   return presentations
 }
 
+export function selectRenderableVizualPresentations(
+  presentations: VizualChatPresentation[],
+): VizualChatPresentation[] {
+  return presentations.filter(presentation => presentation.accepted && presentation.renderable)
+}
+
 export function selectVisibleVizualPresentations(
   presentations: VizualChatPresentation[],
 ): VizualChatPresentation[] {
-  return presentations.filter(presentation => presentation.accepted)
+  return selectRenderableVizualPresentations(presentations)
 }
 
 export function buildVizualActionMessage(options: {
@@ -199,4 +256,3 @@ export function isInternalVizualActionMessage(message: unknown): boolean {
     && text.includes('surfaceId:')
     && text.includes('action:')
 }
-

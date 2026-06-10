@@ -177,76 +177,19 @@ Do not reduce a Vizual tool result to plain text. Preserve the `envelope`.
 ## Step 5. Extract Vizual Presentations On The Frontend
 
 ```ts
-const VIZUAL_TOOL_NAME = 'present_vizual_ui'
+import {
+  extractVizualPresentations,
+  selectRenderableVizualPresentations,
+} from 'vizual'
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
-}
-
-function parseMaybeJson(value: unknown) {
-  if (typeof value !== 'string') return value
-  try {
-    return JSON.parse(value)
-  } catch {
-    return value
-  }
-}
-
-export function extractVizualPresentations(messages: ChatMessage[]) {
-  const toolResults = new Map<string, unknown>()
-  for (const message of messages) {
-    if (message.role === 'tool') {
-      toolResults.set(message.toolCallId, parseMaybeJson(message.content))
-    }
-  }
-
-  const presentations = []
-  for (const message of messages) {
-    if (message.role !== 'assistant') continue
-    for (const call of message.toolCalls ?? []) {
-      if (call.name !== VIZUAL_TOOL_NAME) continue
-      const args = isRecord(call.args) ? call.args : {}
-      const result = toolResults.get(call.id)
-      const resultRecord = isRecord(result) ? result : {}
-      const envelope = isRecord(resultRecord.envelope)
-        ? resultRecord.envelope
-        : isRecord(args.envelope)
-          ? args.envelope
-          : undefined
-
-      const input = envelope?.input ?? args.input
-      if (!input) continue
-
-      presentations.push({
-        toolCallId: call.id,
-        ok: resultRecord.ok === true,
-        surfaceId:
-          typeof envelope?.surfaceId === 'string'
-            ? envelope.surfaceId
-            : typeof args.surfaceId === 'string'
-              ? args.surfaceId
-              : undefined,
-        fallbackText:
-          typeof envelope?.fallbackText === 'string'
-            ? envelope.fallbackText
-            : typeof args.fallbackText === 'string'
-              ? args.fallbackText
-              : undefined,
-        display: envelope?.display ?? args.display,
-        input,
-        result,
-      })
-    }
-  }
-  return presentations
-}
+const visible = selectRenderableVizualPresentations(
+  extractVizualPresentations(messages),
+)
 ```
 
-Only render accepted presentations:
-
-```ts
-const visible = extractVizualPresentations(messages).filter(item => item.ok)
-```
+Do not hand-roll `filter(item => item.ok)`. `ok: true` only means the tool
+result claimed success; the SDK selector also requires a successful native
+preview and a real renderable spec.
 
 Failed tool attempts are for the agent repair loop. They should not appear as
 broken UI cards in the user-visible chat.
@@ -356,8 +299,10 @@ assistant turn:
 
 ```tsx
 function AssistantMessage({ message, allMessages }) {
-  const presentations = extractVizualPresentations(allMessages).filter(
-    item => item.ok && message.toolCalls?.some(call => call.id === item.toolCallId),
+  const presentations = selectRenderableVizualPresentations(
+    extractVizualPresentations(allMessages),
+  ).filter(
+    item => message.toolCalls?.some(call => call.id === item.toolCallId),
   )
 
   return (
@@ -425,10 +370,9 @@ Then test your chatbot with fresh prompts:
 - The backend returns `ok`, `issues`, and `envelope`.
 - Chat history preserves tool calls and tool results.
 - The frontend extracts Vizual envelopes from messages.
-- The frontend renders only `ok:true` presentations.
+- The frontend renders only presentations returned by `selectRenderableVizualPresentations`.
 - Failed repair attempts do not show as broken cards.
 - Assistant text and Vizual UI can appear in the same turn.
 - Vizual actions can be sent back to the agent.
 - Internal action messages are hidden from the visible transcript.
 - Browser testing verifies actual pixels, not just JSON.
-

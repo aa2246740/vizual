@@ -116,7 +116,7 @@ RadarChart 不在原生组件目录中，我用 Mermaid 来呈现。
 
 ## 4. 前端聊天渲染
 
-前端不能只因为 assistant 文本说“已渲染”或 tool result `ok: true` 就展示成功。应该从聊天历史中抽取可见的 Vizual presentations，只渲染 accepted 的结果。
+前端不能只因为 assistant 文本说“已渲染”或 tool result `ok: true` 就展示成功。应该从聊天历史中抽取 Vizual presentations，只渲染通过 SDK renderability gate 的结果。在 Vizual Core 里，`ok: true` 只是 tool transport/result 状态；聊天前端还必须要求 native preview 成功并拿到真实 spec。
 
 推荐流程：
 
@@ -124,12 +124,12 @@ RadarChart 不在原生组件目录中，我用 Mermaid 来呈现。
 import {
   VizualRenderer,
   extractVizualPresentations,
-  selectVisibleVizualPresentations,
+  selectRenderableVizualPresentations,
   previewVizualNativeInput,
   buildVizualActionMessage,
 } from 'vizual'
 
-const presentations = selectVisibleVizualPresentations(
+const presentations = selectRenderableVizualPresentations(
   extractVizualPresentations(messages),
 )
 

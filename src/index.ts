@@ -354,6 +354,7 @@ export {
   buildVizualActionMessage,
   extractVizualPresentations,
   isInternalVizualActionMessage,
+  selectRenderableVizualPresentations,
   selectVisibleVizualPresentations,
 } from './chat-adapter'
 export type {

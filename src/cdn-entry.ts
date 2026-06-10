@@ -291,6 +291,13 @@ import {
   VIZUAL_CATALOG_MANIFEST_SCHEMA,
   VIZUAL_CATALOG_VERSION,
 } from './catalog-manifest'
+import {
+  buildVizualActionMessage,
+  extractVizualPresentations,
+  isInternalVizualActionMessage,
+  selectRenderableVizualPresentations,
+  selectVisibleVizualPresentations,
+} from './chat-adapter'
 
 // === Expose to window ===
 declare global {
@@ -456,6 +463,11 @@ const vizual = {
   createVizualToolInputSchema,
   isVizualAgentEnvelope,
   renderVizualAgentInput,
+  buildVizualActionMessage,
+  extractVizualPresentations,
+  isInternalVizualActionMessage,
+  selectRenderableVizualPresentations,
+  selectVisibleVizualPresentations,
   vizualEnvelopeToMcpEmbeddedResource,
   vizualPreviewToMcpEmbeddedResource,
   VIZUAL_AGENT_ENVELOPE_MIME,
