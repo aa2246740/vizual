@@ -297,6 +297,7 @@ import {
   isInternalVizualActionMessage,
   selectRenderableVizualPresentations,
   selectVisibleVizualPresentations,
+  selectVizualFallbackTexts,
 } from './chat-adapter'
 
 // === Expose to window ===
@@ -468,6 +469,7 @@ const vizual = {
   isInternalVizualActionMessage,
   selectRenderableVizualPresentations,
   selectVisibleVizualPresentations,
+  selectVizualFallbackTexts,
   vizualEnvelopeToMcpEmbeddedResource,
   vizualPreviewToMcpEmbeddedResource,
   VIZUAL_AGENT_ENVELOPE_MIME,

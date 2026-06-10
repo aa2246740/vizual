@@ -418,6 +418,86 @@ function collectChartDataIssues(spec: ReturnType<typeof withDefaultElementProps>
   return issues
 }
 
+// Components that render nothing unless their primary data array is non-empty.
+// The key is the canonical prop name AFTER withDefaultElementProps normalization.
+const REQUIRED_CONTENT_ARRAYS: Record<string, string[]> = {
+  AreaChart: ['data'], BarChart: ['data'], LineChart: ['data'], ComboChart: ['data'],
+  ScatterChart: ['data'], BubbleChart: ['data'], BoxplotChart: ['data'], HistogramChart: ['data'],
+  WaterfallChart: ['data'], XmrChart: ['data'], SankeyChart: ['data'], FunnelChart: ['data'],
+  HeatmapChart: ['data'], CalendarChart: ['data'], SparklineChart: ['data'], DumbbellChart: ['data'],
+  RadarChart: ['data'], PieChart: ['data'],
+  DataTable: ['data', 'rows', 'columns'],
+  KpiDashboard: ['metrics'],
+  Timeline: ['events'],
+  OrgChart: ['nodes', 'data'],
+  GanttChart: ['tasks'],
+  FormBuilder: ['fields'],
+}
+
+// Pure layout/decoration components that produce no visible content on their own.
+const LAYOUT_ONLY_COMPONENTS = new Set(['Column', 'Row', 'Card', 'Container', 'Divider', 'Tabs'])
+
+function elementHasNonEmptyArray(props: Record<string, unknown>, keys: string[]): boolean {
+  return keys.some(key => Array.isArray(props[key]) && (props[key] as unknown[]).length > 0)
+}
+
+/**
+ * A surface can be structurally valid (root, elements, no cycles, supported
+ * components, resolvable field bindings) yet render nothing: a chart with an
+ * empty data array, a KpiDashboard with no metrics, a DataTable with no rows,
+ * or a root container with no content leaf. `ok:true` must mean really
+ * renderable, so these are errors under requireRenderable. While streaming
+ * (requireRenderable:false) the same conditions are only warnings, matching the
+ * existing vizual.spec_empty_elements behavior.
+ */
+function collectEmptyContentIssues(
+  spec: ReturnType<typeof withDefaultElementProps>,
+  surfaceId: string,
+  requireRenderable: boolean,
+): VizualValidationIssue[] {
+  const issues: VizualValidationIssue[] = []
+  const elements = spec.elements ?? {}
+  const severity: VizualValidationIssue['severity'] = requireRenderable ? 'error' : 'warning'
+  let sawContentLeaf = false
+
+  for (const [elementId, element] of Object.entries(elements)) {
+    const componentType = stringField(element?.type)
+    if (!componentType) continue
+    const props = isRecord(element?.props) ? element.props : {}
+    const requiredArrays = REQUIRED_CONTENT_ARRAYS[componentType]
+
+    if (requiredArrays) {
+      if (elementHasNonEmptyArray(props, requiredArrays)) {
+        sawContentLeaf = true
+      } else {
+        issues.push({
+          severity,
+          code: 'vizual.empty_content',
+          message: `${componentType} "${elementId}" has no ${requiredArrays.join('/')} to render, so it cannot produce a visible surface.`,
+          surfaceId,
+          evidence: { elementId, componentType, requiredArrays },
+        })
+      }
+    } else if (!LAYOUT_ONLY_COMPONENTS.has(componentType)) {
+      // Text, Markdown, Image, Icon, Button, inputs, Mermaid, etc. carry their
+      // own visible content and count as a renderable leaf.
+      sawContentLeaf = true
+    }
+  }
+
+  // A surface made only of empty layout containers renders blank.
+  if (!sawContentLeaf && Object.keys(elements).length > 0 && !issues.length) {
+    issues.push({
+      severity,
+      code: 'vizual.empty_content',
+      message: 'Rendered Vizual surface has no content-bearing element (only empty layout containers), so it cannot produce a visible surface.',
+      surfaceId,
+    })
+  }
+
+  return issues
+}
+
 function collectUnsupportedComponentIssues(spec: ReturnType<typeof withDefaultElementProps>, surfaceId: string): VizualValidationIssue[] {
   const issues: VizualValidationIssue[] = []
   const elements = spec.elements ?? {}
@@ -510,6 +590,7 @@ export function validateVizualNativeInput(
 
     issues.push(...collectChartDataIssues(spec, snapshot.surfaceId))
     issues.push(...collectUnsupportedComponentIssues(spec, snapshot.surfaceId))
+    issues.push(...collectEmptyContentIssues(spec, snapshot.surfaceId, requireRenderable))
   }
 
   return {

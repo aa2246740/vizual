@@ -1457,7 +1457,17 @@ function normalizeComponentDef(component: VizualNativeComponentDef): VizualNativ
       break
   }
 
-  return normalizeComponentAlias(next)
+  const aliased = normalizeComponentAlias(next)
+  // The semantic/direct spec paths lift nested `data:{metrics|rows|columns|
+  // tasks|events|nodes|items}` into the canonical prop the renderer reads. The
+  // A2UI/AG-UI component path must do the same, or identical content emitted as
+  // an A2UI component renders empty while the semantic form renders correctly.
+  // Only act on a genuine nested-object payload — never an array `data` (already
+  // canonical) or a `{path}` data binding.
+  if (isRecord(aliased.data) && typeof (aliased.data as Record<string, unknown>).path !== 'string') {
+    normalizeNestedDataProps(aliased.component, aliased as Record<string, unknown>)
+  }
+  return aliased
 }
 
 function expandInlineComponentChildren(components: VizualNativeComponentDef[]): VizualNativeComponentDef[] {

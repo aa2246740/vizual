@@ -356,10 +356,12 @@ export {
   isInternalVizualActionMessage,
   selectRenderableVizualPresentations,
   selectVisibleVizualPresentations,
+  selectVizualFallbackTexts,
 } from './chat-adapter'
 export type {
   VizualChatAdapterMessage,
   VizualChatPresentation,
+  VizualPresentationOutcome,
 } from './chat-adapter'
 export {
   downloadBlob,

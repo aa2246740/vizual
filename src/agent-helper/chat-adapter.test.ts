@@ -8,6 +8,7 @@ import {
   extractVizualPresentations,
   selectRenderableVizualPresentations,
   selectVisibleVizualPresentations,
+  selectVizualFallbackTexts,
 } from '../chat-adapter'
 
 function assistantToolCall(id: string, args: unknown) {
@@ -61,6 +62,28 @@ describe('chat adapter renderability gate', () => {
     ]))
     expect(selectRenderableVizualPresentations(presentations)).toEqual([])
     expect(selectVisibleVizualPresentations(presentations)).toEqual([])
+  })
+
+  it('gives the host one outcome directive per turn and a single fallback text', () => {
+    const messages = [
+      // renders
+      assistantToolCall('ok-1', { input: { components: [{ type: 'BarChart', x: 'b', y: 'w', data: [{ b: 'A', w: 5 }] }] } }),
+      toolResult('ok-1', { ok: true }),
+      // fails but provides fallback text → fallback, not a broken card
+      assistantToolCall('bad-1', { input: '<div>raw html</div>', fallbackText: '北京网点等待时间最长。' }),
+      toolResult('bad-1', { ok: true }),
+      // fails, no fallback → suppressed
+      assistantToolCall('bad-2', { input: { components: [{ type: 'BarChart', x: 'b', y: 'w', data: [] }] } }),
+      toolResult('bad-2', { ok: true }),
+    ]
+
+    const presentations = extractVizualPresentations(messages)
+    const byId = Object.fromEntries(presentations.map(p => [p.toolCallId, p.outcome]))
+    expect(byId['ok-1']).toBe('rendered')
+    expect(byId['bad-1']).toBe('fallback')
+    expect(byId['bad-2']).toBe('suppressed')
+    expect(selectVisibleVizualPresentations(presentations)).toHaveLength(1)
+    expect(selectVizualFallbackTexts(presentations)).toEqual(['北京网点等待时间最长。'])
   })
 
   it('accepts only results whose native preview is successful', () => {

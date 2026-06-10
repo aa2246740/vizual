@@ -9,12 +9,23 @@ interface FlatNode { id: string; name: string; role?: string; parentId?: string 
 function flattenNestedData(items: any[], parentId: string | null = null): FlatNode[] {
   const result: FlatNode[] = []
   for (const item of items) {
-    result.push({ id: item.id, name: item.name, role: item.title ?? item.role, parentId })
+    const name = item.name ?? item.label ?? item.title ?? item.id
+    result.push({ id: item.id, name, role: item.role ?? (item.name ? item.title : undefined), parentId })
     if (Array.isArray(item.children)) {
       result.push(...flattenNestedData(item.children, item.id))
     }
   }
   return result
+}
+
+/** Accept common agent aliases (label→name, parent→parentId) for flat nodes. */
+function normalizeFlatNodes(nodes: any[]): FlatNode[] {
+  return nodes.map(node => ({
+    id: node.id,
+    name: node.name ?? node.label ?? node.title ?? node.id,
+    role: node.role ?? node.subtitle,
+    parentId: node.parentId ?? node.parent ?? null,
+  }))
 }
 
 /**
@@ -25,7 +36,7 @@ export function OrgChart({ props }: { props: Record<string, any> }) {
   // Resolve nodes from either format
   let nodes: FlatNode[] = []
   if (Array.isArray(props.nodes) && props.nodes.length > 0) {
-    nodes = props.nodes
+    nodes = normalizeFlatNodes(props.nodes)
   } else if (Array.isArray(props.data) && props.data.length > 0) {
     nodes = flattenNestedData(props.data)
   }
