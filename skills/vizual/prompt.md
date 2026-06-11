@@ -45,6 +45,22 @@ Removed and forbidden: `DocView`, `GridLayout`, `SplitLayout`, `FreeformHtml`, `
 - Use `KpiDashboard` for metric cards, `DataTable` for detailed rows, and charts for evidence.
 - Add `FormBuilder` only when you need structured user input. It submits to the host Agent with `submitForm`; it does not save or dispatch externally by itself.
 
+## Simplest Shape That Works
+
+When in doubt, emit a `components` array — one object per native component, data
+as a flat array of `{ key: value }` rows:
+
+```json
+{ "components": [
+  { "type": "BarChart", "title": "月度销量", "x": "month", "y": "sales",
+    "data": [ { "month": "1月", "sales": 120 }, { "month": "2月", "sales": 168 } ] }
+] }
+```
+
+- `y` values must be real numbers in every row; the `x` value is the label and its key appears in each row.
+- Pie/funnel rows are `{ "name": "...", "value": 12 }`. KPI cards are `metrics: [{ "label","value","trend" }]`. Tables use `data` (row objects).
+- `data` is never empty. Do **not** send ECharts options, Chart.js configs, HTML, React, or a stringified JSON blob. (The runtime will auto-convert a simple bar/line/pie ECharts/Chart.js shape as a fallback, but native is the target.)
+
 ## Output Shape
 
 Preferred tool-call argument shape:
@@ -109,3 +125,7 @@ Before finalizing, check:
 - Interaction has a real purpose.
 - Removed components are not used.
 - Pure-text and explicit webpage/code requests are not forced into Vizual.
+
+If the host runtime returns `ok: false`, it includes a `fixes` array and a `fix`
+field on each issue. Apply every fix and re-emit until `ok: true`. Never tell the
+user a surface rendered before the runtime confirms `ok: true`.

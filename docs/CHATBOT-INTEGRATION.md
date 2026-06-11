@@ -2,6 +2,12 @@
 
 [中文版本](CHATBOT-INTEGRATION.zh-CN.md)
 
+> **Authoritative reference:** [INTEGRATION.md](INTEGRATION.md) is the single
+> end-to-end guide. For a **non-React frontend (Vue/Svelte/vanilla) or a React
+> Native mobile app**, see §12 (the `toVizualRenderTree` framework-agnostic
+> seam). For making **any model** emit valid output, see §4 (dialect repair +
+> the `fixes` self-correction loop).
+
 This guide is for an existing agent chatbot that already has:
 
 - a backend that can expose tools/functions to the agent

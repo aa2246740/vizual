@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Vizual Core — Any-Model Compliance Acceptance</title>
+  <style>
+    body { font-family: -apple-system, system-ui, sans-serif; margin: 0; background: #0d1117; color: #e6edf3; }
+    header { padding: 16px 24px; border-bottom: 1px solid #30363d; }
+    h1 { font-size: 18px; margin: 0 0 4px; }
+    header p { margin: 0; font-size: 12px; color: #8b949e; }
+    .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; padding: 24px; }
+    .case { border: 1px solid #30363d; border-radius: 10px; overflow: hidden; background: #161b22; }
+    .case h2 { font-size: 14px; margin: 0; padding: 10px 14px; background: #21262d; border-bottom: 1px solid #30363d; }
+    .meta { padding: 8px 14px; font-size: 12px; font-family: ui-monospace, monospace; border-bottom: 1px solid #30363d; }
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 6px; font-weight: 600; margin-right: 6px; }
+    .ok-true { background: #1f6f3f; color: #fff; }
+    .ok-false { background: #8b2c2c; color: #fff; }
+    .paint-painted { background: #1f6f3f; color: #fff; }
+    .paint-blank { background: #b08800; color: #000; }
+    .verdict-good { color: #3fb950; }
+    .verdict-bug { color: #f85149; font-weight: 700; }
+    .repair { padding: 4px 14px; font-size: 11px; color: #58a6ff; font-family: ui-monospace, monospace; }
+    .surface { padding: 12px; min-height: 200px; background: #fff; color: #111; }
+    .expect { padding: 6px 14px; font-size: 12px; color: #8b949e; }
+    pre { margin: 0; padding: 10px 14px; font-size: 11px; color: #adbac7; white-space: pre-wrap; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Vizual Core — Any-Model Compliance Acceptance</h1>
+    <p>Proves a model that emits a recognizable foreign dialect (ECharts / Chart.js / JSON string) still gets a real, painted native surface — and that non-convertible shapes fail honestly (no fake success).</p>
+  </header>
+  <div class="grid" id="grid"></div>
+  <script src="../dist/vizual.standalone.js"></script>
+  <script>
+    const V = window.Vizual;
+    const cases = [
+      {
+        name: '1. ECharts option (bar) — weak model output',
+        input: { title: { text: '月度销量' }, tooltip: {}, xAxis: { type: 'category', data: ['1月', '2月', '3月'] },
+          yAxis: { type: 'value' }, series: [{ name: '销量', type: 'bar', data: [120, 135, 168] }] },
+        expectVisible: true, note: 'ECharts 应被忠实转成 BarChart 并真实渲染（旧版会直接 opaque 拒绝）'
+      },
+      {
+        name: '2. ECharts option (pie)',
+        input: { legend: {}, series: [{ type: 'pie', data: [{ name: '直营', value: 60 }, { name: '加盟', value: 40 }] }] },
+        expectVisible: true, note: 'pie name/value 转 PieChart'
+      },
+      {
+        name: '3. Chart.js config (line)',
+        input: { type: 'line', data: { labels: ['Jan', 'Feb', 'Mar'], datasets: [{ label: 'users', data: [10, 20, 35] }] },
+          options: { plugins: { title: { text: 'User Growth' } } } },
+        expectVisible: true, note: 'Chart.js 转 LineChart'
+      },
+      {
+        name: '4. Chart.js doughnut',
+        input: { type: 'doughnut', data: { labels: ['A', 'B', 'C'], datasets: [{ data: [30, 45, 25] }] } },
+        expectVisible: true, note: 'doughnut 转 PieChart(donut)'
+      },
+      {
+        name: '5. ECharts mixed bar+line → ComboChart',
+        input: { xAxis: { data: ['Q1', 'Q2', 'Q3'] }, yAxis: [{}, {}], series: [
+          { name: 'revenue', type: 'bar', data: [120, 135, 168] }, { name: 'growth', type: 'line', data: [15, 12, 24] } ] },
+        expectVisible: true, note: '混合系列转 ComboChart'
+      },
+      {
+        name: '6. Stringified JSON of an ECharts option',
+        input: JSON.stringify({ xAxis: { data: ['东城', '西城'] }, yAxis: {}, series: [{ name: 'wait', type: 'bar', data: ['1,234', '2,345'] }] }),
+        expectVisible: true, note: '先 parse JSON 字符串，再转 BarChart；千分位字符串转数字'
+      },
+      {
+        name: '7. ECharts radar (NOT convertible) — must fail honestly',
+        input: { radar: { indicator: [{ name: 'A', max: 100 }, { name: 'B', max: 100 }] }, series: [{ type: 'radar', data: [{ value: [80, 90], name: 't' }] }] },
+        expectVisible: false, note: '无法忠实映射 → ok:false，主机应回退文本（不能假成功）'
+      },
+      {
+        name: '8. Empty data after conversion — must fail honestly',
+        input: { xAxis: { data: [] }, yAxis: {}, series: [{ type: 'bar', data: [] }] },
+        expectVisible: false, note: '空数据 → ok:false'
+      },
+    ];
+
+    const grid = document.getElementById('grid');
+    const results = [];
+    cases.forEach((c, i) => {
+      const el = document.createElement('div');
+      el.className = 'case';
+      const surfId = 'surf-' + i;
+      el.innerHTML = `<h2>${c.name}</h2><div class="meta" id="meta-${i}">…</div>` +
+        `<div class="repair" id="repair-${i}"></div><div class="expect">期望: ${c.note}</div>` +
+        `<div class="surface" id="${surfId}"></div><pre id="tree-${i}"></pre>`;
+      grid.appendChild(el);
+
+      let preview, ok = false, paint = 'blank', err = '', repairs = [], treeTypes = [];
+      try {
+        preview = V.previewVizualNativeInput(c.input, { requireRenderable: true });
+        ok = preview.ok;
+        repairs = (preview.issues || []).filter(x => x.code && String(x.code).startsWith('vizual.repair.')).map(x => x.code);
+        if (ok && preview.spec) {
+          const tree = V.toVizualRenderTree(preview.spec);
+          treeTypes = V.flattenVizualRenderTree(tree).map(n => n.type);
+        }
+      } catch (e) { err = String(e); }
+
+      const surface = document.getElementById(surfId);
+      if (ok && preview && preview.spec) {
+        try { V.renderSpec(preview.spec, surface); } catch (e) { err = 'render: ' + String(e); }
+      } else {
+        surface.innerHTML = '<div style="color:#8b2c2c;padding:8px">[no Vizual surface — host shows text fallback]</div>';
+      }
+      document.getElementById('repair-' + i).textContent = repairs.length ? ('repairs: ' + repairs.join(', ')) : '';
+      document.getElementById('tree-' + i).textContent = treeTypes.length ? ('render-tree types: ' + treeTypes.join(' → ')) : '';
+
+      setTimeout(() => {
+        let ev = null;
+        try { ev = V.collectVizualRenderEvidence(surface); } catch (e) {}
+        paint = ev ? ev.status : 'unknown';
+        const visible = paint === 'painted';
+        const matches = (c.expectVisible && ok && visible) || (!c.expectVisible && !ok);
+        const meta = document.getElementById('meta-' + i);
+        meta.innerHTML =
+          `<span class="badge ${ok ? 'ok-true' : 'ok-false'}">ok: ${ok}</span>` +
+          `<span class="badge ${visible ? 'paint-painted' : 'paint-blank'}">paint: ${paint}</span>` +
+          `<span class="${matches ? 'verdict-good' : 'verdict-bug'}">${matches ? '✓ 符合预期' : '✗ 不符'}</span>` +
+          (err ? `<div style="color:#f85149">${err}</div>` : '');
+        results.push({ name: c.name, ok, paint, matches, repairs });
+        window.__vizualResults = results;
+        window.__allMatch = results.length === cases.length && results.every(r => r.matches);
+      }, 700);
+    });
+  </script>
+</body>
+</html>

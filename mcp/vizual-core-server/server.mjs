@@ -278,9 +278,32 @@ async function callTool(name, args) {
       ? runtime.assertVizualAgentToolCoverage({ input: args.input, preview })
       : { ok: true, issues: [], componentTypes: preview?.summary?.componentTypes ?? [] }
     const ok = validation.ok && preview.ok && coverage.ok && strictFactIssues.length === 0
+    // Aggregate every diagnostic into one ordered, de-duplicated list so a weak
+    // model gets a single actionable checklist instead of four parallel arrays.
+    const allIssues = [
+      ...(validation.issues ?? []),
+      ...(preview.issues ?? []),
+      ...(coverage.issues ?? []),
+      ...strictFactIssues,
+    ]
+    const seenFix = new Set()
+    const fixes = []
+    for (const issue of allIssues) {
+      if (issue?.severity !== 'error') continue
+      const hint = issue.fix || issue.message
+      if (!hint || seenFix.has(hint)) continue
+      seenFix.add(hint)
+      fixes.push({ code: issue.code, fix: hint })
+    }
+    // Repairs are info-level: the input was foreign but we faithfully mapped it.
+    const repairs = allIssues
+      .filter(issue => issue?.severity === 'info' && typeof issue.code === 'string' && issue.code.startsWith('vizual.repair.'))
+      .map(issue => ({ code: issue.code, message: issue.message }))
     return rpcTextResult({
       ok,
-      error: ok ? undefined : 'Vizual UI did not pass native validation. Revise the tool input and call present_vizual_ui again.',
+      error: ok ? undefined : 'Vizual UI did not pass native validation. Apply every item in "fixes" and call present_vizual_ui again.',
+      fixes: ok ? undefined : fixes,
+      repairs: repairs.length ? repairs : undefined,
       toolCall: {
         name: 'present_vizual_ui',
         arguments: {

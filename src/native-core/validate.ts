@@ -1,5 +1,6 @@
 import { assertNoCyclicChildren, withDefaultElementProps } from '../core/spec-validation'
 import { normalizeVizualNativeInput, type VizualNormalizeOptions, type VizualNormalizedResult } from './normalize'
+import { repairAgentInput } from './repair'
 import type { VizualNativeInput } from './types'
 
 export type VizualValidationIssue = {
@@ -8,6 +9,12 @@ export type VizualValidationIssue = {
   message: string
   surfaceId?: string
   evidence?: unknown
+  /**
+   * A single concrete next action the agent should take to make the surface
+   * renderable. Present on every `error` issue so weak models can self-correct
+   * in one round without having to infer the fix from the message.
+   */
+  fix?: string
 }
 
 export type VizualValidateOptions = VizualNormalizeOptions & {
@@ -112,6 +119,7 @@ function collectOpaqueInputIssues(input: unknown, surfaceId: string): VizualVali
         message: 'Vizual native input cannot be raw HTML, React code, CSS, SVG, or app source. Return a native root/elements payload, supported native components, AG-UI, or A2UI messages.',
         surfaceId,
         evidence: { kind: 'raw-code-or-markup' },
+        fix: 'Re-send the answer as a native component, e.g. { "components": [{ "type": "BarChart", "x": "label", "y": "value", "data": [{ "label": "A", "value": 1 }] }] }. If the user explicitly asked for an HTML page or code, answer in assistant text instead of calling this tool.',
       }]
     }
     return []
@@ -126,6 +134,7 @@ function collectOpaqueInputIssues(input: unknown, surfaceId: string): VizualVali
       message: 'Vizual native input cannot be a raw ECharts option object. Use native chart components such as BarChart, LineChart, RadarChart, or ComboChart with data rows and field bindings.',
       surfaceId,
       evidence: { kind: 'echarts-option', keys: Object.keys(candidate).filter(key => ['xAxis', 'yAxis', 'series', 'tooltip', 'legend', 'grid', 'radar'].includes(key)) },
+      fix: 'Convert xAxis.data into a field per row and each series into a numeric field, e.g. { "components": [{ "type": "BarChart", "x": "category", "y": ["seriesA"], "data": [{ "category": "Mon", "seriesA": 120 }] }] }. Bar/line/scatter are auto-converted when the mapping is unambiguous; radar/gauge/graph must be sent as the matching native component.',
     }]
   }
 
@@ -137,6 +146,7 @@ function collectOpaqueInputIssues(input: unknown, surfaceId: string): VizualVali
       message: 'Vizual native input cannot be a raw Chart.js config. Use a native chart component inside components/root/elements and provide data rows or component-local chart data.',
       surfaceId,
       evidence: { kind: 'chartjs-config', type: candidate.type },
+      fix: 'Turn data.labels into a field per row and each dataset into a numeric field, e.g. { "components": [{ "type": "LineChart", "x": "category", "y": ["sales"], "data": [{ "category": "Jan", "sales": 120 }] }] }.',
     }]
   }
 
@@ -174,6 +184,7 @@ function collectOpaqueInputIssues(input: unknown, surfaceId: string): VizualVali
     message: `Vizual native input cannot be an old opaque UI DSL keyed by "${oldDslKey}". Return supported native components, a Vizual root/elements spec, AG-UI, or A2UI messages.`,
     surfaceId,
     evidence: { kind: 'old-ui-dsl', key: oldDslKey },
+    fix: `Drop the "${oldDslKey}" wrapper and send native components directly, e.g. { "components": [{ "type": "DataTable", "data": [{ "name": "A", "value": 1 }] }] }.`,
   }]
 }
 
@@ -228,6 +239,7 @@ function pushMissingFieldIssue(
     message: `${componentType} "${chartId}" references ${role} field "${field}", but no data row contains that field.`,
     surfaceId,
     evidence: { chartId, componentType, role, field },
+    fix: `Either add a "${field}" key to every data row, or change the ${role} prop to a key that already exists in the rows. The ${role} field name must match a key in the data objects exactly.`,
   })
 }
 
@@ -245,6 +257,7 @@ function pushNonNumericFieldIssue(
     message: `${componentType} "${chartId}" references numeric ${role} field "${field}", but no data row has a finite numeric value.`,
     surfaceId,
     evidence: { chartId, componentType, role, field },
+    fix: `Make "${field}" a real number in the data rows (e.g. 1234, not "1,234" wrapped so it can't parse, and not a label). Keep category/label text in the x field, numeric measures in the y field.`,
   })
 }
 
@@ -476,6 +489,7 @@ function collectEmptyContentIssues(
           message: `${componentType} "${elementId}" has no ${requiredArrays.join('/')} to render, so it cannot produce a visible surface.`,
           surfaceId,
           evidence: { elementId, componentType, requiredArrays },
+          fix: `Populate ${requiredArrays.map(a => `"${a}"`).join(' or ')} with at least one real item. If you have no data to show, answer in assistant text instead of rendering an empty ${componentType}.`,
         })
       }
     } else if (!LAYOUT_ONLY_COMPONENTS.has(componentType)) {
@@ -492,6 +506,7 @@ function collectEmptyContentIssues(
       code: 'vizual.empty_content',
       message: 'Rendered Vizual surface has no content-bearing element (only empty layout containers), so it cannot produce a visible surface.',
       surfaceId,
+      fix: 'Put at least one content component (chart, DataTable, KpiDashboard, Markdown, Text, …) inside the layout, with real data.',
     })
   }
 
@@ -510,6 +525,7 @@ function collectUnsupportedComponentIssues(spec: ReturnType<typeof withDefaultEl
       message: `Rendered Vizual spec element "${elementId}" uses unsupported component "${componentType}". Use a native catalog component or report a catalog gap instead of returning an opaque component.`,
       surfaceId,
       evidence: { elementId, componentType },
+      fix: `Replace "${componentType}" with the closest catalog component (call vizual_catalog to list them). For tabular data use DataTable; for a metric grid use KpiDashboard; for free text use Markdown.`,
     })
   }
   return issues
@@ -520,9 +536,20 @@ export function validateVizualNativeInput(
   options: VizualValidateOptions = {},
 ): VizualValidationResult {
   const requireRenderable = options.requireRenderable ?? true
-  const normalized = normalizeVizualNativeInput(input, options)
+  // Repair recognizable dialects first so the opaque-input check runs against
+  // the same payload normalization will see. A faithfully converted ECharts /
+  // Chart.js input is no longer "opaque"; it is reported as an info-level repair.
+  const repaired = repairAgentInput(input)
+  const normalized = normalizeVizualNativeInput(repaired.input, options)
   const issues: VizualValidationIssue[] = [
-    ...collectOpaqueInputIssues(input, normalized.surfaceId),
+    ...repaired.repairs.map(repair => ({
+      severity: 'info' as const,
+      code: repair.code,
+      message: repair.message,
+      surfaceId: normalized.surfaceId,
+      evidence: repair.detail,
+    })),
+    ...collectOpaqueInputIssues(repaired.input, normalized.surfaceId),
     ...normalized.errors.map(error => ({
       severity: 'error' as const,
       code: `native.${error.phase ?? 'error'}`,
@@ -547,6 +574,7 @@ export function validateVizualNativeInput(
       code: 'vizual.no_renderable_surface',
       message: 'Input did not produce a renderable Vizual surface.',
       surfaceId: normalized.surfaceId,
+      fix: 'Send a native payload such as { "components": [{ "type": "BarChart", "x": "label", "y": "value", "data": [{ "label": "A", "value": 1 }] }] }, or a { "root", "elements" } spec. Make sure the JSON is an object/array, not a stringified blob or prose.',
     })
   }
 

@@ -25,6 +25,7 @@ export {
   nativeInputsToVizualSnapshot,
   normalizeVizualNativeInput,
   previewVizualNativeInput,
+  repairAgentInput,
   validateVizualNativeInput,
   VIZUAL_NATIVE_PREVIEW_MIME,
 } from './native-core'
@@ -51,6 +52,8 @@ export type {
   VizualValidateOptions,
   VizualValidationIssue,
   VizualValidationResult,
+  VizualInputRepair,
+  VizualRepairResult,
 } from './native-core'
 export {
   createVizualAgentEnvelope,
@@ -254,6 +257,13 @@ export { vercelTheme } from './themes/vercel'
 export { tc, tcss, chartColors, updateActiveColors } from './core/theme-colors'
 
 // Export API
+export {
+  toVizualRenderTree,
+  flattenVizualRenderTree,
+} from './core/render-tree'
+export type {
+  VizualRenderNode,
+} from './core/render-tree'
 export {
   createHostRuntime,
   createLocalStorageArtifactStore,

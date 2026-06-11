@@ -28,6 +28,13 @@ export type {
   VizualValidateOptions,
 } from './validate'
 export {
+  repairAgentInput,
+} from './repair'
+export type {
+  VizualInputRepair,
+  VizualRepairResult,
+} from './repair'
+export {
   previewVizualNativeInput,
   VIZUAL_NATIVE_PREVIEW_MIME,
 } from './preview'
