@@ -8,8 +8,9 @@ Element type: `"LineChart"` | Props type: `"line"`
 |------|------|----------|-------------|
 | type | `"line"` | yes | fixed literal |
 | title | string | no | chart title |
-| x | string | no | X axis field |
-| y | string \| string[] | no | Y axis field(s) |
+| encoding | object | no | preferred field mapping, e.g. `{x:{field:"month"}, y:{field:"revenue"}, color:{field:"client"}}` |
+| x | string | no | compatibility shortcut for X axis field |
+| y | string \| string[] | no | compatibility shortcut for Y axis field(s) |
 | data | object[] | yes | data array |
 | smooth | boolean | no | smooth curves |
 | multiSeries | boolean | no | enable multi-series mode |
@@ -24,13 +25,16 @@ Element type: `"LineChart"` | Props type: `"line"`
   "props": {
     "type": "line",
     "title": "增长趋势",
-    "x": "month",
-    "y": ["revenue", "cost"],
     "data": [
       { "month": "Q1", "revenue": 100, "cost": 60 },
       { "month": "Q2", "revenue": 130, "cost": 70 },
       { "month": "Q3", "revenue": 180, "cost": 85 }
     ],
+    "measures": [
+      { "field": "revenue", "label": "收入", "mark": "line" },
+      { "field": "cost", "label": "成本", "mark": "line" }
+    ],
+    "encoding": { "x": { "field": "month", "type": "ordinal" } },
     "smooth": true
   },
   "children": []

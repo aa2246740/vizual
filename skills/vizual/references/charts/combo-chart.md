@@ -12,8 +12,10 @@ the runtime renders this native spec.
 |------|------|----------|-------------|
 | type | `"combo"` | yes | fixed literal |
 | title | string | no | chart title |
-| x | string | no | X axis field |
-| y | string \| string[] | no | Shortcut Y field(s). First field = bar series, rest = line series |
+| encoding | object | no | preferred field mapping; at minimum set `encoding.x` |
+| measures | object[] | no | preferred numeric layer list with `field`, `label`, `mark`, `axis`, optional `size` |
+| x | string | no | compatibility shortcut for X axis field |
+| y | string \| string[] | no | compatibility shortcut Y field(s). First field = bar series, rest = line series |
 | data | object[] | yes | data array |
 | series | `ComboSeries[]` | no | Explicit bar/line/scatter mapping. Use this for dual-axis or dense mixed charts |
 | bar | string[] | no | Bar series fields, shorthand for simple cases |
@@ -37,8 +39,8 @@ the runtime renders this native spec.
 | sizeField | string | no | Alias for size |
 | r | string | no | Alias for size |
 
-Use `y` as an array only for simple bar + line charts. Use `series` for mixed
-bar/line/scatter, dual Y axes, or when labels must be precise.
+Prefer `measures` for mixed bar/line/scatter, dual Y axes, or precise labels.
+`series` is accepted as a lower-level compatibility shape.
 
 ## Direct Vizual Spec Example
 
@@ -51,17 +53,17 @@ bar/line/scatter, dual Y axes, or when labels must be precise.
       "props": {
         "type": "combo",
         "title": "研发投入与质量风险",
-        "x": "week",
         "leftAxisName": "研发投入工时",
         "rightAxisName": "崩溃率 / 流失率 (%)",
         "data": [
           { "week": "W1", "hours": 420, "crashRate": 1.2, "churnRate": 0.5 },
           { "week": "W2", "hours": 450, "crashRate": 1.1, "churnRate": 0.4 }
         ],
-        "series": [
-          { "name": "研发投入工时", "type": "bar", "y": "hours", "yAxisIndex": 0 },
-          { "name": "系统崩溃率", "type": "line", "y": "crashRate", "yAxisIndex": 1 },
-          { "name": "用户流失率", "type": "scatter", "y": "churnRate", "size": "churnRate", "yAxisIndex": 1 }
+        "encoding": { "x": { "field": "week", "type": "ordinal" } },
+        "measures": [
+          { "field": "hours", "label": "研发投入工时", "mark": "bar", "axis": "left" },
+          { "field": "crashRate", "label": "系统崩溃率", "mark": "line", "axis": "right" },
+          { "field": "churnRate", "label": "用户流失率", "mark": "scatter", "size": "churnRate", "axis": "right" }
         ]
       }
     }
@@ -77,11 +79,14 @@ bar/line/scatter, dual Y axes, or when labels must be precise.
   "props": {
     "type": "combo",
     "title": "收入 vs 增长率",
-    "x": "month",
-    "y": ["revenue", "growth"],
     "data": [
       { "month": "1月", "revenue": 120, "growth": 15 },
       { "month": "2月", "revenue": 135, "growth": 12 }
+    ],
+    "encoding": { "x": "month" },
+    "measures": [
+      { "field": "revenue", "label": "收入", "mark": "bar", "axis": "left" },
+      { "field": "growth", "label": "增长率", "mark": "line", "axis": "right" }
     ]
   },
   "children": []

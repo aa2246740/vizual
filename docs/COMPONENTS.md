@@ -35,7 +35,9 @@ All chart components use native ECharts option builders owned by Vizual.
 Common chart guidance:
 
 - Data must be non-empty unless the host is intentionally showing an empty state.
-- Field names referenced by chart props must exist in the data rows.
+- Prefer `props.data` plus typed `props.encoding`; use `props.measures` for multiple numeric series or ComboChart layers.
+- Field names referenced by chart props, `encoding`, or `measures` must exist in the data rows.
+- Put long-form categorical grouping in `encoding.color`, `seriesBy`, `colorBy`, or `groupBy`; do not use a string `series` prop as the recommended path.
 - Use `action: "drillDown"` only when selecting a point should trigger deeper analysis.
 - Do not add arbitrary chart props that are not in the schema.
 

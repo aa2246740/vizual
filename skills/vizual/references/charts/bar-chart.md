@@ -10,8 +10,10 @@ Column chart with grouped, stacked, and horizontal variants.
 |------|------|----------|-------------|
 | type | `"bar"` | yes | fixed literal |
 | title | string | no | chart title |
-| x | string | yes | X axis field name |
-| y | string \| string[] | yes | Y axis field(s). Array = multiple series |
+| encoding | object | no | preferred field mapping, e.g. `{x:{field:"month"}, y:{field:"sales"}, color:{field:"channel"}}` |
+| measures | object[] | no | preferred numeric series list for multiple bars |
+| x | string | no | compatibility shortcut for X axis field name |
+| y | string \| string[] | no | compatibility shortcut for Y axis field(s) |
 | data | object[] | yes | data array, each item is { key: value } |
 | stacked | boolean | no | stack series |
 | horizontal | boolean | no | rotate axes |
@@ -26,13 +28,15 @@ Column chart with grouped, stacked, and horizontal variants.
   "props": {
     "type": "bar",
     "title": "月度销售",
-    "x": "month",
-    "y": "sales",
     "data": [
       { "month": "1月", "sales": 120 },
       { "month": "2月", "sales": 135 },
       { "month": "3月", "sales": 168 }
     ],
+    "encoding": {
+      "x": { "field": "month", "type": "ordinal" },
+      "y": { "field": "sales", "type": "quantitative" }
+    },
     "stacked": false,
     "horizontal": false
   },
@@ -48,11 +52,14 @@ Multi-series:
   "props": {
     "type": "bar",
     "title": "季度收入",
-    "x": "quarter",
-    "y": ["online", "offline"],
     "data": [
       { "quarter": "Q1", "online": 80, "offline": 40 },
       { "quarter": "Q2", "online": 120, "offline": 80 }
+    ],
+    "encoding": { "x": { "field": "quarter", "type": "ordinal" } },
+    "measures": [
+      { "field": "online", "label": "线上", "mark": "bar" },
+      { "field": "offline", "label": "线下", "mark": "bar" }
     ],
     "stacked": true
   },

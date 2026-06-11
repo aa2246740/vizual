@@ -44,6 +44,8 @@ Removed and forbidden: `DocView`, `GridLayout`, `SplitLayout`, `FreeformHtml`, `
 - Use `Markdown` for short narrative blocks inside a surface; do not build full documents in native core.
 - Use `KpiDashboard` for metric cards, `DataTable` for detailed rows, and charts for evidence.
 - Add `FormBuilder` only when you need structured user input. It submits to the host Agent with `submitForm`; it does not save or dispatch externally by itself.
+- For charts, prefer `props.data` plus typed `props.encoding`, and use `props.measures` for multiple numeric series or ComboChart layers.
+- Put long-form categorical grouping in `encoding.color`, `seriesBy`, `colorBy`, or `groupBy`. Do not use a string `series` prop as the recommended path.
 
 ## Output Shape
 
@@ -83,9 +85,11 @@ Flat spec fallback:
       "props": {
         "type": "bar",
         "title": "Example",
-        "x": "name",
-        "y": "value",
-        "data": [{ "name": "A", "value": 10 }]
+        "data": [{ "name": "A", "value": 10 }],
+        "encoding": {
+          "x": { "field": "name", "type": "nominal" },
+          "y": { "field": "value", "type": "quantitative" }
+        }
       },
       "children": []
     }
@@ -106,6 +110,7 @@ Before finalizing, check:
 - Every component is in the current catalog.
 - Props match component schemas and required `props.type` literals for typed semantic components.
 - Data fields referenced by charts/tables exist.
+- Charts use `encoding` / `measures` for field intent instead of ambiguous string `series`.
 - Interaction has a real purpose.
 - Removed components are not used.
 - Pure-text and explicit webpage/code requests are not forced into Vizual.

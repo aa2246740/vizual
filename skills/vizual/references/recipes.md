@@ -32,15 +32,15 @@ Use host message text for the conclusion, then render KPI cards, evidence charts
       "props": {
         "type": "combo",
         "title": "营收、成本、利润趋势",
-        "x": "month",
         "data": [
           { "month": "1月", "revenue": 6400, "cost": 4000, "profit": 2400 },
           { "month": "6月", "revenue": 16800, "cost": 14500, "profit": 2300 }
         ],
-        "series": [
-          { "type": "bar", "y": "revenue", "name": "营收" },
-          { "type": "bar", "y": "cost", "name": "成本" },
-          { "type": "line", "y": "profit", "name": "利润" }
+        "encoding": { "x": { "field": "month", "type": "ordinal" } },
+        "measures": [
+          { "field": "revenue", "label": "营收", "mark": "bar", "axis": "left" },
+          { "field": "cost", "label": "成本", "mark": "bar", "axis": "left" },
+          { "field": "profit", "label": "利润", "mark": "line", "axis": "right" }
         ]
       },
       "children": []

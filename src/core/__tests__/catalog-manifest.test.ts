@@ -36,7 +36,17 @@ describe('catalog manifest', () => {
     expect(manifest.components.LineChart).toMatchObject({
       kind: 'chart',
       tags: expect.arrayContaining(['visualization', 'data-bound']),
+      agentGuidance: expect.stringContaining('props.encoding'),
+      propsSchema: {
+        properties: expect.objectContaining({
+          encoding: expect.objectContaining({ type: 'object' }),
+          measures: expect.objectContaining({ type: 'array' }),
+          seriesBy: expect.objectContaining({ description: expect.stringContaining('Categorical grouping') }),
+        }),
+      },
     })
+    expect((manifest.components.BarChart.propsSchema.required as string[])).not.toContain('x')
+    expect((manifest.components.BarChart.propsSchema.required as string[])).not.toContain('y')
     expect(manifest.components.FormBuilder).toMatchObject({
       kind: 'input',
       emits: expect.arrayContaining([{ event: 'submit', description: 'Submits bound form data through submitForm.' }]),
@@ -74,8 +84,14 @@ describe('catalog manifest', () => {
     }
 
     const schema = createVizualToolInputSchema(manifest) as {
+      properties: {
+        input: { anyOf: Array<{ type?: string }> }
+        vizual?: unknown
+      }
       $defs: { nativeComponent: { properties: { component: { enum: string[] } } } }
     }
+    expect(schema.properties.vizual).toBeUndefined()
+    expect(schema.properties.input.anyOf.some(entry => entry.type === 'string')).toBe(false)
     expect(schema.$defs.nativeComponent.properties.component.enum).toEqual(Object.keys(manifest.components).sort())
   })
 

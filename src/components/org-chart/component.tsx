@@ -20,6 +20,9 @@ function flattenNestedData(items: any[], parentId: string | null = null): FlatNo
 
 /** Accept common agent aliases (label→name, parent→parentId) for flat nodes. */
 function normalizeFlatNodes(nodes: any[]): FlatNode[] {
+  if (nodes.some(node => Array.isArray(node?.children))) {
+    return flattenNestedData(nodes)
+  }
   return nodes.map(node => ({
     id: node.id,
     name: node.name ?? node.label ?? node.title ?? node.id,

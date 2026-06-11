@@ -73,6 +73,26 @@ export const VIZUAL_RENDERABLE_COMPONENTS = [
 ] as const
 
 const RENDERABLE_COMPONENTS = new Set<string>(VIZUAL_RENDERABLE_COMPONENTS)
+const CHART_COMPONENTS = new Set<string>([
+  'AreaChart',
+  'BarChart',
+  'BoxplotChart',
+  'BubbleChart',
+  'CalendarChart',
+  'ComboChart',
+  'DumbbellChart',
+  'FunnelChart',
+  'HeatmapChart',
+  'HistogramChart',
+  'LineChart',
+  'PieChart',
+  'RadarChart',
+  'SankeyChart',
+  'ScatterChart',
+  'SparklineChart',
+  'WaterfallChart',
+  'XmrChart',
+])
 
 function hasOwn(record: Record<string, unknown>, key: string): boolean {
   return Object.prototype.hasOwnProperty.call(record, key)
@@ -181,14 +201,42 @@ function stringField(value: unknown): string | undefined {
   return typeof value === 'string' && value.trim().length > 0 ? value.trim() : undefined
 }
 
+function fieldFromRecord(value: unknown): string | undefined {
+  if (!isRecord(value)) return undefined
+  return stringField(
+    value.y
+    ?? value.yField
+    ?? value.field
+    ?? value.key
+    ?? value.dataKey
+    ?? value.value
+    ?? value.valueField
+    ?? value.valueKey
+    ?? value.metricField,
+  )
+}
+
 function fieldList(value: unknown): string[] {
   if (Array.isArray(value)) {
     return value
-      .filter((item): item is string => typeof item === 'string' && item.trim().length > 0)
-      .map(item => item.trim())
+      .map(item => stringField(item) ?? fieldFromRecord(item))
+      .filter((item): item is string => Boolean(item))
   }
+  const recordField = fieldFromRecord(value)
+  if (recordField) return [recordField]
   const single = stringField(value)
   return single ? [single] : []
+}
+
+function seriesMeasureFieldList(value: unknown): string[] {
+  if (Array.isArray(value) || isRecord(value)) {
+    return fieldList(value)
+  }
+  return []
+}
+
+function uniqueFields(...groups: string[][]): string[] {
+  return Array.from(new Set(groups.flat().filter(Boolean)))
 }
 
 function finiteNumber(value: unknown): number | null {
@@ -212,6 +260,97 @@ function chartRows(props: Record<string, unknown>): Array<Record<string, unknown
   return Array.isArray(props.data)
     ? props.data.filter(isRecord)
     : []
+}
+
+function stringChildren(value: unknown): string[] {
+  return Array.isArray(value)
+    ? value.filter((child): child is string => typeof child === 'string' && child.length > 0)
+    : []
+}
+
+function elementContainsChart(
+  id: string,
+  elements: Record<string, unknown>,
+  seen = new Set<string>(),
+): boolean {
+  if (seen.has(id)) return false
+  seen.add(id)
+  const element = elements[id]
+  if (!isRecord(element)) return false
+  const componentType = stringField(element.type)
+  if (componentType && CHART_COMPONENTS.has(componentType)) return true
+  return stringChildren(element.children).some(childId => elementContainsChart(childId, elements, seen))
+}
+
+function chartLikeRowChildCount(children: string[], elements: Record<string, unknown>): number {
+  return children.filter(childId => elementContainsChart(childId, elements)).length
+}
+
+function fieldMagnitude(rows: Array<Record<string, unknown>>, field: string): { min: number; max: number } | null {
+  const values = numericValuesForField(rows, field).map(value => Math.abs(value)).filter(value => value > 0)
+  if (!values.length) return null
+  return { min: Math.min(...values), max: Math.max(...values) }
+}
+
+function collectLayoutQualityIssues(
+  spec: ReturnType<typeof withDefaultElementProps>,
+  surfaceId: string,
+): VizualValidationIssue[] {
+  const issues: VizualValidationIssue[] = []
+  const elements = spec.elements ?? {}
+
+  for (const [elementId, element] of Object.entries(elements)) {
+    const componentType = stringField(element?.type)
+    const props = isRecord(element?.props) ? element.props : {}
+
+    if (componentType === 'Row') {
+      const children = stringChildren(element?.children)
+      const chartChildren = chartLikeRowChildCount(children, elements)
+      if (chartChildren > 2) {
+        issues.push({
+          severity: 'warning',
+          code: 'vizual.layout.too_many_peer_charts',
+          message: `Row "${elementId}" places ${chartChildren} chart panels side by side. Prefer one full-width main evidence chart and at most two secondary charts per row.`,
+          surfaceId,
+          evidence: { elementId, chartChildren },
+        })
+      }
+    }
+
+    if (componentType === 'LineChart' || componentType === 'AreaChart') {
+      const rows = chartRows(props)
+      const y = uniqueFields(fieldList(props.y), fieldList(props.yField), fieldList(props.yFields), seriesMeasureFieldList(props.series))
+      if (rows.length && y.length >= 2) {
+        const magnitudes = y
+          .map(field => ({ field, magnitude: fieldMagnitude(rows, field) }))
+          .filter((item): item is { field: string; magnitude: { min: number; max: number } } => item.magnitude !== null)
+        if (magnitudes.length >= 2) {
+          const globalMin = Math.min(...magnitudes.map(item => item.magnitude.min))
+          const globalMax = Math.max(...magnitudes.map(item => item.magnitude.max))
+          if (globalMin > 0 && globalMax / globalMin >= 20) {
+            issues.push({
+              severity: 'warning',
+              code: 'vizual.layout.mixed_scale_line_chart',
+              message: `${componentType} "${elementId}" mixes series with very different magnitudes. Use ComboChart with dual axes or split the measures into separate charts/tables.`,
+              surfaceId,
+              evidence: {
+                elementId,
+                componentType,
+                fields: magnitudes.map(item => ({
+                  field: item.field,
+                  min: item.magnitude.min,
+                  max: item.magnitude.max,
+                })),
+                ratio: Number((globalMax / globalMin).toFixed(2)),
+              },
+            })
+          }
+        }
+      }
+    }
+  }
+
+  return issues
 }
 
 function pushMissingFieldIssue(
@@ -349,17 +488,29 @@ function collectChartDataIssues(spec: ReturnType<typeof withDefaultElementProps>
     const rows = chartRows(props)
     if (!componentType || !rows.length) continue
 
-    const x = stringField(props.x)
-    const y = fieldList(props.y)
+    const x = stringField(props.x) ?? stringField(props.xField) ?? stringField(props.axis)
+    const y = uniqueFields(
+      fieldList(props.y),
+      fieldList(props.yField),
+      fieldList(props.yFields),
+      seriesMeasureFieldList(props.series),
+    )
 
     switch (componentType) {
       case 'AreaChart':
-      case 'BarChart':
       case 'LineChart':
       case 'ComboChart':
       case 'RadarChart':
         requireCategoryField(issues, surfaceId, chartId, componentType, rows, x ?? 'name', 'x')
         ;(y.length ? y : ['value']).forEach(field => requireNumericField(issues, surfaceId, chartId, componentType, rows, field, 'y'))
+        break
+      case 'BarChart':
+        if (x && rowsHaveNumericField(rows, x)) {
+          requireCategoryField(issues, surfaceId, chartId, componentType, rows, y[0] ?? stringField(props.yField), 'y')
+        } else {
+          requireCategoryField(issues, surfaceId, chartId, componentType, rows, x ?? 'name', 'x')
+          ;(y.length ? y : ['value']).forEach(field => requireNumericField(issues, surfaceId, chartId, componentType, rows, field, 'y'))
+        }
         break
       case 'ScatterChart':
         requireCategoryField(issues, surfaceId, chartId, componentType, rows, x ?? 'name', 'x')
@@ -589,6 +740,7 @@ export function validateVizualNativeInput(
     }
 
     issues.push(...collectChartDataIssues(spec, snapshot.surfaceId))
+    issues.push(...collectLayoutQualityIssues(spec, snapshot.surfaceId))
     issues.push(...collectUnsupportedComponentIssues(spec, snapshot.surfaceId))
     issues.push(...collectEmptyContentIssues(spec, snapshot.surfaceId, requireRenderable))
   }

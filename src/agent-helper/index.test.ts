@@ -124,6 +124,8 @@ describe('Vizual agent runtime harness', () => {
     expect(tool.description).toContain('explicit creative requests such as webpages/games/custom HTML/code artifacts')
     expect(tool.description).toContain('business-dashboard: KpiDashboard')
     expect(tool.description).toContain('mixed-or-dual-axis-chart: ComboChart')
+    expect(tool.description).toContain('props.encoding')
+    expect(tool.description).toContain('Do not use a string series prop as the recommended path')
     expect(tool.description).toContain('discovery hints, not creative gates or mandatory component bundles')
     expect(tool.description).toContain('DataTable may support details')
     expect(tool.description).not.toContain('Invocation contract')
@@ -716,8 +718,13 @@ describe('Vizual agent runtime harness', () => {
     })
     expect(manifest.components.BarChart.propsSchema).toMatchObject({
       type: 'object',
-      required: expect.arrayContaining(['type', 'x', 'y', 'data']),
+      required: expect.arrayContaining(['type', 'data']),
+      properties: {
+        encoding: expect.objectContaining({ type: 'object' }),
+        measures: expect.objectContaining({ type: 'array' }),
+      },
     })
+    expect(manifest.components.BarChart.propsSchema.required).not.toEqual(expect.arrayContaining(['x', 'y']))
     expect(manifest.capabilities.map(capability => capability.id)).toEqual(expect.arrayContaining([
       'business-dashboard',
       'mixed-or-dual-axis-chart',

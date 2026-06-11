@@ -21,6 +21,8 @@ function firstField(record: Record<string, unknown>): string | undefined {
     ?? record.yField
     ?? record.field
     ?? record.key
+    ?? record.dataKey
+    ?? record.value
     ?? record.valueField
     ?? record.valueKey
     ?? record.metricField
@@ -68,7 +70,11 @@ function setStringAlias(
 type NativeSeriesType = 'bar' | 'line' | 'scatter'
 
 function toSeriesEntries(value: unknown, defaultType?: NativeSeriesType) {
-  const values = Array.isArray(value) ? value : value == null ? [] : [value]
+  const values = Array.isArray(value)
+    ? value
+    : typeof value === 'string'
+      ? []
+      : value == null ? [] : [value]
   return values
     .map((item, index) => {
       if (typeof item === 'string' && item.length > 0) {
@@ -90,6 +96,250 @@ function toSeriesEntries(value: unknown, defaultType?: NativeSeriesType) {
       }
     })
     .filter((series): series is { type: NativeSeriesType; y: string; name?: string; size?: string; yAxisIndex?: number } => Boolean(series))
+}
+
+function chartMark(value: unknown): NativeSeriesType | undefined {
+  return value === 'bar' || value === 'line' || value === 'scatter' ? value : undefined
+}
+
+function fieldRef(value: unknown): string | undefined {
+  if (typeof value === 'string' && value.trim().length > 0) return value.trim()
+  const record = toRecord(value)
+  const field = firstStringValue(
+    record.field,
+    record.key,
+    record.dataKey,
+    record.accessor,
+    record.name,
+    record.value,
+    record.valueField,
+    record.metric,
+    record.metricField,
+    record.measure,
+    record.measureField,
+    record.y,
+    record.yField,
+    record.x,
+    record.xField,
+  )
+  return field
+}
+
+function fieldRefList(value: unknown): string[] {
+  if (Array.isArray(value)) {
+    return value.map(fieldRef).filter((field): field is string => Boolean(field))
+  }
+  const record = toRecord(value)
+  const nested = record.fields ?? record.values ?? record.measures
+  if (Array.isArray(nested)) return fieldRefList(nested)
+  const single = fieldRef(value)
+  return single ? [single] : []
+}
+
+function encodingRecord(value: unknown): Record<string, unknown> {
+  return toRecord(value)
+}
+
+function encodedField(encoding: Record<string, unknown>, ...keys: string[]): string | undefined {
+  for (const key of keys) {
+    const field = fieldRef(encoding[key])
+    if (field) return field
+  }
+  return undefined
+}
+
+function encodedFieldList(encoding: Record<string, unknown>, ...keys: string[]): string[] {
+  for (const key of keys) {
+    const fields = fieldRefList(encoding[key])
+    if (fields.length) return fields
+  }
+  return []
+}
+
+type ChartMeasure = {
+  field: string
+  name?: string
+  type: NativeSeriesType
+  size?: string
+  yAxisIndex?: number
+}
+
+function axisIndex(value: unknown): number | undefined {
+  if (typeof value === 'number' && Number.isFinite(value)) return value
+  if (typeof value !== 'string') return undefined
+  const text = value.trim().toLowerCase()
+  if (!text) return undefined
+  if (text === 'right' || text === 'secondary' || text === 'rightaxis' || text === 'y2') return 1
+  if (text === 'left' || text === 'primary' || text === 'leftaxis' || text === 'y1') return 0
+  const parsed = Number(text)
+  return Number.isFinite(parsed) ? parsed : undefined
+}
+
+function measureEntries(value: unknown, defaultType?: NativeSeriesType): ChartMeasure[] {
+  const values = Array.isArray(value) ? value : value == null ? [] : [value]
+  return values
+    .map((item, index) => {
+      const record = toRecord(item)
+      const field = fieldRef(item)
+      if (!field) return null
+      return {
+        field,
+        type: chartMark(record.mark ?? record.type ?? record.chartType ?? record.kind) ?? defaultType ?? (index === 0 ? 'bar' : 'line'),
+        ...(typeof record.name === 'string' && record.name.trim() ? { name: record.name.trim() } : {}),
+        ...(typeof record.label === 'string' && record.label.trim() ? { name: record.label.trim() } : {}),
+        ...(typeof record.title === 'string' && record.title.trim() ? { name: record.title.trim() } : {}),
+        ...(fieldRef(record.size ?? record.sizeField ?? record.r ?? record.radiusField) ? { size: fieldRef(record.size ?? record.sizeField ?? record.r ?? record.radiusField)! } : {}),
+        ...(axisIndex(record.yAxisIndex ?? record.axisIndex ?? record.axis ?? record.yAxis) !== undefined
+          ? { yAxisIndex: axisIndex(record.yAxisIndex ?? record.axisIndex ?? record.axis ?? record.yAxis)! }
+          : {}),
+      }
+    })
+    .filter((entry): entry is ChartMeasure => Boolean(entry))
+}
+
+function finiteChartNumber(value: unknown): number | null {
+  if (typeof value === 'number') return Number.isFinite(value) ? value : null
+  if (typeof value === 'string') {
+    const parsed = Number(value.replace(/,/g, ''))
+    return Number.isFinite(parsed) ? parsed : null
+  }
+  return null
+}
+
+function pivotLongFormSeries(
+  rows: unknown[],
+  xField: string,
+  yField: string,
+  seriesField: string,
+): { data: Record<string, unknown>[]; y: string[] } | null {
+  const rowRecords = rows.map(toRecord).filter(row => Object.keys(row).length)
+  if (!rowRecords.length) return null
+  const hasAllFields = rowRecords.some(row => row[xField] != null && row[yField] != null && row[seriesField] != null)
+  if (!hasAllFields) return null
+
+  const groupNames: string[] = []
+  const rowsByX = new Map<string, Record<string, unknown>>()
+  const xValuesByKey = new Map<string, unknown>()
+
+  for (const row of rowRecords) {
+    const rawX = row[xField]
+    const rawGroup = row[seriesField]
+    const numericValue = finiteChartNumber(row[yField])
+    if (rawX == null || rawGroup == null || numericValue === null) continue
+    const xKey = String(rawX)
+    const groupName = String(rawGroup).trim()
+    if (!groupName) continue
+    if (!groupNames.includes(groupName)) groupNames.push(groupName)
+    xValuesByKey.set(xKey, rawX)
+    const out = rowsByX.get(xKey) ?? { [xField]: rawX }
+    const previous = finiteChartNumber(out[groupName])
+    out[groupName] = previous === null ? numericValue : previous + numericValue
+    rowsByX.set(xKey, out)
+  }
+
+  if (!groupNames.length || !rowsByX.size) return null
+  const data = Array.from(rowsByX.entries()).map(([xKey, row]) => ({
+    [xField]: xValuesByKey.get(xKey) ?? xKey,
+    ...row,
+  }))
+  return { data, y: groupNames }
+}
+
+function applyChartIntent(componentType: string, next: Record<string, unknown>) {
+  const encoding = encodingRecord(next.encoding)
+  const measures = measureEntries(next.measures)
+  const encodedMeasures = encodedFieldList(encoding, 'measures', 'measure', 'metrics', 'metric')
+  const x = encodedField(encoding, 'x', 'category', 'dimension', 'time', 'date', 'label')
+  const y = [
+    ...encodedFieldList(encoding, 'y', 'value', 'values', 'metric', 'measure'),
+    ...encodedMeasures,
+    ...measures.map(measure => measure.field),
+  ]
+  const label = encodedField(encoding, 'label', 'name', 'category', 'x')
+  const value = encodedField(encoding, 'value', 'y', 'metric', 'measure')
+    ?? (measures.length === 1 ? measures[0].field : undefined)
+  const date = encodedField(encoding, 'date', 'time', 'x')
+  const size = encodedField(encoding, 'size', 'r', 'radius')
+  const group = fieldRef(next.seriesBy)
+    ?? fieldRef(next.colorBy)
+    ?? fieldRef(next.groupBy)
+    ?? encodedField(encoding, 'seriesBy', 'color', 'colorBy', 'group', 'groupBy', 'series')
+
+  if (next.x == null && x) next.x = x
+  if (group && next.seriesBy == null) next.seriesBy = group
+  if (group && next.colorBy == null) next.colorBy = group
+  if (group && next.groupBy == null) next.groupBy = group
+
+  if (componentType === 'ComboChart' && measures.length) {
+    if (!Array.isArray(next.series)) {
+      next.series = measures.map(measure => ({
+        type: measure.type ?? 'line',
+        y: measure.field,
+        ...(measure.name ? { name: measure.name } : {}),
+        ...(measure.size ? { size: measure.size } : {}),
+        ...(measure.yAxisIndex !== undefined ? { yAxisIndex: measure.yAxisIndex } : {}),
+      }))
+    }
+    if (next.y == null) next.y = measures.map(measure => measure.field)
+  } else if (next.y == null && y.length) {
+    next.y = y.length === 1 ? y[0] : y
+  }
+
+  if (componentType === 'PieChart' || componentType === 'FunnelChart' || componentType === 'WaterfallChart' || componentType === 'XmrChart') {
+    if (next.label == null && label) next.label = label
+    if (next.value == null && value) next.value = value
+  }
+  if (componentType === 'CalendarChart') {
+    if (next.dateField == null && date) next.dateField = date
+    if (next.valueField == null && value) next.valueField = value
+  }
+  if (componentType === 'HeatmapChart') {
+    const heatX = encodedField(encoding, 'x', 'column', 'category')
+    const heatY = encodedField(encoding, 'y', 'row', 'group', 'series')
+    if (next.xField == null && heatX) next.xField = heatX
+    if (next.yField == null && heatY) next.yField = heatY
+    if (next.valueField == null && value) next.valueField = value
+  }
+  if (componentType === 'BoxplotChart') {
+    if (next.groupField == null && (group || x)) next.groupField = group ?? x
+    if (next.valueField == null && value) next.valueField = value
+  }
+  if (componentType === 'DumbbellChart') {
+    const low = encodedField(encoding, 'low', 'min', 'start', 'from', 'before')
+    const high = encodedField(encoding, 'high', 'max', 'end', 'to', 'after')
+    if (next.groupField == null && (group || x)) next.groupField = group ?? x
+    if (next.low == null && low) next.low = low
+    if (next.high == null && high) next.high = high
+  }
+  if (componentType === 'ScatterChart' || componentType === 'BubbleChart') {
+    if (next.size == null && size) next.size = size
+    if (next.label == null && label) next.label = label
+    if (next.groupField == null && group) next.groupField = group
+  }
+  if (componentType === 'HistogramChart' && next.value == null && value) {
+    next.value = value
+  }
+  if (componentType === 'SankeyChart') {
+    const source = encodedField(encoding, 'source', 'from')
+    const target = encodedField(encoding, 'target', 'to')
+    if (next.source == null && source) next.source = source
+    if (next.target == null && target) next.target = target
+    if (next.value == null && value) next.value = value
+  }
+}
+
+function applyLongFormChartGrouping(componentType: string, next: Record<string, unknown>) {
+  if (!['AreaChart', 'BarChart', 'LineChart'].includes(componentType)) return
+  if (!Array.isArray(next.data)) return
+  const x = fieldRef(next.x)
+  const yFields = fieldRefList(next.y)
+  const seriesBy = fieldRef(next.seriesBy) ?? fieldRef(next.colorBy) ?? fieldRef(next.groupBy)
+  if (!x || yFields.length !== 1 || !seriesBy) return
+  const pivoted = pivotLongFormSeries(next.data, x, yFields[0], seriesBy)
+  if (!pivoted) return
+  next.data = pivoted.data
+  next.y = pivoted.y
+  if (componentType === 'BarChart' && next.stacked == null) next.stacked = false
 }
 
 function rowsFromSeriesData(value: unknown): Record<string, unknown>[] {
@@ -499,6 +749,7 @@ function mapDataTableProps(props: Record<string, unknown>) {
 
 function mapChartProps(componentType: string, props: Record<string, unknown>) {
   const next = { ...props }
+  applyChartIntent(componentType, next)
   const agenuiData = toRecord(next.data)
   const agenuiSeries = Array.isArray(agenuiData.series)
     ? agenuiData.series.map(toRecord).filter(series => Object.keys(series).length)
@@ -847,6 +1098,7 @@ function mapChartProps(componentType: string, props: Record<string, unknown>) {
   }
   if (Array.isArray(next.data)) {
     next.data = coerceGroupedNumericCells(next.data)
+    applyLongFormChartGrouping(componentType, next)
   }
   return next
 }
@@ -1038,6 +1290,92 @@ const INTERACTIVE_CHART_TYPES = new Set([
 
 function isInteractiveChart(type: string | undefined) {
   return typeof type === 'string' && INTERACTIVE_CHART_TYPES.has(type)
+}
+
+const FLEXIBLE_ROW_CONTAINER_TYPES = new Set(['Card', 'Container'])
+const ROW_CHART_CARD_MIN_HEIGHT = 360
+
+function stringChildren(value: unknown): string[] {
+  return Array.isArray(value)
+    ? value.filter((child): child is string => typeof child === 'string' && child.length > 0)
+    : []
+}
+
+function ownProp(record: Record<string, unknown>, key: string): boolean {
+  return Object.prototype.hasOwnProperty.call(record, key)
+}
+
+function elementContainsChart(
+  id: string,
+  elements: NonNullable<VizualSpec['elements']>,
+  seen = new Set<string>(),
+): boolean {
+  if (seen.has(id)) return false
+  seen.add(id)
+  const element = elements[id]
+  if (!element) return false
+  if (isInteractiveChart(element.type)) return true
+  return stringChildren(element.children).some(childId => elementContainsChart(childId, elements, seen))
+}
+
+function rowChildCanReceiveLayoutDefaults(element: NonNullable<VizualSpec['elements']>[string] | undefined): boolean {
+  if (!element?.type) return false
+  return FLEXIBLE_ROW_CONTAINER_TYPES.has(element.type)
+}
+
+function applyLayoutDefaultsToRows(
+  elements: NonNullable<VizualSpec['elements']>,
+): NonNullable<VizualSpec['elements']> {
+  let next = elements
+
+  const updateElementProps = (id: string, patch: Record<string, unknown>) => {
+    const current = next[id]
+    if (!current) return
+    const props = current.props && typeof current.props === 'object' && !Array.isArray(current.props)
+      ? { ...(current.props as Record<string, unknown>) }
+      : {}
+    let changed = false
+    for (const [key, value] of Object.entries(patch)) {
+      if (!ownProp(props, key) || props[key] == null) {
+        props[key] = value
+        changed = true
+      }
+    }
+    if (!changed) return
+    if (next === elements) next = { ...elements }
+    next[id] = { ...current, props }
+  }
+
+  for (const [rowId, row] of Object.entries(elements)) {
+    if (row?.type !== 'Row') continue
+    const children = stringChildren(row.children)
+    if (children.length < 2) continue
+
+    const eligibleChildren = children.filter(childId => {
+      const child = elements[childId]
+      return rowChildCanReceiveLayoutDefaults(child)
+    })
+    if (eligibleChildren.length < 2) continue
+
+    const rowProps = row.props && typeof row.props === 'object' && !Array.isArray(row.props)
+      ? row.props as Record<string, unknown>
+      : {}
+    if (eligibleChildren.length > 2 && !ownProp(rowProps, 'wrap')) {
+      updateElementProps(rowId, { wrap: true })
+    }
+
+    for (const childId of eligibleChildren) {
+      const child = elements[childId]
+      if (!child?.type) continue
+
+      updateElementProps(childId, { flex: '1 1 0', width: 0 })
+      if (elementContainsChart(childId, elements)) {
+        updateElementProps(childId, { minHeight: ROW_CHART_CARD_MIN_HEIGHT })
+      }
+    }
+  }
+
+  return next
 }
 
 const ACTIONABLE_CONTAINER_TYPES = new Set([
@@ -1247,35 +1585,36 @@ export function withDefaultElementProps(spec: VizualSpec | undefined | null): Vi
   if (!spec?.elements) return spec || {}
   const elements = spec.elements
   const state = { ...toRecord(spec.state) }
+  const normalizedElements = Object.fromEntries(
+    Object.entries(elements).map(([id, element]) => {
+      const elementRecord = toRecord(element)
+      const rawComponent = typeof elementRecord.component === 'string' ? elementRecord.component : undefined
+      const rawType = typeof elementRecord.type === 'string' ? elementRecord.type : undefined
+      const componentType = normalizeRendererType(rawComponent) ?? normalizeRendererType(rawType)
+      const props = element?.props && typeof element.props === 'object' && !Array.isArray(element.props)
+        ? { ...(element.props as Record<string, unknown>) }
+        : {}
+      if (componentType && props.type == null && rawType && rawType !== componentType) props.type = rawType
+      const resolvedProps = resolveDataTemplates(props, state) as Record<string, unknown>
+      const normalizedProps = normalizeElementProps(componentType, resolvedProps)
+      const nextElement: NonNullable<VizualSpec['elements']>[string] = {
+        ...element,
+        ...(componentType ? { type: componentType } : {}),
+        props: normalizedProps,
+      }
+      delete (nextElement as Record<string, unknown>).component
+      const on = hydrateDefaultEventBindings(id, nextElement, normalizedProps, state)
+      if (on) nextElement.on = on
+      return [
+        id,
+        nextElement,
+      ]
+    }),
+  )
   return {
     ...spec,
     state,
-    elements: Object.fromEntries(
-      Object.entries(elements).map(([id, element]) => {
-        const elementRecord = toRecord(element)
-        const rawComponent = typeof elementRecord.component === 'string' ? elementRecord.component : undefined
-        const rawType = typeof elementRecord.type === 'string' ? elementRecord.type : undefined
-        const componentType = normalizeRendererType(rawComponent) ?? normalizeRendererType(rawType)
-        const props = element?.props && typeof element.props === 'object' && !Array.isArray(element.props)
-          ? { ...(element.props as Record<string, unknown>) }
-          : {}
-        if (componentType && props.type == null && rawType && rawType !== componentType) props.type = rawType
-        const resolvedProps = resolveDataTemplates(props, state) as Record<string, unknown>
-        const normalizedProps = normalizeElementProps(componentType, resolvedProps)
-        const nextElement: NonNullable<VizualSpec['elements']>[string] = {
-          ...element,
-          ...(componentType ? { type: componentType } : {}),
-          props: normalizedProps,
-        }
-        delete (nextElement as Record<string, unknown>).component
-        const on = hydrateDefaultEventBindings(id, nextElement, normalizedProps, state)
-        if (on) nextElement.on = on
-        return [
-          id,
-          nextElement,
-        ]
-      }),
-    ),
+    elements: applyLayoutDefaultsToRows(normalizedElements),
   }
 }
 

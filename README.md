@@ -88,12 +88,15 @@ const spec = {
       props: {
         type: 'line',
         title: 'Revenue vs Profit',
-        x: 'month',
-        y: ['revenue', 'profit'],
         data: [
           { month: 'Jan', revenue: 6400, profit: 2400 },
           { month: 'Feb', revenue: 7200, profit: 2500 },
           { month: 'Mar', revenue: 8800, profit: 2700 },
+        ],
+        encoding: { x: { field: 'month', type: 'ordinal' } },
+        measures: [
+          { field: 'revenue', label: 'Revenue', mark: 'line' },
+          { field: 'profit', label: 'Profit', mark: 'line' },
         ],
       },
       children: [],

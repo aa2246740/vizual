@@ -189,12 +189,21 @@ const ACTION_METADATA: Record<string, Pick<VizualCatalogActionManifest, 'kind' |
   },
 }
 
-function componentAgentMetadata(_component: string): Pick<VizualCatalogComponentManifest, 'status' | 'agentFacing' | 'agentGuidance'> {
+function componentAgentMetadata(component: string): Pick<VizualCatalogComponentManifest, 'status' | 'agentFacing' | 'agentGuidance'> {
+  if (isDataChartComponent(component)) {
+    return {
+      agentGuidance: 'For charts, prefer props.data plus typed props.encoding and optional props.measures. Use encoding.x/y/value/label/color/source/target/low/high to name fields. Use measures for multiple numeric series or ComboChart layers. Do not use a string series prop as the recommended path; categorical grouping belongs in encoding.color, seriesBy, colorBy, or groupBy, and numeric series belong in measures or explicit series arrays.',
+    }
+  }
   return {}
 }
 
 function isChartComponent(component: string): boolean {
   return /Chart$/u.test(component) || component === 'MermaidDiagram'
+}
+
+function isDataChartComponent(component: string): boolean {
+  return isChartComponent(component) && component !== 'MermaidDiagram'
 }
 
 function componentKind(component: string): VizualCatalogComponentKind {
@@ -367,6 +376,72 @@ export function zodToJsonSchema(schema: unknown, seen: WeakSet<object> = new Wea
       return {}
     default:
       return {}
+  }
+}
+
+function withChartIntentProps(schema: JsonSchemaObject): JsonSchemaObject {
+  if (schema.type !== 'object') return schema
+  const properties = (schema.properties && typeof schema.properties === 'object' && !Array.isArray(schema.properties))
+    ? schema.properties as Record<string, unknown>
+    : {}
+  const required = Array.isArray(schema.required)
+    ? schema.required.filter(item => typeof item !== 'string' || !['x', 'y', 'label', 'value', 'dateField', 'valueField', 'xField', 'yField'].includes(item))
+    : schema.required
+
+  return {
+    ...schema,
+    ...(required ? { required } : {}),
+    properties: {
+      ...properties,
+      encoding: {
+        type: 'object',
+        additionalProperties: true,
+        description: 'Preferred chart intent mapping. Use field references such as {x:{field:"month",type:"temporal"}, y:{field:"revenue",type:"quantitative"}, color:{field:"branch",type:"nominal"}}. Vizual compiles this into renderer props.',
+        properties: {
+          x: { anyOf: [{ type: 'string' }, { type: 'object', additionalProperties: true }] },
+          y: { anyOf: [{ type: 'string' }, { type: 'object', additionalProperties: true }, { type: 'array', items: {} }] },
+          value: { anyOf: [{ type: 'string' }, { type: 'object', additionalProperties: true }] },
+          label: { anyOf: [{ type: 'string' }, { type: 'object', additionalProperties: true }] },
+          color: { anyOf: [{ type: 'string' }, { type: 'object', additionalProperties: true }] },
+          size: { anyOf: [{ type: 'string' }, { type: 'object', additionalProperties: true }] },
+          date: { anyOf: [{ type: 'string' }, { type: 'object', additionalProperties: true }] },
+          source: { anyOf: [{ type: 'string' }, { type: 'object', additionalProperties: true }] },
+          target: { anyOf: [{ type: 'string' }, { type: 'object', additionalProperties: true }] },
+          low: { anyOf: [{ type: 'string' }, { type: 'object', additionalProperties: true }] },
+          high: { anyOf: [{ type: 'string' }, { type: 'object', additionalProperties: true }] },
+        },
+      },
+      measures: {
+        type: 'array',
+        description: 'Preferred numeric measure list for multiple series or ComboChart layers. Each item should include field plus optional label, mark bar/line/scatter, axis left/right, and size.',
+        items: {
+          type: 'object',
+          additionalProperties: true,
+          required: ['field'],
+          properties: {
+            field: { type: 'string' },
+            label: { type: 'string' },
+            name: { type: 'string' },
+            mark: { enum: ['bar', 'line', 'scatter'] },
+            axis: { enum: ['left', 'right', 'primary', 'secondary'] },
+            yAxisIndex: { type: 'number' },
+            size: { type: 'string' },
+          },
+        },
+      },
+      seriesBy: {
+        anyOf: [{ type: 'string' }, { type: 'object', additionalProperties: true }],
+        description: 'Categorical grouping field for long-form chart data. Prefer encoding.color; do not use string series for this in new Agent outputs.',
+      },
+      colorBy: {
+        anyOf: [{ type: 'string' }, { type: 'object', additionalProperties: true }],
+        description: 'Alias for categorical grouping field in long-form chart data.',
+      },
+      groupBy: {
+        anyOf: [{ type: 'string' }, { type: 'object', additionalProperties: true }],
+        description: 'Alias for categorical grouping field in long-form chart data.',
+      },
+    },
   }
 }
 
@@ -656,7 +731,17 @@ export function createVizualAgentPromptExamples(): VizualAgentPromptExample[] {
             components: [
               { id: 'root', component: 'Column', children: ['kpis', 'trend', 'stores', 'actionForm'] },
               { id: 'kpis', component: 'KpiDashboard', data: { path: '/kpis' } },
-              { id: 'trend', component: 'LineChart', data: { path: '/trend' }, x: 'date', y: ['revenue', 'traffic'], action: 'drillDown' },
+              {
+                id: 'trend',
+                component: 'LineChart',
+                data: { path: '/trend' },
+                encoding: { x: { field: 'date', type: 'temporal' } },
+                measures: [
+                  { field: 'revenue', label: '收入', mark: 'line' },
+                  { field: 'traffic', label: '客流', mark: 'line' },
+                ],
+                action: 'drillDown',
+              },
               { id: 'stores', component: 'DataTable', data: { path: '/stores' } },
               { id: 'actionForm', component: 'FormBuilder', value: { $bindState: '/actionDraft' }, fields: [] },
             ],
@@ -686,12 +771,12 @@ export function createVizualAgentPromptExamples(): VizualAgentPromptExample[] {
             component: 'ComboChart',
             props: {
               title: '月度经营趋势',
-              x: 'month',
               data: [{ month: '6月', spending: 305, installment: 115, npl: 1.42 }],
-              series: [
-                { type: 'bar', y: 'spending', name: '消费金额' },
-                { type: 'bar', y: 'installment', name: '分期金额' },
-                { type: 'line', y: 'npl', name: '不良率', yAxisIndex: 1 },
+              encoding: { x: { field: 'month', type: 'ordinal' } },
+              measures: [
+                { field: 'spending', label: '消费金额', mark: 'bar', axis: 'left' },
+                { field: 'installment', label: '分期金额', mark: 'bar', axis: 'left' },
+                { field: 'npl', label: '不良率', mark: 'line', axis: 'right' },
               ],
             },
           },
@@ -699,9 +784,11 @@ export function createVizualAgentPromptExamples(): VizualAgentPromptExample[] {
             component: 'BarChart',
             props: {
               title: '区域消费对比',
-              x: 'branch',
-              y: 'spending',
               data: [{ branch: '深圳', spending: 55 }],
+              encoding: {
+                x: { field: 'branch', type: 'nominal' },
+                y: { field: 'spending', type: 'quantitative' },
+              },
             },
           },
           actions: {
@@ -726,12 +813,12 @@ export function createVizualAgentPromptExamples(): VizualAgentPromptExample[] {
             component: 'ComboChart',
             props: {
               title: '研发投入与产品质量关联',
-              x: 'week',
               data: [{ week: 'W6', hours: 820, crashRate: 8.5, churnRate: 3.8 }],
-              series: [
-                { type: 'bar', y: 'hours', name: '研发投入工时', yAxisIndex: 0 },
-                { type: 'line', y: 'crashRate', name: '系统崩溃率', yAxisIndex: 1 },
-                { type: 'scatter', y: 'churnRate', name: '用户流失率', yAxisIndex: 1, size: 'churnRate' },
+              encoding: { x: { field: 'week', type: 'ordinal' } },
+              measures: [
+                { field: 'hours', label: '研发投入工时', mark: 'bar', axis: 'left' },
+                { field: 'crashRate', label: '系统崩溃率', mark: 'line', axis: 'right' },
+                { field: 'churnRate', label: '用户流失率', mark: 'scatter', axis: 'right', size: 'churnRate' },
               ],
             },
           },
@@ -777,7 +864,9 @@ export function createVizualCatalogManifest(options: { includeExamples?: boolean
           tags: componentTags(component),
           agentRole: componentAgentRole(component),
           compatibleInputs: componentCompatibleInputs(component),
-          propsSchema: zodToJsonSchema(definition.props),
+          propsSchema: isDataChartComponent(component)
+            ? withChartIntentProps(zodToJsonSchema(definition.props))
+            : zodToJsonSchema(definition.props),
           children: inferChildrenKind(component),
           emits: inferEmits(component),
           ...componentAgentMetadata(component),

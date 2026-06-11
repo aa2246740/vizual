@@ -124,6 +124,362 @@ describe('chat adapter renderability gate', () => {
     expect(selectVisibleVizualPresentations(presentations)).toEqual([presentations[0]])
   })
 
+  it('does not accept old vizual alias shells as renderable native input', () => {
+    const result = {
+      ok: true,
+      envelope: {
+        schema: 'vizual.agent.envelope.v1',
+        mimeType: 'application/vnd.vizual.agent+json',
+        nativeMimeType: 'application/vnd.vizual.native+json',
+        toolName: VIZUAL_AGENT_TOOL_NAME,
+        surfaceId: 'server-generated-id',
+        fallbackText: '',
+        display: { mode: 'inline' },
+        input: {
+          surfaceId: 'training-panel',
+          fallbackText: '培训资源包',
+          display: { mode: 'inline', title: '培训资源包' },
+          vizual: {
+            root: 'root',
+            elements: {
+              root: {
+                type: 'Column',
+                children: ['video'],
+              },
+              video: {
+                type: 'Video',
+                props: {
+                  src: 'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4',
+                  controls: true,
+                },
+              },
+            },
+          },
+        },
+      },
+    }
+    const messages = [
+      assistantToolCall('call-wrapper', { input: result.envelope.input }),
+      toolResult('call-wrapper', result),
+    ]
+
+    const presentations = extractVizualPresentations(messages)
+
+    expect(presentations).toHaveLength(1)
+    expect(presentations[0]).toMatchObject({
+      accepted: false,
+      renderable: false,
+      fallbackText: '培训资源包',
+      outcome: 'fallback',
+    })
+    expect(selectVisibleVizualPresentations(presentations)).toEqual([])
+    expect(selectVizualFallbackTexts(presentations)).toEqual(['培训资源包'])
+  })
+
+  it('falls back to the original tool args when an ok result envelope dropped createSurface', () => {
+    const argsInput = {
+      version: 'v0.10',
+      createSurface: { surfaceId: 'bank-branch-diagnosis' },
+      operations: [
+        {
+          version: 'v0.10',
+          updateComponents: {
+            surfaceId: 'bank-branch-diagnosis',
+            components: {
+              root: {
+                type: 'BarChart',
+                props: {
+                  data: [{ branch: '南山', score: 82 }],
+                  x: 'branch',
+                  y: 'score',
+                },
+              },
+            },
+          },
+        },
+      ],
+    }
+    const badResultInput = [
+      ...argsInput.operations,
+    ]
+    const messages = [
+      assistantToolCall('call-dropped-create', { input: JSON.stringify(argsInput) }),
+      toolResult('call-dropped-create', {
+        ok: true,
+        surfaceId: 'bank-branch-diagnosis',
+        envelope: {
+          schema: 'vizual.agent.envelope.v1',
+          mimeType: 'application/vnd.vizual.agent+json',
+          nativeMimeType: 'application/vnd.vizual.native+json',
+          toolName: VIZUAL_AGENT_TOOL_NAME,
+          surfaceId: 'bank-branch-diagnosis',
+          input: badResultInput,
+        },
+      }),
+    ]
+
+    const presentations = extractVizualPresentations(messages)
+
+    expect(presentations).toHaveLength(1)
+    expect(presentations[0]).toMatchObject({
+      accepted: true,
+      renderable: true,
+      surfaceId: 'bank-branch-diagnosis',
+    })
+    expect(presentations[0].preview?.summary.componentTypes).toEqual(['BarChart'])
+  })
+
+  it('previews createSurface root/elements plus later child component updates as one renderable presentation', () => {
+    const input = [
+      {
+        version: 'v0.10',
+        createSurface: {
+          id: 'branch-feedback-form',
+          root: 'form-root',
+          elements: {
+            'form-root': {
+              type: 'FormBuilder',
+              props: {
+                title: '网点服务问题反馈采集表',
+                submitLabel: '提交反馈',
+                children: ['field-branch', 'field-type'],
+              },
+            },
+          },
+        },
+      },
+      {
+        version: 'v0.10',
+        updateComponents: {
+          components: {
+            'field-branch': {
+              type: 'TextField',
+              props: { label: '网点名称', required: true },
+            },
+            'field-type': {
+              type: 'ChoicePicker',
+              props: {
+                label: '问题类型',
+                options: ['柜面服务', '排队等候', '系统故障'],
+              },
+            },
+          },
+        },
+      },
+    ]
+    const messages = [
+      assistantToolCall('call-form', { input }),
+      toolResult('call-form', {
+        ok: true,
+        envelope: {
+          schema: 'vizual.agent.envelope.v1',
+          mimeType: 'application/vnd.vizual.agent+json',
+          nativeMimeType: 'application/vnd.vizual.native+json',
+          toolName: VIZUAL_AGENT_TOOL_NAME,
+          surfaceId: 'branch-feedback-form',
+          input,
+        },
+      }),
+    ]
+
+    const presentations = extractVizualPresentations(messages)
+
+    expect(presentations).toHaveLength(1)
+    expect(presentations[0]).toMatchObject({
+      accepted: true,
+      renderable: true,
+      surfaceId: 'branch-feedback-form',
+    })
+    expect(presentations[0].preview?.summary.componentTypes).toEqual([
+      'Column',
+      'FormBuilder',
+      'TextField',
+      'ChoicePicker',
+    ])
+    expect(presentations[0].preview?.spec?.elements?.['form-root'].props?.fields).toMatchObject([
+      { name: 'field-branch', type: 'text', label: '网点名称', required: true },
+      { name: 'field-type', type: 'select', label: '问题类型' },
+    ])
+  })
+
+  it('accepts direct root/elements FormBuilder envelopes normalized by host adapters', () => {
+    const input = {
+      root: 'form-root',
+      elements: {
+        'form-root': {
+          type: 'FormBuilder',
+          props: {
+            title: '网点服务问题反馈采集表',
+            submitLabel: '提交反馈',
+            children: ['field-branch', 'field-type'],
+          },
+          children: ['field-branch', 'field-type'],
+        },
+        'field-branch': {
+          type: 'TextField',
+          props: { label: '网点名称', required: true },
+        },
+        'field-type': {
+          type: 'ChoicePicker',
+          props: {
+            label: '问题类型',
+            options: ['柜面服务', '排队等候', '系统故障'],
+          },
+        },
+      },
+    }
+    const messages = [
+      assistantToolCall('call-direct-form', { input }),
+      toolResult('call-direct-form', {
+        ok: true,
+        surfaceId: 'branch-feedback-form',
+        envelope: {
+          schema: 'vizual.agent.envelope.v1',
+          mimeType: 'application/vnd.vizual.agent+json',
+          nativeMimeType: 'application/vnd.vizual.native+json',
+          toolName: VIZUAL_AGENT_TOOL_NAME,
+          surfaceId: 'branch-feedback-form',
+          input,
+        },
+      }),
+    ]
+
+    const presentations = extractVizualPresentations(messages)
+
+    expect(presentations).toHaveLength(1)
+    expect(presentations[0]).toMatchObject({
+      accepted: true,
+      renderable: true,
+      surfaceId: 'branch-feedback-form',
+    })
+    expect(presentations[0].preview?.spec?.elements?.['form-root'].props?.fields).toMatchObject([
+      { name: 'field-branch', type: 'text', label: '网点名称', required: true },
+      { name: 'field-type', type: 'select', label: '问题类型' },
+    ])
+  })
+
+  it('accepts long-form line charts with a string series grouping field', () => {
+    const input = {
+      root: 'dashboard',
+      elements: {
+        dashboard: {
+          type: 'Column',
+          children: ['trend'],
+        },
+        trend: {
+          type: 'LineChart',
+          props: {
+            data: [
+              { date: '2025-01', line: '个人助手-iOS', value: 45000 },
+              { date: '2025-01', line: '企业Agent-Windows', value: 18000 },
+              { date: '2025-02', line: '个人助手-iOS', value: 48000 },
+              { date: '2025-02', line: '企业Agent-Windows', value: 21000 },
+            ],
+            x: 'date',
+            y: 'value',
+            series: 'line',
+          },
+        },
+      },
+    }
+    const result = {
+      ok: true,
+      envelope: {
+        schema: 'vizual.agent.envelope.v1',
+        mimeType: 'application/vnd.vizual.agent+json',
+        nativeMimeType: 'application/vnd.vizual.native+json',
+        toolName: VIZUAL_AGENT_TOOL_NAME,
+        surfaceId: 'jarvis-growth',
+        input,
+      },
+    }
+    const messages = [
+      assistantToolCall('call-long-form-line', { input: JSON.stringify(input) }),
+      toolResult('call-long-form-line', result),
+    ]
+
+    const presentations = extractVizualPresentations(messages)
+
+    expect(presentations).toHaveLength(1)
+    expect(presentations[0]).toMatchObject({
+      accepted: true,
+      renderable: true,
+      surfaceId: 'jarvis-growth',
+      outcome: 'rendered',
+    })
+    expect(selectRenderableVizualPresentations(presentations)).toEqual([presentations[0]])
+  })
+
+  it('accepts typed encoding/measures charts through the chat adapter preview gate', () => {
+    const input = {
+      root: 'dashboard',
+      elements: {
+        dashboard: {
+          type: 'Column',
+          children: ['trend', 'combo'],
+        },
+        trend: {
+          type: 'LineChart',
+          props: {
+            data: [
+              { month: '2025-01', client: 'iOS', users: 45000 },
+              { month: '2025-01', client: 'Android', users: 52000 },
+              { month: '2025-02', client: 'iOS', users: 48000 },
+              { month: '2025-02', client: 'Android', users: 55000 },
+            ],
+            encoding: {
+              x: { field: 'month', type: 'temporal' },
+              y: { field: 'users', type: 'quantitative' },
+              color: { field: 'client', type: 'nominal' },
+            },
+          },
+        },
+        combo: {
+          type: 'ComboChart',
+          props: {
+            data: [
+              { month: '2025-01', apiCalls: 120, compute: 450 },
+              { month: '2025-02', apiCalls: 140, compute: 520 },
+            ],
+            encoding: { x: 'month' },
+            measures: [
+              { field: 'apiCalls', label: 'API调用量', mark: 'bar', axis: 'left' },
+              { field: 'compute', label: '算力消耗', mark: 'line', axis: 'right' },
+            ],
+          },
+        },
+      },
+    }
+    const messages = [
+      assistantToolCall('call-encoding', { input }),
+      toolResult('call-encoding', {
+        ok: true,
+        envelope: {
+          schema: 'vizual.agent.envelope.v1',
+          mimeType: 'application/vnd.vizual.agent+json',
+          nativeMimeType: 'application/vnd.vizual.native+json',
+          toolName: VIZUAL_AGENT_TOOL_NAME,
+          surfaceId: 'typed-encoding',
+          input,
+        },
+      }),
+    ]
+
+    const presentations = extractVizualPresentations(messages)
+
+    expect(presentations).toHaveLength(1)
+    expect(presentations[0]).toMatchObject({
+      accepted: true,
+      renderable: true,
+      outcome: 'rendered',
+      surfaceId: 'typed-encoding',
+    })
+    expect(presentations[0].preview?.spec?.elements?.trend.props).toMatchObject({
+      x: 'month',
+      y: ['iOS', 'Android'],
+    })
+  })
+
   it('keeps failed tool attempts hidden even when their input can preview', () => {
     const input = {
       components: [

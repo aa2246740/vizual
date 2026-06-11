@@ -166,6 +166,11 @@ The tool should return validation/preview errors to the agent so the agent can
 repair its payload. Hosts should not show failed internal repair attempts as
 final user-visible cards unless the final answer truly cannot be rendered.
 
+Chart payloads should use `props.data` plus typed `props.encoding` by default.
+Use `props.measures` for multiple numeric series or `ComboChart` layers. Keep
+categorical grouping in `encoding.color`, `seriesBy`, `colorBy`, or `groupBy`;
+do not teach agents to use a string `series` prop as the default path.
+
 ## liveControl
 
 liveControl is not just static JSON. The host needs to bridge FormBuilder state

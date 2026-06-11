@@ -13,6 +13,15 @@ Do not use Vizual as a keyword router or product gate. The user speaks naturally
 5. **Do not invent components or props.** Validate before rendering whenever possible.
 6. **Do not silently hide failures.** If a component is unsupported, return a clear unsupported-component error or gap metadata; do not fake success.
 
+## Chart Data Contract
+
+For charts, the recommended Agent-facing shape is `props.data` plus typed `props.encoding`, with optional `props.measures`.
+
+- Use `encoding.x`, `encoding.y`, `encoding.value`, `encoding.label`, `encoding.color`, `encoding.size`, `encoding.date`, `encoding.source`, `encoding.target`, `encoding.low`, and `encoding.high` to point at fields in the data rows.
+- Use `measures` for multiple numeric series or `ComboChart` layers. Each measure should include `field` and can include `label`, `mark` (`bar`, `line`, `scatter`), `axis` (`left` or `right`), and `size`.
+- Use `encoding.color`, `seriesBy`, `colorBy`, or `groupBy` for categorical grouping in long-form data.
+- Do not use a string `series` prop as the recommended path. Numeric series belong in `measures` or explicit series arrays; categorical grouping belongs in `encoding.color` / `seriesBy`.
+
 ## Current Agent-Facing Catalog
 
 Charts: `BarChart`, `LineChart`, `AreaChart`, `PieChart`, `ScatterChart`, `BubbleChart`, `BoxplotChart`, `HistogramChart`, `WaterfallChart`, `XmrChart`, `SankeyChart`, `FunnelChart`, `HeatmapChart`, `CalendarChart`, `SparklineChart`, `ComboChart`, `DumbbellChart`, `RadarChart`, `MermaidDiagram`.
@@ -133,11 +142,11 @@ For Agent platforms that expose `present_vizual_ui`, return native operations. T
               "type": "combo",
               "title": "营收、成本、利润趋势",
               "data": "{{monthly}}",
-              "x": "month",
-              "series": [
-                { "type": "bar", "y": "revenue", "name": "营收" },
-                { "type": "bar", "y": "cost", "name": "成本" },
-                { "type": "line", "y": "profit", "name": "利润" }
+              "encoding": { "x": { "field": "month", "type": "ordinal" } },
+              "measures": [
+                { "field": "revenue", "label": "营收", "mark": "bar", "axis": "left" },
+                { "field": "cost", "label": "成本", "mark": "bar", "axis": "left" },
+                { "field": "profit", "label": "利润", "mark": "line", "axis": "right" }
               ]
             }
           },
@@ -187,12 +196,14 @@ Use this shape when the host only accepts direct specs.
       "props": {
         "type": "line",
         "title": "利润趋势",
-        "x": "month",
-        "y": "profit",
         "data": [
           { "month": "1月", "profit": 2400 },
           { "month": "6月", "profit": 2300 }
-        ]
+        ],
+        "encoding": {
+          "x": { "field": "month", "type": "ordinal" },
+          "y": { "field": "profit", "type": "quantitative" }
+        }
       },
       "children": []
     }

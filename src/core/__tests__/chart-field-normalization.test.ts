@@ -79,6 +79,164 @@ describe('chart field alias normalization', () => {
     expect(normalizeChart(componentType, props)).toMatchObject(expected)
   })
 
+  it('normalizes typed chart encoding without requiring agents to hand-write renderer props', () => {
+    expect(normalizeChart('BarChart', {
+      data: rows,
+      encoding: {
+        x: { field: 'fund', type: 'nominal' },
+        y: { field: 'return', type: 'quantitative' },
+      },
+    })).toMatchObject({ x: 'fund', y: 'return' })
+
+    expect(normalizeChart('PieChart', {
+      data: rows,
+      encoding: {
+        label: { field: 'fund', type: 'nominal' },
+        value: { field: 'return', type: 'quantitative' },
+      },
+    })).toMatchObject({ label: 'fund', value: 'return', y: 'return' })
+
+    expect(normalizeChart('ScatterChart', {
+      data: rows,
+      encoding: {
+        x: { field: 'risk', type: 'quantitative' },
+        y: { field: 'return', type: 'quantitative' },
+        size: { field: 'aum', type: 'quantitative' },
+        label: { field: 'fund', type: 'nominal' },
+      },
+    })).toMatchObject({ x: 'risk', y: 'return', size: 'aum', label: 'fund' })
+
+    expect(normalizeChart('HeatmapChart', {
+      data: rows,
+      encoding: {
+        x: { field: 'region', type: 'nominal' },
+        y: { field: 'product', type: 'nominal' },
+        value: { field: 'score', type: 'quantitative' },
+      },
+    })).toMatchObject({ x: 'region', y: 'product', xField: 'region', yField: 'product', valueField: 'score' })
+
+    expect(normalizeChart('CalendarChart', {
+      data: rows,
+      encoding: {
+        date: { field: 'date', type: 'temporal' },
+        value: { field: 'score', type: 'quantitative' },
+      },
+    })).toMatchObject({ dateField: 'date', valueField: 'score' })
+
+    expect(normalizeChart('DumbbellChart', {
+      data: rows,
+      encoding: {
+        group: { field: 'fund', type: 'nominal' },
+        low: { field: 'low', type: 'quantitative' },
+        high: { field: 'high', type: 'quantitative' },
+      },
+    })).toMatchObject({ groupField: 'fund', low: 'low', high: 'high', y: ['low', 'high'] })
+  })
+
+  it('compiles measures into ComboChart series instead of asking agents to hand-code series', () => {
+    const normalized = normalizeChart('ComboChart', {
+      data: rows,
+      encoding: { x: { field: 'quarter', type: 'ordinal' } },
+      measures: [
+        { field: 'return', label: '收益率', mark: 'bar', axis: 'left' },
+        { field: 'risk', label: '风险值', mark: 'line', axis: 'right' },
+        { field: 'aum', label: '规模', mark: 'scatter', size: 'aum', axis: 'right' },
+      ],
+    })
+
+    expect(normalized).toMatchObject({
+      x: 'quarter',
+      y: ['return', 'risk', 'aum'],
+      series: [
+        { type: 'bar', y: 'return', name: '收益率', yAxisIndex: 0 },
+        { type: 'line', y: 'risk', name: '风险值', yAxisIndex: 1 },
+        { type: 'scatter', y: 'aum', name: '规模', size: 'aum', yAxisIndex: 1 },
+      ],
+    })
+  })
+
+  it('pivots long-form chart encoding into wide renderer data for grouped trends', () => {
+    const normalized = normalizeChart('LineChart', {
+      title: '客户端活跃用户趋势',
+      data: [
+        { month: '2025-01', client: 'iOS', activeUsers: 45000 },
+        { month: '2025-01', client: 'Android', activeUsers: 52000 },
+        { month: '2025-02', client: 'iOS', activeUsers: 48000 },
+        { month: '2025-02', client: 'Android', activeUsers: 55000 },
+      ],
+      encoding: {
+        x: { field: 'month', type: 'temporal' },
+        y: { field: 'activeUsers', type: 'quantitative' },
+        color: { field: 'client', type: 'nominal' },
+      },
+    })
+
+    expect(normalized).toMatchObject({
+      x: 'month',
+      y: ['iOS', 'Android'],
+      data: [
+        { month: '2025-01', iOS: 45000, Android: 52000 },
+        { month: '2025-02', iOS: 48000, Android: 55000 },
+      ],
+    })
+
+    const option = buildLineFallback(normalized as any)
+    expect(option.series).toEqual([
+      expect.objectContaining({ name: 'iOS', data: [45000, 48000] }),
+      expect.objectContaining({ name: 'Android', data: [52000, 55000] }),
+    ])
+  })
+
+  it('aggregates duplicate long-form groups while pivoting typed chart encoding', () => {
+    const normalized = normalizeChart('BarChart', {
+      data: [
+        { month: '2025-01', client: 'iOS', business: '个人助手', calls: 120 },
+        { month: '2025-01', client: 'iOS', business: '企业Agent', calls: 380 },
+        { month: '2025-01', client: 'Android', business: '个人助手', calls: 135 },
+        { month: '2025-01', client: 'Android', business: '企业Agent', calls: 520 },
+      ],
+      encoding: {
+        x: 'month',
+        y: 'calls',
+        color: 'client',
+      },
+    })
+
+    expect(normalized).toMatchObject({
+      x: 'month',
+      y: ['iOS', 'Android'],
+      data: [{ month: '2025-01', iOS: 500, Android: 655 }],
+    })
+  })
+
+  it('normalizes typed Sankey encoding into source/target/value rows', () => {
+    const normalized = normalizeChart('SankeyChart', {
+      data: rows,
+      encoding: {
+        source: { field: 'sourceName', type: 'nominal' },
+        target: { field: 'targetName', type: 'nominal' },
+        value: { field: 'amount', type: 'quantitative' },
+      },
+    })
+
+    expect(normalized.data).toEqual(expect.arrayContaining([
+      expect.objectContaining({ source: '渠道A', target: '产品B', value: 128 }),
+      expect.objectContaining({ source: '渠道B', target: '产品C', value: 256 }),
+    ]))
+  })
+
+  it('does not treat a scalar series string as a required numeric measure', () => {
+    expect(normalizeChart('LineChart', {
+      data: rows,
+      xField: 'quarter',
+      yField: 'return',
+      series: 'line',
+    })).toMatchObject({
+      x: 'quarter',
+      y: 'return',
+    })
+  })
+
   it('normalizes agent BarChart series x/y points when axis labels are display text', () => {
     const normalized = normalizeChart('BarChart', {
       title: '请求重复度对命中率的影响',
@@ -233,6 +391,123 @@ describe('chart field alias normalization', () => {
         background: '#3b82f6',
       },
     })
+  })
+
+  it('fills responsive defaults for chart cards placed in a Row', () => {
+    const spec = withDefaultElementProps({
+      root: 'root',
+      elements: {
+        root: { type: 'Column', children: ['row'] },
+        row: { type: 'Row', children: ['left', 'right'] },
+        left: { type: 'Card', props: { title: '会员来源占比' }, children: ['pie'] },
+        right: { type: 'Card', props: { title: '营销投入 vs 获客人数' }, children: ['combo'] },
+        pie: {
+          type: 'PieChart',
+          props: {
+            type: 'pie',
+            label: 'channel',
+            value: 'share',
+            data: [{ channel: '官网', share: 31.2 }, { channel: '门店', share: 19.6 }],
+          },
+        },
+        combo: {
+          type: 'ComboChart',
+          props: {
+            type: 'combo',
+            x: 'channel',
+            data: [{ channel: '抖音', spend: 720, acquired: 8600 }, { channel: '小红书', spend: 120, acquired: 3700 }],
+            series: [
+              { type: 'bar', y: 'spend', name: '投入' },
+              { type: 'line', y: 'acquired', name: '获客' },
+            ],
+          },
+        },
+      },
+    })
+
+    expect(spec.elements!.left.props).toMatchObject({ flex: '1 1 0', width: 0, minHeight: 360 })
+    expect(spec.elements!.right.props).toMatchObject({ flex: '1 1 0', width: 0, minHeight: 360 })
+  })
+
+  it('preserves explicit row child layout props', () => {
+    const spec = withDefaultElementProps({
+      root: 'root',
+      elements: {
+        root: { type: 'Row', children: ['left', 'right'] },
+        left: {
+          type: 'Card',
+          props: { flex: '2 1 0', width: '60%', minHeight: 420 },
+          children: ['chart'],
+        },
+        right: { type: 'Card', props: { flex: '1 1 0', width: '40%' }, children: ['note'] },
+        chart: {
+          type: 'BarChart',
+          props: {
+            type: 'bar',
+            x: 'name',
+            y: 'value',
+            data: [{ name: 'A', value: 1 }],
+          },
+        },
+        note: { type: 'Markdown', props: { content: 'OK' } },
+      },
+    })
+
+    expect(spec.elements!.left.props).toMatchObject({ flex: '2 1 0', width: '60%', minHeight: 420 })
+    expect(spec.elements!.right.props).toMatchObject({ flex: '1 1 0', width: '40%' })
+  })
+
+  it('warns when a row contains too many peer chart panels', () => {
+    const result = validateVizualNativeInput({
+      root: 'root',
+      elements: {
+        root: { type: 'Row', children: ['a', 'b', 'c'] },
+        a: {
+          type: 'Card',
+          children: ['a-chart'],
+          props: {},
+        },
+        b: {
+          type: 'Card',
+          children: ['b-chart'],
+          props: {},
+        },
+        c: {
+          type: 'Card',
+          children: ['c-chart'],
+          props: {},
+        },
+        'a-chart': { type: 'BarChart', props: { type: 'bar', x: 'name', y: 'value', data: [{ name: 'A', value: 1 }] } },
+        'b-chart': { type: 'BarChart', props: { type: 'bar', x: 'name', y: 'value', data: [{ name: 'B', value: 2 }] } },
+        'c-chart': { type: 'BarChart', props: { type: 'bar', x: 'name', y: 'value', data: [{ name: 'C', value: 3 }] } },
+      },
+    } as any)
+
+    expect(result.ok).toBe(true)
+    expect(result.issues.map(issue => issue.code)).toContain('vizual.layout.too_many_peer_charts')
+  })
+
+  it('warns when line charts mix fields with very different scales', () => {
+    const result = validateVizualNativeInput({
+      root: 'chart',
+      elements: {
+        chart: {
+          type: 'LineChart',
+          props: {
+            type: 'line',
+            x: 'month',
+            y: ['retention', 'mau'],
+            data: [
+              { month: '1月', retention: 82, mau: 64000 },
+              { month: '2月', retention: 79, mau: 61000 },
+            ],
+          },
+        },
+      },
+    } as any)
+
+    expect(result.ok).toBe(true)
+    expect(result.issues.map(issue => issue.code)).toContain('vizual.layout.mixed_scale_line_chart')
   })
 
   it('normalizes ECharts-style categories plus nested series data from Claude Code', () => {

@@ -143,6 +143,11 @@ the requested artifact path.
 Keep normal explanation in assistant text. Put only the structured Vizual input
 in the tool call.
 
+For charts, prefer props.data plus typed props.encoding, and use props.measures
+for multiple numeric series or ComboChart layers. Put long-form categorical
+grouping in encoding.color, seriesBy, colorBy, or groupBy. Do not use a string
+series prop as the recommended chart path.
+
 If the tool returns ok:false, inspect issues and repair the payload before
 claiming the UI is done. Do not show failed internal repair attempts as final
 user-visible content.

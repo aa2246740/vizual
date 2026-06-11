@@ -123,6 +123,10 @@ liveControl 不是纯 JSON spec。宿主需要提供 bridge：FormBuilder 控件
 
 这些只是 host-visible event。Vizual 不会自己保存、审批、派单、写数据库或调用外部系统。
 
+图表 payload 默认使用 `props.data` + typed `props.encoding`。多指标或
+`ComboChart` 图层使用 `props.measures`。分类分组放在 `encoding.color`、
+`seriesBy`、`colorBy` 或 `groupBy`；不要把 string `series` 教成默认路径。
+
 ## 当前 Agent-Facing Catalog
 
 详见 [COMPONENTS.zh-CN.md](COMPONENTS.zh-CN.md)。Native core 不保留单独的 runtime-only 页面布局组件。

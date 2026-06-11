@@ -33,7 +33,9 @@ Vizual 的组件不是页面模板，而是 Agent 可以组合使用的语义表
 通用要求：
 
 - 数据必须非空，除非宿主明确要展示空状态。
-- chart props 引用的字段必须存在于数据行。
+- 图表优先使用 `props.data` + typed `props.encoding`；多指标或 ComboChart 图层优先使用 `props.measures`。
+- chart props、`encoding`、`measures` 引用的字段必须存在于数据行。
+- 长表分类分组放在 `encoding.color`、`seriesBy`、`colorBy` 或 `groupBy`；不要把 string `series` 当推荐路径。
 - 只有当点击点位能触发更深入分析时，才使用 `drillDown`。
 - 不要添加 schema 中不存在的任意图表字段。
 

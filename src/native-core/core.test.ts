@@ -910,6 +910,157 @@ describe('VizualNativeCore', () => {
     ]))
   })
 
+  it('accepts horizontal BarChart ranking fields with numeric x and categorical y', () => {
+    const result = validateVizualNativeInput({
+      root: 'rank',
+      elements: {
+        rank: {
+          type: 'BarChart',
+          props: {
+            data: [
+              { branch: '南山', score: 82 },
+              { branch: '福田', score: 76 },
+            ],
+            x: 'score',
+            y: 'branch',
+          },
+        },
+      },
+    } as any)
+
+    expect(result.ok).toBe(true)
+    expect(result.issues.map(issue => issue.code)).not.toContain('vizual.chart_non_numeric_data_field')
+  })
+
+  it('accepts chart series field aliases commonly emitted by agents', () => {
+    const result = validateVizualNativeInput({
+      root: 'root',
+      elements: {
+        root: {
+          type: 'Column',
+          children: ['combo', 'radar'],
+        },
+        combo: {
+          type: 'ComboChart',
+          props: {
+            data: [
+              { month: '1月', 客流: 28.2, 人均贡献: 53.9, 营销费用: 180 },
+              { month: '2月', 客流: 27.8, 人均贡献: 53.2, 营销费用: 195 },
+            ],
+            xField: 'month',
+            series: [
+              { name: '客流', type: 'bar', dataKey: '客流' },
+              { name: '人均贡献', type: 'line', dataKey: '人均贡献' },
+              { name: '营销费用', type: 'line', dataKey: '营销费用' },
+            ],
+          },
+        },
+        radar: {
+          type: 'RadarChart',
+          props: {
+            data: [
+              { axis: '产品质量', current: 85, benchmark: 75 },
+              { axis: '交付速度', current: 70, benchmark: 80 },
+            ],
+            axis: 'axis',
+            series: [
+              { name: '当前', value: 'current' },
+              { name: '基准', value: 'benchmark' },
+            ],
+          },
+        },
+      },
+    } as any)
+
+    expect(result.ok).toBe(true)
+    expect(result.issues.map(issue => issue.code)).not.toContain('vizual.chart_missing_data_field')
+  })
+
+  it('treats a string series prop as a long-form grouping field, not a numeric measure', () => {
+    const result = validateVizualNativeInput({
+      root: 'root',
+      elements: {
+        root: {
+          type: 'LineChart',
+          props: {
+            data: [
+              { date: '2025-01', line: '个人助手-iOS', value: 45000 },
+              { date: '2025-01', line: '企业Agent-Windows', value: 18000 },
+              { date: '2025-02', line: '个人助手-iOS', value: 48000 },
+              { date: '2025-02', line: '企业Agent-Windows', value: 21000 },
+            ],
+            x: 'date',
+            y: 'value',
+            series: 'line',
+          },
+        },
+      },
+    } as any)
+
+    expect(result.ok).toBe(true)
+    expect(result.issues.map(issue => issue.code)).not.toContain('vizual.chart_non_numeric_data_field')
+  })
+
+  it('previews typed chart encoding and compiles long-form groups into renderable wide series', () => {
+    const preview = previewVizualNativeInput({
+      root: 'root',
+      elements: {
+        root: {
+          type: 'Column',
+          children: ['trend', 'mix'],
+        },
+        trend: {
+          type: 'LineChart',
+          props: {
+            title: '客户端活跃用户趋势',
+            data: [
+              { month: '2025-01', client: 'iOS', activeUsers: 45000 },
+              { month: '2025-01', client: 'Android', activeUsers: 52000 },
+              { month: '2025-02', client: 'iOS', activeUsers: 48000 },
+              { month: '2025-02', client: 'Android', activeUsers: 55000 },
+            ],
+            encoding: {
+              x: { field: 'month', type: 'temporal' },
+              y: { field: 'activeUsers', type: 'quantitative' },
+              color: { field: 'client', type: 'nominal' },
+            },
+          },
+        },
+        mix: {
+          type: 'ComboChart',
+          props: {
+            data: [
+              { month: '2025-01', apiCalls: 120, compute: 450 },
+              { month: '2025-02', apiCalls: 140, compute: 520 },
+            ],
+            encoding: { x: 'month' },
+            measures: [
+              { field: 'apiCalls', label: 'API调用量', mark: 'bar', axis: 'left' },
+              { field: 'compute', label: '算力消耗', mark: 'line', axis: 'right' },
+            ],
+          },
+        },
+      },
+    } as any)
+
+    expect(preview.ok).toBe(true)
+    expect(preview.spec!.elements!.trend.props).toMatchObject({
+      x: 'month',
+      y: ['iOS', 'Android'],
+      data: [
+        { month: '2025-01', iOS: 45000, Android: 52000 },
+        { month: '2025-02', iOS: 48000, Android: 55000 },
+      ],
+    })
+    expect(preview.spec!.elements!.mix.props).toMatchObject({
+      x: 'month',
+      series: [
+        { type: 'bar', y: 'apiCalls', name: 'API调用量', yAxisIndex: 0 },
+        { type: 'line', y: 'compute', name: '算力消耗', yAxisIndex: 1 },
+      ],
+    })
+  })
+
   it('validates chart-specific field requirements across native chart families', () => {
     const rows = [{ category: 'A', group: 'G1', low: 1, high: 3, value: 2, x: 10, y: 20, size: 5, date: '2026-06-04', source: 'S', target: 'T' }]
     const result = validateVizualNativeInput({
@@ -1490,6 +1641,69 @@ describe('VizualNativeCore', () => {
         tasks: [
           { name: '客户动线梳理', start: '2026-06-10', end: '2026-06-12' },
           { name: '窗口排班调整', start: '2026-06-13', end: '2026-06-20' },
+        ],
+      },
+    })
+  })
+
+  it('normalizes Timeline props.data arrays into events', () => {
+    const preview = previewVizualNativeInput({
+      root: 'root',
+      elements: {
+        root: {
+          type: 'Timeline',
+          props: {
+            data: [
+              { date: '2026-06-11', label: '项目启动会' },
+              { date: '2026-06-15', label: '数据采集完成' },
+            ],
+          },
+        },
+      },
+    })
+
+    expect(preview.ok).toBe(true)
+    expect(preview.spec.elements!.root).toMatchObject({
+      type: 'Timeline',
+      props: {
+        events: [
+          { date: '2026-06-11', label: '项目启动会' },
+          { date: '2026-06-15', label: '数据采集完成' },
+        ],
+      },
+    })
+  })
+
+  it('normalizes native operation Timeline props.data arrays into events', () => {
+    const preview = previewVizualNativeInput([
+      { version: 'v0.10', createSurface: { surfaceId: 'timeline-operation' } },
+      {
+        version: 'v0.10',
+        updateComponents: {
+          surfaceId: 'timeline-operation',
+          components: [
+            {
+              id: 'root',
+              type: 'Timeline',
+              props: {
+                data: [
+                  { date: '2026-06-11', label: '项目启动会' },
+                  { date: '2026-06-15', label: '数据采集完成' },
+                ],
+              },
+            },
+          ],
+        },
+      },
+    ])
+
+    expect(preview.ok).toBe(true)
+    expect(preview.spec.elements!.root).toMatchObject({
+      type: 'Timeline',
+      props: {
+        events: [
+          { date: '2026-06-11', label: '项目启动会' },
+          { date: '2026-06-15', label: '数据采集完成' },
         ],
       },
     })
@@ -3010,5 +3224,443 @@ describe('VizualNativeCore', () => {
     expect(renderedSpec.elements!.submit.on).toMatchObject({
       submitPlan: { action: 'submitPlan', params: { owner: '经营分析组' } },
     })
+  })
+
+  it('normalizes OrgChart hierarchy data wrappers into renderable tree data', () => {
+    const preview = previewVizualNativeInput({
+      root: 'root',
+      elements: {
+        root: {
+          type: 'Column',
+          children: ['org'],
+        },
+        org: {
+          type: 'OrgChart',
+          props: {
+            data: {
+              type: 'hierarchy',
+              data: {
+                id: 'cmd',
+                label: '整改总指挥',
+                children: [
+                  {
+                    id: 'office',
+                    label: '整改办公室',
+                    children: [{ id: 'risk', label: '风险整改组' }],
+                  },
+                ],
+              },
+            },
+          },
+        },
+      },
+    } as any, { surfaceId: 'org-hierarchy-wrapper' })
+
+    expect(preview.ok).toBe(true)
+    expect(preview.spec!.elements!.org.props!.data).toMatchObject([
+      {
+        id: 'cmd',
+        label: '整改总指挥',
+        children: [{ id: 'office' }],
+      },
+    ])
+    expect(preview.issues).toEqual([])
+  })
+
+  it('normalizes GanttChart tabular columns and rows into real task records', () => {
+    const preview = previewVizualNativeInput({
+      root: 'gantt',
+      elements: {
+        gantt: {
+          type: 'GanttChart',
+          props: {
+            data: [
+              ['排查摸底', '阶段一', '2026-03-01', '2026-03-20', 100],
+              ['集中攻坚', '阶段二', '2026-04-01', '2026-04-30', 60],
+            ],
+            taskField: 'task',
+            categoryField: 'category',
+            startField: 'start',
+            endField: 'end',
+            progressField: 'progress',
+          },
+        },
+      },
+    } as any, { surfaceId: 'gantt-tabular-rows' })
+
+    expect(preview.ok).toBe(true)
+    expect(preview.spec!.elements!.gantt.props!.tasks).toMatchObject([
+      {
+        task: '排查摸底',
+        category: '阶段一',
+        start: '2026-03-01',
+        end: '2026-03-20',
+        progress: 100,
+      },
+      {
+        task: '集中攻坚',
+        category: '阶段二',
+        start: '2026-04-01',
+        end: '2026-04-30',
+        progress: 60,
+      },
+    ])
+  })
+
+  it('keeps outer createSurface when extracting operation wrapper arrays', () => {
+    const preview = previewVizualNativeInput({
+      version: 'v0.10',
+      createSurface: { surfaceId: 'operation-wrapper' },
+      operations: [
+        {
+          version: 'v0.10',
+          updateComponents: {
+            surfaceId: 'operation-wrapper',
+            components: [
+              {
+                id: 'root',
+                type: 'BarChart',
+                props: {
+                  data: [{ branch: '南山', score: 82 }],
+                  x: 'branch',
+                  y: 'score',
+                },
+              },
+            ],
+          },
+        },
+      ],
+    } as any, { surfaceId: 'operation-wrapper' })
+
+    expect(preview.ok).toBe(true)
+    expect(preview.spec!.elements!.root.type).toBe('BarChart')
+    expect(preview.issues).toEqual([])
+  })
+
+  it('normalizes updateComponents component maps into renderable component arrays', () => {
+    const preview = previewVizualNativeInput({
+      version: 'v0.10',
+      createSurface: { surfaceId: 'operation-component-map' },
+      operations: [
+        {
+          version: 'v0.10',
+          updateComponents: {
+            surfaceId: 'operation-component-map',
+            components: {
+              root: {
+                type: 'Column',
+                children: ['chart'],
+              },
+              chart: {
+                type: 'BarChart',
+                props: {
+                  data: [{ branch: '南山', score: 82 }],
+                  x: 'branch',
+                  y: 'score',
+                },
+              },
+            },
+          },
+        },
+      ],
+    } as any, { surfaceId: 'operation-component-map' })
+
+    expect(preview.ok).toBe(true)
+    expect(preview.spec!.elements!.root).toMatchObject({
+      type: 'Column',
+      children: ['chart'],
+    })
+    expect(preview.spec!.elements!.chart.type).toBe('BarChart')
+    expect(preview.issues).toEqual([])
+  })
+
+  it('resolves dataModels wrappers and brace data refs for native operation charts', () => {
+    const preview = previewVizualNativeInput({
+      version: 'v0.10',
+      createSurface: { surfaceId: 'operation-data-model-refs' },
+      operations: [
+        {
+          version: 'v0.10',
+          updateDataModel: {
+            dataModels: {
+              trendData: {
+                type: 'collection',
+                data: [
+                  { month: '1月', 客流: 28.5, 综合贡献: 0.62 },
+                  { month: '2月', 客流: 27.8, 综合贡献: 0.58 },
+                ],
+              },
+            },
+          },
+        },
+        {
+          version: 'v0.10',
+          updateComponents: {
+            components: {
+              root: {
+                type: 'Column',
+                children: ['combo'],
+              },
+              combo: {
+                type: 'ComboChart',
+                props: {
+                  data: '{trendData}',
+                  xField: 'month',
+                  series: [
+                    { type: 'line', y: '客流', name: '客流' },
+                    { type: 'bar', y: '综合贡献', name: '综合贡献' },
+                  ],
+                },
+              },
+            },
+          },
+        },
+      ],
+    } as any, { surfaceId: 'operation-data-model-refs' })
+
+    expect(preview.ok).toBe(true)
+    expect(preview.spec!.state!.trendData).toMatchObject([
+      { month: '1月', 客流: 28.5, 综合贡献: 0.62 },
+      { month: '2月', 客流: 27.8, 综合贡献: 0.58 },
+    ])
+    expect(preview.spec!.elements!.combo.props!.data).toMatchObject([
+      { month: '1月', 客流: 28.5, 综合贡献: 0.62 },
+      { month: '2月', 客流: 27.8, 综合贡献: 0.58 },
+    ])
+    expect(preview.issues).toEqual([])
+  })
+
+  it('synthesizes FormBuilder fields from child input components emitted by agents', () => {
+    const preview = previewVizualNativeInput([
+      {
+        version: 'v0.10',
+        createSurface: { id: 'branch-feedback-form' },
+      },
+      {
+        version: 'v0.10',
+        updateComponents: {
+          components: {
+            'form-root': {
+              type: 'FormBuilder',
+              title: '网点服务问题反馈采集表',
+              submitLabel: '提交反馈',
+              children: ['field-branch', 'field-type', 'field-date', 'field-urgent'],
+            },
+            'field-branch': {
+              type: 'TextField',
+              label: '网点名称',
+              placeholder: '请输入网点全称',
+              required: true,
+            },
+            'field-type': {
+              type: 'ChoicePicker',
+              label: '问题类型',
+              options: ['柜面服务', '排队等候', '系统故障'],
+              required: true,
+            },
+            'field-date': {
+              type: 'DateTimeInput',
+              label: '期望回访日期',
+            },
+            'field-urgent': {
+              type: 'CheckBox',
+              label: '是否需要加急处理',
+            },
+          },
+        },
+      },
+    ] as any, { surfaceId: 'branch-feedback-form' })
+
+    expect(preview.ok).toBe(true)
+    expect(preview.spec!.elements!['form-root'].props!.fields).toMatchObject([
+      { name: 'field-branch', type: 'text', label: '网点名称', required: true },
+      { name: 'field-type', type: 'select', label: '问题类型', options: ['柜面服务', '排队等候', '系统故障'] },
+      { name: 'field-date', type: 'date', label: '期望回访日期' },
+      { name: 'field-urgent', type: 'checkbox', label: '是否需要加急处理' },
+    ])
+    expect(preview.spec!.elements!['form-root'].children).toBeUndefined()
+    expect(preview.issues).toEqual([])
+  })
+
+  it('synthesizes FormBuilder fields for direct root/elements specs emitted by host adapters', () => {
+    const preview = previewVizualNativeInput({
+      root: 'form-root',
+      elements: {
+        'form-root': {
+          type: 'FormBuilder',
+          props: {
+            title: '网点服务问题反馈采集表',
+            submitLabel: '提交反馈',
+            children: ['field-branch', 'field-type', 'field-desc'],
+          },
+          children: ['field-branch', 'field-type', 'field-desc'],
+        },
+        'field-branch': {
+          type: 'TextField',
+          props: {
+            label: '网点名称',
+            placeholder: '请输入网点全称',
+            required: true,
+          },
+        },
+        'field-type': {
+          type: 'ChoicePicker',
+          props: {
+            label: '问题类型',
+            options: ['柜面服务', '排队等候', '系统故障'],
+            required: true,
+          },
+        },
+        'field-desc': {
+          type: 'TextField',
+          props: {
+            label: '问题简述',
+            multiline: true,
+          },
+        },
+      },
+    } as any, { surfaceId: 'branch-feedback-form' })
+
+    expect(preview.ok).toBe(true)
+    expect(preview.spec!.elements!['form-root']).toMatchObject({
+      type: 'FormBuilder',
+      props: {
+        fields: [
+          { name: 'field-branch', type: 'text', label: '网点名称', required: true },
+          { name: 'field-type', type: 'select', label: '问题类型', options: ['柜面服务', '排队等候', '系统故障'] },
+          { name: 'field-desc', type: 'textarea', label: '问题简述' },
+        ],
+      },
+    })
+    expect(preview.spec!.elements!['form-root'].children).toBeUndefined()
+    expect(preview.issues).toEqual([])
+  })
+
+  it('preserves createSurface root/elements as initial native components before later updates', () => {
+    const preview = previewVizualNativeInput([
+      {
+        version: 'v0.10',
+        createSurface: {
+          id: 'branch-feedback-form',
+          root: 'form-root',
+          elements: {
+            'form-root': {
+              type: 'FormBuilder',
+              props: {
+                title: '网点服务问题反馈采集表',
+                submitLabel: '提交反馈',
+                children: ['field-branch', 'field-type', 'field-date', 'field-urgent'],
+              },
+            },
+          },
+        },
+      },
+      {
+        version: 'v0.10',
+        updateComponents: {
+          components: {
+            'field-branch': {
+              type: 'TextField',
+              props: {
+                label: '网点名称',
+                placeholder: '请输入网点全称',
+                required: true,
+              },
+            },
+            'field-type': {
+              type: 'ChoicePicker',
+              props: {
+                label: '问题类型',
+                options: ['柜面服务', '排队等候', '系统故障'],
+                required: true,
+              },
+            },
+            'field-date': {
+              type: 'DateTimeInput',
+              props: { label: '期望回访日期' },
+            },
+            'field-urgent': {
+              type: 'CheckBox',
+              props: { label: '是否需要加急处理' },
+            },
+          },
+        },
+      },
+    ] as any, { surfaceId: 'branch-feedback-form' })
+
+    expect(preview.ok).toBe(true)
+    expect(preview.spec!.elements!.root).toMatchObject({
+      type: 'Column',
+      children: ['form-root'],
+    })
+    expect(preview.spec!.elements!['form-root']).toMatchObject({
+      type: 'FormBuilder',
+      props: {
+        fields: [
+          { name: 'field-branch', type: 'text', label: '网点名称', required: true },
+          { name: 'field-type', type: 'select', label: '问题类型', options: ['柜面服务', '排队等候', '系统故障'] },
+          { name: 'field-date', type: 'date', label: '期望回访日期' },
+          { name: 'field-urgent', type: 'checkbox', label: '是否需要加急处理' },
+        ],
+      },
+    })
+    expect(preview.issues).toEqual([])
+  })
+
+  it('does not let createSurface component props overwrite the internal surface create operation type', () => {
+    const preview = previewVizualNativeInput([
+      {
+        version: 'v0.10',
+        createSurface: {
+          id: 'anti-fraud-governance-dashboard',
+          surfaceId: 'anti-fraud-governance-dashboard',
+          type: 'Column',
+          props: {
+            spacing: 16,
+            padding: 24,
+          },
+        },
+      },
+      {
+        version: 'v0.10',
+        updateComponents: {
+          surfaceId: 'anti-fraud-governance-dashboard',
+          components: [
+            {
+              id: 'root',
+              type: 'Column',
+              children: ['title', 'risk_chart'],
+            },
+            {
+              id: 'title',
+              parentId: 'root',
+              type: 'Text',
+              props: {
+                text: '反诈治理专项推进面板',
+              },
+            },
+            {
+              id: 'risk_chart',
+              parentId: 'root',
+              type: 'BarChart',
+              props: {
+                data: [
+                  { group: '复盘整改组', progress: 35 },
+                  { group: '客户触达组', progress: 58 },
+                ],
+                x: 'group',
+                y: 'progress',
+              },
+            },
+          ],
+        },
+      },
+    ] as any, { surfaceId: 'anti-fraud-governance-dashboard' })
+
+    expect(preview.ok).toBe(true)
+    expect(preview.surfaceId).toBe('anti-fraud-governance-dashboard')
+    expect(preview.spec!.elements!.title.props!.text).toBe('反诈治理专项推进面板')
+    expect(preview.spec!.elements!.risk_chart.type).toBe('BarChart')
+    expect(preview.issues).toEqual([])
   })
 })

@@ -139,6 +139,10 @@ export async function presentVizualUi(args: {
 
 普通解释写在 assistant text 里。tool call 里只放结构化 Vizual input。
 
+图表优先使用 props.data + typed props.encoding；多指标或 ComboChart 图层使用
+props.measures。长表分类分组放在 encoding.color、seriesBy、colorBy 或 groupBy。
+不要把 string series 当作推荐图表路径。
+
 如果 tool 返回 ok:false，阅读 issues 并修复 payload，不要声称 UI 已经完成。
 失败的内部修复尝试不应该作为最终用户可见内容。
 

@@ -74,6 +74,7 @@ function normalizeEvents(props: TimelineProps | Record<string, unknown>): Array<
   const source =
     asArray(record.events) ??
     asArray(record.items) ??
+    asArray(record.data) ??
     asArray(data.events) ??
     asArray(data.items) ??
     asArray(data.timeline) ??

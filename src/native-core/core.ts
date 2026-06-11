@@ -172,12 +172,26 @@ function getValueAtPath(obj: Record<string, unknown>, path: string): unknown {
   return cursor
 }
 
+function normalizeDataModelEntry(value: unknown): unknown {
+  if (!isRecord(value)) return cloneJson(value)
+  if (Array.isArray(value.data) && typeof value.type === 'string') return cloneJson(value.data)
+  if ('value' in value && typeof value.type === 'string') return cloneJson(value.value)
+  return cloneJson(value)
+}
+
 function normalizeDataModelRoot(value: unknown): Record<string, unknown> {
   if (!isRecord(value)) return {}
   const next: Record<string, unknown> = {}
+  if (isRecord(value.dataModels)) {
+    next.dataModels = cloneJson(value.dataModels)
+    for (const [key, entryValue] of Object.entries(value.dataModels)) {
+      next[key] = normalizeDataModelEntry(entryValue)
+    }
+  }
   for (const [key, entryValue] of Object.entries(value)) {
+    if (key === 'dataModels') continue
     if (key.startsWith('/')) setValueAtPath(next, key, entryValue)
-    else next[key] = entryValue
+    else next[key] = normalizeDataModelEntry(entryValue)
   }
   return next
 }
@@ -235,6 +249,14 @@ function appendValue(existing: unknown, incoming: unknown): unknown {
 
 function resolveDynamicValue(value: unknown, dataModel: Record<string, unknown>, scopeModel?: Record<string, unknown>): unknown {
   if (typeof value === 'string') {
+    const exactModelRef = value.trim().match(/^\{\s*([^{}:]+?)\s*\}$/)
+    if (exactModelRef) {
+      const key = exactModelRef[1].trim()
+      const resolved = key.startsWith('/')
+        ? getValueAtPath(dataModel, key)
+        : getValueAtPath(scopeModel ?? dataModel, key)
+      if (resolved !== undefined) return normalizeDataModelEntry(resolved)
+    }
     return value.replace(/\{path\s*:\s*([^}]+)\}/g, (_match, rawPath: string) => {
       const path = rawPath.trim()
       const resolved = path.startsWith('/')
@@ -441,14 +463,66 @@ function normalizeDirectSpecElement(element: VizualSpecElement): VizualSpecEleme
 
 function normalizeNestedDataProps(componentType: unknown, props: Record<string, unknown>) {
   const data = isRecord(props.data) ? props.data : {}
+  const dataArray = Array.isArray(props.data) ? cloneJson(props.data) : undefined
   const copyArray = (value: unknown) => Array.isArray(value) ? cloneJson(value) : undefined
+  const stringValue = (value: unknown) => typeof value === 'string' && value.trim() ? value.trim() : undefined
+  const columnKeys = (value: unknown): string[] => {
+    if (!Array.isArray(value)) return []
+    return value
+      .map((column) => {
+        if (typeof column === 'string') return column
+        if (!isRecord(column)) return undefined
+        return stringValue(column.key) ?? stringValue(column.field) ?? stringValue(column.name) ?? stringValue(column.title) ?? stringValue(column.label)
+      })
+      .filter((key): key is string => Boolean(key))
+  }
+  const rowsToObjects = (rows: unknown, columns: string[]): unknown[] | undefined => {
+    if (!Array.isArray(rows)) return undefined
+    if (rows.every(isRecord)) return cloneJson(rows)
+    if (columns.length === 0 || !rows.every(Array.isArray)) return cloneJson(rows)
+    return rows.map((row) => {
+      const record: Record<string, unknown> = {}
+      columns.forEach((key, index) => {
+        record[key] = (row as unknown[])[index]
+      })
+      return record
+    })
+  }
+  const ganttColumns = () => {
+    const propsColumns = columnKeys(props.columns)
+    const explicitColumns = propsColumns.length > 0 ? propsColumns : columnKeys(data.columns)
+    if (explicitColumns.length > 0) return explicitColumns
+    return [
+      props.taskField,
+      props.nameField,
+      props.categoryField,
+      props.startField,
+      props.endField,
+      props.progressField,
+      props.milestoneField,
+    ]
+      .map(stringValue)
+      .filter((key): key is string => Boolean(key))
+  }
+  const ganttTasks = (rows: unknown): unknown[] | undefined => rowsToObjects(rows, ganttColumns())
+  const orgTreeArray = (value: unknown): unknown[] | undefined => {
+    if (Array.isArray(value)) return cloneJson(value)
+    if (!isRecord(value)) return undefined
+    if (Array.isArray(value.nodes)) return cloneJson(value.nodes)
+    if (Array.isArray(value.items)) return cloneJson(value.items)
+    if (Array.isArray(value.data)) return cloneJson(value.data)
+    if (isRecord(value.data)) return [cloneJson(value.data)]
+    if (typeof value.id === 'string' || Array.isArray(value.children)) return [cloneJson(value)]
+    return undefined
+  }
 
   if (props.title == null && typeof data.title === 'string') {
     props.title = data.title
   }
 
-  if (componentType === 'KpiDashboard' && !Array.isArray(props.metrics)) {
+  if (componentType === 'KpiDashboard' && props.metrics == null) {
     props.metrics =
+      dataArray ??
       copyArray(data.metrics) ??
       copyArray(data.kpis) ??
       copyArray(data.items) ??
@@ -456,33 +530,41 @@ function normalizeNestedDataProps(componentType: unknown, props: Record<string, 
   }
 
   if (componentType === 'DataTable') {
-    if (!Array.isArray(props.columns)) props.columns = copyArray(data.columns)
-    if (!Array.isArray(props.rows)) props.rows = copyArray(data.rows)
-    if (!Array.isArray(props.data) && Array.isArray(data.data)) props.data = cloneJson(data.data)
+    if (props.columns == null) props.columns = copyArray(data.columns)
+    if (props.rows == null) props.rows = copyArray(data.rows)
+    if (props.data == null && Array.isArray(data.data)) props.data = cloneJson(data.data)
   }
 
-  if (componentType === 'GanttChart' && !Array.isArray(props.tasks)) {
+  if (componentType === 'GanttChart' && props.tasks == null) {
     props.tasks =
-      copyArray(data.tasks) ??
-      copyArray(data.items) ??
-      copyArray(data.rows) ??
-      copyArray(data.data)
+      ganttTasks(dataArray) ??
+      ganttTasks(data.tasks) ??
+      ganttTasks(data.items) ??
+      ganttTasks(data.rows) ??
+      ganttTasks(data.data)
   }
 
-  if (componentType === 'Timeline' && !Array.isArray(props.events)) {
+  if (componentType === 'Timeline' && props.events == null) {
     props.events =
       copyArray(props.items) ??
+      dataArray ??
       copyArray(data.events) ??
       copyArray(data.items) ??
       copyArray(data.timeline)
   }
 
-  if (componentType === 'OrgChart' && !Array.isArray(props.nodes)) {
-    props.nodes = copyArray(data.nodes) ?? copyArray(data.items)
+  if (componentType === 'OrgChart' && props.nodes == null) {
+    const nodes = copyArray(data.nodes) ?? copyArray(data.items)
+    const treeData = nodes ? undefined : orgTreeArray(props.data)
+    if (nodes) {
+      props.nodes = nodes
+    } else if (treeData) {
+      props.data = treeData
+    }
   }
 
-  if (componentType === 'List' && !Array.isArray(props.items)) {
-    props.items = copyArray(data.items)
+  if (componentType === 'List' && props.items == null) {
+    props.items = dataArray ?? copyArray(data.items)
   }
 }
 
@@ -716,14 +798,19 @@ function normalizeDirectSpecChildren(spec: VizualSpec, entries: Array<[string, V
   }
 
   const rootElement = elements[root]
+  const rootProps = isRecord(rootElement.props) ? rootElement.props : {}
+  const rootIsFieldBackedForm =
+    firstString(rootElement.type, rootElement.component) === 'FormBuilder' &&
+    Array.isArray(rootProps.fields)
   const existingChildren = Array.isArray(rootElement.children)
     ? rootElement.children.filter((child: unknown): child is string => typeof child === 'string' && Boolean(elements[child]))
     : []
   const hasChildren = existingChildren.length > 0
-  if (!hasChildren && entries.length > 1) {
+  if (!hasChildren && entries.length > 1 && !rootIsFieldBackedForm) {
     rootElement.children = entries.map(([id]) => id).filter(id => id !== root && !referenced.has(id))
   } else if (hasChildren) {
-    rootElement.children = existingChildren
+    if (rootIsFieldBackedForm) delete rootElement.children
+    else rootElement.children = existingChildren
   }
 
   return { ...spec, root, elements }
@@ -734,7 +821,8 @@ function normalizeDirectVizualSpec(spec: VizualSpec): VizualSpec {
   const entries = expandDirectInlineChildren(
     Object.entries(spec.elements).map(([id, element]) => [id, normalizeDirectSpecElement(element)] as [string, VizualSpecElement]),
   )
-  const synthesized = synthesizeKpiDashboardFromTextCards(entries)
+  const formSynthesized = synthesizeDirectFormBuilderFields(entries)
+  const synthesized = synthesizeKpiDashboardFromTextCards(formSynthesized)
   return normalizeDirectSpecChildren(spec, synthesized.entries)
 }
 
@@ -1084,7 +1172,7 @@ function normalizeSemanticComponentArray(records: Record<string, unknown>[]): Vi
 
 function semanticComponentArrayFromWrapper(record: Record<string, unknown>): Record<string, unknown>[] | null {
   if (looksLikeNativeOperation(record) || looksLikeA2UIMessage(record)) return null
-  const components = asRecordArray(record.components)
+  const components = asComponentRecordArray(record.components)
   if (!components.length) return null
   if (!components.every(component => Boolean(semanticTargetForRecord(component)))) return null
   return components
@@ -1169,6 +1257,128 @@ function looksLikeBareComponentArray(value: unknown): value is Record<string, un
 function asRecordArray(value: unknown): Record<string, unknown>[] {
   if (!Array.isArray(value)) return []
   return value.filter(isRecord)
+}
+
+function asComponentRecordArray(value: unknown): Record<string, unknown>[] {
+  if (Array.isArray(value)) return value.filter(isRecord)
+  if (!isRecord(value)) return []
+  return Object.entries(value)
+    .filter((entry): entry is [string, Record<string, unknown>] => isRecord(entry[1]))
+    .map(([id, component]) => {
+      const next = cloneJson(component) as Record<string, unknown>
+      if (!firstString(next.id, next.componentId)) next.id = id
+      return next
+    })
+}
+
+function directSpecFromRecord(record: Record<string, unknown>): VizualSpec | null {
+  const root = firstString(record.root)
+  const elements = isRecord(record.elements) ? record.elements : undefined
+  if (!root || !elements) return null
+  const spec: VizualSpec = {
+    root,
+    elements: cloneJson(elements) as NonNullable<VizualSpec['elements']>,
+  }
+  if (isRecord(record.state)) spec.state = cloneJson(record.state) as Record<string, unknown>
+  return spec
+}
+
+function nativeComponentsFromDirectSpec(spec: VizualSpec): VizualNativeComponentDef[] {
+  const normalized = normalizeDirectVizualSpec(spec)
+  const elements = isRecord(normalized.elements) ? normalized.elements : {}
+  const components: VizualNativeComponentDef[] = []
+
+  for (const [id, element] of Object.entries(elements)) {
+    if (!isRecord(element)) continue
+    const component = firstString(element.type, element.component)
+    if (!component) continue
+    const props = isRecord(element.props) ? cloneJson(element.props) as Record<string, unknown> : {}
+    const next: Record<string, unknown> = {
+      id,
+      component,
+      ...props,
+    }
+    if (Array.isArray(element.children)) {
+      next.children = element.children.filter((child): child is string => typeof child === 'string' && child.length > 0)
+    }
+    if (isRecord(element.on)) {
+      next.on = cloneJson(element.on)
+    }
+    components.push(next as VizualNativeComponentDef)
+  }
+
+  const root = firstString(normalized.root)
+  if (root && root !== 'root' && !components.some(component => component.id === 'root')) {
+    return [
+      { id: 'root', component: 'Column', children: [root], gap: 16 },
+      ...components,
+    ]
+  }
+  return components
+}
+
+function createSurfaceInitialComponents(payload: Record<string, unknown>): VizualNativeComponentDef[] {
+  const directSpec = directSpecFromRecord(payload)
+  if (directSpec) return nativeComponentsFromDirectSpec(directSpec)
+
+  if (isRecord(payload.components)) {
+    const nestedDirectSpec = directSpecFromRecord(payload.components)
+    if (nestedDirectSpec) return nativeComponentsFromDirectSpec(nestedDirectSpec)
+  }
+
+  return asComponentRecordArray(payload.components) as VizualNativeComponentDef[]
+}
+
+function componentDefFromDirectEntry(id: string, element: VizualSpecElement): VizualNativeComponentDef | null {
+  const component = firstString(element.type, element.component)
+  if (!component) return null
+  const props = isRecord(element.props) ? cloneJson(element.props) as Record<string, unknown> : {}
+  const next: Record<string, unknown> = {
+    id,
+    component,
+    ...props,
+  }
+  if (Array.isArray(element.children)) {
+    next.children = element.children.filter((child): child is string => typeof child === 'string' && child.length > 0)
+  }
+  return next as VizualNativeComponentDef
+}
+
+function synthesizeDirectFormBuilderFields(
+  entries: Array<[string, VizualSpecElement]>,
+): Array<[string, VizualSpecElement]> {
+  const elements = new Map(entries)
+  return entries.map(([id, element]) => {
+    const componentType = firstString(element.type, element.component)
+    const props = isRecord(element.props) ? { ...element.props } : {}
+    if (componentType !== 'FormBuilder' || Array.isArray(props.fields)) {
+      return [id, element] as [string, VizualSpecElement]
+    }
+
+    const childIds = Array.isArray(element.children)
+      ? element.children.filter((child): child is string => typeof child === 'string' && child.length > 0)
+      : []
+    const fields = childIds
+      .map((childId, index) => {
+        const child = elements.get(childId)
+        if (!child) return null
+        const component = componentDefFromDirectEntry(childId, child)
+        return component ? formFieldFromInputComponent(component, index) : null
+      })
+      .filter((field): field is Record<string, unknown> => Boolean(field))
+
+    if (!fields.length) return [id, element] as [string, VizualSpecElement]
+
+    const next: VizualSpecElement = {
+      ...element,
+      props: {
+        ...props,
+        fields,
+      },
+    }
+    delete next.children
+    return [id, next] as [string, VizualSpecElement]
+  })
 }
 
 function normalizeSemanticDashboardSpec(record: Record<string, unknown>): VizualSpec | null {
@@ -1462,9 +1672,11 @@ function normalizeComponentDef(component: VizualNativeComponentDef): VizualNativ
   // tasks|events|nodes|items}` into the canonical prop the renderer reads. The
   // A2UI/AG-UI component path must do the same, or identical content emitted as
   // an A2UI component renders empty while the semantic form renders correctly.
-  // Only act on a genuine nested-object payload — never an array `data` (already
-  // canonical) or a `{path}` data binding.
-  if (isRecord(aliased.data) && typeof (aliased.data as Record<string, unknown>).path !== 'string') {
+  // Only avoid `{path}` data bindings. Some business components commonly use a
+  // plain `data` array where the catalog requires `tasks`, `events`, `nodes`, or
+  // `metrics`; normalize that alias here so operation and direct-spec paths
+  // behave the same.
+  if (!(isRecord(aliased.data) && typeof (aliased.data as Record<string, unknown>).path === 'string')) {
     normalizeNestedDataProps(aliased.component, aliased as Record<string, unknown>)
   }
   return aliased
@@ -1746,6 +1958,76 @@ function normalizeComponentAlias(component: VizualNativeComponentDef): VizualNat
   return next
 }
 
+function normalizeFormFieldName(value: unknown, fallback: string): string {
+  const raw = firstString(value) ?? fallback
+  const normalized = raw
+    .trim()
+    .replace(/\s+/g, '_')
+    .replace(/[^\p{L}\p{N}_-]+/gu, '_')
+    .replace(/^_+|_+$/g, '')
+  return normalized || fallback
+}
+
+function formFieldTypeFromComponent(component: VizualNativeComponentDef): string | null {
+  switch (component.component) {
+    case 'TextField': {
+      const inputType = firstString((component as Record<string, unknown>).inputType, component.type)?.toLowerCase()
+      if (component.multiline === true) return 'textarea'
+      if (inputType && ['email', 'password', 'number', 'url', 'tel'].includes(inputType)) return inputType
+      return 'text'
+    }
+    case 'ChoicePicker': {
+      const variant = firstString((component as Record<string, unknown>).variant, component.type)?.toLowerCase()
+      if (component.multiple === true) return 'checkbox'
+      if (variant === 'radio') return 'radio'
+      return 'select'
+    }
+    case 'DateTimeInput': {
+      const mode = firstString((component as Record<string, unknown>).mode, component.type)?.toLowerCase()
+      if (mode === 'time') return 'time'
+      if (mode === 'datetime' || mode === 'datetime-local') return 'datetime'
+      return 'date'
+    }
+    case 'CheckBox':
+      return 'checkbox'
+    case 'Slider':
+      return 'slider'
+    default:
+      return null
+  }
+}
+
+function formFieldFromInputComponent(component: VizualNativeComponentDef, index: number): Record<string, unknown> | null {
+  const type = formFieldTypeFromComponent(component)
+  if (!type) return null
+  const name = normalizeFormFieldName(
+    component.name ?? component.key ?? component.field ?? component.value ?? component.id,
+    `field_${index + 1}`,
+  )
+  const field: Record<string, unknown> = {
+    name,
+    type,
+  }
+  const label = firstString(component.label, component.text, component.title, component.placeholder, component.id)
+  if (label) field.label = label
+  if (typeof component.placeholder === 'string') field.placeholder = component.placeholder
+  if (component.required != null) field.required = Boolean(component.required)
+  if (component.disabled != null) field.disabled = Boolean(component.disabled)
+  if (typeof component.description === 'string') field.description = component.description
+  const options = Array.isArray(component.options)
+    ? component.options
+    : Array.isArray((component as Record<string, unknown>).choices)
+      ? (component as Record<string, unknown>).choices
+      : Array.isArray((component as Record<string, unknown>).items)
+        ? (component as Record<string, unknown>).items
+        : undefined
+  if (options) field.options = cloneJson(options)
+  for (const key of ['min', 'max', 'step', 'defaultValue', 'accept', 'multiple']) {
+    if ((component as Record<string, unknown>)[key] != null) field[key] = cloneJson((component as Record<string, unknown>)[key])
+  }
+  return field
+}
+
 function normalizeActivityContent(content: unknown): Record<string, unknown> {
   const parsed = parseJsonMaybe(content)
   return isRecord(parsed) ? parsed : {}
@@ -1832,6 +2114,9 @@ function extractA2UIMessages(value: unknown, depth = 0): A2UIMessage[] {
     return extractA2UIMessages(extractPayloadFromResourceRecord(parsed.resource), depth + 1)
   }
 
+  const wrapperMessage = looksLikeA2UIMessage(parsed)
+    ? [stripA2UIWrapperFields(parsed) as A2UIMessage]
+    : []
   const candidates = [
     parsed[A2UI_OPERATIONS_KEY],
     parsed.a2uiMessages,
@@ -1846,11 +2131,20 @@ function extractA2UIMessages(value: unknown, depth = 0): A2UIMessage[] {
   ]
   for (const candidate of candidates) {
     const messages = extractA2UIMessages(candidate, depth + 1)
-    if (messages.length) return messages
+    if (messages.length) return [...wrapperMessage, ...messages]
   }
   if (parsed.content != null) return extractA2UIMessages(parsed.content, depth + 1)
-  if (looksLikeA2UIMessage(parsed)) return [parsed]
+  if (wrapperMessage.length) return wrapperMessage
   return []
+}
+
+function stripA2UIWrapperFields(message: Record<string, unknown>): Record<string, unknown> {
+  const next = { ...message }
+  delete next[A2UI_OPERATIONS_KEY]
+  delete next.a2uiMessages
+  delete next.messages
+  delete next.operations
+  return next
 }
 
 function applyJsonPatch(target: unknown, patch: unknown): unknown {
@@ -1914,7 +2208,7 @@ function normalizeMessageShape(message: A2UIMessage, fallbackSurfaceId = 'surfac
   const catalogId = firstString(record.catalogId, payload.catalogId, isRecord(record.catalog) ? record.catalog.id : undefined) ?? 'vizual'
   const surfaceId = normalizeSurfaceId(record, fallbackSurfaceId)
   const normalizeComponents = (items: unknown): A2UIComponentDef[] => {
-    const rawComponents = Array.isArray(items) ? items.filter(isRecord) : []
+    const rawComponents = asComponentRecordArray(items)
     const hasMissingIds = rawComponents.some(component => !firstString(component.id, component.componentId))
     const components = hasMissingIds && looksLikeBareComponentArray(rawComponents)
       ? normalizeBareComponentTree(rawComponents) as A2UIComponentDef[]
@@ -2059,9 +2353,7 @@ function a2uiMessageToOperations(message: A2UIMessage, fallbackSurfaceId: string
       {
         type: 'surface.updateComponents',
         surfaceId,
-        components: Array.isArray(record.surfaceUpdate.components)
-          ? record.surfaceUpdate.components as VizualNativeComponentDef[]
-          : [],
+        components: asComponentRecordArray(record.surfaceUpdate.components) as VizualNativeComponentDef[],
         raw: message,
       },
     ]
@@ -2102,42 +2394,102 @@ function a2uiMessageToOperations(message: A2UIMessage, fallbackSurfaceId: string
   }
   const normalized = normalizeMessageShape(message, fallbackSurfaceId)
   if ('createSurface' in normalized) {
-    return [{ type: 'surface.create', ...normalized.createSurface, raw: normalized }]
+    const payload: Record<string, unknown> = isRecord(normalized.createSurface) ? normalized.createSurface : {}
+    const surfaceId = normalizeSurfaceId(payload, fallbackSurfaceId)
+    const operations: VizualNativeOperation[] = [{
+      ...payload,
+      type: 'surface.create',
+      surfaceId,
+      catalogId: firstString(payload.catalogId, (normalized as unknown as Record<string, unknown>).catalogId) ?? 'vizual',
+      raw: normalized,
+    }]
+    const initialState = isRecord(payload.state)
+      ? payload.state
+      : isRecord(payload.dataModel)
+        ? payload.dataModel
+        : isRecord(payload.data)
+          ? payload.data
+          : undefined
+    if (initialState) {
+      operations.push({
+        type: 'surface.updateData',
+        surfaceId,
+        path: '/',
+        value: initialState,
+        raw: normalized,
+      })
+    }
+    const initialComponents = createSurfaceInitialComponents(payload)
+    if (initialComponents.length) {
+      operations.push({
+        type: 'surface.updateComponents',
+        surfaceId,
+        components: initialComponents,
+        raw: normalized,
+      })
+    }
+    return operations
   }
   if ('updateComponents' in normalized) {
-    return [{ type: 'surface.updateComponents', ...normalized.updateComponents, raw: normalized }]
+    const payload: Record<string, unknown> = isRecord(normalized.updateComponents) ? normalized.updateComponents : {}
+    return [{
+      ...payload,
+      type: 'surface.updateComponents',
+      surfaceId: normalizeSurfaceId(payload, fallbackSurfaceId),
+      components: asComponentRecordArray(payload.components) as VizualNativeComponentDef[],
+      raw: normalized,
+    }]
   }
   if ('updateDataModel' in normalized) {
-    return [{ type: 'surface.updateData', ...normalized.updateDataModel, raw: normalized }]
+    const payload: Record<string, unknown> = isRecord(normalized.updateDataModel) ? normalized.updateDataModel : {}
+    return [{
+      type: 'surface.updateData',
+      surfaceId: normalizeSurfaceId(payload, fallbackSurfaceId),
+      path: firstString(payload.path) ?? '/',
+      value: payload.value
+        ?? (isRecord(payload.dataModel) ? payload.dataModel : undefined)
+        ?? (isRecord(payload.data) ? payload.data : undefined)
+        ?? payload,
+      raw: normalized,
+    }]
   }
   if ('appendDataModel' in normalized) {
-    const payload = (normalized as any).appendDataModel
-    return [{ type: 'surface.appendData', ...payload, raw: normalized }]
+    const payload: Record<string, unknown> = isRecord((normalized as any).appendDataModel) ? (normalized as any).appendDataModel : {}
+    return [{
+      type: 'surface.appendData',
+      surfaceId: normalizeSurfaceId(payload, fallbackSurfaceId),
+      path: firstString(payload.path) ?? '/',
+      value: payload.value
+        ?? (isRecord(payload.dataModel) ? payload.dataModel : undefined)
+        ?? (isRecord(payload.data) ? payload.data : undefined)
+        ?? payload,
+      raw: normalized,
+    }]
   }
   if ('deleteSurface' in normalized) {
     return [{ type: 'surface.delete', surfaceId: normalized.deleteSurface.surfaceId, raw: normalized }]
   }
   if ('callFunction' in normalized) {
     return [{
+      ...normalized.callFunction,
       type: 'function.call',
       id: (normalized as { functionCallId?: string }).functionCallId,
-      ...normalized.callFunction,
       raw: normalized,
     }]
   }
   if ('actionResponse' in normalized) {
     return [{
+      ...normalized.actionResponse,
       type: 'function.result',
       id: (normalized as { actionId?: string }).actionId ?? normalized.actionResponse.actionId,
-      ...normalized.actionResponse,
       raw: normalized,
     }]
   }
   if ('updateTheme' in normalized) {
-    return [{ type: 'theme.update', ...normalized.updateTheme, raw: normalized }]
+    return [{ ...normalized.updateTheme, type: 'theme.update', raw: normalized }]
   }
   if ('errorRecovery' in normalized) {
-    return [{ type: 'surface.recovery', ...normalized.errorRecovery, raw: normalized }]
+    return [{ ...normalized.errorRecovery, type: 'surface.recovery', raw: normalized }]
   }
   return []
 }
@@ -2228,6 +2580,13 @@ export class VizualNativeCore {
         if (snapshot) lastSnapshot = snapshot
       }
       return lastSnapshot
+    }
+    if (isRecord(input)) {
+      const record = input as Record<string, unknown>
+      if ([record[A2UI_OPERATIONS_KEY], record.a2uiMessages, record.messages, record.operations].some(Array.isArray)) {
+        const messages = extractA2UIMessages(record)
+        if (messages.length > 1) return this.dispatch(messages, surfaceId)
+      }
     }
     if (looksLikeNativeOperation(input)) return this.reduceOperation(input)
     if (isRecord(input) && looksLikeA2UIMessage(input)) {
@@ -2833,7 +3192,11 @@ export class VizualNativeCore {
       return null
     }
 
-    for (const component of expandInlineComponentChildren(msg.components)) {
+    const rawComponents = asComponentRecordArray(msg.components)
+    const hasRoot = rawComponents.some(component => firstString(component.id, component.componentId) === 'root')
+    const hasExistingRoot = surface.components.has('root')
+    const components = (hasRoot || hasExistingRoot ? rawComponents : normalizeBareComponentTree(rawComponents)) as VizualNativeComponentDef[]
+    for (const component of expandInlineComponentChildren(components)) {
       const normalized = normalizeComponentDef(component)
       if (typeof normalized.id !== 'string' || normalized.id.length === 0) continue
       surface.components.set(normalized.id, normalized)
@@ -3040,7 +3403,18 @@ export class VizualNativeCore {
       : surface.dataModel
 
     for (const [id, component] of surface.components) {
-      const props = this.resolveProps(component, surface.dataModel)
+      const synthesizedFields = component.component === 'FormBuilder' && !Array.isArray(component.fields) && Array.isArray(component.children)
+        ? component.children
+            .map((childId, index) => {
+              const child = surface.components.get(childId)
+              return child ? formFieldFromInputComponent(child, index) : null
+            })
+            .filter((field): field is Record<string, unknown> => Boolean(field))
+        : []
+      const componentForProps = synthesizedFields.length
+        ? { ...component, fields: synthesizedFields }
+        : component
+      const props = this.resolveProps(componentForProps, surface.dataModel)
       const element: NonNullable<VizualSpec['elements']>[string] = {
         type: component.component,
         props,
@@ -3053,7 +3427,7 @@ export class VizualNativeCore {
           },
         }
       }
-      if (Array.isArray(component.children) && component.children.length > 0) element.children = [...component.children]
+      if (Array.isArray(component.children) && component.children.length > 0 && component.component !== 'FormBuilder') element.children = [...component.children]
       else if (isRecord(component.children)) {
         const template = surface.components.get(component.children.componentId)
         const list = getValueAtPath(surface.dataModel, component.children.path)

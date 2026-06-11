@@ -140,6 +140,31 @@ function resultEnvelope(args: Record<string, unknown>, result: unknown): Record<
   return undefined
 }
 
+function unwrapPresentationInput(value: unknown): {
+  input: unknown
+  wrapper?: Record<string, unknown>
+} {
+  const parsed = parseMaybeJson(value)
+  if (parsed !== value) return unwrapPresentationInput(parsed)
+  if (!isRecord(value)) return { input: value }
+  if (value.schema === 'vizual.agent.envelope.v1' && value.input !== undefined) {
+    return { input: value.input, wrapper: value }
+  }
+  if (value.surfaceId !== undefined || value.fallbackText !== undefined || value.display !== undefined) {
+    return { input: value, wrapper: value }
+  }
+  if (
+    value.input !== undefined &&
+    !('root' in value) &&
+    !('elements' in value) &&
+    !('createSurface' in value) &&
+    !('updateComponents' in value)
+  ) {
+    return { input: value.input, wrapper: value }
+  }
+  return { input: value }
+}
+
 function previewPresentationInput(input: unknown, surfaceId?: string): VizualPreviewResult {
   try {
     return previewVizualNativeInput(input as VizualNativeInput, { surfaceId })
@@ -177,6 +202,10 @@ function collectPresentationIssues(resultRecord: Record<string, unknown>, previe
   return issues.length ? issues : undefined
 }
 
+function firstStringValue(...values: unknown[]): string | undefined {
+  return values.find((value): value is string => typeof value === 'string')
+}
+
 export function extractVizualPresentations(
   messages: Array<VizualChatAdapterMessage | unknown>,
 ): VizualChatPresentation[] {
@@ -194,23 +223,50 @@ export function extractVizualPresentations(
       const result = call.id ? toolResults.get(call.id) : undefined
       const resultRecord = isRecord(result) ? result : {}
       const envelope = resultEnvelope(args, result)
-      const input = envelope?.input ?? args.input
-      if (input === undefined) continue
-      const display = parseMaybeJson(envelope?.display ?? args.display)
-      const surfaceId = [
-        envelope?.surfaceId,
-        args.surfaceId,
-        resultRecord.surfaceId,
-      ].find((value): value is string => typeof value === 'string' && value.length > 0)
-      const preview = previewPresentationInput(input, surfaceId)
       const resultAccepted = resultRecord.ok === true || (result === undefined && isVizualAgentEnvelope(envelope))
+      const rawInputCandidates = [
+        envelope?.input,
+        args.input,
+      ].filter(value => value !== undefined)
+      let selected:
+        | {
+          input: unknown
+          wrapper?: Record<string, unknown>
+          display: unknown
+          surfaceId?: string
+          fallbackText?: string
+          preview: VizualPreviewResult
+        }
+        | undefined
+      for (const rawInput of rawInputCandidates) {
+        const { input, wrapper } = unwrapPresentationInput(rawInput)
+        if (input === undefined) continue
+        const display = parseMaybeJson(wrapper?.display ?? envelope?.display ?? args.display)
+        const surfaceId = firstStringValue(
+          wrapper?.surfaceId,
+          envelope?.surfaceId,
+          args.surfaceId,
+          resultRecord.surfaceId,
+        )
+        const fallbackText = firstStringValue(
+          wrapper?.fallbackText,
+          envelope?.fallbackText,
+          args.fallbackText,
+          resultRecord.fallbackText,
+        )
+        const preview = previewPresentationInput(input, surfaceId)
+        const candidate = { input, wrapper, display, surfaceId, fallbackText, preview }
+        const candidateRenderable = preview.ok && Boolean(preview.spec)
+        const selectedRenderable = selected ? selected.preview.ok && Boolean(selected.preview.spec) : false
+        if (!selected || (!selectedRenderable && candidateRenderable)) {
+          selected = candidate
+        }
+        if (resultAccepted && candidateRenderable) break
+      }
+      if (!selected) continue
+      const { input, display, surfaceId, fallbackText, preview } = selected
       const renderable = preview.ok && Boolean(preview.spec)
       const accepted = resultAccepted && renderable
-      const fallbackText = [
-        envelope?.fallbackText,
-        args.fallbackText,
-        resultRecord.fallbackText,
-      ].find((value): value is string => typeof value === 'string')
 
       presentations.push({
         id: call.id ? `tool:${call.id}` : surfaceId ? `surface:${surfaceId}` : `vizual:${presentations.length}`,
