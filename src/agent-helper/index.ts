@@ -131,6 +131,8 @@ export function createVizualAgentToolDefinition(options: {
       'The host QA report may flag UI input that contains unsupplied external benchmark/threshold phrases. If that happens, remove or qualify the benchmark claim and call the tool again.',
       'Charts are hydrated with real drillDown actions by the Vizual runtime. For non-chart interactions such as filters, submit buttons, approvals, or plan updates, do not claim interactivity unless the Vizual input includes a real action/function call/control for that behavior.',
       'Do not claim validation passed or failed in assistant prose; the host runtime reports validation status.',
+      'Self-correction protocol: if the tool result has ok:false, it includes a "fixes" array; apply every fix and call present_vizual_ui again until ok:true. Each issue also carries a "fix" field with one concrete next action.',
+      'Shape contract for a single chart: { "components": [ { "type": "BarChart", "title": "...", "x": "<label field>", "y": "<numeric field or [fields]>", "data": [ { "<label field>": "A", "<numeric field>": 12 } ] } ] }. Charts need real numeric values in y fields and a matching label key in x; never wrap numbers as unparseable strings.',
       'If the user only provides month labels such as 1月-6月 without a year, title the UI as 月度/截至6月/1-6月 and never infer the current year.',
       'Do not use Vizual as a theme or layout gate: host and Agent own visual style, while Vizual owns native rendering, state, validation, and action transport.',
       'Default to semantic components plus simple Column/Row composition. Page-level layout widgets are not native core components unless they appear in the live catalog.',

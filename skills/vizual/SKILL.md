@@ -13,9 +13,57 @@ Do not use Vizual as a keyword router or product gate. The user speaks naturally
 5. **Do not invent components or props.** Validate before rendering whenever possible.
 6. **Do not silently hide failures.** If a component is unsupported, return a clear unsupported-component error or gap metadata; do not fake success.
 
+## Fastest Correct Shape (copy, then replace the data)
+
+If you remember nothing else, emit a `components` array. Every item is one
+native component. This is the shortest shape that validates:
+
+```json
+{ "components": [
+  { "type": "BarChart", "title": "月度销量", "x": "month", "y": "sales",
+    "data": [ { "month": "1月", "sales": 120 }, { "month": "2月", "sales": 168 } ] }
+] }
+```
+
+Swap `type` and the fields for other surfaces — the data stays a flat array of
+`{ key: value }` rows:
+
+| Surface | `type` | Required props |
+| --- | --- | --- |
+| Bar / line / area | `BarChart` / `LineChart` / `AreaChart` | `x` (label key), `y` (numeric key or `[keys]`), `data` |
+| Multi-series | same | `y: ["a","b"]`, each row has both numeric keys |
+| Pie / funnel | `PieChart` / `FunnelChart` | `data` of `{ "name": "...", "value": 12 }` |
+| Mixed bar+line | `ComboChart` | `x`, `data`, `series: [{ "type":"bar","y":"a" },{ "type":"line","y":"b" }]` |
+| KPI cards | `KpiDashboard` | `metrics: [{ "label":"营收","value":"¥1.2M","trend":"up" }]` |
+| Table | `DataTable` | `data` (array of row objects); `columns` optional |
+| Scatter | `ScatterChart` | `x`, `y` (both numeric keys), `data` |
+
+Rules that make charts actually render:
+- `y` fields must be **real numbers** in every row (`120`, not `"120分"` and not `"1,234"` left as an unparseable label). Thousands separators like `"1,234"` are tolerated, but prefer raw numbers.
+- The `x` value is the label/category and matches the `x` key in each row.
+- `data` is never empty. If you have no data, answer in text instead.
+
+## Self-Check Before Returning
+
+1. Is every `type` in the catalog below? (No `DocView`, `Modal`, `Kanban`, raw HTML/React/ECharts/Chart.js.)
+2. Does every chart have non-empty `data` with the referenced `x`/`y` keys present in each row, and are `y` values numeric?
+3. Did you avoid inventing thresholds, industry averages, YoY %, or dates the user did not provide?
+4. Is narrative prose in the assistant text, with only the structured UI in the tool input?
+
+## If the Tool Reports `ok: false`
+
+The result includes a `fixes` array and each issue carries a `fix` field with one
+concrete action. Apply **every** fix and call `present_vizual_ui` again until
+`ok: true`. Do not tell the user it rendered until the tool confirms `ok: true`.
+
+If you accidentally emit an ECharts `option`, a Chart.js config, or a stringified
+JSON blob for a simple bar/line/pie chart, the runtime auto-converts it and reports
+an info-level `vizual.repair.*` note. That is a safety net, not the target — emit
+native components directly.
+
 ## Chart Data Contract
 
-For charts, the recommended Agent-facing shape is `props.data` plus typed `props.encoding`, with optional `props.measures`.
+Simple charts may use the fastest `x` / `y` / `data` shape above. For complex charts, multi-series charts, mixed-axis charts, or long-form grouped data, prefer `props.data` plus typed `props.encoding`, with optional `props.measures`.
 
 - Use `encoding.x`, `encoding.y`, `encoding.value`, `encoding.label`, `encoding.color`, `encoding.size`, `encoding.date`, `encoding.source`, `encoding.target`, `encoding.low`, and `encoding.high` to point at fields in the data rows.
 - Use `measures` for multiple numeric series or `ComboChart` layers. Each measure should include `field` and can include `label`, `mark` (`bar`, `line`, `scatter`), `axis` (`left` or `right`), and `size`.

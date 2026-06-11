@@ -824,32 +824,34 @@ describe('VizualNativeCore', () => {
     expect(cyclic.issues.map(issue => issue.code)).toContain('vizual.spec_cyclic_children')
   })
 
-  it('rejects opaque external DSL shapes before any host can treat them as renderable', () => {
+  it('rejects opaque external DSL shapes that cannot be faithfully mapped to native', () => {
     const cases = [
       {
-        name: 'echarts',
+        // radar ECharts is not in the auto-convert set; must reject, not guess.
+        name: 'echarts-radar',
         input: {
-          title: { text: '团队能力 vs 行业标准' },
-          tooltip: {},
-          legend: {},
-          xAxis: { type: 'category', data: ['算法创新', '硬件品控'] },
-          yAxis: { type: 'value' },
-          series: [{ type: 'bar', data: [94, 70] }],
+          radar: { indicator: [{ name: '算法创新', max: 100 }] },
+          series: [{ type: 'radar', data: [{ value: [94], name: 'team' }] }],
         },
       },
       {
-        name: 'chartjs',
+        // Chart.js with non-numeric dataset values cannot be mapped faithfully.
+        name: 'chartjs-nonnumeric',
         input: {
           type: 'bar',
           data: {
             labels: ['东城', '西城'],
-            datasets: [{ label: '等待分钟', data: [6, 18] }],
+            datasets: [{ label: '等待', data: ['n/a', 'pending'] }],
           },
         },
       },
       {
         name: 'html',
         input: '<div class="dashboard"><canvas id="chart"></canvas></div>',
+      },
+      {
+        name: 'react-code',
+        input: 'export default function Dashboard() { return React.createElement("div") }',
       },
       {
         name: 'old-ui-dsl',
@@ -863,13 +865,30 @@ describe('VizualNativeCore', () => {
     for (const item of cases) {
       const preview = previewVizualNativeInput(item.input as any)
       expect(preview.ok, item.name).toBe(false)
-      expect(preview.issues).toEqual(expect.arrayContaining([
-        expect.objectContaining({
-          severity: 'error',
-          code: 'vizual.opaque_dsl_input',
-        }),
-      ]))
+      expect(
+        preview.issues.some(issue => issue.severity === 'error'),
+        item.name,
+      ).toBe(true)
     }
+  })
+
+  it('faithfully repairs recognizable bar ECharts/Chart.js dialects into a really-rendering native chart', () => {
+    const echarts = previewVizualNativeInput({
+      title: { text: '团队能力 vs 行业标准' },
+      xAxis: { type: 'category', data: ['算法创新', '硬件品控'] },
+      yAxis: { type: 'value' },
+      series: [{ type: 'bar', data: [94, 70] }],
+    } as any)
+    expect(echarts.ok).toBe(true)
+    expect(echarts.issues.some(i => i.code === 'vizual.repair.echarts_option')).toBe(true)
+    expect(echarts.issues.every(i => i.severity !== 'error')).toBe(true)
+
+    const chartjs = previewVizualNativeInput({
+      type: 'bar',
+      data: { labels: ['东城', '西城'], datasets: [{ label: '等待分钟', data: [6, 18] }] },
+    } as any)
+    expect(chartjs.ok).toBe(true)
+    expect(chartjs.issues.some(i => i.code === 'vizual.repair.chartjs_config')).toBe(true)
   })
 
   it('rejects chart fields that exist but are not numeric', () => {

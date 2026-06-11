@@ -1,5 +1,10 @@
 # AI Integration Guide
 
+> **Authoritative reference:** [INTEGRATION.md](INTEGRATION.md) is the single
+> end-to-end guide. See §4 for the **dialect repair** + `fix`/`fixes`
+> self-correction protocol (any-model compliance), and §12 for the
+> **framework-agnostic / React Native** render-tree seam.
+
 Vizual is a native visual runtime for AI agent products. Users still ask normal
 questions in natural language. When the agent decides that text alone is not
 clear enough, it can insert an inline visual or interactive UI block into the

@@ -1,5 +1,6 @@
 import type { A2UIError } from '../a2ui/types'
 import { VizualNativeCore } from './core'
+import { repairAgentInput, type VizualInputRepair } from './repair'
 import type {
   VizualNativeCoreOptions,
   VizualNativeFunctionCallState,
@@ -27,6 +28,8 @@ export type VizualNormalizedResult = {
   runs: VizualNativeRunState[]
   runState: Record<string, unknown>
   nativeOperationLog: ReturnType<VizualNativeCore['getNativeOperationLog']>
+  /** Deterministic dialect repairs applied before normalization (e.g. ECharts/Chart.js). */
+  repairs: VizualInputRepair[]
 }
 
 export function normalizeVizualNativeInput(
@@ -36,6 +39,11 @@ export function normalizeVizualNativeInput(
   const snapshots: VizualNativeSurfaceSnapshot[] = []
   const errors: A2UIError[] = []
   const findings: VizualNativeQualityFinding[] = []
+
+  // Faithfully repair recognizable foreign dialects (ECharts option / Chart.js
+  // config / JSON string) into native input before normalization. No-op for
+  // input that is already native.
+  const repaired = repairAgentInput(input)
 
   const core = new VizualNativeCore({
     defaultCatalogId: options.defaultCatalogId,
@@ -47,7 +55,7 @@ export function normalizeVizualNativeInput(
   let directSnapshot: VizualNativeSurfaceSnapshot | null = null
 
   try {
-    directSnapshot = core.dispatch(input, options.surfaceId)
+    directSnapshot = core.dispatch(repaired.input, options.surfaceId)
   } catch (error) {
     errors.push({
       surfaceId: options.surfaceId ?? '',
@@ -81,5 +89,6 @@ export function normalizeVizualNativeInput(
     runs: core.getRuns(),
     runState: core.getRunState(),
     nativeOperationLog: core.getNativeOperationLog(),
+    repairs: repaired.repairs,
   }
 }

@@ -38,13 +38,9 @@ describe('chat adapter renderability gate', () => {
   it('does not accept fake ok:true tool results when preview cannot render a native surface', () => {
     const messages = [
       assistantToolCall('call-1', {
-        input: {
-          title: { text: '团队能力 vs 行业标准' },
-          tooltip: {},
-          xAxis: { type: 'category', data: ['算法创新', '硬件品控'] },
-          yAxis: { type: 'value' },
-          series: [{ type: 'bar', data: [94, 70] }],
-        },
+        // Raw HTML cannot be faithfully mapped to a native surface, so a tool
+        // result that claims ok:true must still be gated out.
+        input: '<div class="dashboard"><canvas id="chart"></canvas></div>',
       }),
       toolResult('call-1', { ok: true }),
     ]

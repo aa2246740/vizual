@@ -18,6 +18,24 @@
       "prompt": "把这个数据画成图表：[['Q1', 450], ['Q2', 620], ['Q3', 580], ['Q4', 890]]，用最合适的图表类型。",
       "expected_output": "单个组件 JSON spec，正确选择 BarChart，type 为 'bar'，数据映射正确。",
       "files": []
+    },
+    {
+      "id": 4,
+      "prompt": "用图展示三个网点的平均等待时间：东城 6 分钟，西城 18 分钟，朝阳 9 分钟。注意有的数据写成了 '1,234' 这种带千分位的字符串。",
+      "expected_output": "单个 BarChart 的 components 数组，x 为网点名、y 为数值字段，data 每行含真实数字；带千分位的字符串值应作为数字渲染，不能产生全 0 的柱子。",
+      "files": []
+    },
+    {
+      "id": 5,
+      "prompt": "这是后端给的图表配置，帮我渲染：{\"xAxis\":{\"type\":\"category\",\"data\":[\"一月\",\"二月\",\"三月\"]},\"yAxis\":{\"type\":\"value\"},\"series\":[{\"type\":\"bar\",\"data\":[120,135,168]}]}",
+      "expected_output": "识别这是 ECharts option，优先直接输出 native BarChart（x/y/data）。若误把 ECharts 透传给工具，runtime 会忠实转换并给出 vizual.repair.echarts_option 提示，最终 ok:true 且柱子非空。",
+      "files": []
+    },
+    {
+      "id": 6,
+      "prompt": "上一轮工具返回了 ok:false，issues 里有 vizual.chart_missing_data_field：y 字段 'sales' 在 data 行里不存在。请修好。",
+      "expected_output": "读取 issue 的 fix 字段，按其指示让每行包含 'sales' 键（或把 y 改成已存在的键），重新调用 present_vizual_ui 直到 ok:true；在工具确认前不向用户声称已渲染。",
+      "files": []
     }
   ]
 }

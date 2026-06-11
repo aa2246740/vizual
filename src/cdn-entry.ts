@@ -49,6 +49,7 @@ import {
   createMemoryArtifactStore,
   VizualHostRuntime,
 } from './core/host-runtime'
+import { toVizualRenderTree, flattenVizualRenderTree } from './core/render-tree'
 import {
   createAgentBridge,
   VizualAgentBridge,
@@ -267,6 +268,7 @@ import {
   nativeInputsToVizualSnapshot,
   normalizeVizualNativeInput,
   previewVizualNativeInput,
+  repairAgentInput,
   validateVizualNativeInput,
   VIZUAL_NATIVE_PREVIEW_MIME,
 } from './native-core'
@@ -364,6 +366,8 @@ const vizual = {
   collectVizualRenderEvidence,
   normalizeArtifact,
   summarizeSpec,
+  toVizualRenderTree,
+  flattenVizualRenderTree,
   createHostRuntime,
   createLocalStorageArtifactStore,
   createMemoryArtifactStore,
@@ -452,6 +456,7 @@ const vizual = {
   nativeInputsToVizualSnapshot,
   normalizeVizualNativeInput,
   previewVizualNativeInput,
+  repairAgentInput,
   validateVizualNativeInput,
   VIZUAL_NATIVE_PREVIEW_MIME,
   VizualFusionRuntime,
