@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Vizual — Interaction Acceptance</title>
+  <style>
+    body { font-family: -apple-system, system-ui, sans-serif; margin: 0; background: #0d1117; color: #e6edf3; }
+    header { padding: 14px 22px; border-bottom: 1px solid #30363d; }
+    h1 { font-size: 17px; margin: 0; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; padding: 22px; }
+    .case { border: 1px solid #30363d; border-radius: 10px; overflow: hidden; background: #161b22; }
+    .case h2 { font-size: 13px; margin: 0; padding: 9px 13px; background: #21262d; border-bottom: 1px solid #30363d; }
+    .surface { padding: 12px; background: #fff; color: #111; min-height: 150px; }
+    .log { padding: 8px 13px; font-family: ui-monospace, monospace; font-size: 11px; border-top: 1px solid #30363d; max-height: 170px; overflow: auto; white-space: pre-wrap; }
+    .agent { color: #3fb950; } .none { color: #f85149; }
+  </style>
+</head>
+<body>
+  <header><h1>Vizual — Interaction Acceptance: submit→agent roundtrip + in-playground live preview</h1></header>
+  <div class="grid" id="grid"></div>
+  <script src="../dist/vizual.standalone.js"></script>
+  <script>
+    const V = window.Vizual;
+    window.__agentInbox = [];
+    window.__results = {};
+    const grid = document.getElementById('grid');
+    function caseEl(title) {
+      const el = document.createElement('div'); el.className = 'case';
+      el.innerHTML = `<h2>${title}</h2><div class="surface"></div><div class="log">…</div>`;
+      grid.appendChild(el);
+      return { surface: el.querySelector('.surface'), log: el.querySelector('.log') };
+    }
+    const formSpec = { root: 'r', elements: { r: { type: 'FormBuilder', props: {
+      title: '客户回访', submitLabel: '提交',
+      fields: [ { name: 'name', label: '姓名', type: 'text', defaultValue: '张三' },
+                { name: 'score', label: '满意度', type: 'select', options: ['高','中','低'] } ],
+    } } } };
+
+    // A: naive host (render only) — interaction does NOT reach the agent
+    (function () {
+      const { surface, log } = caseEl('A. 仅渲染（现状·朴素接入）');
+      const p = V.previewVizualNativeInput(formSpec, { requireRenderable: true });
+      const before = window.__agentInbox.length;
+      V.renderSpec(p.spec, surface, { surfaceId: p.surfaceId, onStateChange: () => {} });
+      window.__results.A = () => window.__agentInbox.length - before;
+      log.innerHTML = '<span class="none">无 bridge：点“提交”不会发给 Agent</span>';
+    })();
+
+    // B: host bridge — submit reaches the agent (roundtrip)
+    (function () {
+      const { surface, log } = caseEl('B. createVizualHostBridge（修复后）');
+      const p = V.previewVizualNativeInput(formSpec, { requireRenderable: true });
+      const before = window.__agentInbox.length;
+      const bridge = V.createVizualHostBridge({
+        surfaceId: p.surfaceId,
+        sendToAgent: (message, action) => {
+          window.__agentInbox.push({ message, action });
+          log.innerHTML = '<span class="agent">→ 已发给 Agent（新一轮 run）</span>\naction=' + action.type +
+            '\ndata=' + JSON.stringify(action.params.data);
+        },
+      });
+      V.renderSpec(p.spec, surface, { surfaceId: p.surfaceId, onAction: bridge.onAction });
+      window.__results.B = () => window.__agentInbox.length - before;
+      log.innerHTML = '填表后点“提交”，应进入 Agent inbox';
+    })();
+
+    // C: in-playground live preview — slider filters chart locally (no agent)
+    (function () {
+      const { surface, log } = caseEl('C. Playground 内实时过滤（recomputeSpec）');
+      const rows = [ { name: '北京', value: 1200 }, { name: '上海', value: 2300 },
+                     { name: '广州', value: 800 }, { name: '深圳', value: 1800 } ];
+      const makeSpec = (state) => {
+        const min = Number((state && state.controls && state.controls.minValue) ?? 0);
+        return { root: 'root', state: { controls: { minValue: min } }, elements: {
+          root: { type: 'Column', props: { gap: 12 }, children: ['ctrl','chart'] },
+          ctrl: { type: 'FormBuilder', props: { value: { $bindState: '/controls' }, fields: [
+            { name: 'minValue', label: '最小营收过滤', type: 'slider', min: 0, max: 2500, step: 100, defaultValue: min } ] } },
+          chart: { type: 'BarChart', props: { title: '各网点营收 ≥ ' + min, x: 'name', y: 'value',
+            data: rows.filter(r => r.value >= min) } },
+        } };
+      };
+      V.renderSpec(makeSpec({ controls: { minValue: 0 } }), surface, {
+        recomputeSpec: makeSpec,
+        initialState: { controls: { minValue: 0 } },
+      });
+      window.__results.C = () => {
+        const cvs = surface.querySelector('canvas');
+        return !!cvs;
+      };
+      log.textContent = '拖动滑竿 → 柱状图在 playground 内实时过滤（不经过 agent）';
+    })();
+  </script>
+</body>
+</html>

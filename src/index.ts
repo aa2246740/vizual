@@ -348,6 +348,18 @@ export {
   VizualRenderer,
 } from './core/react-renderer'
 export {
+  createVizualHostBridge,
+  wrapActionHandlersWithOnAction,
+  summarizeVizualInteractivity,
+  VIZUAL_ROUNDTRIP_ACTIONS,
+} from './core/host-bridge'
+export type {
+  VizualAction,
+  VizualHostBridge,
+  VizualHostBridgeOptions,
+  VizualInteractivitySummary,
+} from './core/host-bridge'
+export {
   collectVizualRenderEvidence,
 } from './core/render-evidence'
 export type {
