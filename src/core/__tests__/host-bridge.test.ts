@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import {
   createVizualHostBridge,
   wrapActionHandlersWithOnAction,
+  collectDeclaredVizualActions,
   summarizeVizualInteractivity,
   type VizualAction,
 } from '../host-bridge'
@@ -63,6 +64,82 @@ describe('wrapActionHandlersWithOnAction', () => {
     await wrapped.submitForm({ formId: 'r', data: { x: 1 } }, undefined, undefined)
     expect(order).toEqual(['handler', 'onAction'])
     expect(seen[0]).toMatchObject({ type: 'submitForm', surfaceId: 's1', params: { formId: 'r' }, state: { a: 1 }, timestamp: 'T' })
+  })
+})
+
+describe('custom action dispatch — declared actions without a local handler', () => {
+  const customActionSpec = {
+    root: 'r',
+    elements: {
+      r: { type: 'Column', children: ['hydrated', 'raw'] },
+      // Hydrated shape: withDefaultElementProps already folded props.action into on.
+      hydrated: {
+        type: 'Button',
+        props: { label: 'Run', action: 'runScenario' },
+        on: { runScenario: { action: 'runScenario', params: { scenario: 'best-case' } } },
+      },
+      // Pre-hydration shape: only props.action declares the intent.
+      raw: { type: 'Button', props: { label: 'Compare', action: 'compareScenarios' } },
+    },
+  }
+
+  it('collectDeclaredVizualActions sees both on-bindings and raw props.action', () => {
+    const actions = collectDeclaredVizualActions(customActionSpec as never)
+    expect(actions).toContain('runScenario')
+    expect(actions).toContain('compareScenarios')
+  })
+
+  it('a declared custom action with no local handler still reaches onAction', async () => {
+    const seen: VizualAction[] = []
+    const wrapped = wrapActionHandlersWithOnAction({}, {
+      onAction: a => { seen.push(a) },
+      surfaceId: 's1',
+      spec: customActionSpec as never,
+      now: () => 'T',
+    })
+    expect(wrapped.runScenario).toBeTypeOf('function')
+    await wrapped.runScenario({ scenario: 'best-case' })
+    expect(seen).toHaveLength(1)
+    expect(seen[0]).toMatchObject({ type: 'runScenario', surfaceId: 's1', params: { scenario: 'best-case' }, timestamp: 'T' })
+  })
+
+  it('a declared custom action round-trips through the host bridge to sendToAgent', async () => {
+    const sent: Array<{ message: string; action: VizualAction }> = []
+    const bridge = createVizualHostBridge({
+      surfaceId: 's1',
+      sendToAgent: (message, action) => { sent.push({ message, action }) },
+    })
+    const wrapped = wrapActionHandlersWithOnAction({}, {
+      onAction: bridge.onAction,
+      surfaceId: 's1',
+      spec: customActionSpec as never,
+    })
+    await wrapped.runScenario({ scenario: 'best-case' })
+    expect(sent).toHaveLength(1)
+    expect(sent[0].action.type).toBe('runScenario')
+    expect(sent[0].message).toContain('runScenario')
+  })
+
+  it('a registered local handler is never replaced by the fallback', async () => {
+    const order: string[] = []
+    const wrapped = wrapActionHandlersWithOnAction(
+      { runScenario: () => { order.push('handler') } },
+      { onAction: () => { order.push('onAction') }, spec: customActionSpec as never },
+    )
+    await wrapped.runScenario({})
+    expect(order).toEqual(['handler', 'onAction'])
+  })
+
+  it('every action the interactivity summary reports is actually dispatchable', () => {
+    const summary = summarizeVizualInteractivity(customActionSpec as never)
+    const wrapped = wrapActionHandlersWithOnAction({}, {
+      onAction: () => undefined,
+      spec: customActionSpec as never,
+    })
+    expect(summary.agentRoundtrip).toBe(true)
+    for (const action of summary.actions) {
+      expect(wrapped[action], `summary reports "${action}" but no handler can dispatch it`).toBeTypeOf('function')
+    }
   })
 })
 

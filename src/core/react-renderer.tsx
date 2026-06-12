@@ -195,8 +195,9 @@ export function VizualRenderer({
       onAction,
       surfaceId,
       getState: () => store.getSnapshot() as Record<string, unknown>,
+      spec: rendererSpec,
     })
-  }, [handlers, store, onAction, surfaceId])
+  }, [handlers, store, onAction, surfaceId, rendererSpec])
 
   const auditRender = React.useCallback(() => {
     const next = collectVizualRenderEvidence(rootRef.current, rendererSpec)

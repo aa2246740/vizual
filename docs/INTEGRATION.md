@@ -273,6 +273,13 @@ window.Vizual.renderSpec(preview.spec, el, { surfaceId, onAction: bridge.onActio
 The bridge builds the agent message (`buildVizualActionMessage`) and only
 round‑trips meaningful actions (`submitForm`, `applyFilter`, `drillDown`,
 `selectLocation`, `updatePlan`, and custom actions). Pure value edits stay local.
+
+Custom actions need no local handler: when `onAction` is wired, every action the
+spec declares (a Button's `action: "runScenario"`, an `element.on` binding) is
+guaranteed a dispatch path into `onAction` — the renderer synthesizes a fallback
+handler for declared actions that have no registered one, so a custom action can
+never silently die with "No handler registered". Use
+`collectDeclaredVizualActions(spec)` to inspect which actions a surface declares.
 On the agent side, hide the injected turn from the transcript with
 `isInternalVizualActionMessage`, run the agent, and it sees the submitted data as
 the latest user input — a new run is produced. That closes the loop.

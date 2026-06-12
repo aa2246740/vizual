@@ -84,7 +84,7 @@ import type {
 } from './core/artifact'
 import { assertNoCyclicChildren, withDefaultElementProps } from './core/spec-validation'
 import { applyVizualStateChanges } from './core/react-renderer'
-import { createVizualHostBridge, wrapActionHandlersWithOnAction, summarizeVizualInteractivity, VIZUAL_ROUNDTRIP_ACTIONS, type VizualAction } from './core/host-bridge'
+import { createVizualHostBridge, wrapActionHandlersWithOnAction, collectDeclaredVizualActions, summarizeVizualInteractivity, VIZUAL_ROUNDTRIP_ACTIONS, type VizualAction } from './core/host-bridge'
 import { collectVizualRenderEvidence } from './core/render-evidence'
 
 // All components
@@ -207,6 +207,7 @@ function renderSpec(spec: any, container: HTMLElement, options: RenderSpecOption
         onAction: options.onAction,
         surfaceId: options.surfaceId,
         getState: () => store.getSnapshot() as Record<string, unknown>,
+        spec: rendererSpec,
       })
     : baseHandlers
   let root = mountedRoots.get(container)
@@ -390,6 +391,7 @@ const vizual = {
   unmountSpec,
   createVizualHostBridge,
   wrapActionHandlersWithOnAction,
+  collectDeclaredVizualActions,
   summarizeVizualInteractivity,
   applyVizualStateChanges,
   VIZUAL_ROUNDTRIP_ACTIONS,

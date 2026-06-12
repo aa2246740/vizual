@@ -100,10 +100,49 @@ export function createVizualHostBridge(options: VizualHostBridgeOptions): Vizual
 type ActionHandler = (...args: any[]) => any
 
 /**
+ * Collect every action name a spec declares — both bindings already hydrated
+ * into `element.on` and a raw `props.action` that hydration has not folded in
+ * yet. This is the single source of truth for "which actions can this surface
+ * emit": the dispatch fallback in {@link wrapActionHandlersWithOnAction} and
+ * the report from {@link summarizeVizualInteractivity} both read it, so the
+ * summary can never claim an action the dispatch layer cannot deliver.
+ */
+export function collectDeclaredVizualActions(spec: VizualSpec | null | undefined): string[] {
+  const actions = new Set<string>()
+  for (const element of Object.values(spec?.elements ?? {})) {
+    for (const name of actionNamesFromElement(element)) actions.add(name)
+  }
+  return Array.from(actions)
+}
+
+function actionNamesFromElement(element: unknown): string[] {
+  const names: string[] = []
+  const record = element && typeof element === 'object' ? element as Record<string, unknown> : {}
+  const on = record.on && typeof record.on === 'object' ? record.on as Record<string, unknown> : {}
+  for (const binding of Object.values(on)) {
+    const list = Array.isArray(binding) ? binding : [binding]
+    for (const b of list) {
+      const name = b && typeof b === 'object' ? (b as { action?: unknown }).action : undefined
+      if (typeof name === 'string') names.push(name)
+    }
+  }
+  const props = (record.props && typeof record.props === 'object' ? record.props : {}) as Record<string, unknown>
+  if (typeof props.action === 'string') names.push(props.action)
+  return names
+}
+
+/**
  * Wrap a registry's action handlers so every action also invokes `onAction`
  * with a normalized {@link VizualAction}. The original local-state handler still
  * runs first (so in-playground behavior is preserved); `onAction` then gives the
  * host one place to observe/forward the interaction.
+ *
+ * When `spec` is provided, this also acts as the generic dispatch layer:
+ * every action the spec declares (via `element.on` or `props.action`) is
+ * guaranteed a handler, so a custom action like `runScenario` reaches
+ * `onAction` instead of dying in the renderer's "No handler registered"
+ * warning. Declared actions without a local handler get a no-op whose only
+ * effect is the `onAction` emit.
  */
 export function wrapActionHandlersWithOnAction(
   handlers: Record<string, ActionHandler>,
@@ -113,10 +152,18 @@ export function wrapActionHandlersWithOnAction(
     toolCallId?: string
     getState?: () => Record<string, unknown>
     now?: () => string
+    /** The (ideally hydrated) spec whose declared actions must all be dispatchable. */
+    spec?: VizualSpec | null
   },
 ): Record<string, ActionHandler> {
+  const base: Record<string, ActionHandler> = { ...handlers }
+  if (options.spec) {
+    for (const name of collectDeclaredVizualActions(options.spec)) {
+      if (!(name in base)) base[name] = () => undefined
+    }
+  }
   const wrapped: Record<string, ActionHandler> = {}
-  for (const [type, handler] of Object.entries(handlers)) {
+  for (const [type, handler] of Object.entries(base)) {
     wrapped[type] = async (params?: Record<string, unknown>, setState?: unknown, state?: Record<string, unknown>) => {
       const result = await handler?.(params, setState, state)
       try {
@@ -181,18 +228,13 @@ export function summarizeVizualInteractivity(spec: VizualSpec | null | undefined
 
   for (const [elementId, element] of Object.entries(elements)) {
     const type = typeof element?.type === 'string' ? element.type : ''
-    const on = element?.on && typeof element.on === 'object' ? element.on as Record<string, unknown> : {}
-    for (const binding of Object.values(on)) {
-      const list = Array.isArray(binding) ? binding : [binding]
-      for (const b of list) {
-        const name = b && typeof b === 'object' ? (b as { action?: unknown }).action : undefined
-        if (typeof name === 'string') actions.add(name)
-      }
-    }
+    const declared = actionNamesFromElement(element)
+    for (const name of declared) actions.add(name)
     if (!INTERACTIVE_COMPONENT_TYPES.has(type)) continue
     interactive = true
+    const on = element?.on && typeof element.on === 'object' ? element.on as Record<string, unknown> : {}
     const props = (element?.props && typeof element.props === 'object' ? element.props : {}) as Record<string, unknown>
-    const hasAction = Object.keys(on).length > 0
+    const hasAction = Object.keys(on).length > 0 || declared.length > 0
     const hasBinding = isBindStateValue(props.value) || isBindStateValue(props.checked)
     if (!hasAction && !hasBinding) deadControls.push({ elementId, type })
   }

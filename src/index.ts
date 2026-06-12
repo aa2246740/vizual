@@ -350,6 +350,7 @@ export {
 export {
   createVizualHostBridge,
   wrapActionHandlersWithOnAction,
+  collectDeclaredVizualActions,
   summarizeVizualInteractivity,
   VIZUAL_ROUNDTRIP_ACTIONS,
 } from './core/host-bridge'
