@@ -788,6 +788,107 @@ describe('chart field alias normalization', () => {
     ])
   })
 
+  it('normalizes grouped scatter series point rows without inventing sparse y fields', () => {
+    const groupedSeries = [
+      {
+        name: 'Green: 加资源',
+        data: [
+          { name: '高科分行', x: 22.5, y: 0.66, size: 84 },
+          { name: '西港分行', x: 18.4, y: 0.94, size: 81 },
+        ],
+        color: '#2F5F7F',
+      },
+      {
+        name: 'Yellow: 补运营短板',
+        data: [
+          { name: '南湾分行', x: 12.6, y: 1.06, size: 69 },
+          { name: '云湖分行', x: 15.1, y: 1.62, size: 58 },
+        ],
+        color: '#FFA500',
+      },
+      {
+        name: 'Red: 控风险',
+        data: [
+          { name: '北岭分行', x: -4.5, y: 2.28, size: 39 },
+        ],
+        color: '#C8152D',
+      },
+    ]
+
+    const normalized = normalizeChart('ScatterChart', {
+      title: '分行经营三维诊断',
+      series: groupedSeries,
+    })
+
+    expect(normalized).toMatchObject({
+      x: 'x',
+      y: 'y',
+      size: 'size',
+      label: 'label',
+      groupField: 'series',
+      data: [
+        { label: '高科分行', series: 'Green: 加资源', x: 22.5, y: 0.66, size: 84, color: '#2F5F7F' },
+        { label: '西港分行', series: 'Green: 加资源', x: 18.4, y: 0.94, size: 81, color: '#2F5F7F' },
+        { label: '南湾分行', series: 'Yellow: 补运营短板', x: 12.6, y: 1.06, size: 69, color: '#FFA500' },
+        { label: '云湖分行', series: 'Yellow: 补运营短板', x: 15.1, y: 1.62, size: 58, color: '#FFA500' },
+        { label: '北岭分行', series: 'Red: 控风险', x: -4.5, y: 2.28, size: 39, color: '#C8152D' },
+      ],
+    })
+    expect(normalized.series).toBeUndefined()
+
+    const option = buildScatterFallback(normalized as any)
+    expect((option.series as Array<{ type: string; name: string }>).map(series => [series.type, series.name])).toEqual([
+      ['scatter', 'Green: 加资源'],
+      ['scatter', 'Yellow: 补运营短板'],
+      ['scatter', 'Red: 控风险'],
+    ])
+    expect((option.series as Array<{ data: Array<{ name: string; value: unknown[] }> }>)[0].data[0]).toMatchObject({
+      name: '高科分行',
+      value: [22.5, 0.66, 84],
+    })
+  })
+
+  it('normalizes grouped bubble series point rows to the same canonical point shape', () => {
+    const normalized = normalizeChart('BubbleChart', {
+      series: [
+        { name: '机会', data: [{ name: 'A', x: 10, y: 2, size: 80 }] },
+        { name: '风险', data: [{ name: 'B', x: 4, y: 8, size: 30 }] },
+      ],
+    })
+
+    expect(normalized).toMatchObject({
+      x: 'x',
+      y: 'y',
+      size: 'size',
+      label: 'label',
+      groupField: 'series',
+      data: [
+        { label: 'A', series: '机会', x: 10, y: 2, size: 80 },
+        { label: 'B', series: '风险', x: 4, y: 8, size: 30 },
+      ],
+    })
+    expect(normalized.series).toBeUndefined()
+  })
+
+  it('rejects sparse scatter y fields instead of rendering missing points as zero', () => {
+    const result = validateVizualNativeInput({
+      components: [{
+        type: 'ScatterChart',
+        props: {
+          data: [
+            { x: 22.5, Green: 0.66 },
+            { x: 12.6, Yellow: 1.06 },
+          ],
+          x: 'x',
+          y: ['Green', 'Yellow'],
+        },
+      }],
+    } as never)
+
+    expect(result.ok).toBe(false)
+    expect(result.issues.some(issue => issue.code === 'vizual.chart_missing_data_field')).toBe(true)
+  })
+
   it('resolves dataPath/dataKey for every native chart component', () => {
     const chartTypes = [
       'AreaChart',

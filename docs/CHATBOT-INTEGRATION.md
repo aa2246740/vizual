@@ -75,7 +75,7 @@ single object with `input` and optional display metadata.
 ```ts
 import {
   createVizualAgentToolDefinition,
-  renderVizualAgentInput,
+  createVizualAgentToolResult,
 } from 'vizual'
 
 export const presentVizualUiToolDefinition =
@@ -87,37 +87,11 @@ export async function presentVizualUi(args: {
   fallbackText?: string
   display?: { title?: string; mode?: 'inline' | 'side-panel' | 'artifact'; persist?: boolean }
 }) {
-  const result = renderVizualAgentInput(args.input as any, {
+  return createVizualAgentToolResult(args.input as any, {
     surfaceId: args.surfaceId,
     fallbackText: args.fallbackText,
     display: args.display,
   })
-
-  if (!result.ok) {
-    return {
-      schema: 'vizual.agent.tool_result.v1',
-      ok: false,
-      toolName: 'present_vizual_ui',
-      surfaceId: result.envelope.surfaceId,
-      issues: result.preview.issues,
-      repairInstructions: [
-        'Rebuild the payload with supported Vizual native components.',
-        'Do not pass HTML, React code, ECharts options, Chart.js configs, or natural-language promises as input.',
-      ],
-      envelope: result.envelope,
-    }
-  }
-
-  return {
-    schema: 'vizual.agent.tool_result.v1',
-    ok: true,
-    toolName: 'present_vizual_ui',
-    surfaceId: result.envelope.surfaceId,
-    fallbackText: result.envelope.fallbackText,
-    display: result.envelope.display,
-    envelope: result.envelope,
-    renderEvidence: result.preview.summary,
-  }
 }
 ```
 
@@ -129,6 +103,11 @@ Use your framework's normal tool registration mechanism:
 
 The important part is not the framework. The important part is that the tool
 result is stored in chat history and can be found by the frontend.
+
+Do not hand-write the tool-result object unless you are porting the SDK to
+another language. `createVizualAgentToolResult()` is the canonical host boundary:
+`ok:true` is only returned after Core can preview a real renderable native
+surface; `ok:false` includes `issues` and `fixes` for the agent repair loop.
 
 ## Step 3. Teach The Agent The Boundary
 
@@ -158,8 +137,16 @@ If the tool returns ok:false, inspect issues and repair the payload before
 claiming the UI is done. Do not show failed internal repair attempts as final
 user-visible content.
 
-Use actions only when they are useful and the host can receive them, such as
-submitForm, applyFilter, drillDown, selectLocation, and updatePlan.
+There are two interaction classes:
+
+1. Local playground interactions stay inside the Vizual surface. Sliders,
+   filters, toggles, and input controls may update the visible panel without
+   asking the agent again.
+2. Agent round-trip actions must be sent back to the agent by the host, such as
+   submitForm, applyFilter, drillDown, selectLocation, and updatePlan.
+Use actions only when they are useful and the host can receive them.
+Copy, export, download, share, and persistence controls belong to the host
+product shell, outside Vizual native core.
 ```
 
 ## Step 4. Store Tool Calls And Results
@@ -212,6 +199,7 @@ import {
   VizualRenderer,
   previewVizualNativeInput,
   applyVizualStateChanges,
+  buildVizualActionMessage,
   type VizualStateChange,
 } from 'vizual'
 import { useMemo, useRef, useState } from 'react'
@@ -252,28 +240,12 @@ export function VizualInline({
 
   async function returnActionToAgent(name: string, params: Record<string, unknown>) {
     await sendInternalUserMessage(
-      [
-        'The user triggered an action in a Vizual inline UI. Treat it as the latest user input.',
-        '',
-        `surfaceId: ${presentation.surfaceId ?? preview.surfaceId ?? '(unknown)'}`,
-        `action: ${name}`,
-        '',
-        'Payload:',
-        '```json',
-        JSON.stringify(
-          {
-            source: 'vizual',
-            surfaceId: presentation.surfaceId ?? preview.surfaceId,
-            toolCallId: presentation.toolCallId,
-            action: name,
-            params,
-            currentState: currentState.current,
-          },
-          null,
-          2,
-        ),
-        '```',
-      ].join('\n'),
+      buildVizualActionMessage({
+        presentation,
+        action: name,
+        params,
+        currentState: currentState.current,
+      }),
     )
   }
 
@@ -298,6 +270,9 @@ export function VizualInline({
   )
 }
 ```
+
+If your chatbot needs copy, export, download, share, or persistence controls,
+add them in your host product shell outside `VizualRenderer`.
 
 Production hosts should also audit the mounted DOM after render. If the preview
 claims a chart or controls exist but the DOM is blank, hide the card and log

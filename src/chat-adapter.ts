@@ -165,6 +165,26 @@ function unwrapPresentationInput(value: unknown): {
   return { input: value }
 }
 
+function rootElementsInputFromArgs(args: Record<string, unknown>): unknown {
+  const elements = parseMaybeJson(args.elements)
+  if (!isRecord(elements)) return undefined
+
+  const root = firstStringValue(
+    args.root,
+    isRecord(args.input) ? args.input.root : undefined,
+    'root' in elements ? 'root' : undefined,
+    Object.keys(elements)[0],
+  )
+  if (!root) return undefined
+
+  const state = parseMaybeJson(args.state)
+  return {
+    root,
+    elements,
+    ...(isRecord(state) && Object.keys(state).length > 0 ? { state } : {}),
+  }
+}
+
 function previewPresentationInput(input: unknown, surfaceId?: string): VizualPreviewResult {
   try {
     return previewVizualNativeInput(input as VizualNativeInput, { surfaceId })
@@ -225,6 +245,7 @@ export function extractVizualPresentations(
       const envelope = resultEnvelope(args, result)
       const resultAccepted = resultRecord.ok === true || (result === undefined && isVizualAgentEnvelope(envelope))
       const rawInputCandidates = [
+        rootElementsInputFromArgs(args),
         envelope?.input,
         args.input,
       ].filter(value => value !== undefined)

@@ -771,6 +771,88 @@ describe('VizualNativeCore', () => {
     expect(nestedRoot.props).not.toHaveProperty('children')
   })
 
+  it('normalizes direct-spec element.elements inline child aliases from weak agent output', () => {
+    const preview = previewVizualNativeInput({
+      root: 'dashboard',
+      elements: {
+        dashboard: {
+          type: 'Column',
+          elements: [
+            {
+              id: 'kpis',
+              type: 'KpiDashboard',
+              props: {
+                metrics: [
+                  { label: '存款余额', value: '6,120亿' },
+                  { label: '平均不良率', value: '1.24%' },
+                ],
+              },
+            },
+            {
+              id: 'loan-risk',
+              type: 'ComboChart',
+              props: {
+                data: [
+                  { branch: 'A分行', loan: 380, npl: 0.85 },
+                  { branch: 'H分行', loan: 70, npl: 2.1 },
+                ],
+                x: 'branch',
+                series: [
+                  { key: 'loan', name: '新发放零售贷款' },
+                  { key: 'npl', name: '不良贷款率', type: 'line' },
+                ],
+              },
+            },
+            {
+              id: 'branch-table',
+              type: 'DataTable',
+              props: {
+                data: [
+                  { branch: 'A分行', deposit: 1250, npl: 0.85 },
+                  { branch: 'H分行', deposit: 350, npl: 2.1 },
+                ],
+              },
+            },
+          ],
+        },
+      },
+    } as any)
+
+    expect(preview.ok).toBe(true)
+    expect(preview.spec!.elements!.dashboard.children).toEqual(['kpis', 'loan-risk', 'branch-table'])
+    expect(preview.summary.componentTypes).toEqual(expect.arrayContaining(['Column', 'KpiDashboard', 'ComboChart', 'DataTable']))
+  })
+
+  it.each([
+    ['props.children', { props: { children: [{ id: 'chart', type: 'BarChart', props: { data: [{ branch: 'A', value: 1 }], x: 'branch', y: 'value' } }] } }],
+    ['top-level children', { children: [{ id: 'chart', type: 'BarChart', props: { data: [{ branch: 'A', value: 1 }], x: 'branch', y: 'value' } }] }],
+    ['top-level elements array', { elements: [{ id: 'chart', type: 'BarChart', props: { data: [{ branch: 'A', value: 1 }], x: 'branch', y: 'value' } }] }],
+    ['props.elements array', { props: { elements: [{ id: 'chart', type: 'BarChart', props: { data: [{ branch: 'A', value: 1 }], x: 'branch', y: 'value' } }] } }],
+  ])('compiles %s into the same canonical direct-spec child graph', (_label, rootPatch) => {
+    const preview = previewVizualNativeInput({
+      root: 'root',
+      elements: {
+        root: {
+          type: 'Column',
+          ...rootPatch,
+        },
+      },
+    } as any)
+
+    expect(preview.ok).toBe(true)
+    expect(preview.spec!.elements!.root.children).toEqual(['chart'])
+    expect(preview.spec!.elements!.root.props).not.toHaveProperty('children')
+    expect(preview.spec!.elements!.root.props).not.toHaveProperty('elements')
+    expect(preview.spec!.elements!.chart).toMatchObject({
+      type: 'BarChart',
+      props: {
+        data: [{ branch: 'A', value: 1 }],
+        x: 'branch',
+        y: 'value',
+      },
+    })
+  })
+
   it('validates renderability boundaries before handing specs to a renderer', () => {
     const noSurface = validateVizualNativeInput({ type: 'unknown-intent', text: 'plain answer only' } as any)
     expect(noSurface.ok).toBe(false)
@@ -1120,7 +1202,7 @@ describe('VizualNativeCore', () => {
     })
 
     expect(result.ok).toBe(true)
-    expect(result.issues).toEqual([])
+    expect(result.issues.filter(issue => issue.severity !== 'info')).toEqual([])
   })
 
   it('reports missing chart data fields with concrete evidence instead of silently rendering a broken chart', () => {
@@ -2148,6 +2230,50 @@ describe('VizualNativeCore', () => {
       props: {
         label: '负责人',
         value: { $bindState: '/owner' },
+      },
+    })
+  })
+
+  it('expands updateComponents elements aliases as inline child component trees', () => {
+    const snapshot = nativeInputsToVizualSnapshot([
+      { version: 'v0.10', createSurface: { surfaceId: 'elements-alias', catalogId: 'vizual' } },
+      {
+        version: 'v0.10',
+        updateComponents: {
+          surfaceId: 'elements-alias',
+          components: [
+            {
+              id: 'root',
+              component: 'Column',
+              elements: [
+                {
+                  id: 'trend',
+                  component: 'BarChart',
+                  data: [
+                    { branch: 'A分行', value: 45 },
+                    { branch: 'H分行', value: -22 },
+                  ],
+                  x: 'branch',
+                  y: 'value',
+                },
+              ],
+            },
+          ],
+        },
+      },
+    ])
+
+    expect(snapshot!.spec.elements!.root.children).toEqual(['trend'])
+    expect(snapshot!.spec.elements!.root.props).not.toHaveProperty('elements')
+    expect(snapshot!.spec.elements!.trend).toMatchObject({
+      type: 'BarChart',
+      props: {
+        data: [
+          { branch: 'A分行', value: 45 },
+          { branch: 'H分行', value: -22 },
+        ],
+        x: 'branch',
+        y: 'value',
       },
     })
   })

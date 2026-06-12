@@ -52,11 +52,11 @@ function getDefaultBgColor(source?: HTMLElement): string {
     if (source) {
       const style = getComputedStyle(source)
       const localToken = style.getPropertyValue('--rk-bg-primary').trim()
-      if (localToken) return localToken
-      if (!isTransparentColor(style.backgroundColor)) return style.backgroundColor
+      if (localToken) return canvasSafeColor(localToken, '#FFFFFF')
+      if (!isTransparentColor(style.backgroundColor)) return canvasSafeColor(style.backgroundColor, '#FFFFFF')
     }
     const dom = getComputedStyle(document.documentElement).getPropertyValue('--rk-bg-primary').trim()
-    if (dom) return dom
+    if (dom) return canvasSafeColor(dom, '#FFFFFF')
   }
   return tc('--rk-bg-primary') || '#0f1117'
 }
@@ -202,10 +202,189 @@ async function exportHTMLCanvasPNG(
     useCORS: true,
     logging: false,
     ignoreElements: element => element instanceof HTMLElement && element.dataset.vizualExportIgnore === 'true',
+    onclone: (documentClone, clonedSource) => {
+      sanitizeClonedDocumentForCanvasExport(documentClone)
+      if (clonedSource instanceof HTMLElement) {
+        sanitizeClonedTreeForCanvasExport(source, clonedSource)
+      }
+    },
   })
   return new Promise<Blob>((resolve, reject) => {
     canvas.toBlob(b => b ? resolve(b) : reject(new Error('toBlob failed')), 'image/png', 1)
   })
+}
+
+const UNSUPPORTED_CANVAS_COLOR_RE = /\b(?:oklch|oklab|lch|lab|color-mix|hwb)\(/iu
+
+const CANVAS_SAFE_THEME_VARS: Record<string, string> = {
+  '--background': '#FFFFFF',
+  '--foreground': '#0F172A',
+  '--card': '#FFFFFF',
+  '--card-foreground': '#0F172A',
+  '--popover': '#FFFFFF',
+  '--popover-foreground': '#0F172A',
+  '--primary': '#0F172A',
+  '--primary-foreground': '#FFFFFF',
+  '--secondary': '#F8FAFC',
+  '--secondary-foreground': '#0F172A',
+  '--muted': '#F8FAFC',
+  '--muted-foreground': '#64748B',
+  '--accent': '#F1F5F9',
+  '--accent-foreground': '#0F172A',
+  '--destructive': '#C8152D',
+  '--border': '#E5E7EB',
+  '--input': '#CBD5E1',
+  '--ring': '#64748B',
+  '--chart-1': '#2F5F7F',
+  '--chart-2': '#2F7D74',
+  '--chart-3': '#5B6C9D',
+  '--chart-4': '#9A6B2F',
+  '--chart-5': '#64748B',
+  '--rk-bg-primary': '#FFFFFF',
+  '--rk-bg-secondary': '#F8FAFC',
+  '--rk-bg-tertiary': '#F1F5F9',
+  '--rk-border': '#E5E7EB',
+  '--rk-border-subtle': '#CBD5E1',
+  '--rk-text-primary': '#0F172A',
+  '--rk-text-secondary': '#475569',
+  '--rk-text-tertiary': '#64748B',
+  '--rk-accent': '#C8152D',
+  '--rk-error': '#9F1024',
+  '--rk-warning': '#B7791F',
+  '--rk-success': '#15803D',
+  '--rk-chart-1': '#2F5F7F',
+  '--rk-chart-2': '#2F7D74',
+  '--rk-chart-3': '#5B6C9D',
+  '--rk-chart-4': '#9A6B2F',
+  '--rk-chart-5': '#64748B',
+}
+
+function canvasSafeColor(value: string, fallback: string) {
+  return UNSUPPORTED_CANVAS_COLOR_RE.test(value) ? fallback : value
+}
+
+function fallbackForColorProp(prop: string) {
+  const normalized = prop.replace(/[A-Z]/g, match => `-${match.toLowerCase()}`).toLowerCase()
+  if (normalized.includes('background')) return '#FFFFFF'
+  if (normalized.includes('border') || normalized.includes('outline') || normalized.includes('rule')) return '#E5E7EB'
+  return '#0F172A'
+}
+
+function canvasSafeCssValue(prop: string, value: string) {
+  if (!value || !UNSUPPORTED_CANVAS_COLOR_RE.test(value)) return value
+
+  const normalized = prop.toLowerCase()
+  if (
+    normalized.includes('image') ||
+    normalized.includes('gradient') ||
+    normalized.includes('shadow') ||
+    normalized.includes('filter')
+  ) {
+    return 'none'
+  }
+
+  if (normalized.includes('background')) return '#FFFFFF'
+  if (normalized.includes('border') || normalized.includes('outline') || normalized.includes('rule')) return '#E5E7EB'
+  if (normalized.includes('fill') || normalized.includes('stroke') || normalized.includes('color')) {
+    return fallbackForColorProp(normalized)
+  }
+
+  return ''
+}
+
+function applyCanvasSafeComputedStyles(sourceElement: Element, clonedElement: HTMLElement | SVGElement) {
+  const style = getComputedStyle(sourceElement)
+
+  for (const prop of Array.from(style)) {
+    const value = style.getPropertyValue(prop)
+    const safeValue = canvasSafeCssValue(prop, value)
+    if (safeValue === value) continue
+
+    if (safeValue) {
+      clonedElement.style.setProperty(prop, safeValue, style.getPropertyPriority(prop))
+    } else {
+      clonedElement.style.removeProperty(prop)
+    }
+  }
+}
+
+function applyCanvasSafeThemeVars(element: HTMLElement | SVGElement) {
+  for (const [key, value] of Object.entries(CANVAS_SAFE_THEME_VARS)) {
+    element.style.setProperty(key, value)
+  }
+}
+
+function canvasSafeThemeCss() {
+  return Object.entries(CANVAS_SAFE_THEME_VARS)
+    .map(([key, value]) => `${key}: ${value} !important;`)
+    .join('\n')
+}
+
+function sanitizeClonedDocumentForCanvasExport(documentClone: Document) {
+  const css = `
+:root,
+html,
+body {
+${canvasSafeThemeCss()}
+  color: #0F172A !important;
+  background: #FFFFFF !important;
+  background-color: #FFFFFF !important;
+}
+html *,
+body *,
+html *::before,
+html *::after,
+body *::before,
+body *::after {
+  --tw-ring-color: #CBD5E1 !important;
+  --tw-ring-offset-color: #FFFFFF !important;
+}
+`
+  const style = documentClone.createElement('style')
+  style.setAttribute('data-vizual-canvas-safe-colors', 'true')
+  style.textContent = css
+  documentClone.head.appendChild(style)
+
+  if (documentClone.documentElement instanceof HTMLElement) applyCanvasSafeThemeVars(documentClone.documentElement)
+  if (documentClone.body instanceof HTMLElement) applyCanvasSafeThemeVars(documentClone.body)
+}
+
+function sanitizeClonedElementForCanvasExport(sourceElement: Element, clonedElement: Element) {
+  if (!(sourceElement instanceof Element) || !(clonedElement instanceof HTMLElement || clonedElement instanceof SVGElement)) {
+    return
+  }
+
+  applyCanvasSafeThemeVars(clonedElement)
+  applyCanvasSafeComputedStyles(sourceElement, clonedElement)
+  const style = getComputedStyle(sourceElement)
+
+  if (clonedElement instanceof HTMLElement) {
+    if (UNSUPPORTED_CANVAS_COLOR_RE.test(style.boxShadow)) {
+      clonedElement.style.boxShadow = 'none'
+    }
+    if (UNSUPPORTED_CANVAS_COLOR_RE.test(style.textShadow)) {
+      clonedElement.style.textShadow = 'none'
+    }
+  }
+
+  if (clonedElement instanceof SVGElement) {
+    const fill = sourceElement.getAttribute('fill') || style.fill
+    const stroke = sourceElement.getAttribute('stroke') || style.stroke
+    if (fill) clonedElement.setAttribute('fill', canvasSafeColor(fill, '#0F172A'))
+    if (stroke) clonedElement.setAttribute('stroke', canvasSafeColor(stroke, '#0F172A'))
+  }
+}
+
+function sanitizeClonedTreeForCanvasExport(source: HTMLElement, clonedSource: HTMLElement) {
+  sanitizeClonedElementForCanvasExport(source, clonedSource)
+
+  const sourceElements = Array.from(source.querySelectorAll('*'))
+  const clonedElements = Array.from(clonedSource.querySelectorAll('*'))
+  for (let index = 0; index < sourceElements.length; index += 1) {
+    const clonedElement = clonedElements[index]
+    if (!clonedElement) continue
+    sanitizeClonedElementForCanvasExport(sourceElements[index], clonedElement)
+  }
 }
 
 function dataUrlToBlob(dataUrl: string): Promise<Blob> {

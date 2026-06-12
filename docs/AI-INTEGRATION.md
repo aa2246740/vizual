@@ -67,10 +67,12 @@ The host frontend should support:
 - rendering one-shot JSON specs
 - saving `VizualArtifact` objects in chat history or product storage
 - patching existing artifacts from follow-up turns through `targetMap`
-- exporting PNG/PDF for visuals and CSV/XLSX for data
 - bridging FormBuilder state for liveControl surfaces
 - receiving host-visible actions: `submitForm`, `applyFilter`, `drillDown`,
   `selectLocation`, and `updatePlan`
+- adding host-shell product actions when needed, such as copy, export,
+  download, share, or persistence. These controls sit outside Vizual Core and
+  should not be represented as Vizual native actions.
 
 Vizual can be integrated into SaaS chat panels, ChatGPT-like agent products,
 DeerFlow-like platforms, or business workbenches. It cannot render inside closed
@@ -140,36 +142,24 @@ Rules:
 ## SDK Tool Definition
 
 ```ts
-import { createVizualAgentToolDefinition, renderVizualAgentInput } from 'vizual'
+import { createVizualAgentToolDefinition, createVizualAgentToolResult } from 'vizual'
 
 const tool = createVizualAgentToolDefinition({ includeCatalogManifest: true })
 
 async function presentVizualUi(args) {
-  const result = renderVizualAgentInput(args.input, {
+  return createVizualAgentToolResult(args.input, {
     surfaceId: args.surfaceId,
     fallbackText: args.fallbackText,
     display: args.display,
   })
-
-  if (!result.ok) {
-    return {
-      ok: false,
-      errors: result.preview.issues,
-      repair: 'Rebuild the payload with supported native Vizual components.',
-    }
-  }
-
-  return {
-    ok: true,
-    envelope: result.envelope,
-    renderEvidence: result.preview,
-  }
 }
 ```
 
-The tool should return validation/preview errors to the agent so the agent can
-repair its payload. Hosts should not show failed internal repair attempts as
-final user-visible cards unless the final answer truly cannot be rendered.
+The tool should return the SDK result as-is. `createVizualAgentToolResult()`
+returns `ok:true` only when Core can preview a real renderable surface, and
+returns `issues` plus de-duplicated `fixes` when the agent needs to repair its
+payload. Hosts should not show failed internal repair attempts as final
+user-visible cards unless the final answer truly cannot be rendered.
 
 Chart payloads should use `props.data` plus typed `props.encoding` by default.
 Use `props.measures` for multiple numeric series or `ComboChart` layers. Keep
@@ -214,6 +204,9 @@ Real acceptance must happen in a browser, not only against JSON:
   project/organization/timeline cases, and dashboards
 - A2UI, AG-UI, and native operations normalize to the same catalog
 - FormBuilder submit events reach the host action log
+- local playground controls update the visible surface without unnecessary
+  agent round-trips
+- utility buttons export/copy/download only when the host browser supports them
 - text-only requests do not force UI
 - explicit webpage/HTML/React requests do not get forced into native core
 - removed components return stable unsupported errors

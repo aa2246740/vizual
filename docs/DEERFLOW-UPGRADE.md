@@ -57,7 +57,7 @@ outputs in these shapes:
 If the DeerFlow backend is TypeScript, use the SDK directly:
 
 ```ts
-import { createVizualAgentToolDefinition, renderVizualAgentInput } from 'vizual'
+import { createVizualAgentToolDefinition, createVizualAgentToolResult } from 'vizual'
 
 export const presentVizualUiTool = createVizualAgentToolDefinition({
   includeCatalogManifest: true,
@@ -69,29 +69,16 @@ export async function presentVizualUi(args: {
   fallbackText?: string
   display?: unknown
 }) {
-  const result = renderVizualAgentInput(args.input, {
+  return createVizualAgentToolResult(args.input, {
     surfaceId: args.surfaceId,
     fallbackText: args.fallbackText,
     display: args.display,
   })
-
-  return {
-    schema: 'vizual.agent.tool_result.v1',
-    ok: result.ok,
-    toolName: 'present_vizual_ui',
-    surfaceId: result.envelope.surfaceId,
-    envelope: result.envelope,
-    issues: result.preview.issues,
-    renderEvidence: result.preview.summary,
-    repairInstructions: result.ok
-      ? []
-      : ['Rebuild the payload with supported Vizual native components.'],
-  }
 }
 ```
 
 If the DeerFlow backend is Python, do not maintain a separate handwritten catalog
-forever. Either call a small Node bridge that uses `renderVizualAgentInput`, or
+forever. Either call a small Node bridge that uses `createVizualAgentToolResult`, or
 generate/assert the backend catalog from the installed `vizual` package in CI.
 
 Minimum Python-side requirements:
@@ -101,7 +88,7 @@ Minimum Python-side requirements:
   Funnel, Heatmap, Calendar, Sparkline, Dumbbell, Bubble, Combo, and Mermaid.
 - Removed components must stay unsupported: DocView, GridLayout, SplitLayout,
   FreeformHtml, HeroLayout, Modal, Kanban, AuditLog.
-- `ok: false` must include issues and repair instructions so the agent can
+- `ok: false` must include Core-generated `issues` and `fixes` so the agent can
   repair the payload.
 - Failed internal attempts must remain in tool history for the agent, but should
   not become final user-visible Vizual cards.
@@ -167,19 +154,24 @@ for (const presentation of presentations) {
     continue
   }
 
-  render(
-    <VizualRenderer
-      spec={preview.spec}
-      onAction={(name, params, currentState) => {
+  const handlers = Object.fromEntries(
+    ['submitForm', 'applyFilter', 'drillDown', 'selectLocation', 'updatePlan'].map(action => [
+      action,
+      (params: Record<string, unknown>) =>
         sendInternalUserMessage(
           buildVizualActionMessage({
             presentation,
-            action: name,
+            action,
             params,
-            currentState,
           }),
-        )
-      }}
+        ),
+    ]),
+  )
+
+  render(
+    <VizualRenderer
+      spec={preview.spec}
+      handlers={handlers}
       onRenderReceipt={(receipt) => {
         recordVizualRenderReceipt(presentation.surfaceId, receipt)
       }}
@@ -219,7 +211,8 @@ Supported action families:
 
 For each action, convert the event into an internal follow-up message to the
 agent. Do not pretend Vizual itself saved data, approved a workflow, dispatched a
-ticket, or called a bank system.
+ticket, or called a bank system. Copy, export, download, share, and persistence
+controls belong to the DeerFlow product shell outside `VizualRenderer`.
 
 ## 6. Readiness Gate
 

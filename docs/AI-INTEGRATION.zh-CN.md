@@ -33,9 +33,14 @@ Native Catalog 是组件、action/function、data binding、theme token、artifa
 - 渲染一次性 JSON spec。
 - 保存 `VizualArtifact` 到聊天记录或业务存储。
 - 后续追问时基于 artifact targetMap 做 patch。
-- 导出 PNG/PDF/CSV/XLSX。
 - liveControl 场景下提供 FormBuilder state bridge。
 - 接收 host-visible actions：`submitForm`、`applyFilter`、`drillDown`、`selectLocation`、`updatePlan`。
+- 在浏览器支持时启用 Core runtime 工具：导出当前图表/面板为 PNG、
+  复制抽取出的图表/表格数据、下载 CSV。
+
+Runtime 工具和 Agent action 是两层东西。Runtime 工具不应该回传 Agent，也不
+代表保存、派单、审批、建工单、写数据库或任何业务流程，除非宿主显式新增了
+这类业务能力。
 
 Vizual 可以接入自有 SaaS 小聊天窗、完整 ChatGPT-like 对话页、DeerFlow 类 Agent 平台或 B 端工作台；但不能直接在 ChatGPT / Claude.ai 这类封闭消费级聊天界面里渲染，除非平台方集成 Vizual runtime。
 
@@ -140,6 +145,8 @@ liveControl 不是纯 JSON spec。宿主需要提供 bridge：FormBuilder 控件
 - 自然语言任务触发数据分析、概念互动、表单输入、项目/组织/时间线等不同能力。
 - A2UI / AG-UI / native operations 都归一到同一 native catalog。
 - FormBuilder 提交能进入 host-visible action log。
+- 本地 playground 控件能直接更新当前 surface，不制造无意义的 Agent round-trip。
+- 复制、导出、下载、分享、持久化等产品操作由宿主外壳负责，不由 Vizual Core 内置。
 - 纯文本请求不强塞 UI。
 - 显式网页/HTML/React 请求不被强行转为 native core。
 - 已移除组件返回稳定 unsupported error。

@@ -263,8 +263,16 @@ function rowsHaveField(rows: Array<Record<string, unknown>>, field: string): boo
   return rows.some(row => hasOwn(row, field))
 }
 
+function rowsAllHaveField(rows: Array<Record<string, unknown>>, field: string): boolean {
+  return rows.length > 0 && rows.every(row => hasOwn(row, field))
+}
+
 function rowsHaveNumericField(rows: Array<Record<string, unknown>>, field: string): boolean {
   return rows.some(row => finiteNumber(row[field]) !== null)
+}
+
+function rowsAllHaveNumericField(rows: Array<Record<string, unknown>>, field: string): boolean {
+  return rows.length > 0 && rows.every(row => finiteNumber(row[field]) !== null)
 }
 
 function chartRows(props: Record<string, unknown>): Array<Record<string, unknown>> {
@@ -492,6 +500,27 @@ function requireNumericField(
   warnIfAllZeroNumericField(issues, surfaceId, chartId, componentType, rows, field, role)
 }
 
+function requireNumericFieldEveryRow(
+  issues: VizualValidationIssue[],
+  surfaceId: string,
+  chartId: string,
+  componentType: string,
+  rows: Array<Record<string, unknown>>,
+  field: string | undefined,
+  role: string,
+) {
+  if (!field || !rows.length) return
+  if (!rowsAllHaveField(rows, field)) {
+    pushMissingFieldIssue(issues, surfaceId, chartId, componentType, field, role)
+    return
+  }
+  if (!rowsAllHaveNumericField(rows, field)) {
+    pushNonNumericFieldIssue(issues, surfaceId, chartId, componentType, field, role)
+    return
+  }
+  warnIfAllZeroNumericField(issues, surfaceId, chartId, componentType, rows, field, role)
+}
+
 function collectChartDataIssues(spec: ReturnType<typeof withDefaultElementProps>, surfaceId: string): VizualValidationIssue[] {
   const issues: VizualValidationIssue[] = []
   const elements = spec.elements ?? {}
@@ -527,14 +556,14 @@ function collectChartDataIssues(spec: ReturnType<typeof withDefaultElementProps>
         break
       case 'ScatterChart':
         requireCategoryField(issues, surfaceId, chartId, componentType, rows, x ?? 'name', 'x')
-        ;(y.length ? y : ['value']).forEach(field => requireNumericField(issues, surfaceId, chartId, componentType, rows, field, 'y'))
-        requireNumericField(issues, surfaceId, chartId, componentType, rows, stringField(props.size), 'size')
+        ;(y.length ? y : ['value']).forEach(field => requireNumericFieldEveryRow(issues, surfaceId, chartId, componentType, rows, field, 'y'))
+        requireNumericFieldEveryRow(issues, surfaceId, chartId, componentType, rows, stringField(props.size), 'size')
         requireCategoryField(issues, surfaceId, chartId, componentType, rows, stringField(props.label), 'label')
         break
       case 'BubbleChart':
-        requireNumericField(issues, surfaceId, chartId, componentType, rows, x ?? 'x', 'x')
-        requireNumericField(issues, surfaceId, chartId, componentType, rows, y[0] ?? 'y', 'y')
-        requireNumericField(issues, surfaceId, chartId, componentType, rows, stringField(props.size) ?? 'size', 'size')
+        requireNumericFieldEveryRow(issues, surfaceId, chartId, componentType, rows, x ?? 'x', 'x')
+        requireNumericFieldEveryRow(issues, surfaceId, chartId, componentType, rows, y[0] ?? 'y', 'y')
+        requireNumericFieldEveryRow(issues, surfaceId, chartId, componentType, rows, stringField(props.size) ?? 'size', 'size')
         requireCategoryField(issues, surfaceId, chartId, componentType, rows, stringField(props.label), 'label')
         break
       case 'CalendarChart':
@@ -589,20 +618,28 @@ const REQUIRED_CONTENT_ARRAYS: Record<string, string[]> = {
   ScatterChart: ['data'], BubbleChart: ['data'], BoxplotChart: ['data'], HistogramChart: ['data'],
   WaterfallChart: ['data'], XmrChart: ['data'], SankeyChart: ['data'], FunnelChart: ['data'],
   HeatmapChart: ['data'], CalendarChart: ['data'], SparklineChart: ['data'], DumbbellChart: ['data'],
-  RadarChart: ['data'], PieChart: ['data'],
+  PieChart: ['data'],
   DataTable: ['data', 'rows', 'columns'],
   KpiDashboard: ['metrics'],
   Timeline: ['events'],
   OrgChart: ['nodes', 'data'],
   GanttChart: ['tasks'],
   FormBuilder: ['fields'],
+  Tabs: ['tabs'],
 }
 
 // Pure layout/decoration components that produce no visible content on their own.
-const LAYOUT_ONLY_COMPONENTS = new Set(['Column', 'Row', 'Card', 'Container', 'Divider', 'Tabs'])
+const LAYOUT_ONLY_COMPONENTS = new Set(['Column', 'Row', 'Card', 'Container', 'Divider'])
 
 function elementHasNonEmptyArray(props: Record<string, unknown>, keys: string[]): boolean {
   return keys.some(key => Array.isArray(props[key]) && (props[key] as unknown[]).length > 0)
+}
+
+function radarHasRenderableContent(props: Record<string, unknown>): boolean {
+  const hasTableData = Array.isArray(props.data) && props.data.length > 0
+  const hasIndicators = Array.isArray(props.indicators) && props.indicators.length > 0
+  const hasSeries = Array.isArray(props.series) && props.series.length > 0
+  return hasTableData || (hasIndicators && hasSeries)
 }
 
 /**
@@ -629,6 +666,22 @@ function collectEmptyContentIssues(
     if (!componentType) continue
     const props = isRecord(element?.props) ? element.props : {}
     const requiredArrays = REQUIRED_CONTENT_ARRAYS[componentType]
+
+    if (componentType === 'RadarChart') {
+      if (radarHasRenderableContent(props)) {
+        sawContentLeaf = true
+      } else {
+        issues.push({
+          severity,
+          code: 'vizual.empty_content',
+          message: `RadarChart "${elementId}" has no data or indicators+series to render, so it cannot produce a visible surface.`,
+          surfaceId,
+          evidence: { elementId, componentType, requiredArrays: ['data', 'indicators+series'] },
+          fix: `Populate "data" with table rows, or provide non-empty "indicators" plus non-empty "series". If you have no data to show, answer in assistant text instead of rendering an empty ${componentType}.`,
+        })
+      }
+      continue
+    }
 
     if (requiredArrays) {
       if (elementHasNonEmptyArray(props, requiredArrays)) {

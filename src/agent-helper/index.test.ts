@@ -3,6 +3,7 @@ import {
   assertVizualAgentToolCoverage,
   createVizualAgentEnvelope,
   createVizualAgentToolDefinition,
+  createVizualAgentToolResult,
   inferVizualAgentUserIntent,
   isVizualAgentEnvelope,
   renderVizualAgentInput,
@@ -135,6 +136,9 @@ describe('Vizual agent runtime harness', () => {
     expect(tool.description).toContain('Forbidden unless present in the source data')
     expect(tool.description).toContain('host QA report may flag UI input')
     expect(tool.description).toContain('Charts are hydrated with real drillDown actions')
+    expect(tool.description).toContain('Interaction has two layers')
+    expect(tool.description).toContain('file operations are host product features')
+    expect(tool.description).toContain('Do not imply save, approval, dispatch, ticket creation')
     expect(tool.description).toContain('Do not claim validation passed or failed')
     expect(tool.description).toContain('never infer the current year')
     expect(tool.description).toContain('Page-level layout widgets are not native core components')
@@ -143,6 +147,64 @@ describe('Vizual agent runtime harness', () => {
     expect(renderResult.ok).toBe(true)
     expect(vizualEnvelopeToMcpEmbeddedResource(envelope).resource.mimeType).toBe(VIZUAL_AGENT_ENVELOPE_MIME)
     expect(vizualPreviewToMcpEmbeddedResource(renderResult.preview).resource.uri).toBe('vizual://preview/agent-demo')
+  })
+
+  it('builds a canonical tool result whose ok:true is backed by render preview', () => {
+    const toolResult = createVizualAgentToolResult({
+      components: [
+        {
+          type: 'BubbleChart',
+          title: '增长效率风险匹配',
+          xAxis: '月活环比(%)',
+          yAxis: '手机银行活跃率(%)',
+          sizeField: '存款增量(亿元)',
+          colorField: '不良率(%)',
+          data: [
+            { name: '云谷支行', x: 26.8, y: 88, size: 31, color: 0.52 },
+            { name: '北苑支行', x: -3.2, y: 45, size: -6, color: 2.35 },
+          ],
+        },
+      ],
+    } as any, {
+      surfaceId: 'branch-diagnosis',
+      fallbackText: '已保留文字结论。',
+      display: { mode: 'inline', persist: true },
+    })
+
+    expect(toolResult).toMatchObject({
+      schema: 'vizual.agent.tool_result.v1',
+      ok: true,
+      toolName: VIZUAL_AGENT_TOOL_NAME,
+      surfaceId: 'branch-diagnosis',
+      fallbackText: '已保留文字结论。',
+      display: { mode: 'inline', persist: true },
+    })
+    expect(toolResult.envelope.input).toEqual(expect.objectContaining({
+      components: expect.arrayContaining([
+        expect.objectContaining({
+          type: 'BubbleChart',
+          xAxis: '月活环比(%)',
+        }),
+      ]),
+    }))
+    expect(toolResult.renderEvidence.componentTypes).toContain('BubbleChart')
+    expect(toolResult.repairs).toEqual(expect.arrayContaining([
+      expect.objectContaining({ code: 'vizual.repair.native_component_props' }),
+    ]))
+    expect(toolResult.fixes).toEqual([])
+  })
+
+  it('builds canonical failed tool results with concrete fixes for the agent loop', () => {
+    const toolResult = createVizualAgentToolResult('<div><canvas id="chart"></canvas></div>' as any, {
+      fallbackText: '可视化未渲染，文字结论仍可用。',
+    })
+
+    expect(toolResult.ok).toBe(false)
+    expect(toolResult.envelope.input).toBe('<div><canvas id="chart"></canvas></div>')
+    expect(toolResult.issues.map(issue => issue.code)).toContain('vizual.opaque_dsl_input')
+    expect(toolResult.fixes.length).toBeGreaterThan(0)
+    expect(toolResult.fixes[0].fix).toContain('native component')
+    expect(toolResult.renderEvidence.elementCount).toBe(0)
   })
 
   it('reports user intent coverage gaps as QA guidance against actual rendered components', () => {

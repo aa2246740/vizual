@@ -57,6 +57,7 @@ export type {
 } from './native-core'
 export {
   createVizualAgentEnvelope,
+  createVizualAgentToolResult,
   createVizualAgentToolDefinition,
   assertVizualAgentToolCoverage,
   inferVizualAgentUserIntent,
@@ -76,7 +77,10 @@ export type {
   VizualAgentEnvelope,
   VizualAgentQAGuidance,
   VizualAgentRenderResult,
+  VizualAgentToolFix,
+  VizualAgentToolRepair,
   VizualAgentToolDefinition,
+  VizualAgentToolResult,
   VizualAgentUserIntent,
 } from './agent-helper'
 export {

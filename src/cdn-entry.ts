@@ -276,6 +276,7 @@ import { VizualFusionRuntime, a2uiMessagesToVizualSnapshot } from './fusion'
 import {
   createVizualAgentEnvelope,
   createVizualAgentToolDefinition,
+  createVizualAgentToolResult,
   isVizualAgentEnvelope,
   renderVizualAgentInput,
   vizualEnvelopeToMcpEmbeddedResource,
@@ -463,6 +464,7 @@ const vizual = {
   a2uiMessagesToVizualSnapshot,
   createVizualAgentEnvelope,
   createVizualAgentToolDefinition,
+  createVizualAgentToolResult,
   createVizualActionDefinitions,
   createVizualAgentPromptExamples,
   createVizualCatalogManifest,

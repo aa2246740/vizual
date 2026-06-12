@@ -12,7 +12,8 @@
     "skills/vizual"
   ],
   "bin": {
-    "vizual-core-mcp": "mcp/vizual-core-server/server.mjs"
+    "vizual-core-mcp": "mcp/vizual-core-server/server.mjs",
+    "vizual-agent-tool-result": "mcp/vizual-agent-tool-result.mjs"
   },
   "exports": {
     ".": {

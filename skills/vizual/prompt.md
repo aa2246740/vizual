@@ -44,6 +44,7 @@ Removed and forbidden: `DocView`, `GridLayout`, `SplitLayout`, `FreeformHtml`, `
 - Use `Markdown` for short narrative blocks inside a surface; do not build full documents in native core.
 - Use `KpiDashboard` for metric cards, `DataTable` for detailed rows, and charts for evidence.
 - Add `FormBuilder` only when you need structured user input. It submits to the host Agent with `submitForm`; it does not save or dispatch externally by itself.
+- Treat interaction as two layers: local playground controls update the current surface; agent round-trip actions use real host-visible actions. Copy, export, download, share, and persistence controls belong to the host product shell, not Vizual native core.
 - For charts, prefer `props.data` plus typed `props.encoding`, and use `props.measures` for multiple numeric series or ComboChart layers.
 - Put long-form categorical grouping in `encoding.color`, `seriesBy`, `colorBy`, or `groupBy`. Do not use a string `series` prop as the recommended path.
 
@@ -118,6 +119,7 @@ Flat spec fallback:
 Available action names: `submitForm`, `applyFilter`, `drillDown`, `selectLocation`, `updatePlan`.
 
 Only attach actions when they are useful and host-visible. Avoid buttons that do nothing meaningful.
+Do not imply save, approval, dispatch, ticket creation, database writes, or external business effects unless the host explicitly provides that workflow as a real action/tool.
 
 ## Validation
 

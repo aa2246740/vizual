@@ -354,6 +354,61 @@ describe('chat adapter renderability gate', () => {
     ])
   })
 
+  it('reconstructs complete root/elements input when weak models pass partial input plus stringified elements', () => {
+    const elements = {
+      root: { type: 'Column', children: ['title', 'chart'] },
+      title: { type: 'Markdown', props: { content: '# 反诈治理专项推进看板' } },
+      chart: {
+        type: 'BarChart',
+        props: {
+          x: '工作组',
+          y: '完成率',
+          data: [
+            { 工作组: '客户触达组', 完成率: 58 },
+            { 工作组: '复盘整改组', 完成率: 35 },
+          ],
+        },
+      },
+    }
+    const partialInput = {
+      components: [
+        { type: 'Markdown', props: { content: '# 反诈治理专项推进看板' } },
+        { type: 'Row', children: ['chart'] },
+      ],
+    }
+
+    const messages = [
+      assistantToolCall('call-split-shape', {
+        input: JSON.stringify(partialInput),
+        elements: JSON.stringify(elements),
+      }),
+      toolResult('call-split-shape', {
+        ok: true,
+        surfaceId: 'surface-1',
+        envelope: {
+          schema: 'vizual.agent.envelope.v1',
+          surfaceId: 'surface-1',
+          input: partialInput,
+        },
+      }),
+    ]
+
+    const presentations = extractVizualPresentations(messages)
+
+    expect(presentations).toHaveLength(1)
+    expect(presentations[0]).toMatchObject({
+      accepted: true,
+      renderable: true,
+      outcome: 'rendered',
+      surfaceId: 'surface-1',
+    })
+    expect(presentations[0].preview?.summary.componentTypes).toEqual([
+      'Column',
+      'Markdown',
+      'BarChart',
+    ])
+  })
+
   it('accepts long-form line charts with a string series grouping field', () => {
     const input = {
       root: 'dashboard',

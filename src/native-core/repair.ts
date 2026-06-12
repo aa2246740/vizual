@@ -119,6 +119,214 @@ function wrapChartElement(element: VizualSpecElement): VizualSpec {
   return { root: 'chart-1', elements: { 'chart-1': element } }
 }
 
+function cloneRecord(record: Record<string, unknown>): Record<string, unknown> {
+  return JSON.parse(JSON.stringify(record)) as Record<string, unknown>
+}
+
+function repairKpiDashboardProps(props: Record<string, unknown>): boolean {
+  if (Array.isArray(props.metrics) && props.metrics.length > 0) return false
+
+  if (Array.isArray(props.kpis) && props.kpis.length > 0) {
+    props.metrics = props.kpis
+    return true
+  }
+
+  const label = firstString(props.label, props.title, props.name)
+  if (!label || !hasOwn(props, 'value')) return false
+
+  const metric: Record<string, unknown> = { label, value: props.value }
+  const description = firstString(props.subtext, props.description, props.subtitle)
+  if (description) metric.description = description
+  if (hasOwn(props, 'trend')) metric.trend = props.trend
+  props.metrics = [metric]
+  return true
+}
+
+function firstRowWithKeys(rows: unknown): Record<string, unknown> | null {
+  if (!Array.isArray(rows)) return null
+  return rows.find(isRecord) ?? null
+}
+
+function hasField(rows: unknown, field: string): boolean {
+  const row = firstRowWithKeys(rows)
+  return Boolean(row && hasOwn(row, field))
+}
+
+function chooseDataField(rows: unknown, preferred: unknown, fallbacks: string[]): string | undefined {
+  const preferredField = firstString(preferred)
+  if (preferredField && hasField(rows, preferredField)) return preferredField
+  return fallbacks.find(field => hasField(rows, field))
+}
+
+function repairChartFieldAliases(props: Record<string, unknown>, componentType: unknown): boolean {
+  if (typeof componentType !== 'string' || !componentType.endsWith('Chart')) return false
+  const coordinateCharts = new Set([
+    'BarChart',
+    'LineChart',
+    'AreaChart',
+    'ScatterChart',
+    'BubbleChart',
+    'ComboChart',
+    'DumbbellChart',
+    'WaterfallChart',
+    'SparklineChart',
+  ])
+  if (!coordinateCharts.has(componentType)) return false
+  const rows = props.data
+  const firstRow = firstRowWithKeys(rows)
+  if (!firstRow) return false
+
+  let changed = false
+  if (typeof props.x !== 'string' || !hasField(rows, props.x)) {
+    const field = chooseDataField(rows, props.xAxis ?? props.xField ?? props.labelField ?? props.x, ['x', 'name', 'label', 'category', 'branch'])
+    if (field) {
+      props.x = field
+      changed = true
+    }
+  }
+  if (typeof props.y !== 'string' || !hasField(rows, props.y)) {
+    const field = chooseDataField(rows, props.yAxis ?? props.yField ?? props.valueField ?? props.y, ['y', 'value'])
+    if (field) {
+      props.y = field
+      changed = true
+    }
+  }
+  if (componentType === 'BubbleChart' && (typeof props.size !== 'string' || !hasField(rows, props.size))) {
+    const field = chooseDataField(rows, props.sizeField ?? props.size, ['size', 'z'])
+    if (field) {
+      props.size = field
+      changed = true
+    }
+  }
+  if ((typeof props.color !== 'string' || !hasField(rows, props.color)) && typeof (props.colorField ?? props.color) === 'string') {
+    const field = chooseDataField(rows, props.colorField ?? props.color, ['color'])
+    if (field) {
+      props.color = field
+      changed = true
+    }
+  }
+  return changed
+}
+
+function normalizeRadarIndicators(indicators: unknown): Array<{ name: string; max?: number }> | null {
+  if (!Array.isArray(indicators) || indicators.length === 0) return null
+  const normalized: Array<{ name: string; max?: number }> = []
+  for (const indicator of indicators) {
+    if (typeof indicator === 'string' && indicator.trim()) {
+      normalized.push({ name: indicator.trim() })
+      continue
+    }
+    if (isRecord(indicator)) {
+      const name = firstString(indicator.name, indicator.label, indicator.key)
+      if (!name) return null
+      const max = coerceNumeric(indicator.max)
+      normalized.push(max === null ? { name } : { name, max })
+      continue
+    }
+    return null
+  }
+  return normalized
+}
+
+function normalizeRadarSeriesRows(rows: unknown, indicatorCount: number): Array<{ name: string; values: number[] }> | null {
+  if (!Array.isArray(rows) || rows.length === 0 || indicatorCount <= 0) return null
+  const series: Array<{ name: string; values: number[] }> = []
+  for (const row of rows) {
+    if (!isRecord(row) || !Array.isArray(row.values) || row.values.length !== indicatorCount) return null
+    const values = row.values.map(coerceNumeric)
+    if (values.some(value => value === null)) return null
+    const name = firstString(row.name, row.label, row.branch, row['分行']) ?? `series-${series.length + 1}`
+    series.push({ name, values: values as number[] })
+  }
+  return series
+}
+
+function repairRadarChartProps(props: Record<string, unknown>, componentType: unknown): boolean {
+  if (componentType !== 'RadarChart') return false
+
+  const indicators = normalizeRadarIndicators(props.indicators ?? props.categories)
+  if (!indicators) return false
+
+  let changed = false
+  if (props.indicators !== indicators) {
+    props.indicators = indicators
+    if (hasOwn(props, 'categories')) delete props.categories
+    changed = true
+  }
+
+  if (!Array.isArray(props.series) && Array.isArray(props.data)) {
+    const series = normalizeRadarSeriesRows(props.data, indicators.length)
+    if (series) {
+      props.series = series
+      delete props.data
+      changed = true
+    }
+  }
+
+  return changed
+}
+
+function repairComponentObject(component: Record<string, unknown>): boolean {
+  const componentType = component.type
+  const props = isRecord(component.props) ? component.props : component
+
+  let changed = false
+  if (componentType === 'KpiDashboard') {
+    changed = repairKpiDashboardProps(props) || changed
+  }
+  changed = repairRadarChartProps(props, componentType) || changed
+  changed = repairChartFieldAliases(props, componentType) || changed
+  return changed
+}
+
+function repairNativeSpecConventions(record: Record<string, unknown>): VizualRepairResult | null {
+  if (!isRecord(record.elements) && !Array.isArray(record.components)) return null
+
+  let repaired: Record<string, unknown> | null = null
+  let repairedCount = 0
+
+  if (isRecord(record.elements)) {
+    for (const [elementId, element] of Object.entries(record.elements)) {
+      if (!isRecord(element)) continue
+      const working: Record<string, unknown> = repaired ?? cloneRecord(record)
+      const workingElements = working.elements as Record<string, unknown>
+      const workingElement = workingElements[elementId]
+      if (!isRecord(workingElement)) continue
+      if (repairComponentObject(workingElement)) {
+        repaired = working
+        repairedCount += 1
+      }
+    }
+  }
+
+  if (Array.isArray(record.components)) {
+    for (let index = 0; index < record.components.length; index += 1) {
+      const component = record.components[index]
+      if (!isRecord(component)) continue
+      const working: Record<string, unknown> = repaired ?? cloneRecord(record)
+      const workingComponents = working.components as unknown[]
+      const workingComponent = workingComponents[index]
+      if (!isRecord(workingComponent)) continue
+      if (repairComponentObject(workingComponent)) {
+        repaired = working
+        repairedCount += 1
+      }
+    }
+  }
+
+  if (!repaired) return null
+
+  return {
+    input: repaired as VizualNativeInput,
+    changed: true,
+    repairs: [{
+      code: 'vizual.repair.native_component_props',
+      message: 'Normalized common native component shorthand props into canonical Vizual props. Emit canonical props such as metrics, x, y, size, and color directly.',
+      detail: { repairedComponents: repairedCount },
+    }],
+  }
+}
+
 function uniqueFieldName(base: string, used: Set<string>): string {
   let name = base || 'series'
   let i = 2
@@ -382,6 +590,14 @@ function repairAgentInputUnsafe(input: VizualNativeInput): VizualRepairResult {
     return { input: current as VizualNativeInput, repairs, changed: repairs.length > 0 }
   }
   if (looksAlreadyNative(current)) {
+    const nativeRepair = repairNativeSpecConventions(current)
+    if (nativeRepair) {
+      return {
+        input: nativeRepair.input,
+        repairs: [...repairs, ...nativeRepair.repairs],
+        changed: true,
+      }
+    }
     return { input: current as VizualNativeInput, repairs, changed: repairs.length > 0 }
   }
 

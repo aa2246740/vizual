@@ -47,7 +47,7 @@ pnpm --dir frontend install
 如果 DeerFlow 后端是 TypeScript，直接用 SDK：
 
 ```ts
-import { createVizualAgentToolDefinition, renderVizualAgentInput } from 'vizual'
+import { createVizualAgentToolDefinition, createVizualAgentToolResult } from 'vizual'
 
 export const presentVizualUiTool = createVizualAgentToolDefinition({
   includeCatalogManifest: true,
@@ -59,30 +59,17 @@ export async function presentVizualUi(args: {
   fallbackText?: string
   display?: unknown
 }) {
-  const result = renderVizualAgentInput(args.input, {
+  return createVizualAgentToolResult(args.input, {
     surfaceId: args.surfaceId,
     fallbackText: args.fallbackText,
     display: args.display,
   })
-
-  return {
-    schema: 'vizual.agent.tool_result.v1',
-    ok: result.ok,
-    toolName: 'present_vizual_ui',
-    surfaceId: result.envelope.surfaceId,
-    envelope: result.envelope,
-    issues: result.preview.issues,
-    renderEvidence: result.preview.summary,
-    repairInstructions: result.ok
-      ? []
-      : ['请使用受支持的 Vizual native 组件重建 payload。'],
-  }
 }
 ```
 
 如果 DeerFlow 后端是 Python，不要长期维护另一套手写 catalog。更稳的做法是：
 
-- 通过一个很薄的 Node bridge 调 `renderVizualAgentInput`；
+- 通过一个很薄的 Node bridge 调 `createVizualAgentToolResult`；
 - 或者在 CI/readiness script 中从已安装的 `vizual` 包生成/比对 backend catalog。
 
 Python 侧最低要求：
@@ -90,7 +77,7 @@ Python 侧最低要求：
 - `SUPPORTED_NATIVE_COMPONENTS` 必须和当前 Vizual catalog 一致。
 - 图表家族要包含 Radar、Waterfall、Boxplot、Histogram、XMR、Sankey、Funnel、Heatmap、Calendar、Sparkline、Dumbbell、Bubble、Combo、Mermaid。
 - 已移除组件必须保持 unsupported：DocView、GridLayout、SplitLayout、FreeformHtml、HeroLayout、Modal、Kanban、AuditLog。
-- `ok: false` 必须返回 issues 和 repair instructions，让 Agent 有机会修复。
+- `ok: false` 必须返回 Core 生成的 `issues` 和 `fixes`，让 Agent 有机会修复。
 - 失败的内部尝试可以保存在 tool history 中给 Agent 使用，但不能作为最终用户可见的 Vizual 卡片展示。
 
 ## 3. Agent Prompt 和工具目录
@@ -143,19 +130,24 @@ for (const presentation of presentations) {
     continue
   }
 
-  render(
-    <VizualRenderer
-      spec={preview.spec}
-      onAction={(name, params, currentState) => {
+  const handlers = Object.fromEntries(
+    ['submitForm', 'applyFilter', 'drillDown', 'selectLocation', 'updatePlan'].map(action => [
+      action,
+      (params: Record<string, unknown>) =>
         sendInternalUserMessage(
           buildVizualActionMessage({
             presentation,
-            action: name,
+            action,
             params,
-            currentState,
           }),
-        )
-      }}
+        ),
+    ]),
+  )
+
+  render(
+    <VizualRenderer
+      spec={preview.spec}
+      handlers={handlers}
       onRenderReceipt={(receipt) => {
         recordVizualRenderReceipt(presentation.surfaceId, receipt)
       }}
@@ -192,7 +184,7 @@ Vizual 只发事件，DeerFlow 决定事件含义。
 - `selectLocation`
 - `updatePlan`
 
-每个 action 都应该转成一条内部 follow-up message 交给 Agent。不要让 Vizual 自己假装完成保存、审批、派单、开工单或调用银行内部系统。
+每个 action 都应该转成一条内部 follow-up message 交给 Agent。不要让 Vizual 自己假装完成保存、审批、派单、开工单或调用银行内部系统。复制、导出、下载、分享、持久化等控件属于 DeerFlow 产品外壳能力，应该放在 `VizualRenderer` 外层实现。
 
 ## 6. Readiness Gate
 

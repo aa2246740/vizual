@@ -396,18 +396,40 @@ function cleanTrendValue(value: string): string {
   return value.replace(/^[↑↓\s]+/u, '').trim()
 }
 
+function canonicalChildAlias(record: Record<string, unknown>, props?: Record<string, unknown>): unknown {
+  if (props?.children != null) return props.children
+  if (record.children != null) return record.children
+  if (Array.isArray(props?.elements)) return props.elements
+  if (Array.isArray(record.elements)) return record.elements
+  return undefined
+}
+
+function canonicalNestedElementsAlias(record: Record<string, unknown>, props?: Record<string, unknown>): Record<string, unknown> | undefined {
+  if (isRecord(props?.elements)) return props.elements
+  if (isRecord(record.elements)) return record.elements
+  return undefined
+}
+
 function normalizeDirectSpecElement(element: VizualSpecElement): VizualSpecElement {
+  const record = element as Record<string, unknown>
   const componentType = firstString(element.type, element.component)
   if (!componentType) return { ...element }
   const normalizedComponentType = normalizeAgentComponentName(componentType)
 
   const props = isRecord(element.props) ? { ...element.props } : {}
+  const childAlias = canonicalChildAlias(record, props)
+  const nestedElementsAlias = canonicalNestedElementsAlias(record, props)
+  if (props.children == null && childAlias != null) props.children = cloneJson(childAlias)
+  if (props.elements == null && nestedElementsAlias) props.elements = cloneJson(nestedElementsAlias)
+  if (props.root == null && typeof record.root === 'string') props.root = record.root
   const next: VizualSpecElement = {
     ...element,
     type: normalizedComponentType,
     props,
   }
   delete next.component
+  delete (next as Record<string, unknown>).elements
+  delete (next as Record<string, unknown>).root
 
   if (next.type === 'Text' && props.content == null && props.text == null && props.value == null && props.children != null && !Array.isArray(props.children) && !isRecord(props.children)) {
     props.content = String(props.children)
@@ -665,6 +687,7 @@ function expandDirectInlineChildren(entries: Array<[string, VizualSpecElement]>)
     if (metrics.length) {
       const kpiId = directElementId(id, 0, { component: 'KpiDashboard', id: `${id}-kpi-dashboard` }, usedIds)
       delete props.children
+      delete props.elements
       next.children = [kpiId]
       expanded.push([id, next])
       expanded.push([kpiId, {
@@ -692,6 +715,7 @@ function expandDirectInlineChildren(entries: Array<[string, VizualSpecElement]>)
         visit(childId, child as VizualSpecElement)
       })
       delete props.children
+      delete props.elements
       if (childIds.length) next.children = childIds
     }
 
@@ -1583,16 +1607,16 @@ function normalizeComponentDef(component: VizualNativeComponentDef): VizualNativ
   }
 
   for (const [key, value] of Object.entries(wrappedProps)) {
-    if (key === 'children' || key === 'child') continue
+    if (key === 'children' || key === 'child' || key === 'elements') continue
     next[key] = value
   }
   for (const [key, value] of Object.entries(record)) {
-    if (key === 'id' || key === 'componentId' || key === 'component' || key === 'props' || key === 'children' || key === 'child') continue
+    if (key === 'id' || key === 'componentId' || key === 'component' || key === 'props' || key === 'children' || key === 'child' || key === 'elements') continue
     if (key === 'type' && typeIsComponentAlias) continue
     next[key] = value
   }
 
-  const children = record.children ?? wrappedProps.children
+  const children = canonicalChildAlias(record, wrappedProps)
   const componentKey = typeof componentType === 'string'
     ? stripVizualNamespace(componentType).replace(/[\s_-]+/g, '').toLowerCase()
     : ''
@@ -1689,10 +1713,12 @@ function expandInlineComponentChildren(components: VizualNativeComponentDef[]): 
     const record = component as Record<string, unknown>
     const next: Record<string, unknown> = { ...record }
     const childComponents: VizualNativeComponentDef[] = []
+    const props = isRecord(record.props) ? record.props : {}
+    const children = canonicalChildAlias(record, props)
 
-    if (Array.isArray(record.children)) {
+    if (Array.isArray(children)) {
       const childIds: string[] = []
-      for (const child of record.children) {
+      for (const child of children) {
         if (typeof child === 'string' && child.length > 0) {
           childIds.push(child)
           continue
@@ -1708,6 +1734,11 @@ function expandInlineComponentChildren(components: VizualNativeComponentDef[]): 
         childComponents.push(child as unknown as VizualNativeComponentDef)
       }
       next.children = childIds
+      delete next.elements
+      if (isRecord(next.props)) {
+        delete (next.props as Record<string, unknown>).children
+        delete (next.props as Record<string, unknown>).elements
+      }
     }
 
     if (isRecord(record.child)) {

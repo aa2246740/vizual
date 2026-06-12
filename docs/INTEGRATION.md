@@ -126,17 +126,17 @@ a weak model converges in one or two rounds instead of guessing.
 ## 5. Expose the tool to your agent
 
 ```ts
-import { createVizualAgentToolDefinition, renderVizualAgentInput } from 'vizual'
+import { createVizualAgentToolDefinition, createVizualAgentToolResult } from 'vizual'
 
 const tool = createVizualAgentToolDefinition({ includeCatalogManifest: true })
 // register `tool` with your LLM framework (OpenAI tools / LangChain / MCP / …)
 
 // when the model calls the tool:
-const result = renderVizualAgentInput(toolArgs.input, {
+const result = createVizualAgentToolResult(toolArgs.input, {
   surfaceId: toolArgs.surfaceId,
   fallbackText: toolArgs.fallbackText,
 })
-// result.ok, result.envelope, result.preview  — return result.envelope to the model
+// return result as the tool result; failed results include issues + fixes
 ```
 
 ---
@@ -247,6 +247,9 @@ runtime.updateArtifact(artifact.id, [{ type: 'filterData', /* targetId from arti
   `updatePlan`) round‑trip via `buildVizualActionMessage` and are hidden from the
   visible transcript with `isInternalVizualActionMessage`. Only add interactive
   controls when the host actually exposes a matching capability.
+- Copy, export, download, share, and persistence controls are host product
+  shell features. Keep them outside `VizualRenderer`; do not model them as
+  Vizual native actions.
 
 ---
 
@@ -270,8 +273,9 @@ npm run build
 Then do a **real browser** pass (don't trust JSON alone): render a data
 dashboard, a multi‑series chart, a KPI board, a form, a timeline/org chart, a
 plain‑text question (no surface), an explicit "make me an HTML page" request (no
-surface), and a deliberately broken input (fallback). Confirm at the end‑user
-level that what `ok` claims matches what is actually visible.
+surface), utility export/copy/download controls, and a deliberately broken input
+(fallback). Confirm at the end‑user level that what `ok` claims matches what is
+actually visible.
 `validation/review-acceptance.html` is a minimal harness for this.
 
 ---

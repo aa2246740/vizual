@@ -6,6 +6,14 @@ Vizual native runtime gives an Agent a host-rendered visual surface model. It is
 
 The Agent may combine ordinary text with one or more Vizual surfaces. Each surface is a native component tree backed by an optional data model and host-visible actions.
 
+Interaction has two layers:
+
+1. Local playground controls update the current surface without asking the Agent again.
+2. Agent round-trip actions use real host-visible actions and are sent back by the host.
+
+Copy, export, download, share, and persistence controls belong to the host
+product shell. Vizual native core does not provide or promise those operations.
+
 Preferred integration order:
 
 1. Discover the live catalog through MCP or SDK manifest.
@@ -62,7 +70,7 @@ Actions are host-visible events:
 - `selectLocation`: selected branch, region, store, or location-like entity.
 - `updatePlan`: visible plan/status update.
 
-Only use actions that the answer can actually consume. Do not invent external workflow effects.
+Only use actions that the answer can actually consume. Do not invent external workflow effects. Do not imply save, approval, dispatch, ticket creation, database writes, or other external business effects unless the host explicitly exposes that workflow.
 
 ## Form And Interaction Quality
 

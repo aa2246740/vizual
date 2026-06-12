@@ -6,6 +6,23 @@ function finiteNumber(value: unknown, fallback = 0): number {
   return Number.isFinite(num) ? num : fallback
 }
 
+function groupRows(data: Array<Record<string, unknown>>, groupField: string | undefined) {
+  if (!groupField) return null
+  const groups = new Map<string, Array<Record<string, unknown>>>()
+  for (const row of data) {
+    const key = String(row[groupField] ?? 'series')
+    const rows = groups.get(key) ?? []
+    rows.push(row)
+    groups.set(key, rows)
+  }
+  return Array.from(groups.entries()).map(([name, rows]) => ({ name, rows }))
+}
+
+function seriesColor(rows: Array<Record<string, unknown>>): string | undefined {
+  const color = rows.find(row => typeof row.color === 'string' && row.color.length > 0)?.color
+  return typeof color === 'string' ? color : undefined
+}
+
 export function buildScatterFallback(props: ScatterChartProps): Record<string, unknown> {
   const x = props.x ?? 'name'
   const yFields = Array.isArray(props.y) ? props.y : [props.y ?? 'value']
@@ -27,17 +44,50 @@ export function buildScatterFallback(props: ScatterChartProps): Record<string, u
         return 8 + ((raw - minSize) / (maxSize - minSize)) * 18
       }
     : undefined
+  const groupedRows = groupRows(data, props.groupField)
+
+  const pointFor = (row: Record<string, unknown>, field: string) => {
+    const y = finiteNumber(row[field], Number.NaN)
+    if (!Number.isFinite(y)) return null
+    const point: unknown[] = [
+      numericX ? finiteNumber(row[x]) : String(row[x] ?? ''),
+      y,
+    ]
+    if (props.size) point.push(finiteNumber(row[props.size]))
+    if (!labelField) return point
+    return {
+      name: String(row[labelField] ?? ''),
+      value: point,
+      data: row,
+    }
+  }
+
+  const groupedSeries = groupedRows
+    ? groupedRows.flatMap(group => yFields.map(field => {
+      const points = group.rows
+        .map(row => pointFor(row, field))
+        .filter((point): point is unknown[] | { name: string; value: unknown[]; data: Record<string, unknown> } => point !== null)
+      return {
+        type: 'scatter',
+        name: yFields.length > 1 ? `${group.name} ${field}` : group.name,
+        data: points,
+        symbolSize: symbolSize ?? 10,
+        showSymbol: true,
+        ...(seriesColor(group.rows) ? { itemStyle: { color: seriesColor(group.rows) } } : {}),
+      }
+    }))
+    : null
 
   return {
     title: props.title ? { text: props.title } : undefined,
     tooltip: { trigger: 'item' },
-    legend: yFields.length > 1 ? { top: 28 } : undefined,
+    legend: groupedSeries || yFields.length > 1 ? { top: 28 } : undefined,
     grid: { left: 50, right: 24, top: props.title ? 72 : 32, bottom: 40 },
     xAxis: numericX
       ? { type: 'value', name: x }
       : { type: 'category', name: x, data: data.map(d => String(d[x] ?? '')) },
     yAxis: { type: 'value' },
-    series: yFields.map((f, index) => ({
+    series: groupedSeries ?? yFields.map((f, index) => ({
       type: index === 0 ? 'scatter' : 'line',
       name: f,
       data: data.map(d => {

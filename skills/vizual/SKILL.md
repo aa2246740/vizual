@@ -1,6 +1,6 @@
 # Vizual
 
-Use Vizual when a host Agent should answer with a native visual or interactive UI surface instead of plain text only: charts, KPI dashboards, tables, timelines, org charts, gantt charts, markdown blocks, structured forms, lightweight A2UI composition, live controls, artifact updates, and exportable visuals.
+Use Vizual when a host Agent should answer with a native visual or interactive UI surface instead of plain text only: charts, KPI dashboards, tables, timelines, org charts, gantt charts, markdown blocks, structured forms, lightweight A2UI composition, live controls, and artifact updates.
 
 Do not use Vizual as a keyword router or product gate. The user speaks naturally; the Agent decides whether a visual surface helps. If the user explicitly asks for a webpage, HTML, React app, landing page, game, custom SVG, or other creative artifact, follow that request unless the user also asks to embed a Vizual surface.
 
@@ -10,8 +10,9 @@ Do not use Vizual as a keyword router or product gate. The user speaks naturally
 2. **Text and Vizual may be mixed.** Put narrative conclusions in the host message and place Vizual blocks where they help prove or explore the answer.
 3. **Interaction must be useful.** Add buttons/forms/filters only when the host or Agent can use the event. Never add interaction just to show that interaction exists.
 4. **FormBuilder only collects input.** It submits structured data through `submitForm` for the host Agent to decide what to do next. Do not promise save, approval, dispatch, ticketing, or external writes unless the host explicitly provides that action.
-5. **Do not invent components or props.** Validate before rendering whenever possible.
-6. **Do not silently hide failures.** If a component is unsupported, return a clear unsupported-component error or gap metadata; do not fake success.
+5. **Separate Vizual actions from host product actions.** Local playground controls may update the current surface; agent round-trip actions must use real host-visible actions. Copy, export, download, share, and persistence controls belong to the host product shell, not Vizual native core.
+6. **Do not invent components or props.** Validate before rendering whenever possible.
+7. **Do not silently hide failures.** If a component is unsupported, return a clear unsupported-component error or gap metadata; do not fake success.
 
 ## Fastest Correct Shape (copy, then replace the data)
 
@@ -270,6 +271,8 @@ Available host-visible action names:
 - `updatePlan`: user updated a visible plan/status item.
 
 Only bind an action when the output can use it. If the host has no relevant handler, leave the visual static or use a FormBuilder field that submits context back to the Agent.
+
+Host product utilities are separate from Vizual actions. Copy, export, download, share, and persistence controls may be added by the host shell, but Vizual native core does not provide or promise those operations.
 
 ## Follow-Up Updates
 

@@ -155,6 +155,15 @@ Actions are events. Vizual itself does not approve, dispatch, save to a business
 system, or pretend an integration exists. The host decides what happens after an
 event is received.
 
+There are two separate interaction layers:
+
+- local playground controls can update the current Vizual surface directly
+- agent round-trip actions must be sent back through a real host action bridge
+
+Host products may add their own shell-level actions around a Vizual surface, such
+as copy, image export, file export, sharing, or persistence. Those are host
+features, not Vizual native actions.
+
 ### Artifacts and Follow-Up Editing
 
 Host apps can persist `VizualArtifact` objects so later turns can modify or
@@ -249,32 +258,22 @@ The recommended integration paths are:
 3. **SDK tool**: expose `createVizualAgentToolDefinition()` as a host tool such as `present_vizual_ui`.
 
 ```ts
-import { createVizualAgentToolDefinition, renderVizualAgentInput } from 'vizual'
+import { createVizualAgentToolDefinition, createVizualAgentToolResult } from 'vizual'
 
 const tool = createVizualAgentToolDefinition({ includeCatalogManifest: true })
 
 async function presentVizualUi(args) {
-  const result = renderVizualAgentInput(args.input, {
+  return createVizualAgentToolResult(args.input, {
     surfaceId: args.surfaceId,
     fallbackText: args.fallbackText,
     display: args.display,
   })
-
-  if (!result.ok) {
-    return {
-      ok: false,
-      errors: result.preview.issues,
-      repair: 'Rebuild the payload with supported native Vizual components.',
-    }
-  }
-
-  return {
-    ok: true,
-    envelope: result.envelope,
-    renderEvidence: result.preview,
-  }
 }
 ```
+
+`createVizualAgentToolResult()` is the canonical host boundary. It returns
+`ok:true` only when Core can preview a real renderable native surface; failed
+results include `issues` and `fixes` for the agent repair loop.
 
 See [docs/AI-INTEGRATION.md](docs/AI-INTEGRATION.md) for the full agent contract.
 For a step-by-step retrofit guide for an existing chatbot, see

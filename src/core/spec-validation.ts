@@ -380,6 +380,45 @@ function rowsFromXYSeriesRecords(seriesRecords: Array<Record<string, unknown>>) 
   return rows.length ? { rows, seriesNames } : null
 }
 
+function pointValue(record: Record<string, unknown>, key: string, tupleIndex: number): unknown {
+  if (record[key] !== undefined) return record[key]
+  const value = record.value
+  return Array.isArray(value) ? value[tupleIndex] : undefined
+}
+
+function rowsFromScatterPointSeriesRecords(seriesRecords: Array<Record<string, unknown>>) {
+  if (!seriesRecords.length || !seriesRecords.every(series => Array.isArray(series.data))) return null
+  const used = new Set<string>()
+  const rows: Array<Record<string, unknown>> = []
+
+  for (const [seriesIndex, series] of seriesRecords.entries()) {
+    const seriesName = uniqueSeriesName(series, seriesIndex, used)
+    const values = Array.isArray(series.data) ? series.data : []
+    const seriesColor = typeof series.color === 'string' && series.color.length ? series.color : undefined
+
+    for (const item of values) {
+      const point = toRecord(item)
+      const x = pointValue(point, 'x', 0) ?? point.xValue ?? point.xAxis
+      const y = pointValue(point, 'y', 1) ?? point.yValue ?? point.yAxis
+      if (x === undefined || y === undefined) return null
+
+      const size = point.size ?? point.sizeValue ?? point.r ?? point.radius ?? pointValue(point, 'z', 2)
+      const label = firstStringValue(point.label, point.name, point.category, point.id)
+      rows.push({
+        ...point,
+        x,
+        y,
+        ...(size !== undefined ? { size } : {}),
+        ...(label ? { label } : {}),
+        series: seriesName,
+        ...(seriesColor ? { color: seriesColor } : {}),
+      })
+    }
+  }
+
+  return rows.length ? rows : null
+}
+
 function mapTextProps(props: Record<string, unknown>) {
   const next = { ...props }
   if (next.content == null && next.text != null) next.content = String(next.text)
@@ -822,6 +861,18 @@ function mapChartProps(componentType: string, props: Record<string, unknown>) {
     .map(toRecord)
     .filter(series => Object.keys(series).length)
   const normalizedSeries = toSeriesEntries(next.series)
+  const scatterPointRows = componentType === 'ScatterChart' || componentType === 'BubbleChart'
+    ? rowsFromScatterPointSeriesRecords(seriesRecords)
+    : null
+  if (!Array.isArray(next.data) && scatterPointRows) {
+    next.data = scatterPointRows
+    next.x = 'x'
+    next.y = 'y'
+    if (next.size == null && scatterPointRows.some(row => row.size !== undefined)) next.size = 'size'
+    if (next.label == null && scatterPointRows.some(row => row.label !== undefined)) next.label = 'label'
+    if (next.groupField == null && scatterPointRows.some(row => row.series !== undefined)) next.groupField = 'series'
+    delete next.series
+  }
   const xySeriesRows = rowsFromXYSeriesRecords(seriesRecords)
   if (!Array.isArray(next.data) && xySeriesRows) {
     next.data = xySeriesRows.rows

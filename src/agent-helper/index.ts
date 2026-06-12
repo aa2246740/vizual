@@ -52,6 +52,31 @@ export type VizualAgentRenderResult = {
   preview: VizualPreviewResult
 }
 
+export type VizualAgentToolFix = {
+  code: string
+  fix: string
+}
+
+export type VizualAgentToolRepair = {
+  code: string
+  message?: string
+  detail?: unknown
+}
+
+export type VizualAgentToolResult = {
+  schema: 'vizual.agent.tool_result.v1'
+  ok: boolean
+  toolName: typeof VIZUAL_AGENT_TOOL_NAME
+  surfaceId?: string
+  fallbackText: string
+  display: VizualAgentDisplayHint
+  issues: VizualPreviewResult['issues']
+  fixes: VizualAgentToolFix[]
+  repairs: VizualAgentToolRepair[]
+  renderEvidence: VizualPreviewResult['summary']
+  envelope: VizualAgentEnvelope
+}
+
 export type VizualAgentToolDefinition = {
   name: typeof VIZUAL_AGENT_TOOL_NAME
   description: string
@@ -101,6 +126,57 @@ export function renderVizualAgentInput(
   }
 }
 
+function collectToolFixes(issues: VizualPreviewResult['issues']): VizualAgentToolFix[] {
+  const fixes: VizualAgentToolFix[] = []
+  const seen = new Set<string>()
+  for (const issue of issues) {
+    if (issue.severity !== 'error') continue
+    const fix = typeof issue.fix === 'string' && issue.fix.trim()
+      ? issue.fix
+      : issue.message
+    if (!fix || seen.has(fix)) continue
+    seen.add(fix)
+    fixes.push({ code: issue.code || 'vizual.error', fix })
+  }
+  return fixes
+}
+
+function collectToolRepairs(issues: VizualPreviewResult['issues']): VizualAgentToolRepair[] {
+  return issues
+    .filter(issue => issue.severity === 'info' && issue.code.startsWith('vizual.repair.'))
+    .map(issue => ({
+      code: issue.code,
+      message: issue.message,
+      detail: issue.evidence,
+    }))
+}
+
+export function createVizualAgentToolResult(
+  input: VizualNativeInput,
+  options: VizualPreviewOptions & {
+    display?: VizualAgentDisplayHint
+  } = {},
+): VizualAgentToolResult {
+  const result = renderVizualAgentInput(input, {
+    ...options,
+    requireRenderable: true,
+  })
+  const display = result.envelope.display ?? options.display ?? { mode: 'inline', persist: true }
+  return {
+    schema: 'vizual.agent.tool_result.v1',
+    ok: result.ok,
+    toolName: VIZUAL_AGENT_TOOL_NAME,
+    surfaceId: result.envelope.surfaceId || result.preview.surfaceId,
+    fallbackText: result.envelope.fallbackText ?? '',
+    display,
+    issues: result.preview.issues,
+    fixes: collectToolFixes(result.preview.issues),
+    repairs: collectToolRepairs(result.preview.issues),
+    renderEvidence: result.preview.summary,
+    envelope: result.envelope,
+  }
+}
+
 export function createVizualAgentToolDefinition(options: {
   includeCatalogManifest?: boolean
 } = {}): VizualAgentToolDefinition {
@@ -120,16 +196,18 @@ export function createVizualAgentToolDefinition(options: {
       `Use catalog "${VIZUAL_CATALOG_ID}" ${VIZUAL_CATALOG_VERSION}; do not invent component names outside the advertised catalog.`,
       `Capability discovery map: ${capabilitySummary}. These are discovery hints, not creative gates or mandatory component bundles.`,
       'Do not pass Chart.js configs, ECharts option objects, HTML, React code, CSS, or app scaffolds as input. External agents speak Vizual native input; Vizual may use renderer libraries internally.',
-      'Prefer semantic Vizual components when they fit the task, such as metric, chart, table, form, document, or primitive controls from the live catalog, instead of hand-built Text/View/Card imitations that lose render, state, export, or action semantics.',
+      'Prefer semantic Vizual components when they fit the task, such as metric, chart, table, form, document, or primitive controls from the live catalog, instead of hand-built Text/View/Card imitations that lose render, state, or action semantics.',
       'If the user explicitly asks to prove, support, or show conclusions with charts/图表, include at least one native chart component using the supplied data. DataTable may support details, but a table or action list alone does not satisfy chart evidence.',
       'For charts, prefer props.data plus typed props.encoding and optional props.measures. Use encoding.x/y/value/label/color/source/target/low/high to name source data fields; use measures for multiple numeric series or ComboChart bar/line/scatter layers. Do not use a string series prop as the recommended path: categorical grouping belongs in encoding.color, seriesBy, colorBy, or groupBy; numeric series belong in measures or explicit series arrays.',
       'Use input controls when collecting missing user data, parameter choices, or action approvals, and wire actions such as submitForm, drillDown, applyFilter, selectLocation, or updatePlan only when the interaction is meaningful and the host can receive it.',
+      'Interaction has two layers: local playground controls may update the current Vizual surface without asking the agent again; agent round-trip actions must use real host-visible actions. Copy, image export, CSV download, sharing, and file operations are host product features, not Vizual native actions.',
       'Charts and tables must have non-empty data. Reuse the same surfaceId for follow-up updates to the same UI.',
       'Do not invent dates, years, YoY/year-over-year labels, or baseline comparisons that are not present in the user data.',
       'Do not invent regulatory thresholds, warning lines, industry averages, benchmark values, or risk scoring standards unless the user supplied them.',
       'Forbidden unless present in the source data: 行业警戒线, 监管预警线, 预警线, 红线, 阈值, 行业均值, 1.5% warning line. For risk prompts, say only relative facts such as “provided rows show the highest/lowest value” or “the provided monthly series is rising”.',
       'The host QA report may flag UI input that contains unsupplied external benchmark/threshold phrases. If that happens, remove or qualify the benchmark claim and call the tool again.',
       'Charts are hydrated with real drillDown actions by the Vizual runtime. For non-chart interactions such as filters, submit buttons, approvals, or plan updates, do not claim interactivity unless the Vizual input includes a real action/function call/control for that behavior.',
+      'Do not imply save, approval, dispatch, ticket creation, database writes, or external business effects unless the host explicitly provides that workflow as a real action/tool.',
       'Do not claim validation passed or failed in assistant prose; the host runtime reports validation status.',
       'Self-correction protocol: if the tool result has ok:false, it includes a "fixes" array; apply every fix and call present_vizual_ui again until ok:true. Each issue also carries a "fix" field with one concrete next action.',
       'Shape contract for a single chart: { "components": [ { "type": "BarChart", "title": "...", "x": "<label field>", "y": "<numeric field or [fields]>", "data": [ { "<label field>": "A", "<numeric field>": 12 } ] } ] }. Charts need real numeric values in y fields and a matching label key in x; never wrap numbers as unparseable strings.',
