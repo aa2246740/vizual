@@ -229,6 +229,85 @@ text, nothing} for each turn — never a loader + error + fallback bubble at onc
 
 ---
 
+## 8b. The complete integration contract (interactivity) — READ THIS
+
+Rendering a surface is **not** a complete integration. There are three tiers,
+and a host must satisfy all three for an interactive surface to actually work:
+
+| Tier | Means | How |
+| --- | --- | --- |
+| **Renderable** | validates, renders, charts actually paint | `previewVizualNativeInput` + `VizualRenderer`/`renderSpec` |
+| **Interactive** | sliders/inputs update the surface in place | bound state + `recomputeSpec` (in‑playground live preview) |
+| **Agent‑roundtrip** | submit / filter / drill‑down become the next agent turn | `onAction` + `createVizualHostBridge` → your platform's send |
+
+> `ok: true` proves **Renderable** only. It does **not** prove Interactive or
+> Agent‑roundtrip. A host that only calls `present_vizual_ui` and renders
+> `VizualRenderer` will show a form whose Submit button does nothing.
+
+### Wire the agent roundtrip (the part most hosts miss)
+
+Vizual auto‑wires a FormBuilder's submit, a Button's action, and a chart's
+drill‑down to named actions during normalization — so the events fire. But the
+host must give those events somewhere to go. Pass `onAction` (one capture point
+for every interaction) and let the bridge turn roundtrip actions into the next
+agent turn:
+
+```ts
+import { createVizualHostBridge } from 'vizual'
+
+const bridge = createVizualHostBridge({
+  surfaceId,
+  toolCallId,
+  // The ONLY thing a host implements. Wire it to your platform's "new user turn":
+  //   DeerFlow:  (msg) => thread.submit(msg)
+  //   ChatGPT:   (msg) => sendMessage(msg)
+  //   custom:    (msg) => startAgentRun(msg)
+  sendToAgent: (message, action) => host.submitUserTurn(message),
+})
+
+<VizualRenderer spec={preview.spec} surfaceId={surfaceId} onAction={bridge.onAction} />
+// standalone:
+window.Vizual.renderSpec(preview.spec, el, { surfaceId, onAction: bridge.onAction })
+```
+
+The bridge builds the agent message (`buildVizualActionMessage`) and only
+round‑trips meaningful actions (`submitForm`, `applyFilter`, `drillDown`,
+`selectLocation`, `updatePlan`, and custom actions). Pure value edits stay local.
+
+Custom actions need no local handler: when `onAction` is wired, every action the
+spec declares (a Button's `action: "runScenario"`, an `element.on` binding) is
+guaranteed a dispatch path into `onAction` — the renderer synthesizes a fallback
+handler for declared actions that have no registered one, so a custom action can
+never silently die with "No handler registered". Use
+`collectDeclaredVizualActions(spec)` to inspect which actions a surface declares.
+On the agent side, hide the injected turn from the transcript with
+`isInternalVizualActionMessage`, run the agent, and it sees the submitted data as
+the latest user input — a new run is produced. That closes the loop.
+
+### In‑playground live preview (no agent)
+
+For a control that should update the surface immediately (slider filters a chart,
+toggle switches a series) without a round trip, give the renderer a
+`recomputeSpec(state)` that re‑derives the spec from live control state:
+
+```ts
+const makeSpec = (state) => ({ /* …chart filtered by state.controls.min… */ })
+<VizualRenderer spec={makeSpec(initial)} recomputeSpec={makeSpec} initialState={initial} />
+```
+
+Bound controls write to state, `recomputeSpec` re‑derives, and only the surface
+re‑renders — the agent is never involved.
+
+### Verify the contract
+
+`summarizeVizualInteractivity(preview.spec)` returns `{ interactive,
+agentRoundtrip, deadControls, actions }`. In acceptance tests, assert
+`agentRoundtrip === true` for surfaces that collect input, and `deadControls`
+is empty (a "dead control" collects input that goes nowhere). The browser
+harness `validation/interaction-acceptance.html` exercises all three tiers.
+
+---
+
 ## 9. Follow‑up edits, actions, artifacts
 
 ```ts

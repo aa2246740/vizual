@@ -11,6 +11,7 @@ import { registry, handlers as createVizualHandlers } from '../registry'
 import type { VizualArtifact, VizualSpec } from './artifact'
 import { collectVizualRenderEvidence, type VizualRenderReceipt } from './render-evidence'
 import { assertNoCyclicChildren, withDefaultElementProps } from './spec-validation'
+import { wrapActionHandlersWithOnAction, type VizualAction } from './host-bridge'
 
 export type VizualStateChange = { path: string; value: unknown }
 
@@ -20,6 +21,20 @@ export type VizualRendererProps = {
   handlers?: Record<string, (params: Record<string, unknown>) => Promise<unknown> | unknown>
   functions?: Record<string, ComputedFunction>
   onStateChange?: (changes: VizualStateChange[]) => void
+  /**
+   * Single capture point for every interactive action (form submit, filter,
+   * drill-down, etc.). Pair with createVizualHostBridge to forward roundtrip
+   * actions to the agent. See docs/INTEGRATION.md "complete integration".
+   */
+  onAction?: (action: VizualAction) => void
+  /** Surface id stamped onto emitted actions so the host can route the roundtrip. */
+  surfaceId?: string
+  /**
+   * In-playground live preview: when bound control state changes, re-derive the
+   * spec from the new state and re-render locally (no agent involved). Use for
+   * sliders/filters that should update a chart immediately.
+   */
+  recomputeSpec?: (state: Record<string, unknown>) => VizualSpec
   onRenderReceipt?: (receipt: VizualRenderReceipt) => void
   renderEvidenceDelayMs?: number
   fallback?: ComponentRenderer
@@ -122,6 +137,9 @@ export function VizualRenderer({
   handlers,
   functions,
   onStateChange,
+  onAction,
+  surfaceId,
+  recomputeSpec,
   onRenderReceipt,
   renderEvidenceDelayMs = 450,
   fallback,
@@ -129,28 +147,57 @@ export function VizualRenderer({
   assertNoCyclicChildren(spec)
   const rootRef = React.useRef<HTMLDivElement | null>(null)
   const [receipt, setReceipt] = React.useState<VizualRenderReceipt | null>(null)
-  const rendererSpec = React.useMemo(() => withDefaultElementProps(spec), [spec])
+  // In-playground live preview: re-derive the spec from live control state.
+  const [liveState, setLiveState] = React.useState<Record<string, unknown> | null>(null)
+  const baseSpec = React.useMemo(() => {
+    if (recomputeSpec && liveState) {
+      try { return recomputeSpec(liveState) } catch { return spec }
+    }
+    return spec
+  }, [spec, recomputeSpec, liveState])
+  const rendererSpec = React.useMemo(() => withDefaultElementProps(baseSpec), [baseSpec])
 
   const mergedInitialState = React.useMemo(
     () => ({
       ...((rendererSpec.state as StateModel | undefined) ?? {}),
       ...(initialState ?? {}),
+      ...(liveState ?? {}),
     }),
-    [initialState, rendererSpec],
+    [initialState, rendererSpec, liveState],
+  )
+
+  const handleStateChange = React.useCallback(
+    (changes: VizualStateChange[]) => {
+      onStateChange?.(changes)
+      if (!recomputeSpec) return
+      // Ignore Vizual-internal bookkeeping paths (/_charts, /_forms, …) so the
+      // live re-derive only reacts to real control edits and cannot loop.
+      const meaningful = changes.filter(change => !change.path.startsWith('/_'))
+      if (!meaningful.length) return
+      setLiveState(prev => applyVizualStateChanges(prev ?? mergedInitialState, meaningful))
+    },
+    [onStateChange, recomputeSpec, mergedInitialState],
   )
 
   const store = React.useMemo(
-    () => createObservableStateStore(mergedInitialState, onStateChange),
-    [mergedInitialState, onStateChange],
+    () => createObservableStateStore(mergedInitialState, handleStateChange),
+    [mergedInitialState, handleStateChange],
   )
 
   const actionHandlers = React.useMemo(() => {
     const setState = createStoreBackedSetState(store)
-    return {
+    const merged = {
       ...createVizualHandlers(() => setState, () => store.getSnapshot()),
       ...(handlers ?? {}),
     }
-  }, [handlers, store])
+    if (!onAction) return merged
+    return wrapActionHandlersWithOnAction(merged, {
+      onAction,
+      surfaceId,
+      getState: () => store.getSnapshot() as Record<string, unknown>,
+      spec: rendererSpec,
+    })
+  }, [handlers, store, onAction, surfaceId, rendererSpec])
 
   const auditRender = React.useCallback(() => {
     const next = collectVizualRenderEvidence(rootRef.current, rendererSpec)
@@ -209,7 +256,7 @@ export function VizualRenderer({
         store={store}
         handlers={actionHandlers}
         functions={functions}
-        onStateChange={onStateChange}
+        onStateChange={handleStateChange}
       >
         <Renderer spec={rendererSpec as any} registry={registry} fallback={fallback} />
       </JSONUIProvider>

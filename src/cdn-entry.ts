@@ -83,6 +83,8 @@ import type {
   VizualSpec,
 } from './core/artifact'
 import { assertNoCyclicChildren, withDefaultElementProps } from './core/spec-validation'
+import { applyVizualStateChanges } from './core/react-renderer'
+import { createVizualHostBridge, wrapActionHandlersWithOnAction, collectDeclaredVizualActions, summarizeVizualInteractivity, VIZUAL_ROUNDTRIP_ACTIONS, type VizualAction } from './core/host-bridge'
 import { collectVizualRenderEvidence } from './core/render-evidence'
 
 // All components
@@ -118,6 +120,9 @@ type RenderSpecOptions = {
   handlers?: Record<string, (params: Record<string, unknown>) => Promise<unknown> | unknown>
   functions?: Record<string, ComputedFunction>
   onStateChange?: (changes: Array<{ path: string; value: unknown }>) => void
+  onAction?: (action: VizualAction) => void
+  surfaceId?: string
+  recomputeSpec?: (state: Record<string, unknown>) => VizualSpec
 }
 
 const mountedRoots = new WeakMap<HTMLElement, ReactDOMClient.Root>()
@@ -171,28 +176,60 @@ function renderSpec(spec: any, container: HTMLElement, options: RenderSpecOption
     ...((rendererSpec?.state as StateModel | undefined) ?? {}),
     ...(options.initialState ?? {}),
   }
-  const store = createObservableStateStore(initialState, options.onStateChange)
+  // In-playground live preview: when bound control state changes, re-derive the
+  // spec from the new state and re-render locally (no agent involved). We reuse
+  // the SAME store (control values already live there), ignore Vizual-internal
+  // bookkeeping paths (/_charts, /_forms, ...), and guard re-entrancy so the
+  // re-render cannot loop.
+  const liveStateRef: { current: Record<string, unknown> } = { current: initialState }
+  let recomputing = false
+  const handleStateChange = (changes: Array<{ path: string; value: unknown }>) => {
+    options.onStateChange?.(changes)
+    if (!options.recomputeSpec || recomputing) return
+    const meaningful = changes.filter(c => !c.path.startsWith('/_'))
+    if (!meaningful.length) return
+    liveStateRef.current = applyVizualStateChanges({ ...liveStateRef.current, ...(store.getSnapshot() as Record<string, unknown>) }, meaningful)
+    recomputing = true
+    try {
+      mount(options.recomputeSpec(liveStateRef.current))
+    } finally {
+      recomputing = false
+    }
+  }
+  const store = createObservableStateStore(initialState, handleStateChange)
   const setState = createStoreBackedSetState(store)
-  const actionHandlers = {
+  const baseHandlers = {
     ...createVizualHandlers(() => setState, () => store.getSnapshot()),
     ...(options.handlers ?? {}),
   }
+  const actionHandlers = options.onAction
+    ? wrapActionHandlersWithOnAction(baseHandlers, {
+        onAction: options.onAction,
+        surfaceId: options.surfaceId,
+        getState: () => store.getSnapshot() as Record<string, unknown>,
+        spec: rendererSpec,
+      })
+    : baseHandlers
   let root = mountedRoots.get(container)
   if (!root) {
     root = ReactDOMClient.createRoot(container)
     mountedRoots.set(container, root)
   }
-  root.render(
-    React.createElement(JSONUIProvider, {
-      registry,
-      store,
-      handlers: actionHandlers,
-      functions: options.functions,
-      onStateChange: options.onStateChange,
-    } as any,
-      React.createElement(Renderer, { spec: rendererSpec as any, registry })
+  const mount = (nextSpec: any) => {
+    const finalSpec = withDefaultElementProps(nextSpec)
+    root!.render(
+      React.createElement(JSONUIProvider, {
+        registry,
+        store,
+        handlers: actionHandlers,
+        functions: options.functions,
+        onStateChange: handleStateChange,
+      } as any,
+        React.createElement(Renderer, { spec: finalSpec as any, registry })
+      )
     )
-  )
+  }
+  mount(rendererSpec)
   return root
 }
 
@@ -353,6 +390,12 @@ const vizual = {
   renderArtifact,
   updateArtifact,
   unmountSpec,
+  createVizualHostBridge,
+  wrapActionHandlersWithOnAction,
+  collectDeclaredVizualActions,
+  summarizeVizualInteractivity,
+  applyVizualStateChanges,
+  VIZUAL_ROUNDTRIP_ACTIONS,
   applyArtifactPatch,
   cloneJson,
   createArtifact,

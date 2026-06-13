@@ -215,6 +215,36 @@ describe('VizualRenderer', () => {
     ])
   })
 
+  it('dispatches a custom Button action with no registered handler into onAction', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+    const onAction = vi.fn()
+    const spec: VizualSpec = {
+      root: 'root',
+      elements: {
+        root: { type: 'Column', children: ['runBtn'] },
+        runBtn: {
+          type: 'Button',
+          props: { label: 'Run scenario', action: 'runScenario', params: { scenario: 'best-case' } },
+        },
+      },
+    }
+
+    // No `handlers` prop at all: runScenario exists only as a spec declaration.
+    render(<VizualRenderer spec={spec} surfaceId="surface-9" onAction={onAction} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Run scenario' }))
+
+    await waitFor(() => {
+      expect(onAction).toHaveBeenCalledTimes(1)
+    })
+    expect(onAction.mock.calls[0][0]).toMatchObject({
+      type: 'runScenario',
+      surfaceId: 'surface-9',
+      params: { scenario: 'best-case' },
+    })
+    expect(warn.mock.calls.flat().join('\n')).not.toContain('No handler registered for action')
+    warn.mockRestore()
+  })
+
   it('normalizes agent-style Gantt aliases into renderable task props', () => {
     const spec: VizualSpec = {
       root: 'plan',
