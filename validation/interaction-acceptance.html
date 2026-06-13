@@ -73,7 +73,7 @@
         const min = Number((state && state.controls && state.controls.minValue) ?? 0);
         return { root: 'root', state: { controls: { minValue: min } }, elements: {
           root: { type: 'Column', props: { gap: 12 }, children: ['ctrl','chart'] },
-          ctrl: { type: 'FormBuilder', props: { value: { $bindState: '/controls' }, fields: [
+          ctrl: { type: 'FormBuilder', props: { showSubmit: false, value: { $bindState: '/controls' }, fields: [
             { name: 'minValue', label: '最小营收过滤', type: 'slider', min: 0, max: 2500, step: 100, defaultValue: min } ] } },
           chart: { type: 'BarChart', props: { title: '各网点营收 ≥ ' + min, x: 'name', y: 'value',
             data: rows.filter(r => r.value >= min) } },

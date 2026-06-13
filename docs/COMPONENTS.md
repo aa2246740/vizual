@@ -86,7 +86,7 @@ Use when structured input is clearer than asking the user to type a long free-fo
 Boundary:
 
 - It submits data to the host Agent through `submitForm`.
-- It can be used for liveControl state when bound with `$bindState`.
+- It can be used for liveControl state when bound with `$bindState`; set `showSubmit: false` when the controls update locally through `recomputeSpec`.
 - It does not save, approve, dispatch, create tickets, or write external systems by itself.
 
 ## Content, Composition, Media, A2UI (20)

@@ -290,7 +290,7 @@ Use `targetMap` target IDs. Do not guess JSON paths when target IDs are availabl
 
 ## liveControl
 
-Use liveControl when changing parameters helps the user explore a concept or decision. It is a host bridge pattern, not a standalone spec. The host renders a FormBuilder bound to state and re-renders the preview from `makeSpec(state)`.
+Use liveControl when changing parameters helps the user explore a concept or decision. It is a host bridge pattern, not a standalone spec. The host renders a FormBuilder bound to state and re-renders the preview from `makeSpec(state)`. For live preview controls, set `FormBuilder.props.showSubmit` to `false`; only show submit when the user is sending data back to the Agent.
 
 Quality rules:
 

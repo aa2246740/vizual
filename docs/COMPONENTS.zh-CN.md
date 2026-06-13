@@ -84,7 +84,7 @@ Vizual 的组件不是页面模板，而是 Agent 可以组合使用的语义表
 边界：
 
 - 通过 `submitForm` 把数据提交给 host Agent。
-- 可以和 `$bindState` 一起用于 liveControl。
+- 可以和 `$bindState` 一起用于 liveControl；如果控件通过 `recomputeSpec` 本地实时更新，设置 `showSubmit: false`。
 - 不会自己保存、审批、派单、创建 ticket 或写外部系统。
 
 ## 内容、组合、媒体、A2UI primitives

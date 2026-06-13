@@ -174,4 +174,28 @@ describe('summarizeVizualInteractivity — Interactive + Roundtrip tiers', () =>
     expect(summary.agentRoundtrip).toBe(false)
     expect(summary.actions).toEqual([])
   })
+
+  it('does not report FormBuilder live preview controls as agent roundtrip when submit is hidden', () => {
+    const preview = previewVizualNativeInput({
+      root: 'r',
+      elements: {
+        r: {
+          type: 'FormBuilder',
+          props: {
+            showSubmit: false,
+            value: { $bindState: '/controls' },
+            fields: [{ name: 'threshold', label: 'Threshold', type: 'slider', min: 0, max: 100 }],
+          },
+        },
+      },
+    } as never, { requireRenderable: true })
+    const form = preview.spec?.elements?.r
+    expect(form?.on).toBeUndefined()
+    expect(form?.props?.action).toBeUndefined()
+    const summary = summarizeVizualInteractivity(preview.spec)
+    expect(summary.interactive).toBe(true)
+    expect(summary.agentRoundtrip).toBe(false)
+    expect(summary.deadControls).toEqual([])
+    expect(summary.actions).toEqual([])
+  })
 })

@@ -291,12 +291,18 @@ toggle switches a series) without a round trip, give the renderer a
 `recomputeSpec(state)` that re‑derives the spec from live control state:
 
 ```ts
-const makeSpec = (state) => ({ /* …chart filtered by state.controls.min… */ })
+const makeSpec = (state) => ({
+  // Use FormBuilder with showSubmit:false for controls that update in place.
+  // Example control props: { showSubmit: false, value: { $bindState: '/controls' }, fields: [...] }
+  /* …chart filtered by state.controls.min… */
+})
 <VizualRenderer spec={makeSpec(initial)} recomputeSpec={makeSpec} initialState={initial} />
 ```
 
 Bound controls write to state, `recomputeSpec` re‑derives, and only the surface
-re‑renders — the agent is never involved.
+re‑renders — the agent is never involved. Set `FormBuilder.props.showSubmit` to
+`false` for these live-control panels; otherwise the user sees a submit button
+that suggests an agent roundtrip.
 
 ### Verify the contract
 

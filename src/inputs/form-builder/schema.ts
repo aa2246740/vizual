@@ -5,6 +5,8 @@ export const FormBuilderSchema = z.object({
   title: z.string().optional(),
   columns: z.number().optional(),
   submitLabel: z.string().optional(),
+  /** Hide the submit button for live preview controls that update in place. */
+  showSubmit: z.boolean().optional(),
   /** Two-way form data value, usually { "$bindState": "/controls" } for liveControl */
   value: z.unknown().optional(),
   fields: z.array(z.object({

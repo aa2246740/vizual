@@ -1524,27 +1524,35 @@ function hydrateDefaultEventBindings(
     } else if (getAtPath(state, bindingPath) === undefined) {
       setAtPath(state, bindingPath, deriveFormDefaults(props.fields))
     }
-    const submitIntent = normalizeActionIntent(
-      props.submitAction ?? props.action ?? props.onSubmit ?? props.onClick ?? 'submitForm',
-    )
-    const actionName = submitIntent.name ?? 'submitForm'
-    const submitParams = {
-      ...toRecord(props.actionParams),
-      ...(submitIntent.params ?? {}),
-    }
-    props.action = actionName
-    if (Object.keys(submitParams).length) props.actionParams = submitParams
-    delete props.submitAction
-    delete props.onSubmit
-    delete props.onClick
-    if (!on.submit) {
-      on.submit = {
-        action: actionName,
-        params: {
-          formId: id,
-          data: { $bindState: bindingPath },
-          ...submitParams,
-        },
+    if (props.showSubmit === false) {
+      delete props.action
+      delete props.actionParams
+      delete props.submitAction
+      delete props.onSubmit
+      delete props.onClick
+    } else {
+      const submitIntent = normalizeActionIntent(
+        props.submitAction ?? props.action ?? props.onSubmit ?? props.onClick ?? 'submitForm',
+      )
+      const actionName = submitIntent.name ?? 'submitForm'
+      const submitParams = {
+        ...toRecord(props.actionParams),
+        ...(submitIntent.params ?? {}),
+      }
+      props.action = actionName
+      if (Object.keys(submitParams).length) props.actionParams = submitParams
+      delete props.submitAction
+      delete props.onSubmit
+      delete props.onClick
+      if (!on.submit) {
+        on.submit = {
+          action: actionName,
+          params: {
+            formId: id,
+            data: { $bindState: bindingPath },
+            ...submitParams,
+          },
+        }
       }
     }
   }

@@ -647,26 +647,30 @@ function FormBuilderBody({
     </div>
   }
 
-  return <form onSubmit={handleSubmit}>
+  const showSubmit = props.showSubmit !== false
+
+  return <form onSubmit={showSubmit ? handleSubmit : (event) => event.preventDefault()}>
       {props.title && <h3 style={{ fontSize:tcss('--rk-text-lg'), fontWeight:tcss('--rk-weight-semibold'), marginBottom: 16, color: tcss('--rk-text-primary') }}>{props.title}</h3>}
       <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: '0 24px' }}>
         {visibleFields.map(renderField)}
       </div>
-      <button
-        type="submit"
-        style={{
-          marginTop: 4,
-          padding: '8px 16px',
-          fontSize: tcss('--rk-text-base'),
-          fontWeight: tcss('--rk-weight-medium'),
-          background: tcss('--rk-accent'),
-          color: '#fff',
-          border: 'none',
-          borderRadius: tcss('--rk-radius-md'),
-          cursor: 'pointer',
-        }}
-      >
-        {props.submitLabel || 'Submit'}
-      </button>
+      {showSubmit && (
+        <button
+          type="submit"
+          style={{
+            marginTop: 4,
+            padding: '8px 16px',
+            fontSize: tcss('--rk-text-base'),
+            fontWeight: tcss('--rk-weight-medium'),
+            background: tcss('--rk-accent'),
+            color: '#fff',
+            border: 'none',
+            borderRadius: tcss('--rk-radius-md'),
+            cursor: 'pointer',
+          }}
+        >
+          {props.submitLabel || 'Submit'}
+        </button>
+      )}
     </form>
 }

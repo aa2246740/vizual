@@ -206,6 +206,25 @@ describe('FormBuilder component', () => {
     expect(screen.getByRole('button', { name: 'Apply changes' })).toBeTruthy()
   })
 
+  it('hides the submit button for live preview controls', () => {
+    const { container } = render(
+      <StateProvider>
+        <FormBuilder
+          props={{
+            type: 'form_builder',
+            showSubmit: false,
+            fields: [
+              { name: 'threshold', label: 'Threshold', type: 'slider', min: 0, max: 100, defaultValue: 40 },
+            ],
+          }}
+        />
+      </StateProvider>,
+    )
+
+    expect(container.querySelector('input[name="threshold"][type="range"]')).toBeTruthy()
+    expect(screen.queryByRole('button')).toBeNull()
+  })
+
   it('renders native date and time controls without forcing dark browser chrome', () => {
     const { container } = render(
       <StateProvider>

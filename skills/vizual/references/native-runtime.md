@@ -89,7 +89,7 @@ Bad uses:
 
 ## liveControl
 
-liveControl is a host bridge: FormBuilder edits state and a preview is regenerated from `makeSpec(state)`. It should be used for real exploration, such as changing sample size, threshold, chart type, or simulation assumptions.
+liveControl is a host bridge: FormBuilder edits state and a preview is regenerated from `makeSpec(state)`. It should be used for real exploration, such as changing sample size, threshold, chart type, or simulation assumptions. Set `FormBuilder.props.showSubmit` to `false` for live preview controls; a submit button is only useful when the input must round-trip to the Agent.
 
 ## Catalog Gap Metadata
 
