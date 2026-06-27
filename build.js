@@ -5,6 +5,11 @@ const { rmSync } = require('fs')
 // 三种产物：ESM（npm import）、CJS（npm require）、Standalone（全量打包，无外部依赖）
 
 const isStandalone = process.argv.includes('--standalone')
+const packageEntryPoints = {
+  index: 'src/index.ts',
+  'native-core/index': 'src/native-core/index.ts',
+  'agent-helper/index': 'src/agent-helper/index.ts',
+}
 
 if (isStandalone) {
   // Standalone: 全量打包，包含 React + ECharts + 所有依赖，一个文件即可运行
@@ -29,19 +34,20 @@ if (isStandalone) {
   // 默认：同时构建 ESM + CJS（npm 包格式，React/ECharts 作为 peer dependency）
   Promise.all([
     esbuild.build({
-      entryPoints: ['src/index.ts'],
+      entryPoints: packageEntryPoints,
       bundle: true,
       format: 'esm',
-      outfile: 'dist/index.mjs',
+      outdir: 'dist',
+      outExtension: { '.js': '.mjs' },
       target: 'es2020',
       external: ['react', 'react-dom', 'echarts'],
       logLevel: 'info',
     }),
     esbuild.build({
-      entryPoints: ['src/index.ts'],
+      entryPoints: packageEntryPoints,
       bundle: true,
       format: 'cjs',
-      outfile: 'dist/index.js',
+      outdir: 'dist',
       target: 'es2020',
       external: ['react', 'react-dom', 'echarts'],
       logLevel: 'info',

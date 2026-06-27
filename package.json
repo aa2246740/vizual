@@ -20,6 +20,16 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.mjs",
       "require": "./dist/index.js"
+    },
+    "./native-core": {
+      "types": "./dist/native-core/index.d.ts",
+      "import": "./dist/native-core/index.mjs",
+      "require": "./dist/native-core/index.js"
+    },
+    "./agent-helper": {
+      "types": "./dist/agent-helper/index.d.ts",
+      "import": "./dist/agent-helper/index.mjs",
+      "require": "./dist/agent-helper/index.js"
     }
   },
   "scripts": {
