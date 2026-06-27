@@ -425,8 +425,10 @@ describe('chart field alias normalization', () => {
       },
     })
 
-    expect(spec.elements!.left.props).toMatchObject({ flex: '1 1 0', width: 0, minHeight: 360 })
-    expect(spec.elements!.right.props).toMatchObject({ flex: '1 1 0', width: 0, minHeight: 360 })
+    expect(spec.elements!.left.props).toMatchObject({ flex: '1 1 0%', minHeight: 360 })
+    expect(spec.elements!.right.props).toMatchObject({ flex: '1 1 0%', minHeight: 360 })
+    expect(spec.elements!.left.props).not.toHaveProperty('width')
+    expect(spec.elements!.right.props).not.toHaveProperty('width')
   })
 
   it('preserves explicit row child layout props', () => {

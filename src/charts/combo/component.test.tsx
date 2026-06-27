@@ -32,8 +32,8 @@ describe('ComboChart option builder', () => {
         { type: 'line', y: 'arppu' },
       ],
       data: [
-        { day: 'D1', revenue: '1,200', arppu: 12.5 },
-        { day: 'D2', revenue: '1,180', arppu: 14.8 },
+        { day: 'D1', revenue: '1,200', arppu: '12.5%' },
+        { day: 'D2', revenue: '￥1,180万元', arppu: '14.8％' },
       ],
     })
 

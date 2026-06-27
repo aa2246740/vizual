@@ -1,4 +1,5 @@
 import type { LineChartProps } from './schema'
+import { chartNumberOrZero } from '../../core/chart-data'
 import { createEChartsBridge } from '../../core/echarts-bridge-factory'
 
 /**
@@ -37,7 +38,7 @@ export function buildLineFallback(props: LineChartProps): Record<string, unknown
     series: yFields.map(f => ({
       type: 'line',
       name: f,
-      data: data.map(d => toNumber(d[f])),
+      data: data.map(d => chartNumberOrZero(d[f])),
       smooth: true,
       yAxisIndex: axisByField.get(f) ?? 0,
     })),
@@ -52,7 +53,7 @@ function inferAxisByField(data: Array<Record<string, unknown>>, fields: string[]
   const maxima = fields
     .map(field => ({
       field,
-      max: Math.max(...data.map(row => Math.abs(toNumber(row[field]))), 0),
+      max: Math.max(...data.map(row => Math.abs(chartNumberOrZero(row[field]))), 0),
     }))
     .filter(item => item.max > 0)
     .sort((a, b) => a.max - b.max)
@@ -67,15 +68,6 @@ function inferAxisByField(data: Array<Record<string, unknown>>, fields: string[]
     if (item.max >= split) axisByField.set(item.field, 1)
   }
   return axisByField
-}
-
-function toNumber(value: unknown) {
-  if (typeof value === 'number') return Number.isFinite(value) ? value : 0
-  if (typeof value === 'string') {
-    const parsed = Number(value.replace(/,/g, ''))
-    return Number.isFinite(parsed) ? parsed : 0
-  }
-  return 0
 }
 
 export const LineChart = createEChartsBridge('line', buildLineFallback)

@@ -214,6 +214,19 @@ agent. Do not pretend Vizual itself saved data, approved a workflow, dispatched 
 ticket, or called a bank system. Copy, export, download, share, and persistence
 controls belong to the DeerFlow product shell outside `VizualRenderer`.
 
+Action lifecycle is also DeerFlow's responsibility, not Vizual Core's. The
+renderer can emit `submitForm`, `applyFilter`, `drillDown`, `selectLocation`, and
+`updatePlan`, but DeerFlow must show the human what happened after the click:
+
+- set visible pending status immediately after the click
+- keep it pending until the internal `sendMessage` / LangGraph run promise settles
+- show a long-running notice when the model or tool run is slow
+- show error text and record evidence if the internal send fails
+- keep the internal action message hidden from the transcript, but never make the
+  action itself silent
+- record `thread_id`, `surfaceId`, action name, params summary, run id, duration,
+  and failure text in logs
+
 ## 6. Readiness Gate
 
 Add or update a readiness script that fails closed. It should check:
@@ -225,6 +238,8 @@ Add or update a readiness script that fails closed. It should check:
 - Frontend imports `VizualRenderer` from `vizual`.
 - Frontend extracts accepted tool calls instead of rendering every attempt.
 - Internal failed attempts are not shown as final user-visible cards.
+- Vizual action handlers return promises and expose visible pending/error/done
+  status in the chat UI.
 
 Run:
 
@@ -258,6 +273,10 @@ Use fresh natural-language tasks, not scripts that already know the answer:
    creation request instead of forcing native core.
 10. Removed component case: send an old HeroLayout/GridLayout payload and
    confirm the failure is stable and not shown as a successful user card.
+11. Action lifecycle: submit a FormBuilder or click a drill-down action. Confirm
+    a visible pending state appears immediately, a slow-run notice appears when
+    the agent is delayed, and the state settles to done or error when the run
+    finishes.
 
 For each case, capture:
 
@@ -265,6 +284,8 @@ For each case, capture:
 - first `present_vizual_ui` tool result
 - final visible browser state
 - render receipt errors, if any
+- action lifecycle evidence: `surfaceId`, action name, pending/done/error state,
+  duration, and any failed send error
 - whether the user saw a failed internal card
 
 ## Common Failure Diagnoses

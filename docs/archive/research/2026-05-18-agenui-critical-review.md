@@ -151,4 +151,4 @@ AGenUI core 的 `ProtocolStreamExtractor` 对 `updateComponents` 做组件级增
 - AGenUI surface/data/runtime：`/Users/wu/Documents/vizual-research/_external/AGenUI/core/src/surface/`
 - AGenUI CI：`/Users/wu/Documents/vizual-research/_external/AGenUI/.github/workflows/`
 - 当前 Vizual Fusion Runtime：`/Users/wu/Documents/vizual-research/vizual-compare/src/fusion/runtime.ts`
-- 当前 Vizual runtime 设计记录：`/Users/wu/Documents/vizual-research/vizual-compare/docs/plans/2026-05-16-vizual-fusion-runtime-design.md`
+- 当前 Vizual runtime 设计记录：`docs/archive/plans/2026-05-16-vizual-fusion-runtime-design.md`

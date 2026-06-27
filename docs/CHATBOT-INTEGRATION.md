@@ -218,6 +218,12 @@ export function VizualInline({
   sendInternalUserMessage: (text: string) => Promise<void>
 }) {
   const [state, setState] = useState<Record<string, unknown>>({})
+  const [actionStatus, setActionStatus] = useState<null | {
+    state: 'pending' | 'done' | 'error'
+    action: string
+    actionId: string
+    message?: string
+  }>(null)
   const currentState = useRef<Record<string, unknown>>({})
 
   const preview = useMemo(
@@ -239,14 +245,28 @@ export function VizualInline({
   }
 
   async function returnActionToAgent(name: string, params: Record<string, unknown>) {
-    await sendInternalUserMessage(
-      buildVizualActionMessage({
-        presentation,
+    const actionId = crypto.randomUUID()
+    setActionStatus({ state: 'pending', action: name, actionId })
+
+    try {
+      await sendInternalUserMessage(
+        buildVizualActionMessage({
+          presentation,
+          action: name,
+          params,
+          currentState: currentState.current,
+        }),
+      )
+      setActionStatus({ state: 'done', action: name, actionId })
+    } catch (error) {
+      setActionStatus({
+        state: 'error',
         action: name,
-        params,
-        currentState: currentState.current,
-      }),
-    )
+        actionId,
+        message: error instanceof Error ? error.message : String(error),
+      })
+      throw error
+    }
   }
 
   const handlers = {
@@ -266,10 +286,23 @@ export function VizualInline({
         handlers={handlers}
         onStateChange={onStateChange}
       />
+      {actionStatus ? (
+        <div role="status" aria-live="polite" data-vizual-action-status={actionStatus.state}>
+          {actionStatus.state === 'pending' ? 'Submitted. Waiting for the agent...' : null}
+          {actionStatus.state === 'done' ? 'Agent handled this interaction.' : null}
+          {actionStatus.state === 'error' ? `Action failed: ${actionStatus.message}` : null}
+        </div>
+      ) : null}
     </section>
   )
 }
 ```
+
+The status UI is not optional. The internal action message should usually be
+hidden from the transcript, but the user still needs visible pending, success,
+and error feedback. `sendInternalUserMessage` should return the real Promise for
+the next agent turn; if it returns `void`, the host cannot know when to settle the
+status.
 
 If your chatbot needs copy, export, download, share, or persistence controls,
 add them in your host product shell outside `VizualRenderer`.

@@ -1,4 +1,5 @@
 import type { ComboChartProps } from './schema'
+import { chartNumberOrZero } from '../../core/chart-data'
 import { createEChartsBridge } from '../../core/echarts-bridge-factory'
 
 function toFieldList(value: unknown): string[] {
@@ -33,15 +34,6 @@ function toSeriesSpecList(value: unknown): ComboSeriesSpec[] {
       return { field, type, name, size, yAxisIndex }
     })
     .filter((item): item is ComboSeriesSpec => Boolean(item))
-}
-
-function toNumber(value: unknown) {
-  if (typeof value === 'number') return Number.isFinite(value) ? value : 0
-  if (typeof value === 'string') {
-    const parsed = Number(value.replace(/,/g, ''))
-    return Number.isFinite(parsed) ? parsed : 0
-  }
-  return 0
 }
 
 export function buildComboOption(props: ComboChartProps): Record<string, unknown> {
@@ -116,20 +108,20 @@ export function buildComboOption(props: ComboChartProps): Record<string, unknown
       ...resolvedBarFields.map(f => ({
         type: 'bar',
         name: seriesNameByField.get(f) ?? f,
-        data: data.map(d => toNumber((d as Record<string, unknown>)[f])),
+        data: data.map(d => chartNumberOrZero((d as Record<string, unknown>)[f])),
         yAxisIndex: 0,
       })),
       ...resolvedLineFields.map(f => ({
         type: 'line',
         name: seriesNameByField.get(f) ?? f,
-        data: data.map(d => toNumber((d as Record<string, unknown>)[f])),
+        data: data.map(d => chartNumberOrZero((d as Record<string, unknown>)[f])),
         smooth: true,
         yAxisIndex: useDualAxis ? 1 : 0,
       })),
       ...resolvedScatterSeries.map(series => {
         const sizeField = series.size
         const sizeValues = sizeField
-          ? data.map(d => toNumber((d as Record<string, unknown>)[sizeField]))
+          ? data.map(d => chartNumberOrZero((d as Record<string, unknown>)[sizeField]))
           : []
         const maxSize = Math.max(...sizeValues, 1)
         const minSize = Math.min(...sizeValues, maxSize)
@@ -138,8 +130,8 @@ export function buildComboOption(props: ComboChartProps): Record<string, unknown
           name: series.name ?? sizeField ?? series.field,
           data: data.map(d => [
             String((d as Record<string, unknown>)[x] ?? ''),
-            toNumber((d as Record<string, unknown>)[series.field]),
-            sizeField ? toNumber((d as Record<string, unknown>)[sizeField]) : undefined,
+            chartNumberOrZero((d as Record<string, unknown>)[series.field]),
+            sizeField ? chartNumberOrZero((d as Record<string, unknown>)[sizeField]) : undefined,
           ]),
           symbolSize: sizeField
             ? (value: unknown) => {

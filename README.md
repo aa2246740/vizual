@@ -155,6 +155,11 @@ Actions are events. Vizual itself does not approve, dispatch, save to a business
 system, or pretend an integration exists. The host decides what happens after an
 event is received.
 
+The host also owns the visible action lifecycle. After a user submits a form or
+clicks a drill-down/filter action, the host must show pending feedback, wait for
+the real agent round trip, then settle to success or error. Hiding the internal
+follow-up message is fine; leaving the user with a silent button is not.
+
 There are two separate interaction layers:
 
 - local playground controls can update the current Vizual surface directly
@@ -318,7 +323,9 @@ natural-language tasks and inspect the rendered result visually:
 
 ## Documentation
 
+- [Documentation Map](docs/README.md)
 - [Getting Started](docs/GETTING-STARTED.md)
+- [Integration Guide](docs/INTEGRATION.md)
 - [Chatbot Integration](docs/CHATBOT-INTEGRATION.md)
 - [Agent Integration](docs/AI-INTEGRATION.md)
 - [DeerFlow Upgrade](docs/DEERFLOW-UPGRADE.md)

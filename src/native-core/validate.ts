@@ -1,4 +1,5 @@
 import { assertNoCyclicChildren, withDefaultElementProps } from '../core/spec-validation'
+import { parseChartNumber } from '../core/chart-data'
 import { normalizeVizualNativeInput, type VizualNormalizeOptions, type VizualNormalizedResult } from './normalize'
 import { repairAgentInput } from './repair'
 import type { VizualNativeInput } from './types'
@@ -251,12 +252,7 @@ function uniqueFields(...groups: string[][]): string[] {
 }
 
 function finiteNumber(value: unknown): number | null {
-  if (typeof value === 'number') return Number.isFinite(value) ? value : null
-  if (typeof value === 'string') {
-    const parsed = Number(value.replace(/,/g, ''))
-    return Number.isFinite(parsed) ? parsed : null
-  }
-  return null
+  return parseChartNumber(value)
 }
 
 function rowsHaveField(rows: Array<Record<string, unknown>>, field: string): boolean {

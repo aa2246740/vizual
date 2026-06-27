@@ -1,4 +1,5 @@
 import type { BarChartProps } from './schema'
+import { chartCategoryLabels, chartNumberOrZero, hasCategoricalChartValue, hasNumericChartValue } from '../../core/chart-data'
 import { createEChartsBridge } from '../../core/echarts-bridge-factory'
 
 /**
@@ -7,8 +8,14 @@ import { createEChartsBridge } from '../../core/echarts-bridge-factory'
 export function buildBarFallback(props: BarChartProps): Record<string, unknown> {
   const { x = 'name', y = 'value', data, title, stacked, horizontal } = props
   const rows = Array.isArray(data) ? data : []
-  const yFields = Array.isArray(y) ? y : [y]
-  const categoryData = rows.map((d: Record<string, unknown>) => String(d[x] ?? ''))
+  const rawYFields = Array.isArray(y) ? y : [y]
+  const xLooksNumeric = rows.length > 0 && hasNumericChartValue(rows, x)
+  const singleYLooksCategorical = rawYFields.length === 1 && hasCategoricalChartValue(rows, rawYFields[0])
+  const inferredHorizontal = xLooksNumeric && singleYLooksCategorical
+  const isHorizontal = Boolean(horizontal || inferredHorizontal)
+  const categoryField = inferredHorizontal ? rawYFields[0] : x
+  const yFields = inferredHorizontal ? [x] : rawYFields
+  const categoryData = chartCategoryLabels(rows, categoryField)
 
   const hasTitle = !!title
   const hasLegend = yFields.length > 1
@@ -24,17 +31,17 @@ export function buildBarFallback(props: BarChartProps): Record<string, unknown> 
       top: hasTitle ? (hasLegend ? 70 : 40) : (hasLegend ? 30 : 30),
       containLabel: true,
     },
-    xAxis: horizontal
+    xAxis: isHorizontal
       ? { type: 'value' }
       : { type: 'category', data: categoryData },
-    yAxis: horizontal
+    yAxis: isHorizontal
       ? { type: 'category', data: categoryData }
       : { type: 'value' },
     series: yFields.map((field: string) => ({
       type: 'bar',
       name: field,
       stack: stacked ? 'total' : undefined,
-      data: rows.map((d: Record<string, unknown>) => Number(d[field]) || 0),
+      data: rows.map((d: Record<string, unknown>) => chartNumberOrZero(d[field])),
     })),
   }
 }

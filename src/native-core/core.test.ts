@@ -1033,6 +1033,28 @@ describe('VizualNativeCore', () => {
     expect(result.issues.map(issue => issue.code)).not.toContain('vizual.chart_non_numeric_data_field')
   })
 
+  it('accepts common agent-formatted numeric strings for chart measures', () => {
+    const result = validateVizualNativeInput({
+      root: 'chart',
+      elements: {
+        chart: {
+          type: 'BarChart',
+          props: {
+            data: [
+              { branch: '高科分行', badRate: '0.66%' },
+              { branch: '北岭分行', badRate: '2.28％' },
+            ],
+            x: 'branch',
+            y: 'badRate',
+          },
+        },
+      },
+    } as any)
+
+    expect(result.ok).toBe(true)
+    expect(result.issues.map(issue => issue.code)).not.toContain('vizual.chart_non_numeric_data_field')
+  })
+
   it('accepts chart series field aliases commonly emitted by agents', () => {
     const result = validateVizualNativeInput({
       root: 'root',

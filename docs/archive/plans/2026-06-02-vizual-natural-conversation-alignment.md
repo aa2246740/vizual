@@ -20,9 +20,9 @@ Re-align Vizual Core integration around natural conversation visualization. Agen
 ## References
 
 - `CONTEXT.md`
-- `docs/adr/0001-contract-validation-not-creative-gating.md`
-- `docs/adr/0002-optional-catalog-gap-sink.md`
-- `docs/adr/0003-cold-start-acceptance-scenarios-not-scripts.md`
+- `docs/archive/adr/0001-contract-validation-not-creative-gating.md`
+- `docs/archive/adr/0002-optional-catalog-gap-sink.md`
+- `docs/archive/adr/0003-cold-start-acceptance-scenarios-not-scripts.md`
 - `validation/prototype-natural-conversation-vizual.html`
 
 ## Parallel Workstreams

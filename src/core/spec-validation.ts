@@ -1,4 +1,5 @@
 import type { VizualSpec } from './artifact'
+import { parseChartNumber } from './chart-data'
 
 function toRecord(value: unknown): Record<string, unknown> {
   return value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {}
@@ -198,12 +199,7 @@ function measureEntries(value: unknown, defaultType?: NativeSeriesType): ChartMe
 }
 
 function finiteChartNumber(value: unknown): number | null {
-  if (typeof value === 'number') return Number.isFinite(value) ? value : null
-  if (typeof value === 'string') {
-    const parsed = Number(value.replace(/,/g, ''))
-    return Number.isFinite(parsed) ? parsed : null
-  }
-  return null
+  return parseChartNumber(value)
 }
 
 function pivotLongFormSeries(
@@ -1419,7 +1415,7 @@ function applyLayoutDefaultsToRows(
       const child = elements[childId]
       if (!child?.type) continue
 
-      updateElementProps(childId, { flex: '1 1 0', width: 0 })
+      updateElementProps(childId, { flex: '1 1 0%' })
       if (elementContainsChart(childId, elements)) {
         updateElementProps(childId, { minHeight: ROW_CHART_CARD_MIN_HEIGHT })
       }

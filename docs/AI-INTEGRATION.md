@@ -188,6 +188,27 @@ making. Do not add sliders, buttons, or forms as decoration.
 Actions are events, not business promises. Vizual does not save, approve,
 dispatch, create tickets, write databases, or call external systems by itself.
 
+### Action Lifecycle Responsibility
+
+Vizual Core is responsible for action schema, normalization, validation, event
+emission, and helper messages. The host application is responsible for the
+visible lifecycle after a user clicks or submits:
+
+- show pending feedback within 200 ms
+- keep the pending state until the host action handler's `Promise` resolves or
+  rejects
+- show a long-running notice when the model/tool run is slow
+- show error/retry UI when the handler fails
+- suppress duplicate submissions while the same action is pending, or make the
+  queue explicit
+- log `surfaceId`, action name, params summary, outcome, duration, and error
+  evidence
+
+Hidden internal action messages are fine, but silent actions are not. If a host
+hides the follow-up message from the transcript, it must still show the human a
+visible status line such as "Submitted. Waiting for the agent..." until the
+agent turn completes.
+
 ## Current Agent-Facing Catalog
 
 See [COMPONENTS.md](COMPONENTS.md). Native core does not keep separate
@@ -204,6 +225,8 @@ Real acceptance must happen in a browser, not only against JSON:
   project/organization/timeline cases, and dashboards
 - A2UI, AG-UI, and native operations normalize to the same catalog
 - FormBuilder submit events reach the host action log
+- FormBuilder/Button/chart actions show pending feedback, settle on success or
+  error, and record lifecycle evidence
 - local playground controls update the visible surface without unnecessary
   agent round-trips
 - utility buttons export/copy/download only when the host browser supports them

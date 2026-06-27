@@ -204,6 +204,12 @@ export function VizualInline({
   sendInternalUserMessage: (text: string) => Promise<void>
 }) {
   const [state, setState] = useState<Record<string, unknown>>({})
+  const [actionStatus, setActionStatus] = useState<null | {
+    state: 'pending' | 'done' | 'error'
+    action: string
+    actionId: string
+    message?: string
+  }>(null)
   const currentState = useRef<Record<string, unknown>>({})
 
   const preview = useMemo(
@@ -225,14 +231,28 @@ export function VizualInline({
   }
 
   async function returnActionToAgent(name: string, params: Record<string, unknown>) {
-    await sendInternalUserMessage(
-      buildVizualActionMessage({
-        presentation,
+    const actionId = crypto.randomUUID()
+    setActionStatus({ state: 'pending', action: name, actionId })
+
+    try {
+      await sendInternalUserMessage(
+        buildVizualActionMessage({
+          presentation,
+          action: name,
+          params,
+          currentState: currentState.current,
+        }),
+      )
+      setActionStatus({ state: 'done', action: name, actionId })
+    } catch (error) {
+      setActionStatus({
+        state: 'error',
         action: name,
-        params,
-        currentState: currentState.current,
-      }),
-    )
+        actionId,
+        message: error instanceof Error ? error.message : String(error),
+      })
+      throw error
+    }
   }
 
   const handlers = {
@@ -252,10 +272,19 @@ export function VizualInline({
         handlers={handlers}
         onStateChange={onStateChange}
       />
+      {actionStatus ? (
+        <div role="status" aria-live="polite" data-vizual-action-status={actionStatus.state}>
+          {actionStatus.state === 'pending' ? '已提交，正在等待 Agent 回复...' : null}
+          {actionStatus.state === 'done' ? 'Agent 已处理这次交互。' : null}
+          {actionStatus.state === 'error' ? `交互提交失败：${actionStatus.message}` : null}
+        </div>
+      ) : null}
     </section>
   )
 }
 ```
+
+这个状态 UI 不是可选项。内部 action message 通常应该从可见对话里隐藏，但用户仍然需要看到 pending、成功和错误反馈。`sendInternalUserMessage` 应该返回下一轮 Agent 的真实 Promise；如果它返回 `void`，宿主就不知道什么时候把状态从 pending 变成成功或失败。
 
 如果聊天产品需要复制、导出、下载、分享或持久化控件，请在
 `VizualRenderer` 外层的宿主产品外壳里实现。

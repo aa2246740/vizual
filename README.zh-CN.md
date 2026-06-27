@@ -262,7 +262,9 @@ npm run build
 
 ## 文档
 
+- [文档地图](docs/README.md)
 - [快速开始](docs/GETTING-STARTED.zh-CN.md)
+- [完整集成指南](docs/INTEGRATION.md)
 - [Chatbot 接入](docs/CHATBOT-INTEGRATION.zh-CN.md)
 - [Agent 接入](docs/AI-INTEGRATION.zh-CN.md)
 - [DeerFlow 升级](docs/DEERFLOW-UPGRADE.zh-CN.md)

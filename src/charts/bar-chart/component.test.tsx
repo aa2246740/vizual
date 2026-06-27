@@ -41,6 +41,47 @@ describe('BarChart option builder', () => {
     expect((option.series as Record<string, unknown>[])[0]).toHaveProperty('stack', 'total')
   })
 
+  it('infers horizontal ranking bars when x is numeric and y is categorical', () => {
+    const option = buildBarFallback({
+      type: 'bar',
+      x: 'badRate',
+      y: 'branch',
+      data: [
+        { branch: '北岭分行', badRate: 2.28 },
+        { branch: '中城分行', badRate: 1.34 },
+        { branch: '高科分行', badRate: 0.66 },
+      ],
+    })
+
+    expect((option.xAxis as Record<string, unknown>).type).toBe('value')
+    expect(option.yAxis).toMatchObject({
+      type: 'category',
+      data: ['北岭分行', '中城分行', '高科分行'],
+    })
+    expect((option.series as Record<string, unknown>[])[0]).toMatchObject({
+      name: 'badRate',
+      data: [2.28, 1.34, 0.66],
+    })
+  })
+
+  it('keeps formatted numeric strings visible instead of collapsing them to zero', () => {
+    const option = buildBarFallback({
+      type: 'bar',
+      x: 'branch',
+      y: 'badRate',
+      data: [
+        { branch: '北岭分行', badRate: '2.28%' },
+        { branch: '中城分行', badRate: '1.34％' },
+        { branch: '南湾分行', badRate: '1,060' },
+      ],
+    })
+
+    expect((option.series as Record<string, unknown>[])[0]).toMatchObject({
+      name: 'badRate',
+      data: [2.28, 1.34, 1060],
+    })
+  })
+
   it('builds an empty series instead of throwing when data is missing', () => {
     const option = buildBarFallback({
       type: 'bar',

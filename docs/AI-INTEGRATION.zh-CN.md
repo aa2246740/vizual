@@ -128,6 +128,22 @@ liveControl 不是纯 JSON spec。宿主需要提供 bridge：FormBuilder 控件
 
 这些只是 host-visible event。Vizual 不会自己保存、审批、派单、写数据库或调用外部系统。
 
+### Action 生命周期责任
+
+Vizual Core 负责 action 的 schema、归一化、校验、事件发出和 helper message。
+用户点击或提交之后的可见生命周期由宿主应用负责：
+
+- 200 ms 内给出可见 pending 反馈。
+- pending 状态要一直持续到宿主 action handler 的 `Promise` resolve 或 reject。
+- 模型或工具链较慢时显示长等待提示，不要静默无响应。
+- handler 失败时显示错误/重试状态。
+- 同一个 action pending 时要禁止重复提交，或者明确展示排队行为。
+- 记录 `surfaceId`、action 名称、参数摘要、结果、耗时和错误 evidence。
+
+隐藏内部 action message 是可以的，但不能让用户点击后完全没有反馈。如果宿主把
+follow-up message 从可见对话里隐藏，就必须同时显示类似“已提交，正在等待 Agent
+回复...”的可见状态，并在 Agent 回合完成后更新为成功或失败。
+
 图表 payload 默认使用 `props.data` + typed `props.encoding`。多指标或
 `ComboChart` 图层使用 `props.measures`。分类分组放在 `encoding.color`、
 `seriesBy`、`colorBy` 或 `groupBy`；不要把 string `series` 教成默认路径。
@@ -145,6 +161,7 @@ liveControl 不是纯 JSON spec。宿主需要提供 bridge：FormBuilder 控件
 - 自然语言任务触发数据分析、概念互动、表单输入、项目/组织/时间线等不同能力。
 - A2UI / AG-UI / native operations 都归一到同一 native catalog。
 - FormBuilder 提交能进入 host-visible action log。
+- FormBuilder、Button、图表 action 点击后有 pending 反馈，最终能进入成功或错误状态，并留下 lifecycle evidence。
 - 本地 playground 控件能直接更新当前 surface，不制造无意义的 Agent round-trip。
 - 复制、导出、下载、分享、持久化等产品操作由宿主外壳负责，不由 Vizual Core 内置。
 - 纯文本请求不强塞 UI。

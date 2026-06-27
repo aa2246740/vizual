@@ -284,6 +284,87 @@ On the agent side, hide the injected turn from the transcript with
 `isInternalVizualActionMessage`, run the agent, and it sees the submitted data as
 the latest user input — a new run is produced. That closes the loop.
 
+### Action lifecycle ownership
+
+Vizual Core owns the contract surface: it normalizes actions, validates that a
+surface declares real actions, emits `onAction` events, and provides helpers such
+as `buildVizualActionMessage` and `createVizualHostBridge`.
+
+The host product owns the user-visible action lifecycle. A production chat host
+must:
+
+- show visible feedback within 200 ms after a submit/filter/drill-down click
+- keep a pending state while the agent/tool run is still active
+- return a `Promise` from the action handler so pending, success, and failure can
+  be tied to the real round trip
+- show a long-running notice for slow model/tool runs instead of silently doing
+  nothing
+- show an error/retry state if the handler rejects
+- prevent duplicate submissions while the same action is pending, or make queued
+  duplicate behavior explicit
+- log `surfaceId`, action name, params summary, status, duration, and error
+  evidence for debugging
+
+The agent owns the follow-up answer. After the host sends the internal action
+message, the agent should either update the surface or answer visibly in text.
+Agents must not claim that a submit/filter/drill-down was handled unless the host
+actually routed the action back into a new turn.
+
+Do not hide the internal Vizual action message without also showing a visible
+pending indicator to the human user. Hidden follow-up messages keep the transcript
+clean, but the user still needs to know that the click was accepted and the agent
+is working.
+
+Minimal host pattern:
+
+```tsx
+const [actionStatus, setActionStatus] = useState<null | {
+  state: 'pending' | 'done' | 'error'
+  action: string
+  actionId: string
+  message?: string
+}>(null)
+
+const bridge = createVizualHostBridge({
+  surfaceId,
+  toolCallId,
+  sendToAgent: async (message) => {
+    await host.submitUserTurn(message)
+  },
+})
+
+async function onVizualAction(action) {
+  const actionId = crypto.randomUUID()
+  setActionStatus({ state: 'pending', action: action.name, actionId })
+
+  try {
+    await bridge.onAction(action)
+    setActionStatus({ state: 'done', action: action.name, actionId })
+  } catch (error) {
+    setActionStatus({
+      state: 'error',
+      action: action.name,
+      actionId,
+      message: error instanceof Error ? error.message : String(error),
+    })
+    throw error
+  }
+}
+
+return (
+  <>
+    <VizualRenderer spec={preview.spec} surfaceId={surfaceId} onAction={onVizualAction} />
+    {actionStatus ? (
+      <div role="status" aria-live="polite" data-vizual-action-status={actionStatus.state}>
+        {actionStatus.state === 'pending' ? 'Submitted. Waiting for the agent...' : null}
+        {actionStatus.state === 'done' ? 'Agent handled this interaction.' : null}
+        {actionStatus.state === 'error' ? `Action failed: ${actionStatus.message}` : null}
+      </div>
+    ) : null}
+  </>
+)
+```
+
 ### In‑playground live preview (no agent)
 
 For a control that should update the surface immediately (slider filters a chart,
